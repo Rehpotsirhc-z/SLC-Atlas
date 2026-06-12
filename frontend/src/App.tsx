@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+//
+// SPDX-License-Identifier: Apache-2.0
+
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { AppBar, Toolbar, Tabs, Tab, Box, Typography } from "@mui/material"
 import GeneAnnotation from "./views/GeneAnnotation"

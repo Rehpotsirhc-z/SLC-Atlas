@@ -1,0 +1,19 @@
+version = 1
+SPDX-PackageName = "SLC Atlas"
+SPDX-PackageSupplier = "Dong Lab, Yale School of Medicine <https://donglab.org>"
+
+[[annotations]]
+path = [
+  "frontend/package.json",
+  "frontend/package-lock.json",
+  "frontend/tsconfig.json",
+  "frontend/tsconfig.app.json",
+  "frontend/tsconfig.node.json",
+  "frontend/index.html",
+  "frontend/src/assets/**",
+  "zellij-layout.kdl",
+  ".gitattributes",
+  "README.org",
+]
+SPDX-FileCopyrightText = "2026 Dong Lab, Yale School of Medicine <https://donglab.org>"
+SPDX-License-Identifier = "CC0-1.0"

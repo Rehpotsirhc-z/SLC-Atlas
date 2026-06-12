@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 [tool.black]
 line-length = 100
 target-version = ["py312"]

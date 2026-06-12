@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive

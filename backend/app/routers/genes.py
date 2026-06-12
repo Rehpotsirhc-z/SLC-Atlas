@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from ..deps import get_source
 from ..data.parquet_source import ParquetSource
