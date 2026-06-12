@@ -6,8 +6,7 @@ volumes:
   # Persisted /usr/local — keeps anything installed there (e.g. npm globals,
   # /usr/local/bin tools) across container rebuilds.
   devtools:
-  # Persisted /home/ubuntu — the entrypoint creates ~/.venv here on first
-  # run and won't redo it on subsequent starts as long as this volume lives.
+  # Persisted /home/ubuntu — shell config, zellij install, etc.
   home:
   # Persisted node_modules — keeps npm packages off the bind-mounted workspace
   # for faster installs and better I/O performance during dev.

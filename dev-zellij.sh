@@ -4,5 +4,5 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-source "$HOME/.virtualenvs/SLC-Atlas/bin/activate"
+source ".venv/bin/activate"
 zellij --layout zellij-layout.kdl

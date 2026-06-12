@@ -6,7 +6,7 @@
 
 set -e
 
-VENV="$HOME/.virtualenvs/SLC-Atlas"
+VENV="/workspace/.venv"
 BACKEND_REQ=/workspace/backend/requirements.txt
 BACKEND_MARKER="$VENV/.backend-deps-installed"
 FRONTEND_DIR=/workspace/frontend
@@ -25,7 +25,6 @@ fi
 # ── Python venv ──────────────────────────────────────────────────────────────
 if [ ! -d "$VENV" ]; then
     echo "[entrypoint] creating Python venv at $VENV"
-    mkdir -p "$HOME/.virtualenvs"
     python3 -m venv "$VENV"
 fi
 
