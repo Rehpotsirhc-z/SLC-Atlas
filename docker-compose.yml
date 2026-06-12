@@ -1,0 +1,30 @@
+volumes:
+  # Persisted /usr/local — keeps anything installed there (e.g. npm globals,
+  # /usr/local/bin tools) across container rebuilds.
+  devtools:
+  # Persisted /home/ubuntu — the entrypoint creates ~/.venv here on first
+  # run and won't redo it on subsequent starts as long as this volume lives.
+  home:
+  # Persisted node_modules — keeps npm packages off the bind-mounted workspace
+  # for faster installs and better I/O performance during dev.
+  frontend_node_modules:
+
+services:
+  dev:
+    container_name: slc-atlas
+    user: ubuntu
+    working_dir: /workspace
+
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+
+    ports:
+      - "8000:8000"   # FastAPI backend
+      - "3000:3000"   # Vite frontend dev server
+
+    volumes:
+      - .:/workspace
+      - devtools:/usr/local
+      - home:/home/ubuntu
+      - frontend_node_modules:/workspace/frontend/node_modules

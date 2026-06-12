@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+
+if ! docker compose ps --status running | grep -q slc-atlas; then
+    echo "Container not running. Starting it..."
+    docker compose up -d --build
+fi
+
+docker compose exec dev bash

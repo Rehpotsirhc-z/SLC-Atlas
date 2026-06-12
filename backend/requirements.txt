@@ -1,0 +1,7 @@
+fastapi[standard]>=0.115
+uvicorn[standard]>=0.32
+polars>=1.0
+pyarrow>=17
+pydantic>=2.8
+pydantic-settings>=2.5
+black>=24.0
