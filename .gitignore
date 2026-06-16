@@ -27,6 +27,7 @@ backend/data/raw/*
 # Frontend build
 frontend/dist/
 frontend/.vite/
+frontend/*.tsbuildinfo
 
 # Node
 node_modules/
