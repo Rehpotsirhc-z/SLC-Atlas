@@ -4,6 +4,7 @@
 
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { AppBar, Toolbar, Tabs, Tab, Box, Typography } from "@mui/material"
+import ThemeToggle from "./components/ThemeToggle"
 import GeneAnnotation from "./views/GeneAnnotation"
 import Clustering from "./views/Clustering"
 import Conservation from "./views/Conservation"
@@ -44,6 +45,8 @@ export default function App() {
               <Tab key={n.path} label={n.label} />
             ))}
           </Tabs>
+          <Box sx={{ flexGrow: 1 }} />
+          <ThemeToggle />
         </Toolbar>
       </AppBar>
       <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>

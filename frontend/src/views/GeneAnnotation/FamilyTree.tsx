@@ -5,11 +5,12 @@
 import { useMemo } from "react"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
-import { Box } from "@mui/material"
+import { Box, Paper, Typography, useTheme } from "@mui/material"
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView"
 import { TreeItem } from "@mui/x-tree-view/TreeItem"
 import type { Gene } from "@/types/gene"
 import { useUIStore } from "@/store/uiStore"
+import { getFamilyColor } from "@/utils/familyColor"
 
 interface FamilyTreeProps {
   genes: Gene[]
@@ -48,33 +49,53 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
 
 export default function FamilyTree({ genes, familyFilter, onSelectFamily }: FamilyTreeProps) {
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const { palette } = useTheme()
   const familyGroups = useMemo(() => buildFamilyGroups(genes), [genes])
 
   return (
-    <Box sx={{ width: 280, overflowY: "auto", flexShrink: 0 }}>
+    <Paper variant="outlined" sx={{ width: 280, flexShrink: 0, overflowY: "auto", p: 1 }}>
+      <Typography variant="overline" color="text.secondary" sx={{ pl: 1 }}>
+        Families
+      </Typography>
       <SimpleTreeView slots={{ expandIcon: ChevronRightIcon, collapseIcon: ExpandMoreIcon }}>
-        {familyGroups.map(({ family, label, members }) => (
-          <TreeItem
-            key={family}
-            itemId={family}
-            label={label}
-            onClick={() => onSelectFamily(familyFilter === family ? null : family)}
-            sx={familyFilter === family ? { bgcolor: "action.selected" } : undefined}
-          >
-            {members.map((gene) => (
-              <TreeItem
-                key={gene.id}
-                itemId={gene.id}
-                label={gene.symbol}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setSelectedGeneId(gene.id)
-                }}
-              />
-            ))}
-          </TreeItem>
-        ))}
+        {familyGroups.map(({ family, label, members }) => {
+          const isActive = familyFilter === family
+          const color = getFamilyColor(family, palette.mode)
+          return (
+            <TreeItem
+              key={family}
+              itemId={family}
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}>
+                  <Box
+                    sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }}
+                  />
+                  <Typography variant="body2" noWrap>
+                    {label}
+                  </Typography>
+                </Box>
+              }
+              onClick={() => onSelectFamily(isActive ? null : family)}
+              sx={{
+                bgcolor: isActive ? "action.selected" : undefined,
+                borderLeft: `3px solid ${isActive ? color : "transparent"}`,
+              }}
+            >
+              {members.map((gene) => (
+                <TreeItem
+                  key={gene.id}
+                  itemId={gene.id}
+                  label={gene.symbol}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedGeneId(gene.id)
+                  }}
+                />
+              ))}
+            </TreeItem>
+          )
+        })}
       </SimpleTreeView>
-    </Box>
+    </Paper>
   )
 }

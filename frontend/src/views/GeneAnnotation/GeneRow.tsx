@@ -6,7 +6,17 @@ import { memo, useEffect, useRef, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
-import { Collapse, IconButton, Link, TableCell, TableRow, Tooltip } from "@mui/material"
+import {
+  Collapse,
+  IconButton,
+  Link,
+  TableCell,
+  TableRow,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material"
+import FamilyChip from "@/components/FamilyChip"
 import type { Gene } from "@/types/gene"
 import { formatPosition } from "@/utils/format"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
@@ -20,6 +30,7 @@ interface GeneRowProps {
 function GeneRow({ gene, isSelected }: GeneRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null)
   const [expanded, setExpanded] = useState(false)
+  const { custom } = useTheme()
 
   useEffect(() => {
     if (isSelected) {
@@ -44,23 +55,35 @@ function GeneRow({ gene, isSelected }: GeneRowProps) {
             )}
           </IconButton>
         </TableCell>
-        <TableCell>{gene.id}</TableCell>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{gene.id}</TableCell>
         <TableCell>
-          <strong>{gene.symbol}</strong>
+          <Typography variant="body2" component="span" fontWeight={700}>
+            {gene.symbol}
+          </Typography>
         </TableCell>
         <TableCell>{gene.name}</TableCell>
-        <TableCell>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
           {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
         </TableCell>
-        <TableCell align="right">{gene.length.toLocaleString()}</TableCell>
-        <TableCell>{gene.category ?? gene.family_name}</TableCell>
-        <TableCell>{gene.alias ?? "—"}</TableCell>
+        <TableCell align="right" sx={{ fontFamily: custom.monoFontFamily }}>
+          {gene.length.toLocaleString()}
+        </TableCell>
+        <TableCell>
+          <FamilyChip family={gene.family} label={gene.category ?? gene.family_name} />
+        </TableCell>
+        <TableCell>
+          {gene.alias ?? (
+            <Typography component="span" color="text.disabled">
+              —
+            </Typography>
+          )}
+        </TableCell>
         <TableCell padding="checkbox">
           {gene.function_brief && (
             <Tooltip title={gene.function_brief} placement="left">
               <InfoOutlinedIcon
                 fontSize="small"
-                sx={{ color: "text.secondary", cursor: "help", display: "block" }}
+                sx={{ color: "info.main", cursor: "help", display: "block" }}
               />
             </Tooltip>
           )}

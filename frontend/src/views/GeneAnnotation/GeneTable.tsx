@@ -32,15 +32,30 @@ const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
   { key: "category", label: "Family / Category" },
 ]
 
-export default function GeneTable({ genes, sortKey, sortDirection, onSort, scrollToGeneId }: GeneTableProps) {
+const headerCellSx = {
+  fontWeight: 700,
+  fontSize: "0.7rem",
+  letterSpacing: 0.5,
+  textTransform: "uppercase" as const,
+  color: "text.secondary",
+  bgcolor: "background.default",
+}
+
+export default function GeneTable({
+  genes,
+  sortKey,
+  sortDirection,
+  onSort,
+  scrollToGeneId,
+}: GeneTableProps) {
   return (
     <TableContainer>
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
-            <TableCell padding="checkbox" />
+            <TableCell padding="checkbox" sx={headerCellSx} />
             {SORTABLE_COLUMNS.map(({ key, label }) => (
-              <TableCell key={key} align={key === "length" ? "right" : undefined}>
+              <TableCell key={key} align={key === "length" ? "right" : undefined} sx={headerCellSx}>
                 <TableSortLabel
                   active={sortKey === key}
                   direction={sortKey === key ? sortDirection : "asc"}
@@ -50,9 +65,9 @@ export default function GeneTable({ genes, sortKey, sortDirection, onSort, scrol
                 </TableSortLabel>
               </TableCell>
             ))}
-            <TableCell>Alias</TableCell>
-            <TableCell padding="checkbox" />
-            <TableCell>Links</TableCell>
+            <TableCell sx={headerCellSx}>Alias</TableCell>
+            <TableCell padding="checkbox" sx={headerCellSx} />
+            <TableCell sx={headerCellSx}>Links</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

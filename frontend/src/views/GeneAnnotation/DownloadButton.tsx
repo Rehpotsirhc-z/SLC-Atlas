@@ -54,7 +54,7 @@ export default function DownloadButton({ genes }: DownloadButtonProps) {
         onClick={(e) => setAnchorEl(e.currentTarget)}
         variant="outlined"
         size="small"
-        sx={{ alignSelf: "flex-start" }}
+        sx={{ whiteSpace: "nowrap" }}
       >
         Download ({genes.length} genes)
       </Button>
