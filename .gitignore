@@ -22,6 +22,7 @@ backend/data/*.tsv
 backend/data/*.csv
 backend/data/*.h5
 backend/data/*.hdf5
+backend/data/raw/*
 
 # Frontend build
 frontend/dist/
