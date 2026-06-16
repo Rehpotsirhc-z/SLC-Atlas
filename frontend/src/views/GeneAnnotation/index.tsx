@@ -23,8 +23,6 @@ export default function GeneAnnotation() {
     sortKey,
     sortDirection,
     toggleSort,
-    expandedGeneIds,
-    toggleExpanded,
   } = useGeneAnnotationState()
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
 
@@ -56,8 +54,6 @@ export default function GeneAnnotation() {
             sortKey={sortKey}
             sortDirection={sortDirection}
             onSort={toggleSort}
-            expandedGeneIds={expandedGeneIds}
-            onToggleExpand={toggleExpanded}
             scrollToGeneId={selectedGeneId}
           />
         </Box>

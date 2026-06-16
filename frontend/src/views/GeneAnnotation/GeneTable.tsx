@@ -20,8 +20,6 @@ interface GeneTableProps {
   sortKey: SortKey
   sortDirection: SortDirection
   onSort: (key: SortKey) => void
-  expandedGeneIds: Set<string>
-  onToggleExpand: (geneId: string) => void
   scrollToGeneId: string | null
 }
 
@@ -34,15 +32,7 @@ const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
   { key: "category", label: "Family / Category" },
 ]
 
-export default function GeneTable({
-  genes,
-  sortKey,
-  sortDirection,
-  onSort,
-  expandedGeneIds,
-  onToggleExpand,
-  scrollToGeneId,
-}: GeneTableProps) {
+export default function GeneTable({ genes, sortKey, sortDirection, onSort, scrollToGeneId }: GeneTableProps) {
   return (
     <TableContainer>
       <Table size="small" stickyHeader>
@@ -67,13 +57,7 @@ export default function GeneTable({
         </TableHead>
         <TableBody>
           {genes.map((gene) => (
-            <GeneRow
-              key={gene.id}
-              gene={gene}
-              expanded={expandedGeneIds.has(gene.id)}
-              onToggleExpand={onToggleExpand}
-              isSelected={gene.id === scrollToGeneId}
-            />
+            <GeneRow key={gene.id} gene={gene} isSelected={gene.id === scrollToGeneId} />
           ))}
         </TableBody>
       </Table>

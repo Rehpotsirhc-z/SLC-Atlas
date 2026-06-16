@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useRef } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
 import { Collapse, IconButton, Link, TableCell, TableRow, Tooltip } from "@mui/material"
 import type { Gene } from "@/types/gene"
 import { formatPosition } from "@/utils/format"
@@ -14,13 +14,12 @@ import TranscriptTable from "./TranscriptTable"
 
 interface GeneRowProps {
   gene: Gene
-  expanded: boolean
-  onToggleExpand: (geneId: string) => void
   isSelected: boolean
 }
 
-export default function GeneRow({ gene, expanded, onToggleExpand, isSelected }: GeneRowProps) {
+function GeneRow({ gene, isSelected }: GeneRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (isSelected) {
@@ -37,7 +36,7 @@ export default function GeneRow({ gene, expanded, onToggleExpand, isSelected }: 
         sx={isSelected ? { outline: "2px solid", outlineColor: "secondary.main" } : undefined}
       >
         <TableCell padding="checkbox">
-          <IconButton size="small" onClick={() => onToggleExpand(gene.id)}>
+          <IconButton size="small" onClick={() => setExpanded((e) => !e)}>
             {expanded ? (
               <KeyboardArrowDownIcon fontSize="small" />
             ) : (
@@ -78,11 +77,13 @@ export default function GeneRow({ gene, expanded, onToggleExpand, isSelected }: 
       </TableRow>
       <TableRow>
         <TableCell colSpan={10} sx={{ p: 0, borderBottom: expanded ? undefined : "none" }}>
-          <Collapse in={expanded} unmountOnExit>
-            {expanded && <TranscriptTable geneId={gene.id} chromosome={gene.chromosome} />}
+          <Collapse in={expanded} mountOnEnter unmountOnExit>
+            <TranscriptTable geneId={gene.id} chromosome={gene.chromosome} />
           </Collapse>
         </TableCell>
       </TableRow>
     </>
   )
 }
+
+export default memo(GeneRow)

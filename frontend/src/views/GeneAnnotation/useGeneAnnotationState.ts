@@ -42,7 +42,6 @@ export function useGeneAnnotationState() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>("symbol")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
-  const [expandedGeneIds, setExpandedGeneIds] = useState<Set<string>>(new Set())
 
   const visibleGenes = useMemo(
     () => sortGenes(filterGenes(genes, searchText, familyFilter), sortKey, sortDirection),
@@ -58,18 +57,6 @@ export function useGeneAnnotationState() {
     }
   }
 
-  function toggleExpanded(geneId: string) {
-    setExpandedGeneIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(geneId)) {
-        next.delete(geneId)
-      } else {
-        next.add(geneId)
-      }
-      return next
-    })
-  }
-
   return {
     genes,
     isLoading,
@@ -82,7 +69,5 @@ export function useGeneAnnotationState() {
     sortKey,
     sortDirection,
     toggleSort,
-    expandedGeneIds,
-    toggleExpanded,
   }
 }
