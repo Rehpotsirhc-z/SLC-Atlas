@@ -114,6 +114,12 @@ function buildTheme(mode: ThemeMode): Theme {
           root: { borderColor: mode === "dark" ? c.base4 : c.base3 },
         },
       },
+      MuiTreeItem: {
+        styleOverrides: {
+          content: { borderRadius: 0 },
+          iconContainer: { "& svg": { color: c.green } },
+        },
+      },
       MuiCssBaseline: {
         styleOverrides: {
           "*": {

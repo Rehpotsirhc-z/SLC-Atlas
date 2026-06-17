@@ -115,7 +115,7 @@ function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
             <Tooltip title={gene.function_brief} placement="left">
               <InfoOutlinedIcon
                 fontSize="small"
-                sx={{ color: "info.main", cursor: "help", display: "block" }}
+                sx={{ color: "text.secondary", cursor: "help", display: "block" }}
               />
             </Tooltip>
           )}

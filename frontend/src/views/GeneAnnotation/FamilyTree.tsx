@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { Box, Paper, Typography, useTheme } from "@mui/material"
@@ -48,18 +48,25 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
 }
 
 export default function FamilyTree({ genes, familyFilter, onSelectFamily }: FamilyTreeProps) {
+  const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const { palette } = useTheme()
   const familyGroups = useMemo(() => buildFamilyGroups(genes), [genes])
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
 
   return (
     <Paper variant="outlined" sx={{ width: 280, flexShrink: 0, overflowY: "auto", p: 1 }}>
       <Typography variant="overline" color="secondary" sx={{ pl: 1 }}>
         Families
       </Typography>
-      <SimpleTreeView slots={{ expandIcon: ChevronRightIcon, collapseIcon: ExpandMoreIcon }}>
+      <SimpleTreeView
+        expandedItems={expandedItems}
+        onExpandedItemsChange={(_, items) => setExpandedItems(items)}
+        slots={{ expandIcon: ChevronRightIcon, collapseIcon: ExpandMoreIcon }}
+      >
         {familyGroups.map(({ family, label, members }) => {
           const isActive = familyFilter === family
+          const isExpanded = expandedItems.includes(family)
           const color = getFamilyColor(family, palette.mode)
           return (
             <TreeItem
@@ -77,21 +84,38 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
               }
               onClick={() => onSelectFamily(isActive ? null : family)}
               sx={{
-                bgcolor: isActive ? "action.selected" : undefined,
-                borderLeft: `3px solid ${isActive ? color : "transparent"}`,
+                "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused": {
+                  borderLeft: `3px solid ${isExpanded ? color : "transparent"}`,
+                  bgcolor: isExpanded ? `${color}22` : undefined,
+                },
               }}
             >
-              {members.map((gene) => (
-                <TreeItem
-                  key={gene.id}
-                  itemId={gene.id}
-                  label={<Typography variant="body2" noWrap>{gene.symbol}</Typography>}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedGeneId(gene.id)
-                  }}
-                />
-              ))}
+              {members.map((gene) => {
+                const isGeneSelected = gene.id === selectedGeneId
+                return (
+                  <TreeItem
+                    key={gene.id}
+                    itemId={gene.id}
+                    label={
+                      <Typography variant="body2" noWrap fontWeight={isGeneSelected ? 700 : 400}>
+                        {gene.symbol}
+                      </Typography>
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedGeneId(gene.id)
+                    }}
+                    sx={{
+                      "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover": {
+                        bgcolor: isGeneSelected ? `${color}50` : `${color}18`,
+                      },
+                      "& > .MuiTreeItem-content:hover": {
+                        bgcolor: isGeneSelected ? `${color}60` : `${color}30`,
+                      },
+                    }}
+                  />
+                )
+              })}
             </TreeItem>
           )
         })}

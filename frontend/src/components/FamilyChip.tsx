@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { Chip, useTheme } from "@mui/material"
+import { Chip, Tooltip, useTheme } from "@mui/material"
 import { getFamilyColor } from "@/utils/familyColor"
 
 interface FamilyChipProps {
@@ -15,11 +15,23 @@ export default function FamilyChip({ family, label }: FamilyChipProps) {
   const color = getFamilyColor(family, palette.mode)
 
   return (
-    <Chip
-      size="small"
-      variant="outlined"
-      label={label}
-      sx={{ borderColor: color, color, fontWeight: 500 }}
-    />
+    <Tooltip title={label} placement="top">
+      <Chip
+        size="small"
+        variant="outlined"
+        label={label}
+        sx={{
+          borderColor: color,
+          color,
+          fontWeight: 500,
+          maxWidth: 220,
+          "& .MuiChip-label": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          },
+        }}
+      />
+    </Tooltip>
   )
 }
