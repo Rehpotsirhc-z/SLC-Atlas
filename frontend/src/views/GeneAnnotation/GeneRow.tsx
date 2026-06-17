@@ -44,10 +44,14 @@ function GeneRow({ gene, isSelected }: GeneRowProps) {
         ref={rowRef}
         hover
         selected={isSelected}
-        sx={isSelected ? { outline: "2px solid", outlineColor: "secondary.main" } : undefined}
+        onClick={() => setExpanded((e) => !e)}
+        sx={{
+          cursor: "pointer",
+          ...(isSelected ? { outline: "2px solid", outlineColor: "secondary.main" } : undefined),
+        }}
       >
         <TableCell padding="checkbox">
-          <IconButton size="small" onClick={() => setExpanded((e) => !e)}>
+          <IconButton size="small" tabIndex={-1}>
             {expanded ? (
               <KeyboardArrowDownIcon fontSize="small" sx={{ color: "primary.main" }} />
             ) : (
