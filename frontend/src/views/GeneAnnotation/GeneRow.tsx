@@ -25,9 +25,10 @@ import TranscriptTable from "./TranscriptTable"
 interface GeneRowProps {
   gene: Gene
   isSelected: boolean
+  autoExpand: boolean
 }
 
-function GeneRow({ gene, isSelected }: GeneRowProps) {
+function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null)
   const [expanded, setExpanded] = useState(false)
   const { custom } = useTheme()
@@ -37,6 +38,10 @@ function GeneRow({ gene, isSelected }: GeneRowProps) {
       rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
     }
   }, [isSelected])
+
+  useEffect(() => {
+    if (autoExpand) setExpanded(true)
+  }, [autoExpand])
 
   return (
     <>

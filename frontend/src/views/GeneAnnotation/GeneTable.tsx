@@ -21,6 +21,7 @@ interface GeneTableProps {
   sortDirection: SortDirection
   onSort: (key: SortKey) => void
   scrollToGeneId: string | null
+  autoExpandGeneId: string | null
 }
 
 const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
@@ -46,6 +47,7 @@ export default function GeneTable({
   sortDirection,
   onSort,
   scrollToGeneId,
+  autoExpandGeneId,
 }: GeneTableProps) {
   return (
     <TableContainer>
@@ -71,7 +73,7 @@ export default function GeneTable({
         </TableHead>
         <TableBody>
           {genes.map((gene) => (
-            <GeneRow key={gene.id} gene={gene} isSelected={gene.id === scrollToGeneId} />
+            <GeneRow key={gene.id} gene={gene} isSelected={gene.id === scrollToGeneId} autoExpand={gene.id === autoExpandGeneId} />
           ))}
         </TableBody>
       </Table>
