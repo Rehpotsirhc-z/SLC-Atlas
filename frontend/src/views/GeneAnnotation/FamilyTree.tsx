@@ -85,7 +85,7 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
                 <TreeItem
                   key={gene.id}
                   itemId={gene.id}
-                  label={gene.symbol}
+                  label={<Typography variant="body2" noWrap>{gene.symbol}</Typography>}
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelectedGeneId(gene.id)
