@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useState } from "react"
+import { useEffect, useDeferredValue, useMemo, useState } from "react"
 import { useGenes } from "@/api/hooks/useGenes"
 import type { Gene } from "@/types/gene"
 
@@ -42,11 +42,16 @@ export function useGeneAnnotationState() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>("symbol")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(50)
 
+  const deferredSearchText = useDeferredValue(searchText)
   const visibleGenes = useMemo(
-    () => sortGenes(filterGenes(genes, searchText, familyFilter), sortKey, sortDirection),
-    [genes, searchText, familyFilter, sortKey, sortDirection],
+    () => sortGenes(filterGenes(genes, deferredSearchText, familyFilter), sortKey, sortDirection),
+    [genes, deferredSearchText, familyFilter, sortKey, sortDirection],
   )
+
+  useEffect(() => { setPage(0) }, [deferredSearchText, familyFilter])
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
@@ -69,5 +74,9 @@ export function useGeneAnnotationState() {
     sortKey,
     sortDirection,
     toggleSort,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
   }
 }

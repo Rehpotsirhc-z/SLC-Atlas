@@ -64,10 +64,15 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
   const handleInputChange = useCallback(
     (_event: React.SyntheticEvent, newInput: string) => {
       setInputValue(newInput)
-      debouncedOnChange(newInput)
       setSelectedGeneId(null)
+      if (!newInput) {
+        debouncedOnChange.clear()
+        onChange("")
+      } else {
+        debouncedOnChange(newInput)
+      }
     },
-    [debouncedOnChange, setSelectedGeneId],
+    [onChange, debouncedOnChange, setSelectedGeneId],
   )
 
   const handleChange = useCallback(

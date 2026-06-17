@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { Alert, Box, Divider, Paper, Toolbar, Typography } from "@mui/material"
+import { Alert, Box, Divider, Paper, TablePagination, Toolbar, Typography } from "@mui/material"
 import { useUIStore } from "@/store/uiStore"
 import DownloadButton from "./DownloadButton"
 import FamilyTree from "./FamilyTree"
@@ -24,7 +24,13 @@ export default function GeneAnnotation() {
     sortKey,
     sortDirection,
     toggleSort,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
   } = useGeneAnnotationState()
+
+  const paginatedGenes = visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage)
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
 
   return (
@@ -64,20 +70,35 @@ export default function GeneAnnotation() {
               <Alert severity="error">Failed to load genes.</Alert>
             </Box>
           ) : (
-            <Box sx={{ flex: 1, overflow: "auto" }}>
-              {isLoading ? (
-                <GeneTableSkeleton />
-              ) : (
-                <GeneTable
-                  genes={visibleGenes}
-                  sortKey={sortKey}
-                  sortDirection={sortDirection}
-                  onSort={toggleSort}
-                  scrollToGeneId={selectedGeneId}
-                  autoExpandGeneId={visibleGenes.length <= 3 ? selectedGeneId : null}
-                />
-              )}
-            </Box>
+            <>
+              <Box sx={{ flex: 1, overflow: "auto" }}>
+                {isLoading ? (
+                  <GeneTableSkeleton />
+                ) : (
+                  <GeneTable
+                    genes={paginatedGenes}
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
+                    scrollToGeneId={selectedGeneId}
+                    autoExpandGeneId={visibleGenes.length <= 3 ? selectedGeneId : null}
+                  />
+                )}
+              </Box>
+              <TablePagination
+                component="div"
+                count={visibleGenes.length}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={(_, p) => setPage(p)}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value))
+                  setPage(0)
+                }}
+                rowsPerPageOptions={[25, 50, 100]}
+                sx={{ borderTop: 1, borderColor: "divider", flexShrink: 0, mr: 0.5 }}
+              />
+            </>
           )}
         </Paper>
       </Box>
