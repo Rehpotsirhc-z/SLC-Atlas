@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import { keyframes } from "@emotion/react"
 import { memo, useEffect, useRef, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
@@ -28,15 +29,23 @@ interface GeneRowProps {
   autoExpand: boolean
 }
 
+const rowFlash = keyframes`
+  0%   { background-color: rgba(81, 175, 239, 0.35); }
+  100% { background-color: transparent; }
+`
+
 function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null)
   const [expanded, setExpanded] = useState(false)
+  const [flashing, setFlashing] = useState(false)
   const { custom } = useTheme()
 
   useEffect(() => {
-    if (isSelected) {
-      rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
-    }
+    if (!isSelected) return
+    rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
+    setFlashing(true)
+    const t = setTimeout(() => setFlashing(false), 1400)
+    return () => clearTimeout(t)
   }, [isSelected])
 
   useEffect(() => {
@@ -48,11 +57,10 @@ function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
       <TableRow
         ref={rowRef}
         hover
-        selected={isSelected}
         onClick={() => setExpanded((e) => !e)}
         sx={{
           cursor: "pointer",
-          ...(isSelected ? { outline: "2px solid", outlineColor: "secondary.main" } : undefined),
+          ...(flashing && { animation: `${rowFlash} 1.4s ease-out forwards` }),
         }}
       >
         <TableCell padding="checkbox">
