@@ -104,6 +104,7 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
                     onClick={(e) => {
                       e.stopPropagation()
                       setSelectedGeneId(gene.id)
+                      if (!isActive) onSelectFamily(family)
                     }}
                     sx={{
                       "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover": {
