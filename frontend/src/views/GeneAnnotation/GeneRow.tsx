@@ -56,12 +56,12 @@ function GeneRow({ gene, isSelected }: GeneRowProps) {
           </IconButton>
         </TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{gene.id}</TableCell>
-        <TableCell>
-          <Typography variant="body2" component="span" fontWeight={700}>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
+          <Typography variant="body2" component="span" fontWeight={700} fontFamily="inherit">
             {gene.symbol}
           </Typography>
         </TableCell>
-        <TableCell>{gene.name}</TableCell>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{gene.name}</TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
           {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
         </TableCell>
@@ -71,9 +71,9 @@ function GeneRow({ gene, isSelected }: GeneRowProps) {
         <TableCell>
           <FamilyChip family={gene.family} label={gene.category ?? gene.family_name} />
         </TableCell>
-        <TableCell>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
           {gene.alias ?? (
-            <Typography component="span" color="text.disabled">
+            <Typography component="span" color="text.disabled" fontFamily="inherit">
               —
             </Typography>
           )}

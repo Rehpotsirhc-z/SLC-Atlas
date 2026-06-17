@@ -22,9 +22,7 @@ import type { Transcript } from "@/types/gene"
 
 const ROW_H = 22
 const BAR_H = 10
-const LABEL_W = 130
-const TRACK_W = 800
-const VB_W = LABEL_W + TRACK_W
+const LABEL_W = 95
 const TICK_AREA_H = 20
 
 const TYPE_COLORS: Record<string, string> = {
@@ -37,7 +35,7 @@ const TYPE_COLORS: Record<string, string> = {
 }
 const FALLBACK_COLOR = "#73797e"
 
-function LocusDiagram({
+function TranscriptMapDiagram({
   transcripts,
   palette,
   monoFont,
@@ -84,7 +82,7 @@ function LocusDiagram({
         color="primary"
         sx={{ lineHeight: 1, mb: 1, display: "block" }}
       >
-        Locus
+        Transcript Map
       </Typography>
       <Box ref={containerRef} sx={{ width: "100%" }}>
         {width > 0 && (
@@ -109,9 +107,9 @@ function LocusDiagram({
               return (
                 <g key={t.id}>
                   <text
-                    x={LABEL_W - 6}
+                    x={0}
                     y={midY + 4}
-                    textAnchor="end"
+                    textAnchor="start"
                     fontSize={10}
                     fontFamily={monoFont}
                     fill={textColor}
@@ -244,8 +242,8 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
             : (transcripts ?? []).map((t) => (
                 <TableRow key={t.id}>
                   <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{t.id}</TableCell>
-                  <TableCell>{t.name}</TableCell>
-                  <TableCell>{t.type}</TableCell>
+                  <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{t.name}</TableCell>
+                  <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{t.type}</TableCell>
                   <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
                     {formatPosition(chromosome, t.start, t.end)}
                   </TableCell>
@@ -309,7 +307,7 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
               ))}
             </Box>
           </Box>
-          <LocusDiagram
+          <TranscriptMapDiagram
             transcripts={transcripts}
             palette={palette}
             monoFont={custom.monoFontFamily}
