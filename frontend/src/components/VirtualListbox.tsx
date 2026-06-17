@@ -81,5 +81,7 @@ export const StyledPopper = styled(Popper)(({ theme }) => ({
     alignItems: "center",
     borderBottom: `1px solid ${theme.palette.divider}`,
     "&:last-child": { borderBottom: "none" },
+    "&:hover": { backgroundColor: theme.palette.action.hover },
+    "&.Mui-focused": { backgroundColor: theme.palette.action.hover },
   },
 }))
