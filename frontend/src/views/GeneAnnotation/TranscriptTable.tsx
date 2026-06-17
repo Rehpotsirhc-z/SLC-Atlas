@@ -27,7 +27,7 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
   const { custom, palette } = useTheme()
 
   return (
-    <Box sx={{ p: 2, bgcolor: "action.hover", borderLeft: `3px solid ${palette.divider}` }}>
+    <Box sx={{ p: 2, bgcolor: "background.default" }}>
       <Table size="small">
         <TableHead>
           <TableRow>

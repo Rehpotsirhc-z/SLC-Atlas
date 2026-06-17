@@ -38,7 +38,6 @@ const headerCellSx = {
   letterSpacing: 0.5,
   textTransform: "uppercase" as const,
   color: "text.secondary",
-  bgcolor: "background.default",
 }
 
 export default function GeneTable({

@@ -86,7 +86,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
     <Autocomplete<Gene, false, false, true>
       freeSolo
       size="small"
-      sx={{ width: 360 }}
+      sx={{ width: 360, "& .MuiAutocomplete-clearIndicator": { color: "text.secondary" } }}
       disableListWrap
       options={options}
       inputValue={inputValue}
@@ -133,16 +133,28 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
           {...params}
           size="small"
           placeholder="Search Ensembl ID, symbol, name, or category…"
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: (
-              <>
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" />
-                </InputAdornment>
-                {params.InputProps.startAdornment}
-              </>
-            ),
+          color="primary"
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: "primary.main" },
+            "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "primary.main",
+            },
+            "& .MuiOutlinedInput-root": { paddingLeft: "10px" },
+            "& .MuiOutlinedInput-input": { color: "primary.main", fontSize: "0.85rem" },
+            "& .MuiOutlinedInput-input::placeholder": { color: "primary.main", opacity: 0.6 },
+          }}
+          slotProps={{
+            input: {
+              ...params.InputProps,
+              startAdornment: (
+                <>
+                  <InputAdornment position="start" sx={{ ml: 0.75, mr: 0 }}>
+                    <SearchIcon sx={{ fontSize: 16 }} color="primary" />
+                  </InputAdornment>
+                  {params.InputProps.startAdornment}
+                </>
+              ),
+            },
           }}
         />
       )}

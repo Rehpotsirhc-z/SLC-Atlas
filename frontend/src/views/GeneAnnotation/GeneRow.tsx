@@ -49,9 +49,9 @@ function GeneRow({ gene, isSelected }: GeneRowProps) {
         <TableCell padding="checkbox">
           <IconButton size="small" onClick={() => setExpanded((e) => !e)}>
             {expanded ? (
-              <KeyboardArrowDownIcon fontSize="small" />
+              <KeyboardArrowDownIcon fontSize="small" sx={{ color: "primary.main" }} />
             ) : (
-              <KeyboardArrowRightIcon fontSize="small" />
+              <KeyboardArrowRightIcon fontSize="small" sx={{ color: "primary.main" }} />
             )}
           </IconButton>
         </TableCell>

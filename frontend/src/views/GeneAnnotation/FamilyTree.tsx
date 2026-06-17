@@ -54,7 +54,7 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
 
   return (
     <Paper variant="outlined" sx={{ width: 280, flexShrink: 0, overflowY: "auto", p: 1 }}>
-      <Typography variant="overline" color="text.secondary" sx={{ pl: 1 }}>
+      <Typography variant="overline" color="secondary" sx={{ pl: 1 }}>
         Families
       </Typography>
       <SimpleTreeView slots={{ expandIcon: ChevronRightIcon, collapseIcon: ExpandMoreIcon }}>

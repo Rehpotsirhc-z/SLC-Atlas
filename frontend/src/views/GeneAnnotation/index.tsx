@@ -30,7 +30,7 @@ export default function GeneAnnotation() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <Box>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography variant="h5" fontWeight={600} color="primary">
           Genes
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -40,7 +40,7 @@ export default function GeneAnnotation() {
       <Box sx={{ display: "flex", flex: 1, gap: 2, minHeight: 0 }}>
         <FamilyTree genes={genes} familyFilter={familyFilter} onSelectFamily={setFamilyFilter} />
         <Paper
-          elevation={1}
+          variant="outlined"
           sx={{
             flex: 1,
             display: "flex",
@@ -52,7 +52,7 @@ export default function GeneAnnotation() {
           <Toolbar disableGutters sx={{ px: 2, gap: 2 }}>
             <SearchBar genes={genes} value={searchText} onChange={setSearchText} />
             <Box sx={{ flexGrow: 1 }} />
-            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
+            <Typography variant="body2" color="success.main" sx={{ whiteSpace: "nowrap" }}>
               {visibleGenes.length} of {genes.length} genes
             </Typography>
             <Divider orientation="vertical" flexItem />
