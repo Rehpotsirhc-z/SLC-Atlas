@@ -50,7 +50,7 @@ export default function GeneAnnotation() {
           }}
         >
           <Toolbar disableGutters sx={{ px: 2, gap: 2 }}>
-            <SearchBar value={searchText} onChange={setSearchText} />
+            <SearchBar genes={genes} value={searchText} onChange={setSearchText} />
             <Box sx={{ flexGrow: 1 }} />
             <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
               {visibleGenes.length} of {genes.length} genes
