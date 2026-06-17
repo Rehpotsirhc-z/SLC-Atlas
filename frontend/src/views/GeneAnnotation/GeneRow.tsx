@@ -42,9 +42,24 @@ function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
 
   useEffect(() => {
     if (!isSelected) return
-    rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
-    setFlashing(true)
-    const t = setTimeout(() => setFlashing(false), 1400)
+    setExpanded(true)
+    const t = setTimeout(() => {
+      if (!rowRef.current) return
+      let fired = false
+      const startFlash = () => {
+        if (fired) return
+        fired = true
+        setFlashing(true)
+        setTimeout(() => setFlashing(false), 1400)
+      }
+      let scrollParent = rowRef.current.parentElement
+      while (scrollParent && scrollParent.scrollHeight <= scrollParent.clientHeight) {
+        scrollParent = scrollParent.parentElement
+      }
+      scrollParent?.addEventListener("scrollend", startFlash, { once: true })
+      rowRef.current.scrollIntoView({ block: "start", behavior: "smooth" })
+      setTimeout(startFlash, 600)
+    }, 300)
     return () => clearTimeout(t)
   }, [isSelected])
 
