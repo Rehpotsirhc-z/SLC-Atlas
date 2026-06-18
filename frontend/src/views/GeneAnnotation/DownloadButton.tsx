@@ -23,6 +23,7 @@ const COLUMNS: (keyof Gene)[] = [
   "length",
   "alias",
   "category",
+  "subcategory",
   "family",
   "family_name",
   "function_brief",

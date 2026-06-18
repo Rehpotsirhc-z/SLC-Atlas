@@ -16,12 +16,12 @@ backend/data/transcripts.parquet.
 """
 
 import csv
-import re
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 import polars as pl
+
+from slc_family import derive_family
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
 DEFAULT_ANNOTATION_PATH = DATA_DIR / "SLC_annotation.tsv"
@@ -41,39 +41,11 @@ GENE_SCHEMA = {
     "length": pl.Int64,
     "alias": pl.Utf8,
     "category": pl.Utf8,
+    "subcategory": pl.Utf8,
     "family": pl.Utf8,
     "family_name": pl.Utf8,
     "function_brief": pl.Utf8,
 }
-
-FAMILY_RE = re.compile(r"^Solute carrier family (\d+)(?:,.*)?$")
-ORGANIC_ANION_GROUP_NAME = "Solute carrier organic anion transporter family"
-
-
-def derive_family(group_name: str) -> str:
-    m = FAMILY_RE.match(group_name)
-    if m:
-        return f"SLC{m.group(1)}"
-    if group_name == ORGANIC_ANION_GROUP_NAME:
-        return "SLCO"
-    raise ValueError(f"Unrecognized HGNC group name: {group_name!r}")
-
-
-def backfill_categories(genes: list[dict]) -> None:
-    """Fill in a null category from sibling family members, but only when
-    every other categorized member of the family agrees on a single value.
-    Families with multiple distinct subfamily descriptions (e.g. SLC35's
-    lettered subfamilies) are left alone."""
-    category_values_by_family: dict[str, set[str]] = defaultdict(set)
-    for gene in genes:
-        if gene["category"] is not None:
-            category_values_by_family[gene["family"]].add(gene["category"])
-
-    for gene in genes:
-        if gene["category"] is None:
-            candidates = category_values_by_family.get(gene["family"], set())
-            if len(candidates) == 1:
-                gene["category"] = next(iter(candidates))
 
 
 TRANSCRIPT_SCHEMA = {
@@ -152,7 +124,8 @@ def build_tables(
                 "strand": "+" if egene["strand"] == 1 else "-",
                 "length": egene["end"] - egene["start"] + 1,
                 "alias": row["Alias symbols"].strip() or None,
-                "category": row["Functional family"].strip() or None,
+                "category": row["Functional family"].strip() or row["Group name"].strip(),
+                "subcategory": row["Subcategory"].strip() or None,
                 "family": derive_family(row["Group name"].strip()),
                 "family_name": row["Group name"].strip(),
                 "function_brief": ncbi_summaries.get(row["NCBI Gene ID"], "").strip() or None,
@@ -176,8 +149,6 @@ def build_tables(
         print(f"{len(skipped)} gene(s) skipped (no Ensembl lookup result):", file=sys.stderr)
         for symbol in skipped:
             print(f"  {symbol}", file=sys.stderr)
-
-    backfill_categories(genes)
 
     return genes, transcripts
 

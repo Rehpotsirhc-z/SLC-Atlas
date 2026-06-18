@@ -30,7 +30,7 @@ const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
   { key: "position", label: "Position" },
   { key: "length", label: "Length" },
-  { key: "category", label: "Family / Category" },
+  { key: "category", label: "Family" },
 ]
 
 const headerCellSx = {

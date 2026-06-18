@@ -101,7 +101,7 @@ function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
           {gene.length.toLocaleString()}
         </TableCell>
         <TableCell>
-          <FamilyChip family={gene.family} label={gene.category ?? gene.family_name} />
+          <FamilyChip family={gene.family} label={gene.category} />
         </TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
           {gene.alias ?? (

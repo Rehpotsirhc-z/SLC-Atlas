@@ -138,7 +138,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
         <TextField
           {...params}
           size="small"
-          placeholder="Search Ensembl ID, symbol, name, or category…"
+          placeholder="Search Ensembl ID, symbol, name, or family…"
           color="primary"
           sx={{
             "& .MuiOutlinedInput-notchedOutline": { borderColor: "primary.main" },

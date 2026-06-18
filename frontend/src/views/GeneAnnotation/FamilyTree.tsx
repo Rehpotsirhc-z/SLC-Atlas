@@ -24,13 +24,6 @@ interface FamilyGroup {
   members: Gene[]
 }
 
-function familyCategoryLabel(members: Gene[]): string {
-  const categories = new Set(members.map((g) => g.category).filter((c): c is string => c != null))
-  if (categories.size === 1) return [...categories][0]
-  if (categories.size === 0) return members[0].family_name
-  return `${members[0].family_name} (mixed)`
-}
-
 function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   const map = new Map<string, Gene[]>()
   for (const gene of genes) {
@@ -41,7 +34,7 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   return [...map.entries()]
     .map(([family, members]) => ({
       family,
-      label: `${family} — ${familyCategoryLabel(members)} (${members.length})`,
+      label: `${family} — ${members[0].category} (${members.length})`,
       members: [...members].sort((a, b) => a.symbol.localeCompare(b.symbol)),
     }))
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
