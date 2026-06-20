@@ -75,7 +75,10 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
                   </Typography>
                 </Box>
               }
-              onClick={() => onSelectFamily(isActive ? null : family)}
+              onClick={() => {
+                if (!isExpanded) onSelectFamily(family)
+                else if (isActive) onSelectFamily(null)
+              }}
               sx={{
                 "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused": {
                   borderLeft: `3px solid ${isExpanded ? color : "transparent"}`,
