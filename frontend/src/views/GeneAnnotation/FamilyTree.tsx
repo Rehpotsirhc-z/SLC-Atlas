@@ -16,6 +16,7 @@ interface FamilyTreeProps {
   genes: Gene[]
   familyFilter: string | null
   onSelectFamily: (family: string | null) => void
+  width?: number
 }
 
 interface FamilyGroup {
@@ -40,7 +41,7 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
 }
 
-export default function FamilyTree({ genes, familyFilter, onSelectFamily }: FamilyTreeProps) {
+export default function FamilyTree({ genes, familyFilter, onSelectFamily, width = 280 }: FamilyTreeProps) {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const { palette } = useTheme()
@@ -48,7 +49,7 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
   const [expandedItems, setExpandedItems] = useState<string[]>([])
 
   return (
-    <Paper variant="outlined" sx={{ width: 280, flexShrink: 0, overflowY: "auto", p: 1 }}>
+    <Paper variant="outlined" sx={{ width, flexShrink: 0, overflowY: "auto", p: 1 }}>
       <Typography variant="overline" color="secondary" sx={{ pl: 1 }}>
         Families
       </Typography>

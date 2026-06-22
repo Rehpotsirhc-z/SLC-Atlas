@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import { useRef, useState } from "react"
 import { Alert, Box, Divider, Paper, TablePagination, Toolbar, Typography } from "@mui/material"
 import { useUIStore } from "@/store/uiStore"
 import DownloadButton from "./DownloadButton"
@@ -33,6 +34,26 @@ export default function GeneAnnotation() {
   const paginatedGenes = visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage)
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
 
+  const [treeWidth, setTreeWidth] = useState(280)
+  const dragging = useRef(false)
+
+  const onDragStart = (e: React.MouseEvent) => {
+    dragging.current = true
+    const startX = e.clientX
+    const startWidth = treeWidth
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current) return
+      setTreeWidth(Math.max(160, Math.min(600, startWidth + ev.clientX - startX)))
+    }
+    const onUp = () => {
+      dragging.current = false
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", onUp)
+    }
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", onUp)
+  }
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <Box>
@@ -43,8 +64,35 @@ export default function GeneAnnotation() {
           SLC superfamily gene and transcript annotation browser
         </Typography>
       </Box>
-      <Box sx={{ display: "flex", flex: 1, gap: 2, minHeight: 0 }}>
-        <FamilyTree genes={genes} familyFilter={familyFilter} onSelectFamily={setFamilyFilter} />
+      <Box sx={{ display: "flex", flex: 1, gap: 0, minHeight: 0 }}>
+        <FamilyTree
+          genes={genes}
+          familyFilter={familyFilter}
+          onSelectFamily={setFamilyFilter}
+          width={treeWidth}
+        />
+        <Box
+          onMouseDown={onDragStart}
+          sx={{
+            width: 16,
+            flexShrink: 0,
+            cursor: "col-resize",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            "&::after": {
+              content: '""',
+              display: "block",
+              width: 2,
+              height: "40%",
+              borderRadius: 1,
+              bgcolor: "divider",
+              transition: "background-color 0.15s",
+            },
+            "&:hover::after": { bgcolor: "text.disabled" },
+            userSelect: "none",
+          }}
+        />
         <Paper
           variant="outlined"
           sx={{
