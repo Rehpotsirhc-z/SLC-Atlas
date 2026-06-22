@@ -35,13 +35,18 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   return [...map.entries()]
     .map(([family, members]) => ({
       family,
-      label: `${family}${members[0].category ? `—${members[0].category}` : ""} (${members.length})`,
+      label: `${family}${members[0].category ? ` \u00B7 ${members[0].category}` : ""} (${members.length})`,
       members: [...members].sort((a, b) => a.symbol.localeCompare(b.symbol)),
     }))
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
 }
 
-export default function FamilyTree({ genes, familyFilter, onSelectFamily, width }: FamilyTreeProps) {
+export default function FamilyTree({
+  genes,
+  familyFilter,
+  onSelectFamily,
+  width,
+}: FamilyTreeProps) {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const { palette } = useTheme()
