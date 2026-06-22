@@ -11,3 +11,6 @@ pydantic-settings>=2.5
 black>=24.0
 reuse[charset-normalizer]>=5.0
 parquet-tools>=0.2.16
+biopython>=1.83
+scipy>=1.13
+gget>=0.28

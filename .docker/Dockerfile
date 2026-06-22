@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates git build-essential pkg-config sudo neovim less \
     python3 python3-pip python3-venv python3-dev \
     libcurl4-openssl-dev \
+    mafft \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
