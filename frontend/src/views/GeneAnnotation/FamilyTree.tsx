@@ -34,7 +34,7 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   return [...map.entries()]
     .map(([family, members]) => ({
       family,
-      label: `${family} — ${members[0].category} (${members.length})`,
+      label: `${family}${members[0].category ? `—${members[0].category}` : ""} (${members.length})`,
       members: [...members].sort((a, b) => a.symbol.localeCompare(b.symbol)),
     }))
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
@@ -80,10 +80,11 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
                 else if (isActive) onSelectFamily(null)
               }}
               sx={{
-                "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused": {
-                  borderLeft: `3px solid ${isExpanded ? color : "transparent"}`,
-                  bgcolor: isExpanded ? `${color}22` : undefined,
-                },
+                "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused":
+                  {
+                    borderLeft: `3px solid ${isExpanded ? color : "transparent"}`,
+                    bgcolor: isExpanded ? `${color}22` : undefined,
+                  },
               }}
             >
               {members.map((gene) => {
@@ -103,9 +104,10 @@ export default function FamilyTree({ genes, familyFilter, onSelectFamily }: Fami
                       if (!isActive) onSelectFamily(family)
                     }}
                     sx={{
-                      "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover": {
-                        bgcolor: isGeneSelected ? `${color}50` : `${color}18`,
-                      },
+                      "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover":
+                        {
+                          bgcolor: isGeneSelected ? `${color}50` : `${color}18`,
+                        },
                       "& > .MuiTreeItem-content:hover": {
                         bgcolor: isGeneSelected ? `${color}60` : `${color}30`,
                       },

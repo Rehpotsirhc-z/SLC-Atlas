@@ -12,7 +12,7 @@ export interface Gene {
   strand: "+" | "-"
   length: number
   alias: string | null
-  category: string
+  category: string | null
   subcategory: string | null
   family: string
   family_name: string

@@ -25,7 +25,7 @@ class Gene(BaseModel):
     strand: str
     length: int
     alias: str | None = None
-    category: str
+    category: str | None = None
     subcategory: str | None = None
     family: str
     family_name: str

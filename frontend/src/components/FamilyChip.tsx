@@ -7,7 +7,7 @@ import { getFamilyColor } from "@/utils/familyColor"
 
 interface FamilyChipProps {
   family: string
-  label: string
+  label: string | null
 }
 
 export default function FamilyChip({ family, label }: FamilyChipProps) {
