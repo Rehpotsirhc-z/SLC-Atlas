@@ -16,7 +16,7 @@ interface FamilyTreeProps {
   genes: Gene[]
   familyFilter: string | null
   onSelectFamily: (family: string | null) => void
-  width?: number
+  width: number
 }
 
 interface FamilyGroup {
@@ -41,7 +41,7 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
 }
 
-export default function FamilyTree({ genes, familyFilter, onSelectFamily, width = 280 }: FamilyTreeProps) {
+export default function FamilyTree({ genes, familyFilter, onSelectFamily, width }: FamilyTreeProps) {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const { palette } = useTheme()

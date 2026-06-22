@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { Alert, Box, Divider, Paper, TablePagination, Toolbar, Typography } from "@mui/material"
 import { useUIStore } from "@/store/uiStore"
 import DownloadButton from "./DownloadButton"
@@ -36,6 +36,21 @@ export default function GeneAnnotation() {
 
   const [treeWidth, setTreeWidth] = useState(280)
   const dragging = useRef(false)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (isLoading) return
+    const el = tableScrollRef.current
+    const table = el?.querySelector<HTMLElement>("table")
+    if (!el || !table) return
+    // Temporarily clear width to measure the table's natural minimum content width
+    const prev = table.style.width
+    table.style.width = "auto"
+    const naturalWidth = table.offsetWidth
+    table.style.width = prev
+    const slack = el.clientWidth - naturalWidth
+    if (slack > 0) setTreeWidth(Math.min(600, 280 + slack))
+  }, [isLoading])
 
   const onDragStart = (e: React.MouseEvent) => {
     dragging.current = true
@@ -43,7 +58,7 @@ export default function GeneAnnotation() {
     const startWidth = treeWidth
     const onMove = (ev: MouseEvent) => {
       if (!dragging.current) return
-      setTreeWidth(Math.max(160, Math.min(600, startWidth + ev.clientX - startX)))
+      setTreeWidth(Math.max(200, Math.min(600, startWidth + ev.clientX - startX)))
     }
     const onUp = () => {
       dragging.current = false
@@ -119,7 +134,7 @@ export default function GeneAnnotation() {
             </Box>
           ) : (
             <>
-              <Box sx={{ flex: 1, overflow: "auto" }}>
+              <Box ref={tableScrollRef} sx={{ flex: 1, overflow: "auto" }}>
                 {isLoading ? (
                   <GeneTableSkeleton />
                 ) : (
