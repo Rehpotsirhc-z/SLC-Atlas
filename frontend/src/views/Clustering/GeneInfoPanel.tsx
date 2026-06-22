@@ -5,7 +5,16 @@
 import CloseIcon from "@mui/icons-material/Close"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import TableRowsIcon from "@mui/icons-material/TableRows"
-import { Box, Button, Divider, IconButton, Paper, Typography, useTheme } from "@mui/material"
+import {
+  Box,
+  Button,
+  Divider,
+  IconButton,
+  Paper,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import type { ClusterNode } from "@/types/clustering"
@@ -33,10 +42,53 @@ export default function GeneInfoPanel({ info, onClose, onOpenInGenes }: GeneInfo
     {
       label: "Family",
       value: (
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.75 }}>
-          <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
-          {node.family}
-        </Box>
+        <Tooltip
+          placement="left"
+          disableHoverListener={!gene?.category}
+          slotProps={{
+            tooltip: {
+              sx: {
+                bgcolor: "background.default",
+                color: "text.primary",
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 1,
+                boxShadow: 3,
+                py: 1,
+                px: 1.25,
+                m: 0,
+                maxWidth: 240,
+                fontSize: "0.7rem",
+                lineHeight: 1.45,
+              },
+            },
+          }}
+          title={
+            gene?.category ? (
+              <>
+                {gene.family_name && (
+                  <Box sx={{ fontWeight: 600, display: "block" }}>{gene.family_name}</Box>
+                )}
+                <Box sx={{ color: "text.secondary", display: "block" }}>{gene.category}</Box>
+              </>
+            ) : (
+              ""
+            )
+          }
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 0.75,
+              cursor: gene?.category ? "help" : "default",
+            }}
+          >
+            <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
+            {node.family}
+          </Box>
+        </Tooltip>
       ),
     },
     { label: "Metric", value: methodLabel },

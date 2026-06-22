@@ -25,6 +25,7 @@ import {
 import { useClustering, type ClusterMethod } from "@/api/hooks/useClustering"
 import { useGenes } from "@/api/hooks/useGenes"
 import { useUIStore } from "@/store/uiStore"
+import type { Gene } from "@/types/gene"
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
 import GeneInfoPanel from "./GeneInfoPanel"
 
@@ -79,6 +80,12 @@ export default function Clustering() {
     const gene = allGenes?.find((g) => g.id === selectedGeneId) ?? null
     return { node, methodLabel: METHOD_LABEL[method], closestSymbol, gene }
   }, [data, selectedGeneId, method, allGenes])
+
+  const geneById = useMemo(() => {
+    const m = new Map<string, Gene>()
+    for (const g of allGenes ?? []) m.set(g.id, g)
+    return m
+  }, [allGenes])
 
   const families = useMemo(() => {
     if (!data) return []
@@ -243,6 +250,7 @@ export default function Clustering() {
                 familyFilter={familyFilter}
                 selectedGeneId={selectedGeneId}
                 onSelect={setSelectedGeneId}
+                geneById={geneById}
               />
               {selectedInfo && (
                 <GeneInfoPanel

@@ -16,6 +16,7 @@ import { Box, Typography, useTheme } from "@mui/material"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
 import type { ClusterNode } from "@/types/clustering"
+import type { Gene } from "@/types/gene"
 
 export type Layout = "rectangular" | "radial"
 
@@ -32,6 +33,7 @@ interface PhyloTreeProps {
   familyFilter: string | null
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
+  geneById: Map<string, Gene>
 }
 
 // Tree Model
@@ -337,7 +339,7 @@ interface Transform {
 }
 
 const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree(
-  { data, layout, familyFilter, selectedGeneId, onSelect },
+  { data, layout, familyFilter, selectedGeneId, onSelect, geneById },
   ref,
 ) {
   const theme = useTheme()
@@ -609,6 +611,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   }
 
   const selectedLeaf = selectedGeneId ? leafByGene.get(selectedGeneId) : undefined
+  const hoverGene = hover?.leaf.geneId ? geneById.get(hover.leaf.geneId) : undefined
 
   const content = (
     <>
@@ -685,18 +688,47 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
             borderRadius: 1,
             px: 1,
             py: 0.5,
-            maxWidth: 240,
+            maxWidth: 260,
             boxShadow: 3,
           }}
         >
           <Typography
             variant="caption"
-            sx={{ fontFamily: monoFont, display: "block", fontWeight: 600 }}
+            sx={{ fontFamily: monoFont, display: "block", fontWeight: 600, fontSize: 13 }}
           >
             {hover.leaf.symbol}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {hover.leaf.family}
+          {hoverGene?.name && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                textAlign: "justify",
+              }}
+            >
+              {hoverGene.name}
+            </Typography>
+          )}
+          <Typography variant="caption" sx={{ display: "block", mt: 0.25, fontSize: 13 }}>
+            <Box component="span" sx={{ fontFamily: monoFont, fontWeight: 600 }}>
+              {hover.leaf.family}
+            </Box>
+            {hoverGene?.category && (
+              <Box component="span" sx={{ color: "text.secondary" }}>
+                <Box
+                  component="span"
+                  sx={{
+                    mx: 0.25,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    verticalAlign: "middle",
+                  }}
+                >
+                  {" \u00B7 "}
+                </Box>
+                {hoverGene.category}
+              </Box>
+            )}
           </Typography>
         </Box>
       )}
