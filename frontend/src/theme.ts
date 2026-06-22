@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createTheme, type Theme, type ThemeOptions } from "@mui/material/styles"
+import type {} from "@mui/x-tree-view/themeAugmentation"
 
 export type ThemeMode = "light" | "dark"
 
