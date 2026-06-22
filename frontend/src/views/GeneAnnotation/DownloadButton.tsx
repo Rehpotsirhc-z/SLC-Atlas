@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import DownloadIcon from "@mui/icons-material/Download"
-import { Button, Menu, MenuItem } from "@mui/material"
+import { Button, Menu, MenuItem, useMediaQuery, useTheme } from "@mui/material"
 import type { Gene } from "@/types/gene"
 import { triggerDownload } from "@/utils/download"
 
@@ -41,6 +41,7 @@ function genesToJsonBlob(genes: Gene[]): Blob {
 
 export default function DownloadButton({ genes }: DownloadButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 
   function handleDownload(format: "txt" | "json") {
     const blob = format === "txt" ? genesToTsvBlob(genes) : genesToJsonBlob(genes)
@@ -50,15 +51,29 @@ export default function DownloadButton({ genes }: DownloadButtonProps) {
 
   return (
     <>
-      <Button
-        startIcon={<DownloadIcon />}
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        variant="outlined"
-        size="small"
-        sx={{ whiteSpace: "nowrap" }}
-      >
-        Download ({genes.length} genes)
-      </Button>
+      {isMobile ? (
+        <Button
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          variant="outlined"
+          size="small"
+          sx={{ minWidth: 0, px: "16px", py: "5px" }}
+        >
+          <DownloadIcon
+            fontSize="small"
+            sx={{ display: "block", mx: "auto", transform: "translateX(-0.5px)" }}
+          />
+        </Button>
+      ) : (
+        <Button
+          startIcon={<DownloadIcon />}
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          variant="outlined"
+          size="small"
+          sx={{ whiteSpace: "nowrap" }}
+        >
+          {`Download (${genes.length} genes)`}
+        </Button>
+      )}
       <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => handleDownload("txt")}>Download as .txt (tab-separated)</MenuItem>
         <MenuItem onClick={() => handleDownload("json")}>Download as .json</MenuItem>

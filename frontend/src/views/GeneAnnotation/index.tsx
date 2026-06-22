@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useLayoutEffect, useRef, useState } from "react"
-import { Alert, Box, Divider, Paper, TablePagination, Toolbar, Typography } from "@mui/material"
+import AccountTreeIcon from "@mui/icons-material/AccountTree"
+import { Alert, Box, Divider, Drawer, IconButton, Paper, TablePagination, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { useUIStore } from "@/store/uiStore"
 import DownloadButton from "./DownloadButton"
 import FamilyTree from "./FamilyTree"
@@ -33,6 +34,10 @@ export default function GeneAnnotation() {
 
   const paginatedGenes = visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage)
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
+
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const [treeWidth, setTreeWidth] = useState(280)
   const dragging = useRef(false)
@@ -80,34 +85,47 @@ export default function GeneAnnotation() {
         </Typography>
       </Box>
       <Box sx={{ display: "flex", flex: 1, gap: 0, minHeight: 0 }}>
-        <FamilyTree
-          genes={genes}
-          familyFilter={familyFilter}
-          onSelectFamily={setFamilyFilter}
-          width={treeWidth}
-        />
-        <Box
-          onMouseDown={onDragStart}
-          sx={{
-            width: 16,
-            flexShrink: 0,
-            cursor: "col-resize",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            "&::after": {
-              content: '""',
-              display: "block",
-              width: 2,
-              height: "40%",
-              borderRadius: 1,
-              bgcolor: "divider",
-              transition: "background-color 0.15s",
-            },
-            "&:hover::after": { bgcolor: "text.disabled" },
-            userSelect: "none",
-          }}
-        />
+        {isMobile ? (
+          <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <FamilyTree
+              genes={genes}
+              familyFilter={familyFilter}
+              onSelectFamily={(f) => { setFamilyFilter(f); setDrawerOpen(false) }}
+              width={280}
+            />
+          </Drawer>
+        ) : (
+          <>
+            <FamilyTree
+              genes={genes}
+              familyFilter={familyFilter}
+              onSelectFamily={setFamilyFilter}
+              width={treeWidth}
+            />
+            <Box
+              onMouseDown={onDragStart}
+              sx={{
+                width: 16,
+                flexShrink: 0,
+                cursor: "col-resize",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                "&::after": {
+                  content: '""',
+                  display: "block",
+                  width: 2,
+                  height: "40%",
+                  borderRadius: 1,
+                  bgcolor: "divider",
+                  transition: "background-color 0.15s",
+                },
+                "&:hover::after": { bgcolor: "text.disabled" },
+                userSelect: "none",
+              }}
+            />
+          </>
+        )}
         <Paper
           variant="outlined"
           sx={{
@@ -119,9 +137,14 @@ export default function GeneAnnotation() {
           }}
         >
           <Toolbar disableGutters sx={{ px: 2, gap: 2 }}>
+            {isMobile && (
+              <IconButton onClick={() => setDrawerOpen(true)} size="small" color={familyFilter ? "primary" : "default"}>
+                <AccountTreeIcon fontSize="small" />
+              </IconButton>
+            )}
             <SearchBar genes={genes} value={searchText} onChange={setSearchText} />
             <Box sx={{ flexGrow: 1 }} />
-            <Typography variant="body2" color="success.main" sx={{ whiteSpace: "nowrap" }}>
+            <Typography variant="body2" color="success.main" sx={{ whiteSpace: "nowrap", display: { xs: "none", sm: "block" } }}>
               {visibleGenes.length} of {genes.length} genes
             </Typography>
             <Divider orientation="vertical" flexItem />
