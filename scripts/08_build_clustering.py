@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Build the four SLC similarity trees and write them to clustering.parquet.
+"""Build the four gene-family similarity trees and write them to clustering.parquet.
 
 Methods:
   aa_sequence            MAFFT MSA of canonical proteins -> p-distance -> UPGMA tree
@@ -20,7 +20,7 @@ methods so topology and branch-length semantics are uniform across metrics. A
 Newick file per method is also written under backend/data/raw/ for inspection.
 
 Usage:
-    python scripts/build_clustering.py
+    python scripts/08_build_clustering.py
 """
 
 import subprocess
@@ -37,9 +37,9 @@ from scipy.stats import rankdata
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
 RAW_DIR = DATA_DIR / "raw"
 GENES_PATH = DATA_DIR / "genes.parquet"
-CDS_FASTA = RAW_DIR / "slc_cds.fasta"
-PROTEIN_FASTA = RAW_DIR / "slc_protein.fasta"
-TPM_PATH = RAW_DIR / "gtex_slc_tpm.parquet"
+CDS_FASTA = RAW_DIR / "cds.fasta"
+PROTEIN_FASTA = RAW_DIR / "protein.fasta"
+TPM_PATH = RAW_DIR / "gtex_tpm.parquet"
 TISSUE_PATH = RAW_DIR / "gtex_sample_tissue.tsv"
 OUT_PATH = DATA_DIR / "clustering.parquet"
 

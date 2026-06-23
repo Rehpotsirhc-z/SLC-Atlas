@@ -1,0 +1,140 @@
+* Data Pipeline
+This pipeline converts an HGNC gene-family download into the files served by the API.
+
+Run all steps in order with the master script, or execute individual steps manually.
+
+** What to re-run after a change
+Steps 03, 04, 06, and 07 hit external APIs and can take minutes to hours, so only re-run them if the gene list itself changes. Use =--only= / =--from= (see Quick start) to run just the affected steps instead of the whole pipeline.
+
+| Change              | File to edit                                            | Re-run                                            |
+|---------------------+---------------------------------------------------------+---------------------------------------------------|
+| Family display name | =raw/family_names.md= --- first bullet under each heading wins | =--only 2,5= (offline; reuses cached data)  |
+| Add/remove genes    | =raw/SLC.txt= (HGNC download)                            | =--from 2= (and drop =--skip-clustering= for 06--08) |
+| Refresh from HGNC   | Replace =raw/SLC.txt=                                    | 01 (optional), then =--from 2=                    |
+
+
+** Prerequisites
+Place these files in =backend/data/raw/= before running the pipeline:
+
+| File                               | Source                                                                                                                                   |
+|------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------|
+| =SLC.txt=                          | Download from [[https://www.genenames.org/data/genegroup/#!/group/2192][HGNC gene group]] → "Download this gene family" (TSV)            |
+| =GTEx_Analysis_*_gene_tpm.parquet= | [[https://gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression][GTEx portal]] --- bulk tissue gene TPMs, converted to Parquet |
+
+Steps 06--08 are only needed for the clustering view. You can skip them if you don't need it.
+
+
+** Quick start
+#+begin_src sh
+# Full pipeline from a fresh HGNC download
+python scripts/run_pipeline.py
+
+# Skip clustering (steps 06–08) — fastest for just genes/transcripts
+python scripts/run_pipeline.py --skip-clustering
+
+# Use a non-default HGNC file
+python scripts/run_pipeline.py path/to/my_family.txt
+
+# Re-run only part of the pipeline (skips the step-01 checkpoint).
+# Step numbers may omit the leading zero (2 == 02).
+python scripts/run_pipeline.py --only 2,5   # e.g. after editing family_names.md
+python scripts/run_pipeline.py --from 5     # run step 05 onward
+#+end_src
+
+
+** Steps
+*** Step 01 --- Fetch HGNC family names
+Walks the HGNC API to fetch "also known as" aliases for every gene family. Writes the editable Markdown file =backend/data/raw/family_names.md=.
+
+#+begin_src sh
+python scripts/01_fetch_hgnc_aliases.py
+# optional override: python scripts/01_fetch_hgnc_aliases.py [parent_group_id] [output.md]
+#+end_src
+
+This script hits =genenames.org= ~50 times (one request per family). Edit =family_names.md= to choose each family's display name (the =category= column): the first bullet under each =##= heading wins, so move your preferred line to the top or edit the text directly.
+
+This is a checkpoint you can return to at any time. The full pipeline (=run_pipeline.py=) stops here on the first run so you can pick names, then continues on the next run. Your edits are preserved --- the file is never overwritten once it exists (delete it to re-fetch from HGNC).
+
+*** Step 02 --- Annotate gene list
+Joins the HGNC TSV with the chosen family names from =family_names.md=. Writes =backend/data/raw/annotation.tsv=.
+
+#+begin_src sh
+python scripts/02_annotate_genes.py
+# optional overrides: python scripts/02_annotate_genes.py [hgnc.txt] [family_names.md] [out.tsv]
+#+end_src
+
+*** Steps 03 & 04 --- Fetch external data (parallel)
+These two steps both read =annotation.tsv= and can run at the same time.
+
+**** Step 03 --- Fetch gene/transcript coordinates from Ensembl BioMart. Writes =backend/data/raw/ensembl_genes.tsv=.
+#+begin_src sh
+python scripts/03_fetch_ensembl_genes.py
+#+end_src
+
+**** Step 04 --- Fetch gene summary blurbs from NCBI E-utilities. Writes =backend/data/raw/ncbi_gene_summaries.tsv=.
+#+begin_src sh
+python scripts/04_fetch_ncbi_summaries.py
+#+end_src
+
+*** Step 05 --- Build gene tables
+Joins annotation + Ensembl + NCBI into the two app-served Parquet files. Writes =backend/data/genes.parquet= and =backend/data/transcripts.parquet=.
+
+#+begin_src sh
+python scripts/05_build_gene_tables.py
+#+end_src
+
+*** Step 06 --- Subset GTEx expression matrix
+Filters the full ~75k-gene GTEx TPM Parquet down to only the genes in =genes.parquet=. Writes =backend/data/raw/gtex_tpm.parquet= and =backend/data/raw/gtex_sample_tissue.tsv=.
+
+#+begin_src sh
+python scripts/06_fetch_gtex_subset.py
+# optional overrides: python scripts/06_fetch_gtex_subset.py [genes.parquet] [gtex_full.parquet] [tpm_out.parquet] [tissue_out.tsv]
+#+end_src
+
+Requires the large GTEx Parquet in =backend/data/raw/=. The sample-attributes file (=GTEx_v11_SampleAttributesDS.txt=) is downloaded automatically if missing.
+
+
+*** Step 07 --- Fetch sequences
+Fetches canonical CDS and protein sequences for every gene from the Ensembl REST API. Writes =backend/data/raw/cds.fasta= and =backend/data/raw/protein.fasta=.
+
+#+begin_src sh
+python scripts/07_fetch_sequences.py
+#+end_src
+
+*** Step 08 --- Build clustering
+Runs MAFFT alignment and UPGMA hierarchical clustering across four methods (amino-acid sequence, DNA sequence, GTEx all-tissue co-expression, GTEx brain co-expression). Writes =backend/data/clustering.parquet= and Newick files in =backend/data/raw/=.
+
+#+begin_src sh
+python scripts/08_build_clustering.py
+#+end_src
+
+** Data layout
+#+begin_example
+backend/data/
+  genes.parquet          ← served by /api/genes
+  transcripts.parquet    ← served by /api/genes/{id}/transcripts
+  clustering.parquet     ← served by /api/clustering
+
+  raw/                   ← inputs and intermediates (not served)
+    SLC.txt                  manual download from HGNC
+    GTEx_*_gene_tpm.parquet  manual download from GTEx portal
+    GTEx_v11_SampleAttributesDS.txt  auto-downloaded by step 06
+    family_names.md          editable display names; output of step 01
+    annotation.tsv           output of step 02
+    ensembl_genes.tsv        output of step 03
+    ncbi_gene_summaries.tsv  output of step 04
+    gtex_tpm.parquet         output of step 06
+    gtex_sample_tissue.tsv   output of step 06
+    cds.fasta                output of step 07
+    protein.fasta            output of step 07
+    aligned_protein.fasta    intermediate of step 08
+    aligned_cds_codon.fasta  intermediate of step 08
+    tree_*.nwk               Newick trees output of step 08
+#+end_example
+
+
+** Utilities
+Non-pipeline helpers live in =scripts/utils/=:
+
+- =tsv_to_parquet.py= --- convert any TSV to Parquet (general-purpose)
+- =reuse_header.sh= / =reuse_header_all.sh= --- add REUSE/SPDX license headers

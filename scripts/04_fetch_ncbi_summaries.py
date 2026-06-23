@@ -4,13 +4,13 @@
 
 """Fetch short gene-summary blurbs from NCBI E-utilities.
 
-Looks up every NCBI Gene ID in SLC_annotation.tsv via esummary and caches
+Looks up every NCBI Gene ID in annotation.tsv via esummary and caches
 the id -> summary mapping as a TSV.
 
 Usage:
-    python scripts/fetch_ncbi_summaries.py [SLC_annotation.tsv] [output.tsv]
+    python scripts/04_fetch_ncbi_summaries.py [annotation.tsv] [output.tsv]
 
-Defaults to backend/data/SLC_annotation.tsv -> backend/data/raw/ncbi_gene_summaries.tsv.
+Defaults to backend/data/raw/annotation.tsv -> backend/data/raw/ncbi_gene_summaries.tsv.
 """
 
 import csv
@@ -21,7 +21,7 @@ import urllib.request
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
-DEFAULT_IN_PATH = DATA_DIR / "SLC_annotation.tsv"
+DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
 
 ESUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"

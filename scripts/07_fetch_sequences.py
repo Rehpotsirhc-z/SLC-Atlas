@@ -11,10 +11,10 @@ translation (type=protein). Using the same transcript for both keeps the DNA and
 amino-acid trees comparable.
 
 Usage:
-    python scripts/fetch_sequences.py [genes.parquet] [cds.fasta] [protein.fasta]
+    python scripts/07_fetch_sequences.py [genes.parquet] [cds.fasta] [protein.fasta]
 
-Defaults to backend/data/genes.parquet -> backend/data/raw/slc_cds.fasta and
-backend/data/raw/slc_protein.fasta.
+Defaults to backend/data/genes.parquet -> backend/data/raw/cds.fasta and
+backend/data/raw/protein.fasta.
 """
 
 import json
@@ -28,8 +28,8 @@ import polars as pl
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
 DEFAULT_GENES_PATH = DATA_DIR / "genes.parquet"
-DEFAULT_CDS_PATH = DATA_DIR / "raw" / "slc_cds.fasta"
-DEFAULT_PROTEIN_PATH = DATA_DIR / "raw" / "slc_protein.fasta"
+DEFAULT_CDS_PATH = DATA_DIR / "raw" / "cds.fasta"
+DEFAULT_PROTEIN_PATH = DATA_DIR / "raw" / "protein.fasta"
 
 REST = "https://rest.ensembl.org"
 LOOKUP_BATCH = 1000  # /lookup/id POST limit

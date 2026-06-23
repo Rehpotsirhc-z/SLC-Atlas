@@ -13,7 +13,6 @@ export interface Gene {
   length: number
   alias: string | null
   category: string | null
-  subcategory: string | null
   family: string
   family_name: string
   function_brief: string | null

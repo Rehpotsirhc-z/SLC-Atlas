@@ -4,14 +4,14 @@
 
 """Fetch gene + transcript coordinates from Ensembl BioMart.
 
-Looks up every Ensembl gene ID in SLC_annotation.tsv against the
+Looks up every Ensembl gene ID in annotation.tsv against the
 hsapiens_gene_ensembl dataset in a single bulk query and caches the raw
 TSV response (one row per transcript, gene fields repeated).
 
 Usage:
-    python scripts/fetch_ensembl_genes.py [SLC_annotation.tsv] [output.tsv]
+    python scripts/03_fetch_ensembl_genes.py [annotation.tsv] [output.tsv]
 
-Defaults to backend/data/SLC_annotation.tsv -> backend/data/raw/ensembl_genes.tsv.
+Defaults to backend/data/raw/annotation.tsv -> backend/data/raw/ensembl_genes.tsv.
 """
 
 import csv
@@ -21,7 +21,7 @@ import urllib.request
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
-DEFAULT_IN_PATH = DATA_DIR / "SLC_annotation.tsv"
+DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 
 BIOMART_URL = "https://www.ensembl.org/biomart/martservice"

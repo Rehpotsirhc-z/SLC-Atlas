@@ -2,15 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Join SLC_annotation.tsv with the cached Ensembl + NCBI lookups into
+"""Join annotation.tsv with the cached Ensembl + NCBI lookups into
 genes.parquet and transcripts.parquet, matching the Gene/Transcript models
 in backend/app/models/gene.py.
 
+annotation.tsv must already contain the 'Family' column written by
+02_annotate_genes.py (the short family key derived from common symbol prefix).
+
 Usage:
-    python scripts/build_gene_tables.py [SLC_annotation.tsv] [ensembl_genes.tsv] \\
+    python scripts/05_build_gene_tables.py [annotation.tsv] [ensembl_genes.tsv] \\
         [ncbi_gene_summaries.tsv] [genes.parquet] [transcripts.parquet]
 
-Defaults to backend/data/SLC_annotation.tsv, backend/data/raw/ensembl_genes.tsv,
+Defaults to backend/data/raw/annotation.tsv, backend/data/raw/ensembl_genes.tsv,
 backend/data/raw/ncbi_gene_summaries.tsv, backend/data/genes.parquet, and
 backend/data/transcripts.parquet.
 """
@@ -21,10 +24,8 @@ from pathlib import Path
 
 import polars as pl
 
-from slc_family import derive_family
-
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
-DEFAULT_ANNOTATION_PATH = DATA_DIR / "SLC_annotation.tsv"
+DEFAULT_ANNOTATION_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_ENSEMBL_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 DEFAULT_NCBI_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
 DEFAULT_GENES_OUT_PATH = DATA_DIR / "genes.parquet"
@@ -41,7 +42,6 @@ GENE_SCHEMA = {
     "length": pl.Int64,
     "alias": pl.Utf8,
     "category": pl.Utf8,
-    "subcategory": pl.Utf8,
     "family": pl.Utf8,
     "family_name": pl.Utf8,
     "function_brief": pl.Utf8,
@@ -125,8 +125,7 @@ def build_tables(
                 "length": egene["end"] - egene["start"] + 1,
                 "alias": row["Alias symbols"].strip() or None,
                 "category": row["Functional family"].strip() or row["Group name"].strip(),
-                "subcategory": row["Subcategory"].strip() or None,
-                "family": derive_family(row["Group name"].strip()),
+                "family": row["Family"].strip(),
                 "family_name": row["Group name"].strip(),
                 "function_brief": ncbi_summaries.get(row["NCBI Gene ID"], "").strip() or None,
             }
