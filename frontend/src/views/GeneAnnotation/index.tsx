@@ -4,7 +4,19 @@
 
 import { useLayoutEffect, useRef, useState } from "react"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
-import { Alert, Box, Divider, Drawer, IconButton, Paper, TablePagination, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material"
+import {
+  Alert,
+  Box,
+  Divider,
+  Drawer,
+  IconButton,
+  Paper,
+  TablePagination,
+  Toolbar,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material"
 import { useUIStore } from "@/store/uiStore"
 import DownloadButton from "./DownloadButton"
 import FamilyTree from "./FamilyTree"
@@ -90,7 +102,10 @@ export default function GeneAnnotation() {
             <FamilyTree
               genes={genes}
               familyFilter={familyFilter}
-              onSelectFamily={(f) => { setFamilyFilter(f); setDrawerOpen(false) }}
+              onSelectFamily={(f) => {
+                setFamilyFilter(f)
+                setDrawerOpen(false)
+              }}
               width={280}
             />
           </Drawer>
@@ -138,13 +153,21 @@ export default function GeneAnnotation() {
         >
           <Toolbar disableGutters sx={{ px: 2, gap: 2 }}>
             {isMobile && (
-              <IconButton onClick={() => setDrawerOpen(true)} size="small" color={familyFilter ? "primary" : "default"}>
+              <IconButton
+                onClick={() => setDrawerOpen(true)}
+                size="small"
+                color={familyFilter ? "primary" : "default"}
+              >
                 <AccountTreeIcon fontSize="small" />
               </IconButton>
             )}
             <SearchBar genes={genes} value={searchText} onChange={setSearchText} />
             <Box sx={{ flexGrow: 1 }} />
-            <Typography variant="body2" color="success.main" sx={{ whiteSpace: "nowrap", display: { xs: "none", sm: "block" } }}>
+            <Typography
+              variant="body2"
+              color="success.main"
+              sx={{ whiteSpace: "nowrap", display: { xs: "none", sm: "block" } }}
+            >
               {visibleGenes.length} of {genes.length} genes
             </Typography>
             <Divider orientation="vertical" flexItem />

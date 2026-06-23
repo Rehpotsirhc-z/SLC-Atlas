@@ -51,7 +51,9 @@ export function useGeneAnnotationState() {
     [genes, deferredSearchText, familyFilter, sortKey, sortDirection],
   )
 
-  useEffect(() => { setPage(0) }, [deferredSearchText, familyFilter])
+  useEffect(() => {
+    setPage(0)
+  }, [deferredSearchText, familyFilter])
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {

@@ -7,10 +7,12 @@ import { memo, useEffect, useRef, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
+import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import {
+  Box,
+  Button,
   Collapse,
   IconButton,
-  Link,
   TableCell,
   TableRow,
   Tooltip,
@@ -120,14 +122,33 @@ function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
             </Tooltip>
           )}
         </TableCell>
-        <TableCell>
-          <Link href={ensemblUrl(gene.id)} target="_blank" rel="noopener">
-            Ensembl
-          </Link>
-          {" / "}
-          <Link href={ucscUrl(gene)} target="_blank" rel="noopener">
-            UCSC
-          </Link>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <Box sx={{ display: "flex", gap: 0.25 }}>
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<OpenInNewIcon />}
+              component="a"
+              href={ensemblUrl(gene.id)}
+              target="_blank"
+              rel="noopener"
+              sx={{ textTransform: "none", minWidth: 0 }}
+            >
+              Ensembl
+            </Button>
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<OpenInNewIcon />}
+              component="a"
+              href={ucscUrl(gene)}
+              target="_blank"
+              rel="noopener"
+              sx={{ textTransform: "none", minWidth: 0 }}
+            >
+              UCSC
+            </Button>
+          </Box>
         </TableCell>
       </TableRow>
       <TableRow>

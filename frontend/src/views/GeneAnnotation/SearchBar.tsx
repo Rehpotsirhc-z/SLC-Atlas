@@ -8,7 +8,7 @@ import { Autocomplete, InputAdornment, TextField, Typography } from "@mui/materi
 import { debounce } from "@mui/material/utils"
 import type { Gene } from "@/types/gene"
 import { useUIStore } from "@/store/uiStore"
-import { StyledPopper, VirtualListbox } from "@/components/VirtualListbox"
+import { acInputSx, StyledPopper, VirtualListbox } from "@/components/VirtualListbox"
 
 interface SearchBarProps {
   genes: Gene[]
@@ -111,26 +111,28 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
             {...optionProps}
             style={{
               ...(optionProps.style as React.CSSProperties | undefined),
-              padding: "8px 12px",
+              padding: "0 12px",
               boxSizing: "border-box",
             }}
           >
-            <Typography
-              component="div"
-              variant="body2"
-              fontWeight={600}
-              sx={{ m: 0, lineHeight: 1.2 }}
-            >
-              {option.symbol}
-            </Typography>
-            <Typography
-              component="div"
-              variant="caption"
-              color="text.secondary"
-              sx={{ m: 0, lineHeight: 1.2 }}
-            >
-              {option.name}
-            </Typography>
+            <div>
+              <Typography
+                component="div"
+                variant="body2"
+                fontWeight={600}
+                sx={{ m: 0, lineHeight: 1.2 }}
+              >
+                {option.symbol}
+              </Typography>
+              <Typography
+                component="div"
+                variant="caption"
+                color="text.secondary"
+                sx={{ m: 0, lineHeight: 1.2 }}
+              >
+                {option.name}
+              </Typography>
+            </div>
           </li>
         )
       }}
@@ -141,13 +143,8 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
           placeholder="Search Ensembl ID, symbol, name, or family…"
           color="primary"
           sx={{
-            "& .MuiOutlinedInput-notchedOutline": { borderColor: "primary.main" },
-            "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "primary.main",
-            },
+            ...acInputSx,
             "& .MuiOutlinedInput-root": { paddingLeft: "10px" },
-            "& .MuiOutlinedInput-input": { color: "primary.main", fontSize: "0.85rem" },
-            "& .MuiOutlinedInput-input::placeholder": { color: "primary.main", opacity: 0.6 },
           }}
           slotProps={{
             input: {

@@ -263,14 +263,27 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
               <Typography variant="overline" color="primary" sx={{ lineHeight: 1, mb: 0.5 }}>
                 Biotypes
               </Typography>
-              <Box sx={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 1, rowGap: 0.75, alignItems: "center" }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr",
+                  columnGap: 1,
+                  rowGap: 0.75,
+                  alignItems: "center",
+                }}
+              >
                 {typeCounts.map(([type, count]) => (
                   <>
                     <Chip
                       key={`chip-${type}`}
                       label={count}
                       size="small"
-                      sx={{ height: 18, fontSize: "0.7rem", minWidth: 24, bgcolor: "action.selected" }}
+                      sx={{
+                        height: 18,
+                        fontSize: "0.7rem",
+                        minWidth: 24,
+                        bgcolor: "action.selected",
+                      }}
                     />
                     <Typography key={`label-${type}`} variant="caption" color="text.secondary">
                       {type.replace(/_/g, " ")}

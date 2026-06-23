@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useRef, useState } from "react"
+import React, { useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
@@ -26,6 +26,12 @@ import { useClustering, type ClusterMethod } from "@/api/hooks/useClustering"
 import { useGenes } from "@/api/hooks/useGenes"
 import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
+import {
+  acIndicatorSx,
+  acInputSx,
+  StyledPopper,
+  VirtualListboxSm,
+} from "@/components/VirtualListbox"
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
 import GeneInfoPanel from "./GeneInfoPanel"
 
@@ -51,6 +57,8 @@ const METHOD_LABEL: Record<ClusterMethod, string> = {
   rna_coexpression_all: "RNA co-expression — all tissues",
   rna_coexpression_brain: "RNA co-expression — brain",
 }
+
+const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
 
 export default function Clustering() {
   const [metric, setMetric] = useState<Metric>("aa")
@@ -135,7 +143,7 @@ export default function Clustering() {
             onChange={(_, v) => v && setMetric(v)}
           >
             {(["aa", "dna", "rna"] as Metric[]).map((m) => (
-              <ToggleButton key={m} value={m} sx={{ textTransform: "none" }}>
+              <ToggleButton key={m} value={m}>
                 {METRIC_LABEL[m]}
               </ToggleButton>
             ))}
@@ -148,12 +156,8 @@ export default function Clustering() {
               value={tissue}
               onChange={(_, v) => v && setTissue(v)}
             >
-              <ToggleButton value="all" sx={{ textTransform: "none" }}>
-                All tissues
-              </ToggleButton>
-              <ToggleButton value="brain" sx={{ textTransform: "none" }}>
-                Brain
-              </ToggleButton>
+              <ToggleButton value="all">All tissues</ToggleButton>
+              <ToggleButton value="brain">Brain</ToggleButton>
             </ToggleButtonGroup>
           )}
 
@@ -163,12 +167,8 @@ export default function Clustering() {
             value={layout}
             onChange={(_, v) => v && setLayout(v)}
           >
-            <ToggleButton value="rectangular" sx={{ textTransform: "none" }}>
-              Rectangular
-            </ToggleButton>
-            <ToggleButton value="radial" sx={{ textTransform: "none" }}>
-              Radial
-            </ToggleButton>
+            <ToggleButton value="rectangular">Rectangular</ToggleButton>
+            <ToggleButton value="radial">Radial</ToggleButton>
           </ToggleButtonGroup>
 
           <Autocomplete
@@ -176,8 +176,27 @@ export default function Clustering() {
             options={families}
             value={familyFilter}
             onChange={(_, v) => setFamilyFilter(v)}
-            sx={{ width: 170 }}
-            renderInput={(params) => <TextField {...params} label="Family" placeholder="All" />}
+            sx={{ width: 170, ...acIndicatorSx }}
+            slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+            renderOption={(props, option) => {
+              const { key, ...rest } = props as {
+                key: React.Key
+              } & React.HTMLAttributes<HTMLLIElement>
+              return (
+                <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                  <Typography variant="body2">{option}</Typography>
+                </li>
+              )
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                placeholder="Family…"
+                color="primary"
+                sx={acInputSx}
+              />
+            )}
           />
 
           <Autocomplete
@@ -190,8 +209,29 @@ export default function Clustering() {
               setSelectedGeneId(v?.id ?? null)
               if (v) treeRef.current?.focusGene(v.id)
             }}
-            sx={{ width: 180 }}
-            renderInput={(params) => <TextField {...params} label="Find gene" />}
+            sx={{ width: 180, ...acIndicatorSx }}
+            slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+            renderOption={(props, option) => {
+              const { key, ...rest } = props as {
+                key: React.Key
+              } & React.HTMLAttributes<HTMLLIElement>
+              return (
+                <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                  <Typography variant="body2" fontWeight={600}>
+                    {option.symbol}
+                  </Typography>
+                </li>
+              )
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                placeholder="Find gene…"
+                color="primary"
+                sx={acInputSx}
+              />
+            )}
           />
 
           <Box sx={{ flexGrow: 1 }} />

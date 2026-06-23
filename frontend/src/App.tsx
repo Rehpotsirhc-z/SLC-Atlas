@@ -5,7 +5,19 @@
 import { useState } from "react"
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import MenuIcon from "@mui/icons-material/Menu"
-import { AppBar, Box, IconButton, Menu, MenuItem, Tab, Tabs, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material"
+import {
+  AppBar,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tab,
+  Tabs,
+  Toolbar,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material"
 import ThemeToggle from "./components/ThemeToggle"
 import GeneAnnotation from "./views/GeneAnnotation"
 import Clustering from "./views/Clustering"
@@ -39,7 +51,11 @@ export default function App() {
         <Toolbar variant="dense">
           {isMobile && (
             <>
-              <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)} sx={{ mr: 1 }}>
+              <IconButton
+                size="small"
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                sx={{ mr: 1 }}
+              >
                 <MenuIcon />
               </IconButton>
               <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
@@ -47,7 +63,10 @@ export default function App() {
                   <MenuItem
                     key={n.path}
                     selected={tabValue === i}
-                    onClick={() => { navigate(n.path); setMenuAnchor(null) }}
+                    onClick={() => {
+                      navigate(n.path)
+                      setMenuAnchor(null)
+                    }}
                   >
                     {n.label}
                   </MenuItem>

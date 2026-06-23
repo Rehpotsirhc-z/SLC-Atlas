@@ -115,6 +115,32 @@ function buildTheme(mode: ThemeMode): Theme {
           root: { borderColor: mode === "dark" ? c.base4 : c.base3 },
         },
       },
+      MuiToggleButton: {
+        styleOverrides: {
+          root: {
+            textTransform: "uppercase",
+            fontWeight: 600,
+            fontSize: "0.7rem",
+            letterSpacing: "0.06em",
+            color: mode === "dark" ? c.base6 : c.base5,
+            borderColor: mode === "dark" ? c.base4 : c.base3,
+            "&.Mui-selected": {
+              color: c.magenta,
+              backgroundColor: "transparent",
+              borderColor: c.magenta,
+            },
+            "&:hover": { backgroundColor: `${c.base4}40` },
+            "&.Mui-selected:hover": { backgroundColor: `${c.magenta}30` },
+          },
+        },
+      },
+      MuiToggleButtonGroup: {
+        styleOverrides: {
+          grouped: {
+            "&.Mui-selected + &": { borderLeftColor: c.magenta },
+          },
+        },
+      },
       MuiTreeItem: {
         styleOverrides: {
           content: { borderRadius: 0 },

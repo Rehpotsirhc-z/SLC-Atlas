@@ -20,7 +20,6 @@ export default function ThemeToggle() {
         color="inherit"
         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       >
-
         {isDark ? (
           <LightModeOutlinedIcon fontSize="small" />
         ) : (

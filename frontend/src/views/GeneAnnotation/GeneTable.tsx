@@ -73,7 +73,12 @@ export default function GeneTable({
         </TableHead>
         <TableBody>
           {genes.map((gene) => (
-            <GeneRow key={gene.id} gene={gene} isSelected={gene.id === scrollToGeneId} autoExpand={gene.id === autoExpandGeneId} />
+            <GeneRow
+              key={gene.id}
+              gene={gene}
+              isSelected={gene.id === scrollToGeneId}
+              autoExpand={gene.id === autoExpandGeneId}
+            />
           ))}
         </TableBody>
       </Table>
