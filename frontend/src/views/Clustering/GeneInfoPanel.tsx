@@ -5,6 +5,7 @@
 import CloseIcon from "@mui/icons-material/Close"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import TableRowsIcon from "@mui/icons-material/TableRows"
+import { keyframes } from "@mui/system"
 import {
   Box,
   Button,
@@ -15,6 +16,11 @@ import {
   Typography,
   useTheme,
 } from "@mui/material"
+
+const glowFlash = keyframes`
+  0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
+  100% { outline: 2px solid rgba(144, 202, 249, 0); }
+`
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import type { ClusterNode } from "@/types/clustering"
@@ -109,6 +115,7 @@ export default function GeneInfoPanel({ info, onClose, onOpenInGenes }: GeneInfo
         zIndex: 2,
         border: 1,
         borderColor: "divider",
+        animation: `${glowFlash} 0.8s ease-out`,
       }}
     >
       <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>

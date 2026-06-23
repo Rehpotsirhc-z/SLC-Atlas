@@ -254,6 +254,7 @@ export default function Clustering() {
               />
               {selectedInfo && (
                 <GeneInfoPanel
+                  key={selectedInfo.node.gene_id}
                   info={selectedInfo}
                   onClose={() => setSelectedGeneId(null)}
                   onOpenInGenes={() => navigate("/genes")}
