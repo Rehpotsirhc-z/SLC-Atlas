@@ -48,3 +48,35 @@ class ParquetSource:
 
     def get_clustering(self, method: str = "aa_sequence") -> pl.DataFrame:
         return self._scan("clustering.parquet").filter(pl.col("method") == method).collect()
+
+    def get_clustering_newick(self, method: str = "aa_sequence") -> str:
+        """Reconstruct a Newick tree from the clustering adjacency rows, labeling
+        leaves with their gene symbol (falling back to the Ensembl gene id)."""
+        df = self.get_clustering(method=method)
+        if df.is_empty():
+            return ""
+
+        children: dict[int, list[int]] = {}
+        label: dict[int, str] = {}
+        length: dict[int, float] = {}
+        root: int | None = None
+        for row in df.iter_rows(named=True):
+            nid = row["node_id"]
+            length[nid] = row["branch_length"] or 0.0
+            label[nid] = row["symbol"] or row["gene_id"] or ""
+            pid = row["parent_id"]
+            if pid is None:
+                root = nid
+            else:
+                children.setdefault(pid, []).append(nid)
+
+        if root is None:
+            return ""
+
+        def emit(nid: int) -> str:
+            kids = children.get(nid)
+            if not kids:
+                return f"{label[nid]}:{length[nid]:.5f}"
+            return "(" + ",".join(emit(k) for k in kids) + f"):{length[nid]:.5f}"
+
+        return "(" + ",".join(emit(k) for k in children.get(root, [])) + ");\n"

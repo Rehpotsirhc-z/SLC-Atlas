@@ -24,6 +24,7 @@ import {
 } from "@mui/material"
 import { useClustering, type ClusterMethod } from "@/api/hooks/useClustering"
 import { useGenes } from "@/api/hooks/useGenes"
+import { triggerDownload } from "@/utils/download"
 import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
 import {
@@ -115,6 +116,14 @@ export default function Clustering() {
     if (format === "svg") treeRef.current?.exportSvg(`${filenameBase}.svg`)
     else treeRef.current?.exportPng(`${filenameBase}.png`)
     setExportAnchor(null)
+  }
+
+  async function handleNewick() {
+    setExportAnchor(null)
+    const res = await fetch(`/api/clustering/newick?method=${method}`)
+    if (!res.ok) return
+    const text = await res.text()
+    triggerDownload(new Blob([text], { type: "text/plain" }), `slc_${method}.nwk`)
   }
 
   return (
@@ -260,6 +269,7 @@ export default function Clustering() {
           <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>
             <MenuItem onClick={() => handleExport("svg")}>Download SVG</MenuItem>
             <MenuItem onClick={() => handleExport("png")}>Download PNG</MenuItem>
+            <MenuItem onClick={handleNewick}>Download Newick (.nwk)</MenuItem>
           </Menu>
         </Toolbar>
         <Divider />

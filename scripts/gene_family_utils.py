@@ -11,14 +11,22 @@ from os.path import commonprefix
 ALIAS_RE = re.compile(r"^([A-Za-z0-9]+)\(([A-Za-z0-9]+)\)$")
 
 
-def derive_family_keys(rows: list[dict]) -> dict[str, str]:
-    """Map HGNC 'Group name' -> short family key derived from the common symbol prefix.
+SLC_FAMILY_RE = re.compile(r"^Solute carrier family (\d+)\b")
 
-    Groups all 'Approved symbol' values by 'Group name', finds the common prefix,
-    then strips any trailing letters that follow the last digit:
-      SLC1A1, SLC1A2, SLC1A3  ->  common prefix 'SLC1A'  ->  'SLC1'
-      KCNQ1,  KCNQ2,  KCNQ3   ->  common prefix 'KCNQ'   ->  'KCNQ'
-      SLCO1A2, SLCO2A1         ->  common prefix 'SLCO'   ->  'SLCO'
+
+def derive_family_keys(rows: list[dict]) -> dict[str, str]:
+    """Map HGNC 'Group name' -> short family key.
+
+    The HGNC group name carries the family number directly, so for solute carrier
+    families the key is taken from there ('Solute carrier family 40' -> 'SLC40').
+    This is exact even for single-member families and for families whose gene isn't
+    named SLC* (e.g. family 53 is gene XPR1, but the key is still 'SLC53').
+
+    Group names without a family number (e.g. 'Solute carrier organic anion
+    transporter family', or any non-SLC family fetched via a different parent group)
+    fall back to the common prefix of the member symbols, trimmed to the last digit:
+      SLCO1A2, SLCO2A1  ->  common prefix 'SLCO'  ->  'SLCO'
+      KCNQ1,  KCNQ2     ->  common prefix 'KCNQ'  ->  'KCNQ'
     """
     groups: dict[str, list[str]] = {}
     for row in rows:
@@ -26,7 +34,11 @@ def derive_family_keys(rows: list[dict]) -> dict[str, str]:
 
     result: dict[str, str] = {}
     for group_name, symbols in groups.items():
+        m = SLC_FAMILY_RE.match(group_name)
+        if m:
+            result[group_name] = f"SLC{m.group(1)}"
+            continue
         prefix = commonprefix(symbols)
-        m = re.match(r"^(.*\d)", prefix)  # keep up to and including the last digit
-        result[group_name] = m.group(1) if m else prefix
+        suffix = re.match(r"^(.*\d)", prefix)  # keep up to and including the last digit
+        result[group_name] = suffix.group(1) if suffix else prefix
     return result

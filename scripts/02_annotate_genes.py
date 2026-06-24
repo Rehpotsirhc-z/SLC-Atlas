@@ -5,8 +5,8 @@
 """Add functional-family columns to an HGNC gene-list TSV.
 
 Two columns are appended:
-  Family          short key derived from the common symbol prefix of each group
-                  (e.g. SLC1A1, SLC1A2, ... -> 'SLC1'; KCNQ1, KCNQ2, ... -> 'KCNQ')
+  Family          short key from the HGNC group name's family number
+                  (e.g. 'Solute carrier family 40' -> 'SLC40'); see derive_family_keys
   Functional family  display name — the first '- ' bullet under each '## <group>'
                   heading in the family names Markdown file; falls back to the
                   HGNC group name
