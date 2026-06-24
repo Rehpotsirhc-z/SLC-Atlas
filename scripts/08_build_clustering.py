@@ -225,7 +225,8 @@ def main() -> None:
         r["id"]: {"symbol": r["symbol"], "family": r["family"]} for r in genes.iter_rows(named=True)
     }
 
-    tpm = pl.read_parquet(TPM_PATH)
+    gene_ids_in_table = set(genes["id"].to_list())
+    tpm = pl.read_parquet(TPM_PATH).filter(pl.col("gene_id").is_in(gene_ids_in_table))
     tissue = pl.read_csv(TISSUE_PATH, separator="\t")
     all_samples = [c for c in tpm.columns if c != "gene_id"]
     brain_set = set(tissue.filter(pl.col("SMTS") == "Brain")["SAMPID"].to_list())

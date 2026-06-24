@@ -31,6 +31,11 @@ DEFAULT_NCBI_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
 DEFAULT_GENES_OUT_PATH = DATA_DIR / "genes.parquet"
 DEFAULT_TRANSCRIPTS_OUT_PATH = DATA_DIR / "transcripts.parquet"
 
+PSEUDOGENE_EXCLUSIONS = frozenset({
+    "SLC19A4P", "SLC23A4P", "SLC66A1LP", "SLC68A2P", "SLC6A10P", "SLC6A21P",
+    "SLC7A15P", "SLCO1B7", "SLC22A20P", "SLC35E2A", "SLC71A3P", "SLC26A10P",
+})
+
 GENE_SCHEMA = {
     "id": pl.Utf8,
     "symbol": pl.Utf8,
@@ -107,6 +112,8 @@ def build_tables(
     skipped = []
 
     for row in rows:
+        if row["Approved symbol"] in PSEUDOGENE_EXCLUSIONS:
+            continue
         ensembl_id = row["Ensembl gene ID"]
         egene = ensembl_genes.get(ensembl_id)
         if egene is None:
