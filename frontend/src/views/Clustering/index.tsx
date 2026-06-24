@@ -152,10 +152,24 @@ export default function Clustering() {
             onChange={(_, v) => v && setMetric(v)}
           >
             {(["aa", "dna", "rna"] as Metric[]).map((m) => (
-              <ToggleButton key={m} value={m}>
+              <ToggleButton key={m} value={m} sx={{ minWidth: 120 }}>
                 {METRIC_LABEL[m]}
               </ToggleButton>
             ))}
+          </ToggleButtonGroup>
+
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={layout}
+            onChange={(_, v) => v && setLayout(v)}
+          >
+            <ToggleButton value="rectangular" sx={{ minWidth: 120 }}>
+              Rectangular
+            </ToggleButton>
+            <ToggleButton value="radial" sx={{ minWidth: 120 }}>
+              Radial
+            </ToggleButton>
           </ToggleButtonGroup>
 
           {metric === "rna" && (
@@ -165,20 +179,14 @@ export default function Clustering() {
               value={tissue}
               onChange={(_, v) => v && setTissue(v)}
             >
-              <ToggleButton value="all">All tissues</ToggleButton>
-              <ToggleButton value="brain">Brain</ToggleButton>
+              <ToggleButton value="all" sx={{ minWidth: 120 }}>
+                All tissues
+              </ToggleButton>
+              <ToggleButton value="brain" sx={{ minWidth: 120 }}>
+                Brain
+              </ToggleButton>
             </ToggleButtonGroup>
           )}
-
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            value={layout}
-            onChange={(_, v) => v && setLayout(v)}
-          >
-            <ToggleButton value="rectangular">Rectangular</ToggleButton>
-            <ToggleButton value="radial">Radial</ToggleButton>
-          </ToggleButtonGroup>
 
           <Autocomplete
             size="small"
@@ -193,7 +201,9 @@ export default function Clustering() {
               } & React.HTMLAttributes<HTMLLIElement>
               return (
                 <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                  <Typography variant="body2">{option}</Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {option}
+                  </Typography>
                 </li>
               )
             }}

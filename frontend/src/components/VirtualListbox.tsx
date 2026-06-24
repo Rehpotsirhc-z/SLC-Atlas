@@ -6,7 +6,7 @@ import React, { forwardRef, useContext, useImperativeHandle, useMemo, useRef } f
 import { FixedSizeList, type ListChildComponentProps } from "react-window"
 import { autocompleteClasses, Popper, styled } from "@mui/material"
 
-const LISTBOX_PADDING = 8
+const LISTBOX_PADDING = 2
 const MAX_VISIBLE = 8
 const ITEM_SIZE = 50
 

@@ -122,6 +122,7 @@ function buildTheme(mode: ThemeMode): Theme {
             fontWeight: 600,
             fontSize: "0.7rem",
             letterSpacing: "0.06em",
+            padding: "6px",
             color: mode === "dark" ? c.base6 : c.base5,
             borderColor: mode === "dark" ? c.base4 : c.base3,
             "&.Mui-selected": {
@@ -138,6 +139,44 @@ function buildTheme(mode: ThemeMode): Theme {
         styleOverrides: {
           grouped: {
             "&.Mui-selected + &": { borderLeftColor: c.magenta },
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: c.bgAlt,
+            backgroundImage: "none",
+            border: `1px solid ${mode === "dark" ? c.base4 : c.base3}`,
+            boxShadow:
+              mode === "dark" ? "0 4px 16px rgba(0,0,0,0.5)" : "0 4px 16px rgba(0,0,0,0.12)",
+          },
+          list: { padding: 0 },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            fontSize: "0.8rem",
+            fontWeight: 500,
+            letterSpacing: "0.02em",
+            lineHeight: 1.4,
+            color: mode === "dark" ? c.base7 : c.base5,
+            minHeight: "unset",
+            paddingTop: "11px",
+            paddingBottom: "9px",
+            paddingLeft: "10px",
+            paddingRight: "10px",
+            display: "flex",
+            alignItems: "center",
+            borderBottom: `1px solid ${mode === "dark" ? c.base4 : c.base3}`,
+            "&:last-child": { borderBottom: "none" },
+            "&:hover": { backgroundColor: `${c.base4}40`, color: c.fg },
+            "&.Mui-selected": {
+              backgroundColor: `${c.magenta}20`,
+              color: c.magenta,
+              "&:hover": { backgroundColor: `${c.magenta}30` },
+            },
           },
         },
       },
