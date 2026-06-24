@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import {
   Alert,
@@ -46,6 +46,15 @@ export default function GeneAnnotation() {
 
   const paginatedGenes = visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage)
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
+
+  const jumpedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!selectedGeneId || jumpedRef.current === selectedGeneId) return
+    const idx = visibleGenes.findIndex((g) => g.id === selectedGeneId)
+    if (idx === -1) return
+    jumpedRef.current = selectedGeneId
+    setPage(Math.floor(idx / rowsPerPage))
+  }, [selectedGeneId, visibleGenes, rowsPerPage, setPage])
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
