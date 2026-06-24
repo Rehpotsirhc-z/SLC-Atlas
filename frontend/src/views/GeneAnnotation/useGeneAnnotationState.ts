@@ -23,11 +23,20 @@ function filterGenes(genes: Gene[], searchText: string, familyFilter: string | n
   )
 }
 
+function chrRank(chr: string): number {
+  const n = parseInt(chr, 10)
+  if (!isNaN(n)) return n
+  if (chr === "X") return 23
+  if (chr === "Y") return 24
+  if (chr === "MT") return 25
+  return 99
+}
+
 function sortGenes(genes: Gene[], sortKey: SortKey, direction: SortDirection): Gene[] {
   const sign = direction === "asc" ? 1 : -1
   return [...genes].sort((a, b) => {
     if (sortKey === "position") {
-      return sign * (a.start - b.start || a.chromosome.localeCompare(b.chromosome))
+      return sign * (chrRank(a.chromosome) - chrRank(b.chromosome) || a.start - b.start)
     }
     const av = a[sortKey]
     const bv = b[sortKey]
