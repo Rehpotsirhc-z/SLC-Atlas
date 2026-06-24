@@ -18,7 +18,7 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       selectedGeneId: null,
       setSelectedGeneId: (id) => set({ selectedGeneId: id }),
-      themeMode: "dark",
+      themeMode: "light",
       toggleThemeMode: () => set((s) => ({ themeMode: s.themeMode === "dark" ? "light" : "dark" })),
     }),
     {
