@@ -20,8 +20,9 @@ services:
       dockerfile: .docker/Dockerfile
 
     ports:
-      - "8000:8000"   # FastAPI backend
-      - "3000:3000"   # Vite frontend dev server
+      - "8000:8000" # FastAPI backend
+      - "3000:3000" # Vite frontend dev server
+      - "80:80" # NGINX frontend production server
 
     volumes:
       - .:/workspace

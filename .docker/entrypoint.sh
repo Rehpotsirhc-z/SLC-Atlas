@@ -59,4 +59,15 @@ add_line() {
 add_line 'export PATH="$HOME/.local/bin:$PATH"'
 add_line "source $VENV/bin/activate"
 
+# ── NGINX ────────────────────────────────────────────────────────────────────
+NGINX_CONF=/workspace/.docker/nginx.conf
+if sudo nginx -t -c "$NGINX_CONF" > /dev/null 2>&1; then
+    sudo nginx -s stop 2>/dev/null || true
+    sudo nginx -c "$NGINX_CONF"
+    echo "[entrypoint] nginx started on :80"
+else
+    echo "[entrypoint] WARNING: nginx config test failed — skipping start"
+    sudo nginx -t -c "$NGINX_CONF" || true
+fi
+
 exec "$@"
