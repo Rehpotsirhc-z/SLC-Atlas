@@ -16,6 +16,7 @@ interface FamilyTreeProps {
   genes: Gene[]
   familyFilter: string | null
   onSelectFamily: (family: string | null) => void
+  onClose?: () => void
   width: number
 }
 
@@ -45,13 +46,16 @@ export default function FamilyTree({
   genes,
   familyFilter,
   onSelectFamily,
+  onClose,
   width,
 }: FamilyTreeProps) {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const { palette } = useTheme()
   const familyGroups = useMemo(() => buildFamilyGroups(genes), [genes])
-  const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const [expandedItems, setExpandedItems] = useState<string[]>(
+    familyFilter ? [familyFilter] : []
+  )
 
   return (
     <Paper variant="outlined" sx={{ width, flexShrink: 0, overflowY: "auto", p: 1 }}>
@@ -82,8 +86,8 @@ export default function FamilyTree({
                 </Box>
               }
               onClick={() => {
-                if (!isExpanded) onSelectFamily(family)
-                else if (isActive) onSelectFamily(null)
+                if (isActive) onSelectFamily(null)
+                else if (!isExpanded) onSelectFamily(family)
               }}
               sx={{
                 "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused":
@@ -108,6 +112,7 @@ export default function FamilyTree({
                       e.stopPropagation()
                       setSelectedGeneId(gene.id)
                       if (!isActive) onSelectFamily(family)
+                      onClose?.()
                     }}
                     sx={{
                       "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover":

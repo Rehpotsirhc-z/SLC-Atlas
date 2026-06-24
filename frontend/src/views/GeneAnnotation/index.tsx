@@ -102,10 +102,8 @@ export default function GeneAnnotation() {
             <FamilyTree
               genes={genes}
               familyFilter={familyFilter}
-              onSelectFamily={(f) => {
-                setFamilyFilter(f)
-                setDrawerOpen(false)
-              }}
+              onSelectFamily={setFamilyFilter}
+              onClose={() => setDrawerOpen(false)}
               width={280}
             />
           </Drawer>
