@@ -42,8 +42,8 @@ export default function DownloadButton({ genes }: DownloadButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 
-  function handleDownload(format: "txt" | "json") {
-    const blob = format === "txt" ? genesToTsvBlob(genes) : genesToJsonBlob(genes)
+  function handleDownload(format: "tsv" | "json") {
+    const blob = format === "tsv" ? genesToTsvBlob(genes) : genesToJsonBlob(genes)
     triggerDownload(blob, `slc_genes.${format}`)
     setAnchorEl(null)
   }
@@ -74,7 +74,7 @@ export default function DownloadButton({ genes }: DownloadButtonProps) {
         </Button>
       )}
       <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => handleDownload("txt")}>Download as .txt (tab-separated)</MenuItem>
+        <MenuItem onClick={() => handleDownload("tsv")}>Download as .tsv</MenuItem>
         <MenuItem onClick={() => handleDownload("json")}>Download as .json</MenuItem>
       </Menu>
     </>
