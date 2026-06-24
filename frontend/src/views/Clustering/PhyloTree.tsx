@@ -12,7 +12,7 @@ import {
   useRef,
   useState,
 } from "react"
-import { Box, Typography, useTheme } from "@mui/material"
+import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
 import type { ClusterNode } from "@/types/clustering"
@@ -228,7 +228,12 @@ function depthAndLeafOrder(tree: Tree): { depth: Map<number, number>; leaves: nu
   return { depth, leaves }
 }
 
-function computeLayout(tree: Tree, layout: Layout): TreeLayout {
+function computeLayout(
+  tree: Tree,
+  layout: Layout,
+  drawW = RECT.drawW,
+  labelArea = RECT.labelArea,
+): TreeLayout {
   const { nodes } = tree
   const { depth, leaves } = depthAndLeafOrder(tree)
   const maxDepth = Math.max(1e-9, ...leaves.map((l) => depth.get(l)!))
@@ -236,7 +241,7 @@ function computeLayout(tree: Tree, layout: Layout): TreeLayout {
   const order = postOrder(tree)
 
   if (layout === "rectangular") {
-    const x = (id: number) => RECT.left + (depth.get(id)! / maxDepth) * RECT.drawW
+    const x = (id: number) => RECT.left + (depth.get(id)! / maxDepth) * drawW
     const y = new Map<number, number>()
 
     leaves.forEach((l, i) => y.set(l, RECT.top + i * RECT.rowH))
@@ -277,7 +282,7 @@ function computeLayout(tree: Tree, layout: Layout): TreeLayout {
     })
 
     return {
-      width: RECT.left + RECT.drawW + RECT.labelArea,
+      width: RECT.left + drawW + labelArea,
       height: RECT.top * 2 + Math.max(1, leaves.length) * RECT.rowH,
       edges,
       leaves: leafLayouts,
@@ -343,6 +348,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   ref,
 ) {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const mode = theme.palette.mode
   const monoFont = theme.custom.monoFontFamily
   const edgeColor = mode === "dark" ? "#5B6268" : "#9ca0a4"
@@ -354,6 +360,15 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const treeGroupRef = useRef<SVGGElement>(null)
   const drag = useRef({ active: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 })
   const fitScale = useRef(1)
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<{
+    dist: number
+    cx: number
+    cy: number
+    k: number
+    tx: number
+    ty: number
+  } | null>(null)
 
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [transform, setTransform] = useState<Transform>({ k: 1, x: 0, y: 0 })
@@ -363,8 +378,8 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     const tree = buildTree(data)
     if (!tree) return null
     const pruned = familyFilter ? pruneToFamily(tree, familyFilter) : tree
-    return computeLayout(pruned, layout)
-  }, [data, layout, familyFilter])
+    return isMobile ? computeLayout(pruned, layout, 300, 120) : computeLayout(pruned, layout)
+  }, [data, layout, familyFilter, isMobile])
 
   const leafByGene = useMemo(() => {
     const m = new Map<string, LeafLayout>()
@@ -426,7 +441,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     (clientX: number, clientY: number): { leaf: LeafLayout; sx: number; sy: number } | null => {
       if (!layoutData || !svgRef.current || !containerRef.current) return null
       const svgRect = svgRef.current.getBoundingClientRect()
-      const scale = isRadial ? transform.k : Math.min(size.w, layoutData.width) / layoutData.width
+      const scale = isRadial ? transform.k : rectScale
       const vx = isRadial
         ? (clientX - svgRect.left - transform.x) / transform.k
         : (clientX - svgRect.left) / scale
@@ -465,7 +480,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
       const crect = containerRef.current.getBoundingClientRect()
       return { leaf: best, sx: clientX - crect.left, sy: clientY - crect.top }
     },
-    [layoutData, transform, isRadial, size],
+    [layoutData, transform, isRadial, size, rectScale],
   )
 
   const focusGene = useCallback(
@@ -479,14 +494,32 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
           return { k, x: size.w / 2 - leaf.x * k, y: size.h / 2 - leaf.y * k }
         })
       } else {
-        const scale = Math.min(size.w, layoutData.width) / layoutData.width
-        containerRef.current?.scrollTo({ top: leaf.y * scale - size.h / 2, behavior: "smooth" })
+        containerRef.current?.scrollTo({ top: leaf.y * rectScale - size.h / 2, behavior: "smooth" })
       }
     },
-    [layoutData, size, isRadial, leafByGene],
+    [layoutData, size, isRadial, leafByGene, rectScale],
   )
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (isRadial) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      svgRef.current?.setPointerCapture(e.pointerId)
+      if (pointers.current.size >= 2) {
+        const [a, b] = [...pointers.current.values()]
+        const rect = svgRef.current!.getBoundingClientRect()
+        pinch.current = {
+          dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+          cx: (a.x + b.x) / 2 - rect.left,
+          cy: (a.y + b.y) / 2 - rect.top,
+          k: transform.k,
+          tx: transform.x,
+          ty: transform.y,
+        }
+        drag.current.active = false
+        drag.current.moved = true // a pinch should never trigger a click-select
+        return
+      }
+    }
     drag.current = {
       active: isRadial,
       moved: false,
@@ -495,10 +528,29 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
       ox: transform.x,
       oy: transform.y,
     }
-    if (isRadial) svgRef.current?.setPointerCapture(e.pointerId)
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (pinch.current && pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pointers.current.size >= 2) {
+        const [a, b] = [...pointers.current.values()]
+        const rect = svgRef.current!.getBoundingClientRect()
+        const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1
+        const mx = (a.x + b.x) / 2 - rect.left
+        const my = (a.y + b.y) / 2 - rect.top
+        const p = pinch.current
+        const k = Math.min(
+          fitScale.current * 80,
+          Math.max(fitScale.current * 0.5, p.k * (dist / p.dist)),
+        )
+        const vx = (p.cx - p.tx) / p.k
+        const vy = (p.cy - p.ty) / p.k
+        setTransform({ k, x: mx - vx * k, y: my - vy * k })
+        setHover(null)
+      }
+      return
+    }
     if (drag.current.active) {
       const dx = e.clientX - drag.current.sx
       const dy = e.clientY - drag.current.sy
@@ -521,9 +573,26 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   }, [isRadial, fit])
 
   const onPointerUp = (e: React.PointerEvent) => {
+    if (isRadial) {
+      pointers.current.delete(e.pointerId)
+      svgRef.current?.releasePointerCapture(e.pointerId)
+      if (pointers.current.size < 2) pinch.current = null
+      if (pointers.current.size === 1) {
+        // One finger remains after a pinch — hand control back to panning.
+        const [rem] = [...pointers.current.values()]
+        drag.current = {
+          active: true,
+          moved: true,
+          sx: rem.x,
+          sy: rem.y,
+          ox: transform.x,
+          oy: transform.y,
+        }
+        return
+      }
+    }
     const wasDrag = drag.current.moved
     drag.current.active = false
-    if (isRadial) svgRef.current?.releasePointerCapture(e.pointerId)
     if (!wasDrag) {
       const hit = nearestLeaf(e.clientX, e.clientY)
       if (hit?.leaf.geneId) onSelect(hit.leaf.geneId)

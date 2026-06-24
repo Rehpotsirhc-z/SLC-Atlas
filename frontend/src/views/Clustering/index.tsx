@@ -21,6 +21,8 @@ import {
   ToggleButtonGroup,
   Toolbar,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material"
 import { useClustering, type ClusterMethod } from "@/api/hooks/useClustering"
 import { useGenes } from "@/api/hooks/useGenes"
@@ -72,6 +74,8 @@ export default function Clustering() {
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const treeRef = useRef<PhyloTreeHandle>(null)
   const navigate = useNavigate()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   const method = metric === "rna" ? METHOD[`rna:${tissue}`] : METHOD[metric]
   const { data, isLoading, error } = useClustering(method)
@@ -143,16 +147,26 @@ export default function Clustering() {
       >
         <Toolbar
           disableGutters
-          sx={{ px: 2, py: 1, gap: 1.5, flexWrap: "wrap", minHeight: "auto" }}
+          sx={{
+            px: 2,
+            pt: { xs: 2, sm: 1 },
+            pb: { xs: 2, sm: 1 },
+            gap: 1.5,
+            flexWrap: "wrap",
+            minHeight: "auto",
+            alignItems: { xs: "stretch", sm: "center" },
+          }}
         >
           <ToggleButtonGroup
             size="small"
             exclusive
+            fullWidth={isMobile}
             value={metric}
             onChange={(_, v) => v && setMetric(v)}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             {(["aa", "dna", "rna"] as Metric[]).map((m) => (
-              <ToggleButton key={m} value={m} sx={{ minWidth: 120 }}>
+              <ToggleButton key={m} value={m} sx={{ minWidth: { xs: 0, sm: 120 } }}>
                 {METRIC_LABEL[m]}
               </ToggleButton>
             ))}
@@ -161,13 +175,15 @@ export default function Clustering() {
           <ToggleButtonGroup
             size="small"
             exclusive
+            fullWidth={isMobile}
             value={layout}
             onChange={(_, v) => v && setLayout(v)}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
-            <ToggleButton value="rectangular" sx={{ minWidth: 120 }}>
+            <ToggleButton value="rectangular" sx={{ minWidth: { xs: 0, sm: 120 } }}>
               Rectangular
             </ToggleButton>
-            <ToggleButton value="radial" sx={{ minWidth: 120 }}>
+            <ToggleButton value="radial" sx={{ minWidth: { xs: 0, sm: 120 } }}>
               Radial
             </ToggleButton>
           </ToggleButtonGroup>
@@ -176,111 +192,138 @@ export default function Clustering() {
             <ToggleButtonGroup
               size="small"
               exclusive
+              fullWidth={isMobile}
               value={tissue}
               onChange={(_, v) => v && setTissue(v)}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
             >
-              <ToggleButton value="all" sx={{ minWidth: 120 }}>
+              <ToggleButton value="all" sx={{ minWidth: { xs: 0, sm: 120 } }}>
                 All tissues
               </ToggleButton>
-              <ToggleButton value="brain" sx={{ minWidth: 120 }}>
+              <ToggleButton value="brain" sx={{ minWidth: { xs: 0, sm: 120 } }}>
                 Brain
               </ToggleButton>
             </ToggleButtonGroup>
           )}
 
-          <Autocomplete
-            size="small"
-            options={families}
-            value={familyFilter}
-            onChange={(_, v) => setFamilyFilter(v)}
-            sx={{ width: 170, ...acIndicatorSx }}
-            slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
-            renderOption={(props, option) => {
-              const { key, ...rest } = props as {
-                key: React.Key
-              } & React.HTMLAttributes<HTMLLIElement>
-              return (
-                <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {option}
-                  </Typography>
-                </li>
-              )
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                size="small"
-                placeholder="Family…"
-                color="primary"
-                sx={acInputSx}
-              />
-            )}
-          />
+          <Box sx={{ display: "flex", gap: 1.5, width: { xs: "100%", sm: "auto" } }}>
+            <Autocomplete
+              size="small"
+              options={families}
+              value={familyFilter}
+              onChange={(_, v) => setFamilyFilter(v)}
+              sx={{ width: { xs: "auto", sm: 170 }, flex: { xs: 1, sm: "none" }, ...acIndicatorSx }}
+              slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+              renderOption={(props, option) => {
+                const { key, ...rest } = props as {
+                  key: React.Key
+                } & React.HTMLAttributes<HTMLLIElement>
+                return (
+                  <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                    <Typography variant="body2" fontWeight={600}>
+                      {option}
+                    </Typography>
+                  </li>
+                )
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  placeholder="Family…"
+                  color="primary"
+                  sx={acInputSx}
+                />
+              )}
+            />
 
-          <Autocomplete
-            size="small"
-            options={genes}
-            getOptionLabel={(o) => o.symbol}
-            isOptionEqualToValue={(o, v) => o.id === v.id}
-            value={genes.find((g) => g.id === selectedGeneId) ?? null}
-            onChange={(_, v) => {
-              setSelectedGeneId(v?.id ?? null)
-              if (v) treeRef.current?.focusGene(v.id)
-            }}
-            sx={{ width: 180, ...acIndicatorSx }}
-            slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
-            renderOption={(props, option) => {
-              const { key, ...rest } = props as {
-                key: React.Key
-              } & React.HTMLAttributes<HTMLLIElement>
-              return (
-                <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {option.symbol}
-                  </Typography>
-                </li>
-              )
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                size="small"
-                placeholder="Find gene…"
-                color="primary"
-                sx={acInputSx}
-              />
-            )}
-          />
+            <Autocomplete
+              size="small"
+              options={genes}
+              getOptionLabel={(o) => o.symbol}
+              isOptionEqualToValue={(o, v) => o.id === v.id}
+              value={genes.find((g) => g.id === selectedGeneId) ?? null}
+              onChange={(_, v) => {
+                setSelectedGeneId(v?.id ?? null)
+                if (v) treeRef.current?.focusGene(v.id)
+              }}
+              sx={{ width: { xs: "auto", sm: 180 }, flex: { xs: 1, sm: "none" }, ...acIndicatorSx }}
+              slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+              renderOption={(props, option) => {
+                const { key, ...rest } = props as {
+                  key: React.Key
+                } & React.HTMLAttributes<HTMLLIElement>
+                return (
+                  <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                    <Typography variant="body2" fontWeight={600}>
+                      {option.symbol}
+                    </Typography>
+                  </li>
+                )
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  placeholder="Find gene…"
+                  color="primary"
+                  sx={acInputSx}
+                />
+              )}
+            />
+          </Box>
 
-          <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ flexGrow: 1, display: { xs: "none", sm: "block" } }} />
 
-          <Typography variant="body2" color="success.main" sx={{ whiteSpace: "nowrap" }}>
-            {familyFilter ? `${familyFilter} subtree` : `${leafCount} genes`}
-          </Typography>
-          <Divider orientation="vertical" flexItem />
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<RestartAltIcon />}
-            onClick={() => treeRef.current?.resetView()}
-            sx={{ whiteSpace: "nowrap" }}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              flexWrap: "wrap",
+              width: { xs: "100%", sm: "auto" },
+            }}
           >
-            Reset view
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={(e) => setExportAnchor(e.currentTarget)}
-          >
-            Export
-          </Button>
-          <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>
-            <MenuItem onClick={() => handleExport("svg")}>Download SVG</MenuItem>
-            <MenuItem onClick={() => handleExport("png")}>Download PNG</MenuItem>
-            <MenuItem onClick={handleNewick}>Download Newick (.nwk)</MenuItem>
-          </Menu>
+            <Typography
+              variant="body2"
+              color="success.main"
+              sx={{ whiteSpace: "nowrap", flexBasis: { xs: "100%", sm: "auto" } }}
+            >
+              {familyFilter ? `${familyFilter} subtree` : `${leafCount} genes`}
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{ display: { xs: "none", sm: "block" } }}
+            />
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<RestartAltIcon />}
+              onClick={() => treeRef.current?.resetView()}
+              sx={{ whiteSpace: "nowrap", flex: { xs: 1, sm: "none" } }}
+            >
+              Reset view
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={(e) => setExportAnchor(e.currentTarget)}
+              sx={{ flex: { xs: 1, sm: "none" } }}
+            >
+              Export
+            </Button>
+            <Menu
+              anchorEl={exportAnchor}
+              open={!!exportAnchor}
+              onClose={() => setExportAnchor(null)}
+            >
+              <MenuItem onClick={() => handleExport("svg")}>Download SVG</MenuItem>
+              <MenuItem onClick={() => handleExport("png")}>Download PNG</MenuItem>
+              <MenuItem onClick={handleNewick}>Download Newick (.nwk)</MenuItem>
+            </Menu>
+          </Box>
         </Toolbar>
         <Divider />
 
