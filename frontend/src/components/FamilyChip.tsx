@@ -8,9 +8,10 @@ import { getFamilyColor } from "@/utils/familyColor"
 interface FamilyChipProps {
   family: string
   label: string | null
+  onClick?: () => void
 }
 
-export default function FamilyChip({ family, label }: FamilyChipProps) {
+export default function FamilyChip({ family, label, onClick }: FamilyChipProps) {
   const { palette } = useTheme()
   const color = getFamilyColor(family, palette.mode)
 
@@ -20,11 +21,13 @@ export default function FamilyChip({ family, label }: FamilyChipProps) {
         size="small"
         variant="outlined"
         label={label}
+        onClick={onClick}
         sx={{
           borderColor: color,
           color,
           fontWeight: 500,
           maxWidth: 220,
+          ...(onClick && { cursor: "pointer" }),
           "& .MuiChip-label": {
             overflow: "hidden",
             textOverflow: "ellipsis",

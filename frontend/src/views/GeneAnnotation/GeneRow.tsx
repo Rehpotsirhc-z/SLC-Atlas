@@ -29,6 +29,7 @@ interface GeneRowProps {
   gene: Gene
   isSelected: boolean
   autoExpand: boolean
+  onFamilyClick?: (family: string) => void
 }
 
 const rowFlash = keyframes`
@@ -36,7 +37,7 @@ const rowFlash = keyframes`
   100% { background-color: transparent; }
 `
 
-function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
+function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [flashing, setFlashing] = useState(false)
@@ -102,8 +103,14 @@ function GeneRow({ gene, isSelected, autoExpand }: GeneRowProps) {
         <TableCell align="right" sx={{ fontFamily: custom.monoFontFamily }}>
           {gene.length.toLocaleString()}
         </TableCell>
-        <TableCell>
-          <FamilyChip family={gene.family} label={gene.category} />
+        <TableCell
+          onClick={onFamilyClick ? (e) => { e.stopPropagation(); onFamilyClick(gene.family) } : undefined}
+        >
+          <FamilyChip
+            family={gene.family}
+            label={gene.category}
+            onClick={onFamilyClick ? () => {} : undefined}
+          />
         </TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
           {gene.alias ?? (

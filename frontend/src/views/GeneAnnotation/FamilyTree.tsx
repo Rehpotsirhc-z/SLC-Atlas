@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useState } from "react"
+import { keyframes } from "@emotion/react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { Box, Paper, Typography, useTheme } from "@mui/material"
@@ -25,6 +26,11 @@ interface FamilyGroup {
   label: string
   members: Gene[]
 }
+
+const familyFlash = keyframes`
+  0%   { background-color: rgba(81, 175, 239, 0.45); }
+  100% { background-color: transparent; }
+`
 
 function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   const map = new Map<string, Gene[]>()
@@ -56,6 +62,30 @@ export default function FamilyTree({
   const [expandedItems, setExpandedItems] = useState<string[]>(
     familyFilter ? [familyFilter] : []
   )
+  const [flashingFamily, setFlashingFamily] = useState<string | null>(null)
+  const familyRefs = useRef(new Map<string, HTMLElement>())
+
+  useEffect(() => {
+    if (!familyFilter) return
+    setExpandedItems((prev) => prev.includes(familyFilter) ? prev : [...prev, familyFilter])
+    const el = familyRefs.current.get(familyFilter)
+    if (!el) return
+    const contentEl = el.closest<HTMLElement>(".MuiTreeItem-content") ?? el
+    let fired = false
+    const startFlash = () => {
+      if (fired) return
+      fired = true
+      setFlashingFamily(familyFilter)
+      setTimeout(() => setFlashingFamily(null), 1400)
+    }
+    let scrollParent = contentEl.parentElement
+    while (scrollParent && scrollParent.scrollHeight <= scrollParent.clientHeight) {
+      scrollParent = scrollParent.parentElement
+    }
+    scrollParent?.addEventListener("scrollend", startFlash, { once: true })
+    contentEl.scrollIntoView({ block: "start", behavior: "smooth" })
+    setTimeout(startFlash, 600)
+  }, [familyFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Paper variant="outlined" sx={{ width, flexShrink: 0, overflowY: "auto", p: 1 }}>
@@ -70,13 +100,20 @@ export default function FamilyTree({
         {familyGroups.map(({ family, label, members }) => {
           const isActive = familyFilter === family
           const isExpanded = expandedItems.includes(family)
+          const isFlashing = flashingFamily === family
           const color = getFamilyColor(family, palette.mode)
           return (
             <TreeItem
               key={family}
               itemId={family}
               label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}>
+                <Box
+                  ref={(el: HTMLElement | null) => {
+                    if (el) familyRefs.current.set(family, el)
+                    else familyRefs.current.delete(family)
+                  }}
+                  sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}
+                >
                   <Box
                     sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }}
                   />
@@ -95,6 +132,11 @@ export default function FamilyTree({
                     borderLeft: `3px solid ${isExpanded ? color : "transparent"}`,
                     bgcolor: isExpanded ? `${color}22` : undefined,
                   },
+                ...(isFlashing && {
+                  "& > .MuiTreeItem-content": {
+                    animation: `${familyFlash} 1.4s ease-out`,
+                  },
+                }),
               }}
             >
               {members.map((gene) => {

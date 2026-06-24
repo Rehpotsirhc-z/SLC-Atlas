@@ -22,6 +22,7 @@ interface GeneTableProps {
   onSort: (key: SortKey) => void
   scrollToGeneId: string | null
   autoExpandGeneId: string | null
+  onFamilyClick?: (family: string) => void
 }
 
 const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
@@ -48,6 +49,7 @@ export default function GeneTable({
   onSort,
   scrollToGeneId,
   autoExpandGeneId,
+  onFamilyClick,
 }: GeneTableProps) {
   return (
     <TableContainer>
@@ -78,6 +80,7 @@ export default function GeneTable({
               gene={gene}
               isSelected={gene.id === scrollToGeneId}
               autoExpand={gene.id === autoExpandGeneId}
+              onFamilyClick={onFamilyClick}
             />
           ))}
         </TableBody>
