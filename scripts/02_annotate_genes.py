@@ -15,7 +15,7 @@ Usage:
     python scripts/02_annotate_genes.py \\
         [hgnc_genes.txt] [family_names.md] [output.tsv]
 
-Defaults to backend/data/raw/SLC.txt, backend/data/raw/family_names.md,
+Defaults to backend/data/raw/SLC.txt, reference/family_names.md,
 and backend/data/raw/annotation.tsv.
 """
 
@@ -26,8 +26,9 @@ from pathlib import Path
 from gene_family_utils import derive_family_keys
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
+REFERENCE_DIR = Path(__file__).resolve().parent.parent / "reference"
 DEFAULT_SLC_PATH = DATA_DIR / "raw" / "SLC.txt"
-DEFAULT_NAMES_PATH = DATA_DIR / "raw" / "family_names.md"
+DEFAULT_NAMES_PATH = REFERENCE_DIR / "family_names.md"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "annotation.tsv"
 
 
