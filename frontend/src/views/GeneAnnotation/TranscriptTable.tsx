@@ -12,6 +12,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
   useTheme,
   type PaletteOptions,
@@ -19,6 +20,19 @@ import {
 import { useTranscripts } from "@/api/hooks/useGenes"
 import { formatPosition } from "@/utils/format"
 import type { Transcript } from "@/types/gene"
+
+type TranscriptSortKey = "id" | "name" | "type" | "start" | "length"
+type SortDir = "asc" | "desc"
+
+function sortTranscripts(transcripts: Transcript[], key: TranscriptSortKey, dir: SortDir) {
+  const sign = dir === "asc" ? 1 : -1
+  return [...transcripts].sort((a, b) => {
+    const av = a[key]
+    const bv = b[key]
+    if (typeof av === "number" && typeof bv === "number") return sign * (av - bv)
+    return sign * String(av ?? "").localeCompare(String(bv ?? ""))
+  })
+}
 
 const ROW_H = 22
 const BAR_H = 10
@@ -167,6 +181,15 @@ const SKELETON_ROWS = 3
 export default function TranscriptTable({ geneId, chromosome }: TranscriptTableProps) {
   const { data: transcripts, isLoading } = useTranscripts(geneId)
   const { custom, palette } = useTheme()
+  const [sortKey, setSortKey] = useState<TranscriptSortKey>("start")
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
+
+  function handleSort(key: TranscriptSortKey) {
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+    else { setSortKey(key); setSortDir("asc") }
+  }
+
+  const sorted = transcripts ? sortTranscripts(transcripts, sortKey, sortDir) : []
 
   const typeCounts = transcripts
     ? [
@@ -211,11 +234,25 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
       <Table size="small" sx={{ width: "auto" }}>
         <TableHead>
           <TableRow>
-            <TableCell>Transcript ID</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Position</TableCell>
-            <TableCell align="right">Length</TableCell>
+            {(
+              [
+                ["id", "Transcript ID", "left"],
+                ["name", "Name", "left"],
+                ["type", "Type", "left"],
+                ["start", "Position", "left"],
+                ["length", "Length", "right"],
+              ] as [TranscriptSortKey, string, "left" | "right"][]
+            ).map(([key, label, align]) => (
+              <TableCell key={key} align={align}>
+                <TableSortLabel
+                  active={sortKey === key}
+                  direction={sortKey === key ? sortDir : "asc"}
+                  onClick={() => handleSort(key)}
+                >
+                  {label}
+                </TableSortLabel>
+              </TableCell>
+            ))}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -239,7 +276,7 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
                   </TableCell>
                 </TableRow>
               ))
-            : (transcripts ?? []).map((t) => (
+            : sorted.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{t.id}</TableCell>
                   <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{t.name}</TableCell>
@@ -319,7 +356,7 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
             </Box>
           </Box>
           <TranscriptMapDiagram
-            transcripts={transcripts}
+            transcripts={sorted}
             palette={palette}
             monoFont={custom.monoFontFamily}
           />
