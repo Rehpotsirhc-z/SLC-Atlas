@@ -10,13 +10,14 @@ with the current Python interpreter (sys.executable), so it works on any platfor
 without relying on a particular shell.
 
 Steps 06-08 (GTEx subset, sequences, clustering) require large external files and
-take the longest, so they are skipped with --skip-clustering.
+take the longest, so they are skipped with --skip-clustering. Steps 09-11 (orthologs,
+species tree, conservation) hit external APIs and are skipped with --skip-conservation.
 
-By default the full pipeline runs (02 -> 08). To re-run only part of it, use
+By default the full pipeline runs (02 -> 11). To re-run only part of it, use
 --from or --only to avoid re-hitting the slow external APIs:
 
 Usage:
-    python scripts/run_pipeline.py [--skip-clustering] [hgnc_genes.txt]
+    python scripts/run_pipeline.py [--skip-clustering] [--skip-conservation] [hgnc_genes.txt]
     python scripts/run_pipeline.py --from 5            # run step 05 onward
     python scripts/run_pipeline.py --only 2,5          # run only steps 02 and 05
 
@@ -31,7 +32,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parent
 RAW = ROOT / "backend" / "data" / "raw"
-NAMES_FILE = RAW / "family_names.md"
+NAMES_FILE = ROOT / "reference" / "family_names.md"
 
 STEP_SCRIPTS = {
     "01": "01_fetch_hgnc_aliases.py",
@@ -42,11 +43,15 @@ STEP_SCRIPTS = {
     "06": "06_fetch_gtex_subset.py",
     "07": "07_fetch_sequences.py",
     "08": "08_build_clustering.py",
+    "09": "09_fetch_orthologs.py",
+    "10": "10_fetch_species_tree.py",
+    "11": "11_build_conservation.py",
 }
 
 # Execution stages in pipeline order; a stage with more than one step runs in parallel.
-STAGES = [["01"], ["02"], ["03", "04"], ["05"], ["06", "07"], ["08"]]
+STAGES = [["01"], ["02"], ["03", "04"], ["05"], ["06", "07"], ["08"], ["09", "10"], ["11"]]
 CLUSTERING_STEPS = {"06", "07", "08"}
+CONSERVATION_STEPS = {"09", "10", "11"}
 
 
 def normalize(step: str) -> str:
@@ -101,6 +106,7 @@ def print_parquet_summary() -> None:
 
 def main() -> None:
     skip_clustering = False
+    skip_conservation = False
     hgnc_file = ""
     from_step = None
     only_steps = None
@@ -111,6 +117,8 @@ def main() -> None:
         arg = args[i]
         if arg == "--skip-clustering":
             skip_clustering = True
+        elif arg == "--skip-conservation":
+            skip_conservation = True
         elif arg == "--from":
             i += 1
             from_step = normalize(args[i])
@@ -137,6 +145,8 @@ def main() -> None:
         selected = {s for s in STEP_SCRIPTS if s >= from_step}
         if skip_clustering:
             selected -= CLUSTERING_STEPS
+        if skip_conservation:
+            selected -= CONSERVATION_STEPS
         run_selection(selected, hgnc_file)
         print_parquet_summary()
         return
@@ -156,13 +166,20 @@ def main() -> None:
     selected = {s for s in STEP_SCRIPTS if s != "01"}
     if skip_clustering:
         selected -= CLUSTERING_STEPS
-        run_selection(selected, hgnc_file)
-        print("\nSkipping steps 06-08 (--skip-clustering). Run them manually when ready:")
-        for step in sorted(CLUSTERING_STEPS):
-            print(f"  python scripts/{STEP_SCRIPTS[step]}")
-        return
+    if skip_conservation:
+        selected -= CONSERVATION_STEPS
 
     run_selection(selected, hgnc_file)
+
+    for flag, label, steps in (
+        (skip_clustering, "--skip-clustering", CLUSTERING_STEPS),
+        (skip_conservation, "--skip-conservation", CONSERVATION_STEPS),
+    ):
+        if flag:
+            lo, hi = min(steps), max(steps)
+            print(f"\nSkipped steps {lo}-{hi} ({label}). Run them manually when ready:")
+            for step in sorted(steps):
+                print(f"  python scripts/{STEP_SCRIPTS[step]}")
     print_parquet_summary()
 
 

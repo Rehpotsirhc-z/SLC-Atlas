@@ -19,7 +19,7 @@ Usage:
     python scripts/01_fetch_hgnc_aliases.py [parent_group_id] [output.md]
 
     parent_group_id  HGNC gene group ID for the parent family (default: 752 = SLC)
-    output.md        defaults to backend/data/raw/family_names.md
+    output.md        defaults to reference/family_names.md
 
 Examples:
     python scripts/01_fetch_hgnc_aliases.py                  # SLC families
@@ -33,8 +33,8 @@ import time
 import urllib.request
 from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
-DEFAULT_OUT_PATH = DATA_DIR / "raw" / "family_names.md"
+REFERENCE_DIR = Path(__file__).resolve().parent.parent / "reference"
+DEFAULT_OUT_PATH = REFERENCE_DIR / "family_names.md"
 DEFAULT_PARENT_GROUP_ID = 752  # HGNC: Solute carrier families
 
 GROUP_URL = "https://www.genenames.org/cgi-bin/genegroup/group?id={id}"

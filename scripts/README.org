@@ -8,7 +8,7 @@ Steps 03, 04, 06, and 07 hit external APIs and can take minutes to hours, so onl
 
 | Change              | File to edit                                            | Re-run                                            |
 |---------------------+---------------------------------------------------------+---------------------------------------------------|
-| Family display name | =raw/family_names.md= --- first bullet under each heading wins | =--only 2,5= (offline; reuses cached data)  |
+| Family display name | =reference/family_names.md= --- first bullet under each heading wins | =--only 2,5= (offline; reuses cached data)  |
 | Add/remove genes    | =raw/SLC.txt= (HGNC download)                            | =--from 2= (and drop =--skip-clustering= for 06--08) |
 | Refresh from HGNC   | Replace =raw/SLC.txt=                                    | 01 (optional), then =--from 2=                    |
 
@@ -21,7 +21,7 @@ Place these files in =backend/data/raw/= before running the pipeline:
 | =SLC.txt=                          | Download from [[https://www.genenames.org/data/genegroup/#!/group/2192][HGNC gene group]] → "Download this gene family" (TSV)            |
 | =GTEx_Analysis_*_gene_tpm.parquet= | [[https://gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression][GTEx portal]] --- bulk tissue gene TPMs, converted to Parquet |
 
-Steps 06--08 are only needed for the clustering view. You can skip them if you don't need it.
+Steps 06--08 are only needed for the clustering view, and steps 09--11 only for the conservation view. You can skip them if you don't need them (=--skip-clustering=, =--skip-conservation=).
 
 
 ** Quick start
@@ -31,6 +31,9 @@ python scripts/run_pipeline.py
 
 # Skip clustering (steps 06–08) — fastest for just genes/transcripts
 python scripts/run_pipeline.py --skip-clustering
+
+# Skip conservation (steps 09–11) — orthologs + species tree
+python scripts/run_pipeline.py --skip-conservation
 
 # Use a non-default HGNC file
 python scripts/run_pipeline.py path/to/my_family.txt
@@ -44,7 +47,7 @@ python scripts/run_pipeline.py --from 5     # run step 05 onward
 
 ** Steps
 *** Step 01 --- Fetch HGNC family names
-Walks the HGNC API to fetch "also known as" aliases for every gene family. Writes the editable Markdown file =backend/data/raw/family_names.md=.
+Walks the HGNC API to fetch "also known as" aliases for every gene family. Writes the editable Markdown file =reference/family_names.md=.
 
 #+begin_src sh
 python scripts/01_fetch_hgnc_aliases.py
@@ -108,18 +111,50 @@ Runs MAFFT alignment and UPGMA hierarchical clustering across four methods (amin
 python scripts/08_build_clustering.py
 #+end_src
 
+*** Step 09 --- Fetch orthologs
+For every gene, queries the Ensembl REST homology endpoint (Compara) for orthologs in the curated species set (=reference/species.tsv=), keeping the highest-%identity ortholog per species plus the ortholog count. Writes =backend/data/raw/orthologs.tsv=.
+
+#+begin_src sh
+python scripts/09_fetch_orthologs.py
+#+end_src
+
+*** Step 10 --- Fetch species tree
+Builds the species (column) dendrogram via a swappable source (=scripts/species_tree_sources.py=). The default is Ensembl Compara; =timetree=, =ucsc=, and =ncbi= are alternatives. Writes =backend/data/raw/species_tree.nwk= (leaves labeled with Ensembl production names).
+
+#+begin_src sh
+python scripts/10_fetch_species_tree.py            # default: ensembl_compara
+python scripts/10_fetch_species_tree.py timetree   # alternative source
+#+end_src
+
+The =timetree= / =ucsc= sources read a curated Newick committed under =reference/= (e.g. =reference/species_tree_timetree.nwk=); they remap its leaves via the matching column in =species.tsv=.
+
+*** Step 11 --- Build conservation
+Joins =orthologs.tsv= + =species.tsv= + =genes.parquet= into a dense gene × species matrix, and parses =species_tree.nwk= into a flat node table. Writes =backend/data/conservation.parquet= and =backend/data/species_tree.parquet=.
+
+#+begin_src sh
+python scripts/11_build_conservation.py
+#+end_src
+
+** Curated, committed inputs
+Hand-curated inputs are version-controlled under =reference/=:
+
+- =reference/family_names.md= --- per-family display names; written by step 01 and edited by hand (first bullet under each heading).
+- =reference/species.tsv= --- the conservation species set + cross-source name mappings (=ensembl_name=, =display_name=, =taxon_id=, =timetree_name=, =ucsc_name=). Edit this one file and re-run steps 09--11 to change which species appear.
+- =reference/species_tree_timetree.nwk= / =reference/species_tree_ucsc.nwk= --- curated Newicks for the non-Ensembl tree sources (only when that source is used).
+
 ** Data layout
 #+begin_example
 backend/data/
   genes.parquet          ← served by /api/genes
   transcripts.parquet    ← served by /api/genes/{id}/transcripts
   clustering.parquet     ← served by /api/clustering
+  conservation.parquet   ← served by /api/conservation
+  species_tree.parquet   ← served by /api/conservation/species-tree
 
   raw/                   ← inputs and intermediates (not served)
     SLC.txt                  manual download from HGNC
     GTEx_*_gene_tpm.parquet  manual download from GTEx portal
     GTEx_v11_SampleAttributesDS.txt  auto-downloaded by step 06
-    family_names.md          editable display names; output of step 01
     annotation.tsv           output of step 02
     ensembl_genes.tsv        output of step 03
     ncbi_gene_summaries.tsv  output of step 04
@@ -130,6 +165,12 @@ backend/data/
     aligned_protein.fasta    intermediate of step 08
     aligned_cds_codon.fasta  intermediate of step 08
     tree_*.nwk               Newick trees output of step 08
+    orthologs.tsv            output of step 09
+    species_tree.nwk         output of step 10
+
+reference/                 ← hand-curated, committed inputs (see "Curated, committed inputs")
+  family_names.md            family display names (step 01 writes, you edit)
+  species.tsv                conservation species list + name mappings
 #+end_example
 
 
