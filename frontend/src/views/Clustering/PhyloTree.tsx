@@ -684,6 +684,8 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
         height: "100%",
         overflowY: isRadial ? "hidden" : "auto",
         overflowX: "hidden",
+        scrollbarWidth: "none",
+        "&::-webkit-scrollbar": { display: "none" },
         userSelect: "none",
       }}
     >

@@ -383,7 +383,7 @@ export default function Clustering() {
                 sx={{
                   position: "absolute",
                   top: 12,
-                  right: 20,
+                  right: 12,
                   zIndex: 2,
                   bgcolor: floatBg,
                   backdropFilter: "blur(10px)",
