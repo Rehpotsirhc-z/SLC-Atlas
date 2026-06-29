@@ -127,11 +127,11 @@ function buildTheme(mode: ThemeMode): Theme {
             borderColor: mode === "dark" ? c.base4 : c.base3,
             "&.Mui-selected": {
               color: c.magenta,
-              backgroundColor: "transparent",
+              backgroundColor: `${c.magenta}25`,
               borderColor: c.magenta,
             },
             "&:hover": { backgroundColor: `${c.base4}40` },
-            "&.Mui-selected:hover": { backgroundColor: `${c.magenta}30` },
+            "&.Mui-selected:hover": { backgroundColor: `${c.magenta}45` },
           },
         },
       },
