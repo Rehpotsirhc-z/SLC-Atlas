@@ -107,7 +107,7 @@ export default function GeneInfoPanel({ info, onClose, onOpenInGenes }: GeneInfo
       elevation={6}
       sx={{
         position: "absolute",
-        top: 12,
+        top: 124,
         left: 12,
         width: 260,
         maxWidth: "calc(100% - 24px)",

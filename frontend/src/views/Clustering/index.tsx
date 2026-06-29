@@ -4,8 +4,11 @@
 
 import React, { useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
+import HubIcon from "@mui/icons-material/Hub"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
+import { alpha } from "@mui/material/styles"
 import {
   Alert,
   Autocomplete,
@@ -13,12 +16,14 @@ import {
   Button,
   CircularProgress,
   Divider,
+  IconButton,
   Menu,
   MenuItem,
   Paper,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -61,6 +66,15 @@ const METHOD_LABEL: Record<ClusterMethod, string> = {
 }
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
+
+const LAYOUT_OPTIONS: { value: Layout; icon: React.ReactNode; label: string }[] = [
+  {
+    value: "rectangular",
+    icon: <AccountTreeIcon sx={{ fontSize: 18 }} />,
+    label: "Rectangular tree",
+  },
+  { value: "radial", icon: <HubIcon sx={{ fontSize: 18 }} />, label: "Radial tree" },
+]
 
 export default function Clustering() {
   const [metric, setMetric] = useState<Metric>("aa")
@@ -129,6 +143,9 @@ export default function Clustering() {
     triggerDownload(new Blob([text], { type: "text/plain" }), `slc_${method}.nwk`)
   }
 
+  const floatBg = alpha(theme.palette.background.paper, 0.9)
+  const selectedColor = theme.palette.secondary.main
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <Box>
@@ -169,22 +186,6 @@ export default function Clustering() {
             ))}
           </ToggleButtonGroup>
 
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            fullWidth={isMobile}
-            value={layout}
-            onChange={(_, v) => v && setLayout(v)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
-          >
-            <ToggleButton value="rectangular" sx={{ minWidth: { xs: 0, sm: 120 } }}>
-              Rectangular
-            </ToggleButton>
-            <ToggleButton value="radial" sx={{ minWidth: { xs: 0, sm: 120 } }}>
-              Radial
-            </ToggleButton>
-          </ToggleButtonGroup>
-
           {metric === "rna" && (
             <ToggleButtonGroup
               size="small"
@@ -202,73 +203,6 @@ export default function Clustering() {
               </ToggleButton>
             </ToggleButtonGroup>
           )}
-
-          <Box sx={{ display: "flex", gap: 1.5, width: { xs: "100%", sm: "auto" } }}>
-            <Autocomplete
-              size="small"
-              options={families}
-              value={familyFilter}
-              onChange={(_, v) => setFamilyFilter(v)}
-              sx={{ width: { xs: "auto", sm: 170 }, flex: { xs: 1, sm: "none" }, ...acIndicatorSx }}
-              slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
-              renderOption={(props, option) => {
-                const { key, ...rest } = props as {
-                  key: React.Key
-                } & React.HTMLAttributes<HTMLLIElement>
-                return (
-                  <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {option}
-                    </Typography>
-                  </li>
-                )
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  size="small"
-                  placeholder="Family…"
-                  color="primary"
-                  sx={acInputSx}
-                />
-              )}
-            />
-
-            <Autocomplete
-              size="small"
-              options={genes}
-              getOptionLabel={(o) => o.symbol}
-              isOptionEqualToValue={(o, v) => o.id === v.id}
-              value={genes.find((g) => g.id === selectedGeneId) ?? null}
-              onChange={(_, v) => {
-                setSelectedGeneId(v?.id ?? null)
-                if (v) treeRef.current?.focusGene(v.id)
-              }}
-              sx={{ width: { xs: "auto", sm: 180 }, flex: { xs: 1, sm: "none" }, ...acIndicatorSx }}
-              slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
-              renderOption={(props, option) => {
-                const { key, ...rest } = props as {
-                  key: React.Key
-                } & React.HTMLAttributes<HTMLLIElement>
-                return (
-                  <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {option.symbol}
-                    </Typography>
-                  </li>
-                )
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  size="small"
-                  placeholder="Find gene…"
-                  color="primary"
-                  sx={acInputSx}
-                />
-              )}
-            />
-          </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: "none", sm: "block" } }} />
 
@@ -352,6 +286,139 @@ export default function Clustering() {
                 onSelect={setSelectedGeneId}
                 geneById={geneById}
               />
+
+              {/* Floating search panel */}
+              <Paper
+                elevation={4}
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  zIndex: 2,
+                  bgcolor: floatBg,
+                  backdropFilter: "blur(10px)",
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  p: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.75,
+                  width: 188,
+                }}
+              >
+                <Autocomplete
+                  size="small"
+                  options={families}
+                  value={familyFilter}
+                  onChange={(_, v) => setFamilyFilter(v)}
+                  sx={{ width: "100%", ...acIndicatorSx }}
+                  slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+                  renderOption={(props, option) => {
+                    const { key, ...rest } = props as {
+                      key: React.Key
+                    } & React.HTMLAttributes<HTMLLIElement>
+                    return (
+                      <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {option}
+                        </Typography>
+                      </li>
+                    )
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      placeholder="Family…"
+                      color="primary"
+                      sx={acInputSx}
+                    />
+                  )}
+                />
+                <Autocomplete
+                  size="small"
+                  options={genes}
+                  getOptionLabel={(o) => o.symbol}
+                  isOptionEqualToValue={(o, v) => o.id === v.id}
+                  value={genes.find((g) => g.id === selectedGeneId) ?? null}
+                  onChange={(_, v) => {
+                    setSelectedGeneId(v?.id ?? null)
+                    if (v) treeRef.current?.focusGene(v.id)
+                  }}
+                  sx={{ width: "100%", ...acIndicatorSx }}
+                  slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+                  renderOption={(props, option) => {
+                    const { key, ...rest } = props as {
+                      key: React.Key
+                    } & React.HTMLAttributes<HTMLLIElement>
+                    return (
+                      <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {option.symbol}
+                        </Typography>
+                      </li>
+                    )
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      placeholder="Find gene…"
+                      color="primary"
+                      sx={acInputSx}
+                    />
+                  )}
+                />
+              </Paper>
+
+              {/* Floating layout toggle */}
+              <Paper
+                elevation={4}
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  right: 20,
+                  zIndex: 2,
+                  bgcolor: floatBg,
+                  backdropFilter: "blur(10px)",
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {LAYOUT_OPTIONS.map(({ value, icon, label }, i) => (
+                  <Tooltip key={value} title={label} placement="left" arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => setLayout(value)}
+                      sx={{
+                        borderRadius: 0,
+                        px: 1.25,
+                        py: 1,
+                        color: layout === value ? selectedColor : "text.secondary",
+                        bgcolor: layout === value ? alpha(selectedColor, 0.15) : "transparent",
+                        "&:hover": {
+                          bgcolor:
+                            layout === value
+                              ? alpha(selectedColor, 0.27)
+                              : alpha(theme.palette.action.active, 0.06),
+                        },
+                        ...(i < LAYOUT_OPTIONS.length - 1 && {
+                          borderBottom: 1,
+                          borderColor: "divider",
+                        }),
+                      }}
+                    >
+                      {icon}
+                    </IconButton>
+                  </Tooltip>
+                ))}
+              </Paper>
+
               {selectedInfo && (
                 <GeneInfoPanel
                   key={selectedInfo.node.gene_id}
