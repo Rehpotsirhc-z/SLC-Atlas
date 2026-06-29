@@ -82,6 +82,7 @@ export default function Clustering() {
   const [layout, setLayout] = useState<Layout>("rectangular")
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
+  const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -304,7 +305,7 @@ export default function Clustering() {
                   display: "flex",
                   flexDirection: "column",
                   gap: 0.75,
-                  width: 188,
+                  width: 216,
                 }}
               >
                 <Autocomplete
@@ -425,6 +426,8 @@ export default function Clustering() {
                   info={selectedInfo}
                   onClose={() => setSelectedGeneId(null)}
                   onOpenInGenes={() => navigate("/genes")}
+                  pos={panelPos}
+                  onPosChange={setPanelPos}
                 />
               )}
             </>
