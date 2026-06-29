@@ -142,10 +142,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
           size="small"
           placeholder="Search Ensembl ID, symbol, name, or family…"
           color="primary"
-          sx={{
-            ...acInputSx,
-            "& .MuiOutlinedInput-root": { paddingLeft: "10px" },
-          }}
+          sx={acInputSx}
           slotProps={{
             input: {
               ...params.InputProps,

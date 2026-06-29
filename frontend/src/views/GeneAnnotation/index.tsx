@@ -12,7 +12,6 @@ import {
   IconButton,
   Paper,
   TablePagination,
-  Toolbar,
   Typography,
   useMediaQuery,
   useTheme,
@@ -158,7 +157,7 @@ export default function GeneAnnotation() {
             minWidth: 0,
           }}
         >
-          <Toolbar disableGutters sx={{ px: 2, gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", p: 2, gap: 2 }}>
             {isMobile && (
               <IconButton
                 onClick={() => setDrawerOpen(true)}
@@ -179,7 +178,7 @@ export default function GeneAnnotation() {
             </Typography>
             <Divider orientation="vertical" flexItem />
             <DownloadButton genes={visibleGenes} />
-          </Toolbar>
+          </Box>
           <Divider />
           {error ? (
             <Box sx={{ p: 2 }}>

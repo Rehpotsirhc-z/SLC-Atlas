@@ -19,7 +19,6 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  Toolbar,
   Typography,
   useMediaQuery,
   useTheme,
@@ -145,15 +144,13 @@ export default function Clustering() {
         variant="outlined"
         sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
       >
-        <Toolbar
-          disableGutters
+        <Box
           sx={{
+            display: "flex",
             px: 2,
-            pt: { xs: 2, sm: 1 },
-            pb: { xs: 2, sm: 1 },
+            py: 2,
             gap: 1.5,
             flexWrap: "wrap",
-            minHeight: "auto",
             alignItems: { xs: "stretch", sm: "center" },
           }}
         >
@@ -324,7 +321,7 @@ export default function Clustering() {
               <MenuItem onClick={handleNewick}>Download Newick (.nwk)</MenuItem>
             </Menu>
           </Box>
-        </Toolbar>
+        </Box>
         <Divider />
 
         <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
