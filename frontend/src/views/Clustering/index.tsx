@@ -87,6 +87,7 @@ export default function Clustering() {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const treeRef = useRef<PhyloTreeHandle>(null)
+  const graphRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -130,6 +131,7 @@ export default function Clustering() {
   useEffect(() => {
     if (familyFilter) treeRef.current?.focusFamily(familyFilter)
   }, [familyFilter])
+
 
   const leafCount = genes.length
   const filenameBase = `slc_${method}_${layout}`
@@ -263,7 +265,7 @@ export default function Clustering() {
         </Box>
         <Divider />
 
-        <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
+        <Box ref={graphRef} sx={{ flex: 1, position: "relative", minHeight: 0 }}>
           {error ? (
             <Box sx={{ p: 2 }}>
               <Alert severity="error">Failed to load clustering data.</Alert>

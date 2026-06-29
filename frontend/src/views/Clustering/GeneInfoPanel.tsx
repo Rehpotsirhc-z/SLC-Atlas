@@ -16,6 +16,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material"
+import { useEffect, useRef } from "react"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import type { ClusterNode } from "@/types/clustering"
@@ -59,6 +60,27 @@ export default function GeneInfoPanel({
   const { palette } = useTheme()
   const familyColor = getFamilyColor(node.family ?? "?", palette.mode)
   const currentPos = pos ?? DEFAULT_POS
+  const panelRef = useRef<HTMLDivElement>(null)
+  const posRef = useRef(currentPos)
+  posRef.current = currentPos
+
+  useEffect(() => {
+    const panel = panelRef.current
+    const container = panel?.parentElement
+    if (!panel || !container) return
+    const pad = 12
+    const clamp = () => {
+      const { offsetWidth: pw, offsetHeight: ph } = panel
+      const { clientWidth: cw, clientHeight: ch } = container
+      const p = posRef.current
+      const x = Math.max(pad, Math.min(p.x, cw - pw - pad))
+      const y = Math.max(pad, Math.min(p.y, ch - ph - pad))
+      if (x !== p.x || y !== p.y) onPosChange({ x, y })
+    }
+    const ro = new ResizeObserver(clamp)
+    ro.observe(container)
+    return () => ro.disconnect()
+  }, [onPosChange])
 
   function handleDragStart(e: React.MouseEvent) {
     e.preventDefault()
@@ -145,6 +167,7 @@ export default function GeneInfoPanel({
 
   return (
     <Paper
+      ref={panelRef}
       elevation={6}
       sx={{
         position: "absolute",
