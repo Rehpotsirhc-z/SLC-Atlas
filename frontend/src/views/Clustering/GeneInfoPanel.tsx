@@ -82,29 +82,64 @@ export default function GeneInfoPanel({
     return () => ro.disconnect()
   }, [onPosChange])
 
-  function handleDragStart(e: React.MouseEvent) {
-    e.preventDefault()
-    const startX = e.clientX
-    const startY = e.clientY
+  function startDrag(startX: number, startY: number) {
     const initX = currentPos.x
     const initY = currentPos.y
+    const panel = panelRef.current
 
     document.body.style.userSelect = "none"
     document.body.style.cursor = "grabbing"
 
-    function onMove(e: MouseEvent) {
-      onPosChange({ x: initX + (e.clientX - startX), y: initY + (e.clientY - startY) })
+    let finalX = initX
+    let finalY = initY
+
+    function move(clientX: number, clientY: number) {
+      const container = panel?.parentElement
+      const pad = 12
+      let x = initX + (clientX - startX)
+      let y = initY + (clientY - startY)
+      if (panel && container) {
+        const handleH = 28
+        const grip = 40
+        x = Math.max(pad - panel.offsetWidth + grip, Math.min(x, container.clientWidth - grip - pad))
+        y = Math.max(pad, Math.min(y, container.clientHeight - handleH - pad))
+      }
+      finalX = x
+      finalY = y
+      if (panel) panel.style.transform = `translate(${x - initX}px, ${y - initY}px)`
     }
 
-    function onUp() {
-      document.removeEventListener("mousemove", onMove)
-      document.removeEventListener("mouseup", onUp)
+    function onMouseMove(e: MouseEvent) { move(e.clientX, e.clientY) }
+    function onTouchMove(e: TouchEvent) {
+      e.preventDefault()
+      const t = e.touches[0]
+      move(t.clientX, t.clientY)
+    }
+    function onEnd() {
+      document.removeEventListener("mousemove", onMouseMove)
+      document.removeEventListener("mouseup", onEnd)
+      document.removeEventListener("touchmove", onTouchMove)
+      document.removeEventListener("touchend", onEnd)
       document.body.style.userSelect = ""
       document.body.style.cursor = ""
+      if (panel) panel.style.transform = ""
+      onPosChange({ x: finalX, y: finalY })
     }
 
-    document.addEventListener("mousemove", onMove)
-    document.addEventListener("mouseup", onUp)
+    document.addEventListener("mousemove", onMouseMove)
+    document.addEventListener("mouseup", onEnd)
+    document.addEventListener("touchmove", onTouchMove, { passive: false })
+    document.addEventListener("touchend", onEnd)
+  }
+
+  function handleDragStart(e: React.MouseEvent) {
+    e.preventDefault()
+    startDrag(e.clientX, e.clientY)
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0]
+    startDrag(t.clientX, t.clientY)
   }
 
   const rows: { label: string; value: React.ReactNode }[] = [
@@ -185,6 +220,7 @@ export default function GeneInfoPanel({
       {/* Drag handle */}
       <Box
         onMouseDown={handleDragStart}
+        onTouchStart={handleTouchStart}
         sx={{
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
