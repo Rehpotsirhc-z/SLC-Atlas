@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
@@ -127,6 +127,10 @@ export default function Clustering() {
       .sort((a, b) => a.symbol.localeCompare(b.symbol))
   }, [data])
 
+  useEffect(() => {
+    if (familyFilter) treeRef.current?.focusFamily(familyFilter)
+  }, [familyFilter])
+
   const leafCount = genes.length
   const filenameBase = `slc_${method}_${layout}`
 
@@ -221,7 +225,7 @@ export default function Clustering() {
               color="success.main"
               sx={{ whiteSpace: "nowrap", flexBasis: { xs: "100%", sm: "auto" } }}
             >
-              {familyFilter ? `${familyFilter} subtree` : `${leafCount} genes`}
+              {leafCount} genes
             </Typography>
             <Divider
               orientation="vertical"

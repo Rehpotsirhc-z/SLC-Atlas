@@ -25,6 +25,7 @@ export interface PhyloTreeHandle {
   exportPng: (filename: string) => void
   resetView: () => void
   focusGene: (geneId: string) => void
+  focusFamily: (family: string) => void
 }
 
 interface PhyloTreeProps {
@@ -75,58 +76,6 @@ function buildTree(data: ClusterNode[]): Tree | null {
   return root === null ? null : { nodes, root }
 }
 
-function pruneToFamily(tree: Tree, family: string): Tree {
-  const { nodes } = tree
-  const targets = [...nodes.values()].filter((n) => n.children.length === 0 && n.family === family)
-  if (targets.length === 0) return tree
-
-  const relevant = new Set<number>()
-  for (const leaf of targets) {
-    let cur: number | null = leaf.id
-    while (cur !== null && !relevant.has(cur)) {
-      relevant.add(cur)
-      cur = nodes.get(cur)!.parent
-    }
-  }
-
-  const relevantChildCount = new Map<number, number>()
-  for (const id of relevant) {
-    const p = nodes.get(id)!.parent
-    if (p !== null && relevant.has(p)) {
-      relevantChildCount.set(p, (relevantChildCount.get(p) ?? 0) + 1)
-    }
-  }
-
-  const kept = new Set<number>(targets.map((n) => n.id))
-  for (const id of relevant) {
-    if ((relevantChildCount.get(id) ?? 0) >= 2) kept.add(id)
-  }
-
-  const out = new Map<number, RNode>()
-  let root = -1
-  for (const id of kept) {
-    let cur = nodes.get(id)!.parent
-    let sum = nodes.get(id)!.branchLength
-    let parent: number | null = null
-    while (cur !== null) {
-      if (kept.has(cur)) {
-        parent = cur
-        break
-      }
-      sum += nodes.get(cur)!.branchLength
-      cur = nodes.get(cur)!.parent
-    }
-    const orig = nodes.get(id)!
-    out.set(id, { ...orig, parent, branchLength: parent === null ? 0 : sum, children: [] })
-    if (parent === null) root = id
-  }
-
-  for (const n of out.values()) {
-    if (n.parent !== null) out.get(n.parent)!.children.push(n.id)
-  }
-
-  return { nodes: out, root }
-}
 
 // Layout
 interface LeafLayout {
@@ -377,9 +326,8 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const layoutData = useMemo(() => {
     const tree = buildTree(data)
     if (!tree) return null
-    const pruned = familyFilter ? pruneToFamily(tree, familyFilter) : tree
-    return isMobile ? computeLayout(pruned, layout, 300, 120) : computeLayout(pruned, layout)
-  }, [data, layout, familyFilter, isMobile])
+    return isMobile ? computeLayout(tree, layout, 300, 120) : computeLayout(tree, layout)
+  }, [data, layout, isMobile])
 
   const leafByGene = useMemo(() => {
     const m = new Map<string, LeafLayout>()
@@ -500,6 +448,20 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     [layoutData, size, isRadial, leafByGene, rectScale],
   )
 
+  const focusFamily = useCallback(
+    (family: string) => {
+      if (!layoutData || size.w === 0) return
+      const familyLeaves = layoutData.leaves.filter((l) => l.family === family)
+      if (familyLeaves.length === 0) return
+      if (!isRadial) {
+        const ys = familyLeaves.map((l) => l.y).sort((a, b) => a - b)
+        const medianY = ys[Math.floor(ys.length / 2)]
+        containerRef.current?.scrollTo({ top: medianY * rectScale - size.h / 2, behavior: "smooth" })
+      }
+    },
+    [layoutData, size, isRadial, rectScale],
+  )
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (isRadial) {
       pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -613,6 +575,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     () => ({
       resetView: reset,
       focusGene,
+      focusFamily,
       exportSvg: (filename) => {
         const svg = buildSvgString()
         if (!svg) return
@@ -639,7 +602,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
         img.src = url
       },
     }),
-    [buildSvgString, layoutData, reset, focusGene],
+    [buildSvgString, layoutData, reset, focusGene, focusFamily],
   )
 
   // Static Tree (memoized)
@@ -656,11 +619,17 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
           strokeLinecap="butt"
         />
         {layoutData.leaves.map((l) => (
-          <LeafLabel key={l.id} leaf={l} monoFont={monoFont} mode={mode} />
+          <LeafLabel
+            key={l.id}
+            leaf={l}
+            monoFont={monoFont}
+            mode={mode}
+            dim={familyFilter !== null && l.family !== familyFilter}
+          />
         ))}
       </g>
     )
-  }, [layoutData, edgeColor, monoFont, mode])
+  }, [layoutData, edgeColor, monoFont, mode, familyFilter])
 
   if (!layoutData) {
     return (
@@ -809,12 +778,15 @@ function LeafLabel({
   leaf,
   monoFont,
   mode,
+  dim,
 }: {
   leaf: LeafLayout
   monoFont: string
   mode: "light" | "dark"
+  dim: boolean
 }) {
-  const color = getFamilyColor(leaf.family ?? "?", mode)
+  const dimColor = mode === "dark" ? "#4a4f55" : "#d0d0d0"
+  const color = dim ? dimColor : getFamilyColor(leaf.family ?? "?", mode)
   if (leaf.angle === null) {
     return (
       <g>
