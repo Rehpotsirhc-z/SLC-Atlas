@@ -8,6 +8,8 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import HubIcon from "@mui/icons-material/Hub"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
+import SearchIcon from "@mui/icons-material/Search"
+import CloseIcon from "@mui/icons-material/Close"
 import { alpha } from "@mui/material/styles"
 import {
   Alert,
@@ -83,6 +85,7 @@ export default function Clustering() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -294,90 +297,164 @@ export default function Clustering() {
                 geneById={geneById}
               />
 
-              {/* Floating search panel */}
-              <Paper
-                elevation={4}
-                sx={{
-                  position: "absolute",
-                  top: 12,
-                  left: 12,
-                  zIndex: 2,
-                  bgcolor: floatBg,
-                  backdropFilter: "blur(10px)",
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 2,
-                  p: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 0.75,
-                  width: 216,
-                }}
-              >
-                <Autocomplete
-                  size="small"
-                  options={families}
-                  value={familyFilter}
-                  onChange={(_, v) => setFamilyFilter(v)}
-                  sx={{ width: "100%", ...acIndicatorSx }}
-                  slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
-                  renderOption={(props, option) => {
-                    const { key, ...rest } = props as {
-                      key: React.Key
-                    } & React.HTMLAttributes<HTMLLIElement>
-                    return (
-                      <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {option}
-                        </Typography>
-                      </li>
-                    )
+              {/* Floating search panel — desktop */}
+              {!isMobile && (
+                <Paper
+                  elevation={4}
+                  sx={{
+                    position: "absolute",
+                    top: 12,
+                    left: 12,
+                    zIndex: 2,
+                    bgcolor: floatBg,
+                    backdropFilter: "blur(10px)",
+                    border: 1,
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    width: 216,
                   }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      size="small"
-                      placeholder="Family…"
-                      color="primary"
-                      sx={acInputSx}
-                    />
+                >
+                  <Autocomplete
+                    size="small"
+                    options={families}
+                    value={familyFilter}
+                    onChange={(_, v) => setFamilyFilter(v)}
+                    sx={{ width: "100%", ...acIndicatorSx }}
+                    slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+                    renderOption={(props, option) => {
+                      const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                      return (
+                        <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                          <Typography variant="body2" fontWeight={600}>{option}</Typography>
+                        </li>
+                      )
+                    }}
+                    renderInput={(params) => (
+                      <TextField {...params} size="small" placeholder="Family…" color="primary" sx={acInputSx} />
+                    )}
+                  />
+                  <Autocomplete
+                    size="small"
+                    options={genes}
+                    getOptionLabel={(o) => o.symbol}
+                    isOptionEqualToValue={(o, v) => o.id === v.id}
+                    value={genes.find((g) => g.id === selectedGeneId) ?? null}
+                    onChange={(_, v) => {
+                      setSelectedGeneId(v?.id ?? null)
+                      if (v) treeRef.current?.focusGene(v.id)
+                    }}
+                    sx={{ width: "100%", ...acIndicatorSx }}
+                    slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+                    renderOption={(props, option) => {
+                      const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                      return (
+                        <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                          <Typography variant="body2" fontWeight={600}>{option.symbol}</Typography>
+                        </li>
+                      )
+                    }}
+                    renderInput={(params) => (
+                      <TextField {...params} size="small" placeholder="Find gene…" color="primary" sx={acInputSx} />
+                    )}
+                  />
+                </Paper>
+              )}
+
+              {/* Floating search — mobile: panel pops above persistent circular toggle */}
+              {isMobile && (
+                <>
+                  {searchOpen && (
+                    <Paper
+                      elevation={4}
+                      sx={{
+                        position: "absolute",
+                        bottom: 64,
+                        right: 12,
+                        zIndex: 2,
+                        bgcolor: floatBg,
+                        backdropFilter: "blur(10px)",
+                        border: 1,
+                        borderColor: "divider",
+                        borderRadius: 2,
+                        p: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.75,
+                        width: 216,
+                      }}
+                    >
+                      <Autocomplete
+                        size="small"
+                        options={families}
+                        value={familyFilter}
+                        onChange={(_, v) => setFamilyFilter(v)}
+                        sx={{ width: "100%", ...acIndicatorSx }}
+                        slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+                        renderOption={(props, option) => {
+                          const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                          return (
+                            <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                              <Typography variant="body2" fontWeight={600}>{option}</Typography>
+                            </li>
+                          )
+                        }}
+                        renderInput={(params) => (
+                          <TextField {...params} size="small" placeholder="Family…" color="primary" sx={acInputSx} />
+                        )}
+                      />
+                      <Autocomplete
+                        size="small"
+                        options={genes}
+                        getOptionLabel={(o) => o.symbol}
+                        isOptionEqualToValue={(o, v) => o.id === v.id}
+                        value={genes.find((g) => g.id === selectedGeneId) ?? null}
+                        onChange={(_, v) => {
+                          setSelectedGeneId(v?.id ?? null)
+                          if (v) treeRef.current?.focusGene(v.id)
+                        }}
+                        sx={{ width: "100%", ...acIndicatorSx }}
+                        slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
+                        renderOption={(props, option) => {
+                          const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                          return (
+                            <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
+                              <Typography variant="body2" fontWeight={600}>{option.symbol}</Typography>
+                            </li>
+                          )
+                        }}
+                        renderInput={(params) => (
+                          <TextField {...params} size="small" placeholder="Find gene…" color="primary" sx={acInputSx} />
+                        )}
+                      />
+                    </Paper>
                   )}
-                />
-                <Autocomplete
-                  size="small"
-                  options={genes}
-                  getOptionLabel={(o) => o.symbol}
-                  isOptionEqualToValue={(o, v) => o.id === v.id}
-                  value={genes.find((g) => g.id === selectedGeneId) ?? null}
-                  onChange={(_, v) => {
-                    setSelectedGeneId(v?.id ?? null)
-                    if (v) treeRef.current?.focusGene(v.id)
-                  }}
-                  sx={{ width: "100%", ...acIndicatorSx }}
-                  slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
-                  renderOption={(props, option) => {
-                    const { key, ...rest } = props as {
-                      key: React.Key
-                    } & React.HTMLAttributes<HTMLLIElement>
-                    return (
-                      <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {option.symbol}
-                        </Typography>
-                      </li>
-                    )
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      size="small"
-                      placeholder="Find gene…"
-                      color="primary"
-                      sx={acInputSx}
-                    />
-                  )}
-                />
-              </Paper>
+                  <IconButton
+                    onClick={() => setSearchOpen((v) => !v)}
+                    sx={{
+                      position: "absolute",
+                      bottom: 12,
+                      right: 12,
+                      zIndex: 2,
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      boxShadow: 4,
+                      backdropFilter: "blur(10px)",
+                      bgcolor: floatBg,
+                      border: 1,
+                      borderColor: "divider",
+                      color: searchOpen ? "text.secondary" : "primary.main",
+                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
+                    }}
+                  >
+                    {searchOpen ? <CloseIcon fontSize="small" /> : <SearchIcon fontSize="small" />}
+                  </IconButton>
+                </>
+              )}
 
               {/* Floating layout toggle */}
               <Paper
