@@ -10,6 +10,7 @@ import { triggerDownload } from "@/utils/download"
 
 interface DownloadButtonProps {
   genes: Gene[]
+  compact?: boolean
 }
 
 const COLUMNS: (keyof Gene)[] = [
@@ -38,9 +39,10 @@ function genesToJsonBlob(genes: Gene[]): Blob {
   return new Blob([JSON.stringify(genes, null, 2)], { type: "application/json" })
 }
 
-export default function DownloadButton({ genes }: DownloadButtonProps) {
+export default function DownloadButton({ genes, compact }: DownloadButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
+  const useCompact = compact ?? isMobile
 
   function handleDownload(format: "tsv" | "json") {
     const blob = format === "tsv" ? genesToTsvBlob(genes) : genesToJsonBlob(genes)
@@ -50,7 +52,7 @@ export default function DownloadButton({ genes }: DownloadButtonProps) {
 
   return (
     <>
-      {isMobile ? (
+      {useCompact ? (
         <Button
           onClick={(e) => setAnchorEl(e.currentTarget)}
           variant="outlined"

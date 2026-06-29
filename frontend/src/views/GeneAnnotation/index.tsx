@@ -58,10 +58,23 @@ export default function GeneAnnotation() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [hideCounter, setHideCounter] = useState(false)
+  const [compactDownload, setCompactDownload] = useState(false)
+  const [useSidebarDrawer, setUseSidebarDrawer] = useState(false)
 
   const [treeWidth, setTreeWidth] = useState(280)
   const dragging = useRef(false)
   const tableScrollRef = useRef<HTMLDivElement>(null)
+  const outerRef = useRef<HTMLDivElement>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const counterRef = useRef<HTMLElement | null>(null)
+  const downloadWrapperRef = useRef<HTMLSpanElement | null>(null)
+  const treeWidthRef = useRef(treeWidth)
+  const thresholds = useRef({ full: 0, noCounter: 0, compact: 0 })
+
+  useEffect(() => {
+    treeWidthRef.current = treeWidth
+  }, [treeWidth])
 
   useLayoutEffect(() => {
     if (isLoading) return
@@ -76,6 +89,73 @@ export default function GeneAnnotation() {
     const slack = el.clientWidth - naturalWidth
     if (slack > 0) setTreeWidth(Math.min(600, 280 + slack))
   }, [isLoading])
+
+  useLayoutEffect(() => {
+    if (isLoading || isMobile) return
+    const outer = outerRef.current
+    const toolbar = toolbarRef.current
+    if (!outer || !toolbar) return
+
+    // Measure thresholds once: natural widths of toolbar at full config
+    if (!thresholds.current.full) {
+      const prevW = toolbar.style.width
+      toolbar.style.width = "max-content"
+      thresholds.current.full = toolbar.offsetWidth
+      const counterW = counterRef.current ? counterRef.current.offsetWidth + 16 : 0
+      thresholds.current.noCounter = thresholds.current.full - counterW
+      const dlFullW = downloadWrapperRef.current ? downloadWrapperRef.current.offsetWidth : 0
+      thresholds.current.compact = thresholds.current.noCounter - Math.max(0, dlFullW - 52)
+      toolbar.style.width = prevW
+    }
+
+    const ICON_BTN_OVERHEAD = 46
+
+    const checkFit = () => {
+      const outerW = outer.clientWidth
+      const treeW = treeWidthRef.current
+      const t = thresholds.current
+
+      const applyForPaperW = (paperW: number, hasIcon: boolean) => {
+        const offset = hasIcon ? ICON_BTN_OVERHEAD : 0
+        if (paperW >= t.full + offset) {
+          setHideCounter(false)
+          setCompactDownload(false)
+        } else if (paperW >= t.noCounter + offset) {
+          setHideCounter(true)
+          setCompactDownload(false)
+        } else {
+          setHideCounter(true)
+          setCompactDownload(true)
+        }
+      }
+
+      // Try inline sidebar at current tree width
+      const paperW = outerW - treeW - 16
+      if (paperW >= t.compact) {
+        setUseSidebarDrawer(false)
+        applyForPaperW(paperW, false)
+        return
+      }
+
+      // Try inline sidebar at minimum tree width (200px)
+      const minPaperW = outerW - 200 - 16
+      if (minPaperW >= t.compact) {
+        if (treeW > 200) setTreeWidth(200)
+        setUseSidebarDrawer(false)
+        applyForPaperW(minPaperW, false)
+        return
+      }
+
+      // Fall back to drawer
+      setUseSidebarDrawer(true)
+      applyForPaperW(outerW, true)
+    }
+
+    checkFit()
+    const ro = new ResizeObserver(checkFit)
+    ro.observe(outer)
+    return () => ro.disconnect()
+  }, [isLoading, isMobile])
 
   const onDragStart = (e: React.MouseEvent) => {
     dragging.current = true
@@ -104,8 +184,8 @@ export default function GeneAnnotation() {
           SLC superfamily gene and transcript annotation browser
         </Typography>
       </Box>
-      <Box sx={{ display: "flex", flex: 1, gap: 0, minHeight: 0 }}>
-        {isMobile ? (
+      <Box ref={outerRef} sx={{ display: "flex", flex: 1, gap: 0, minHeight: 0 }}>
+        {isMobile || useSidebarDrawer ? (
           <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
             <FamilyTree
               genes={genes}
@@ -157,8 +237,8 @@ export default function GeneAnnotation() {
             minWidth: 0,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", p: 2, gap: 2 }}>
-            {isMobile && (
+          <Box ref={toolbarRef} sx={{ display: "flex", alignItems: "center", p: 2, gap: 2 }}>
+            {(isMobile || useSidebarDrawer) && (
               <IconButton
                 onClick={() => setDrawerOpen(true)}
                 size="small"
@@ -170,14 +250,20 @@ export default function GeneAnnotation() {
             <SearchBar genes={genes} value={searchText} onChange={setSearchText} />
             <Box sx={{ flexGrow: 1 }} />
             <Typography
+              ref={counterRef as React.Ref<HTMLElement>}
               variant="body2"
               color="success.main"
-              sx={{ whiteSpace: "nowrap", display: { xs: "none", sm: "block" } }}
+              sx={{
+                whiteSpace: "nowrap",
+                display: isMobile || hideCounter ? "none" : { xs: "none", sm: "block" },
+              }}
             >
               {visibleGenes.length} of {genes.length} genes
             </Typography>
             <Divider orientation="vertical" flexItem />
-            <DownloadButton genes={visibleGenes} />
+            <span ref={downloadWrapperRef} style={{ display: "flex" }}>
+              <DownloadButton genes={visibleGenes} compact={isMobile || compactDownload} />
+            </span>
           </Box>
           <Divider />
           {error ? (
