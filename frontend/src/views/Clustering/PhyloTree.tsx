@@ -347,8 +347,12 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const layoutData = useMemo(() => {
     const tree = buildTree(data)
     if (!tree) return null
-    return isMobile ? computeLayout(tree, layout, 300, 120) : computeLayout(tree, layout)
-  }, [data, layout, isMobile])
+    const maxW = RECT.left + RECT.drawW + RECT.labelArea
+    const w = Math.min(size.w || 600, maxW)
+    const labelArea = Math.min(RECT.labelArea, Math.max(110, Math.round(w * 0.15)))
+    const drawW = Math.max(200, w - RECT.left - labelArea)
+    return computeLayout(tree, layout, drawW, labelArea)
+  }, [data, layout, size.w])
 
   const leafByGene = useMemo(() => {
     const m = new Map<string, LeafLayout>()

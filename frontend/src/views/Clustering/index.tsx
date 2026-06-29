@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
@@ -46,6 +46,7 @@ import GeneInfoPanel from "./GeneInfoPanel"
 
 type Metric = "aa" | "dna" | "rna"
 type Tissue = "all" | "brain"
+type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
 const METHOD: Record<string, ClusterMethod> = {
   aa: "aa_sequence",
@@ -86,11 +87,18 @@ export default function Clustering() {
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [tbState, setTbState] = useState<TbState>("full")
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const treeRef = useRef<PhyloTreeHandle>(null)
   const graphRef = useRef<HTMLDivElement>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const measureCounterRef = useRef<HTMLElement>(null)
+  const measureBtnsRef = useRef<HTMLDivElement>(null)
+  const measureIconBtnsRef = useRef<HTMLDivElement>(null)
+  const measureTogglesRef = useRef<HTMLDivElement>(null)
+  const measureTissueRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -135,9 +143,55 @@ export default function Clustering() {
     if (familyFilter) treeRef.current?.focusFamily(familyFilter)
   }, [familyFilter])
 
-
   const leafCount = genes.length
   const filenameBase = `slc_${method}_${layout}`
+
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current
+    if (!toolbar) return
+
+    let threshFull = 0
+    let threshCounterCompact = 0
+    let threshCompact = 0
+
+    function computeThresholds() {
+      const counterW = measureCounterRef.current?.offsetWidth ?? 0
+      const textBtnsW = measureBtnsRef.current?.offsetWidth ?? 0
+      const iconBtnsW = measureIconBtnsRef.current?.offsetWidth ?? 0
+      const metricToggleW = measureTogglesRef.current?.offsetWidth ?? 0
+      const tissueToggleW = measureTissueRef.current?.offsetWidth ?? 0
+      const toolbarPadding = 32
+      const isRna = metric === "rna"
+      const togglesW = isRna ? metricToggleW + tissueToggleW : metricToggleW
+      // Gaps between flex children [metricToggle, (tissueToggle?), spacer, rightBox]
+      const toolbarGaps = (isRna ? 3 : 2) * 12
+      // counterChunk = counter + gap(12) + divider(1) + gap(12) preceding the buttons.
+      // btn widths (text/icon) already include the inter-button gap.
+      const counterChunk = counterW + 25
+      threshFull = toolbarPadding + togglesW + toolbarGaps + counterChunk + textBtnsW
+      threshCounterCompact = toolbarPadding + togglesW + toolbarGaps + counterChunk + iconBtnsW
+      threshCompact = toolbarPadding + togglesW + toolbarGaps + iconBtnsW
+    }
+
+    function check() {
+      const w = toolbar.clientWidth
+      if (w >= threshFull) setTbState("full")
+      else if (w >= threshCounterCompact) setTbState("counterCompact")
+      else if (w >= threshCompact) setTbState("compact")
+      else setTbState("wrapped")
+    }
+
+    computeThresholds()
+    check()
+    document.fonts.ready.then(() => {
+      computeThresholds()
+      check()
+    })
+
+    const ro = new ResizeObserver(check)
+    ro.observe(toolbar)
+    return () => ro.disconnect()
+  }, [metric, leafCount])
 
   function handleExport(format: "svg" | "png") {
     if (format === "svg") treeRef.current?.exportSvg(`${filenameBase}.svg`)
@@ -156,6 +210,9 @@ export default function Clustering() {
   const floatBg = alpha(theme.palette.background.paper, 0.9)
   const selectedColor = theme.palette.secondary.main
 
+  const showCounter = tbState === "full" || tbState === "counterCompact"
+  const iconButtons = tbState === "compact" || tbState === "counterCompact"
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <Box>
@@ -172,25 +229,26 @@ export default function Clustering() {
         sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
       >
         <Box
+          ref={toolbarRef}
           sx={{
             display: "flex",
             px: 2,
             py: 2,
             gap: 1.5,
             flexWrap: "wrap",
-            alignItems: { xs: "stretch", sm: "center" },
+            alignItems: tbState === "wrapped" ? "stretch" : "center",
           }}
         >
           <ToggleButtonGroup
             size="small"
             exclusive
-            fullWidth={isMobile}
+            fullWidth={tbState === "wrapped"}
             value={metric}
             onChange={(_, v) => v && setMetric(v)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
+            sx={{ width: tbState === "wrapped" ? "100%" : "auto" }}
           >
             {(["aa", "dna", "rna"] as Metric[]).map((m) => (
-              <ToggleButton key={m} value={m} sx={{ minWidth: { xs: 0, sm: 120 } }}>
+              <ToggleButton key={m} value={m} sx={{ minWidth: tbState === "wrapped" ? 0 : 120 }}>
                 {METRIC_LABEL[m]}
               </ToggleButton>
             ))}
@@ -200,61 +258,87 @@ export default function Clustering() {
             <ToggleButtonGroup
               size="small"
               exclusive
-              fullWidth={isMobile}
+              fullWidth={tbState === "wrapped"}
               value={tissue}
               onChange={(_, v) => v && setTissue(v)}
-              sx={{ width: { xs: "100%", sm: "auto" } }}
+              sx={{ width: tbState === "wrapped" ? "100%" : "auto" }}
             >
-              <ToggleButton value="all" sx={{ minWidth: { xs: 0, sm: 120 } }}>
+              <ToggleButton value="all" sx={{ minWidth: tbState === "wrapped" ? 0 : 120 }}>
                 All tissues
               </ToggleButton>
-              <ToggleButton value="brain" sx={{ minWidth: { xs: 0, sm: 120 } }}>
+              <ToggleButton value="brain" sx={{ minWidth: tbState === "wrapped" ? 0 : 120 }}>
                 Brain
               </ToggleButton>
             </ToggleButtonGroup>
           )}
 
-          <Box sx={{ flexGrow: 1, display: { xs: "none", sm: "block" } }} />
+          {tbState !== "wrapped" && <Box sx={{ flexGrow: 1 }} />}
 
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               gap: 1.5,
-              flexWrap: "wrap",
-              width: { xs: "100%", sm: "auto" },
+              width: tbState === "wrapped" ? "100%" : "auto",
             }}
           >
             <Typography
               variant="body2"
               color="success.main"
-              sx={{ whiteSpace: "nowrap", flexBasis: { xs: "100%", sm: "auto" } }}
+              sx={{ whiteSpace: "nowrap", display: showCounter ? "block" : "none" }}
             >
               {leafCount} genes
             </Typography>
             <Divider
               orientation="vertical"
               flexItem
-              sx={{ display: { xs: "none", sm: "block" } }}
+              sx={{ display: showCounter ? "block" : "none" }}
             />
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<RestartAltIcon />}
-              onClick={() => treeRef.current?.resetView()}
-              sx={{ whiteSpace: "nowrap", flex: { xs: 1, sm: "none" } }}
-            >
-              Reset view
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={(e) => setExportAnchor(e.currentTarget)}
-              sx={{ flex: { xs: 1, sm: "none" } }}
-            >
-              Export
-            </Button>
+            {iconButtons ? (
+              <>
+                <Tooltip title="Reset view">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => treeRef.current?.resetView()}
+                    sx={{ minWidth: 0, px: "16px", py: "5px" }}
+                  >
+                    <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Export">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={(e) => setExportAnchor(e.currentTarget)}
+                    sx={{ minWidth: 0, px: "16px", py: "5px" }}
+                  >
+                    <DownloadIcon fontSize="small" sx={{ display: "block" }} />
+                  </Button>
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<RestartAltIcon />}
+                  onClick={() => treeRef.current?.resetView()}
+                  sx={{ whiteSpace: "nowrap", flex: tbState === "wrapped" ? 1 : "none" }}
+                >
+                  Reset view
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  onClick={(e) => setExportAnchor(e.currentTarget)}
+                  sx={{ flex: tbState === "wrapped" ? 1 : "none" }}
+                >
+                  Export
+                </Button>
+              </>
+            )}
             <Menu
               anchorEl={exportAnchor}
               open={!!exportAnchor}
@@ -326,15 +410,25 @@ export default function Clustering() {
                     sx={{ width: "100%", ...acIndicatorSx }}
                     slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
                     renderOption={(props, option) => {
-                      const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                      const { key, ...rest } = props as {
+                        key: React.Key
+                      } & React.HTMLAttributes<HTMLLIElement>
                       return (
                         <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                          <Typography variant="body2" fontWeight={600}>{option}</Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {option}
+                          </Typography>
                         </li>
                       )
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} size="small" placeholder="Family…" color="primary" sx={acInputSx} />
+                      <TextField
+                        {...params}
+                        size="small"
+                        placeholder="Family…"
+                        color="primary"
+                        sx={acInputSx}
+                      />
                     )}
                   />
                   <Autocomplete
@@ -350,15 +444,25 @@ export default function Clustering() {
                     sx={{ width: "100%", ...acIndicatorSx }}
                     slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
                     renderOption={(props, option) => {
-                      const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                      const { key, ...rest } = props as {
+                        key: React.Key
+                      } & React.HTMLAttributes<HTMLLIElement>
                       return (
                         <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                          <Typography variant="body2" fontWeight={600}>{option.symbol}</Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {option.symbol}
+                          </Typography>
                         </li>
                       )
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} size="small" placeholder="Find gene…" color="primary" sx={acInputSx} />
+                      <TextField
+                        {...params}
+                        size="small"
+                        placeholder="Find gene…"
+                        color="primary"
+                        sx={acInputSx}
+                      />
                     )}
                   />
                 </Paper>
@@ -395,15 +499,25 @@ export default function Clustering() {
                         sx={{ width: "100%", ...acIndicatorSx }}
                         slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
                         renderOption={(props, option) => {
-                          const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                          const { key, ...rest } = props as {
+                            key: React.Key
+                          } & React.HTMLAttributes<HTMLLIElement>
                           return (
                             <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                              <Typography variant="body2" fontWeight={600}>{option}</Typography>
+                              <Typography variant="body2" fontWeight={600}>
+                                {option}
+                              </Typography>
                             </li>
                           )
                         }}
                         renderInput={(params) => (
-                          <TextField {...params} size="small" placeholder="Family…" color="primary" sx={acInputSx} />
+                          <TextField
+                            {...params}
+                            size="small"
+                            placeholder="Family…"
+                            color="primary"
+                            sx={acInputSx}
+                          />
                         )}
                       />
                       <Autocomplete
@@ -419,15 +533,25 @@ export default function Clustering() {
                         sx={{ width: "100%", ...acIndicatorSx }}
                         slots={{ listbox: VirtualListboxSm, popper: StyledPopper }}
                         renderOption={(props, option) => {
-                          const { key, ...rest } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>
+                          const { key, ...rest } = props as {
+                            key: React.Key
+                          } & React.HTMLAttributes<HTMLLIElement>
                           return (
                             <li key={key} {...rest} style={{ ...rest.style, ...acOptionStyle }}>
-                              <Typography variant="body2" fontWeight={600}>{option.symbol}</Typography>
+                              <Typography variant="body2" fontWeight={600}>
+                                {option.symbol}
+                              </Typography>
                             </li>
                           )
                         }}
                         renderInput={(params) => (
-                          <TextField {...params} size="small" placeholder="Find gene…" color="primary" sx={acInputSx} />
+                          <TextField
+                            {...params}
+                            size="small"
+                            placeholder="Find gene…"
+                            color="primary"
+                            sx={acInputSx}
+                          />
                         )}
                       />
                     </Paper>
@@ -517,6 +641,58 @@ export default function Clustering() {
           )}
         </Box>
       </Paper>
+      {/* Hidden measurement elements — never visible, always rendered */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "fixed",
+          left: "-9999px",
+          visibility: "hidden",
+          pointerEvents: "none",
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+        }}
+      >
+        <Typography
+          ref={measureCounterRef as React.Ref<HTMLElement>}
+          variant="body2"
+          sx={{ whiteSpace: "nowrap" }}
+        >
+          {leafCount} genes
+        </Typography>
+        <Box ref={measureBtnsRef} sx={{ display: "flex", gap: 1.5 }}>
+          <Button size="small" variant="outlined" startIcon={<RestartAltIcon />}>
+            Reset view
+          </Button>
+          <Button size="small" variant="outlined" startIcon={<DownloadIcon />}>
+            Export
+          </Button>
+        </Box>
+        <Box ref={measureIconBtnsRef} sx={{ display: "flex", gap: 1.5 }}>
+          <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
+            <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+          </Button>
+          <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
+            <DownloadIcon fontSize="small" sx={{ display: "block" }} />
+          </Button>
+        </Box>
+        <ToggleButtonGroup ref={measureTogglesRef} size="small">
+          {(["aa", "dna", "rna"] as Metric[]).map((m) => (
+            <ToggleButton key={m} value={m} sx={{ minWidth: 120 }}>
+              {METRIC_LABEL[m]}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+        <ToggleButtonGroup ref={measureTissueRef} size="small">
+          <ToggleButton value="all" sx={{ minWidth: 120 }}>
+            All tissues
+          </ToggleButton>
+          <ToggleButton value="brain" sx={{ minWidth: 120 }}>
+            Brain
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
     </Box>
   )
 }
