@@ -401,7 +401,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
       if (isRadial) {
         const C = RADIAL.maxR + RADIAL.labelMargin
         const radius = Math.hypot(vx - C, vy - C)
-        if (radius >= RADIAL.maxR * 0.08) {
+        if (radius >= RADIAL.maxR * 0.08 && radius <= RADIAL.maxR + RADIAL.labelMargin) {
           const ang = Math.atan2(vy - C, vx - C)
           let bestDiff = Infinity
           for (const l of layoutData.leaves) {
@@ -412,6 +412,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
               best = l
             }
           }
+          if (best && bestDiff > 0.05) best = null
         }
       } else {
         let bestDiff = Infinity
@@ -422,7 +423,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
             best = l
           }
         }
-        if (best && bestDiff > RECT.rowH * 0.6) best = null
+        if (best && (bestDiff > RECT.rowH * 0.6 || vx < best.x - RECT.rowH * 3)) best = null
       }
       if (!best) return null
       const crect = containerRef.current.getBoundingClientRect()
