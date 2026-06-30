@@ -61,6 +61,7 @@ interface ConservationHeatmapProps {
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
+  cornerSlot?: React.ReactNode
 }
 
 interface GeneRow {
@@ -155,7 +156,17 @@ interface HoverState {
 
 const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHeatmapProps>(
   function ConservationHeatmap(
-    { cells, clusterNodes, speciesNodes, metric, familyFilter, selectedGeneId, onSelect, geneById },
+    {
+      cells,
+      clusterNodes,
+      speciesNodes,
+      metric,
+      familyFilter,
+      selectedGeneId,
+      onSelect,
+      geneById,
+      cornerSlot,
+    },
     ref,
   ) {
     const theme = useTheme()
@@ -545,8 +556,13 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 width: LEFT_W,
                 flexShrink: 0,
                 bgcolor: stickyBg,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
               }}
-            />
+            >
+              {cornerSlot}
+            </Box>
             {speciesHeader}
           </Box>
 

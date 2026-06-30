@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useMemo, useRef, useState } from "react"
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react"
+import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
@@ -19,6 +20,7 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Select,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -63,6 +65,8 @@ const METRIC_LABEL: Record<Metric, string> = {
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
 
+type TbState = "full" | "counterCompact" | "compact" | "wrapped"
+
 export default function Conservation() {
   const [metric, setMetric] = useState<Metric>("aa")
   const [tissue, setTissue] = useState<Tissue>("all")
@@ -70,10 +74,16 @@ export default function Conservation() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [tbState, setTbState] = useState<TbState>("full")
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const heatmapRef = useRef<ConservationHeatmapHandle>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const measureCounterRef = useRef<HTMLElement>(null)
+  const measureBtnsRef = useRef<HTMLDivElement>(null)
+  const measureIconBtnsRef = useRef<HTMLDivElement>(null)
+  const measureTogglesRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
@@ -103,9 +113,59 @@ export default function Conservation() {
       .sort((a, b) => a.symbol.localeCompare(b.symbol))
   }, [cells])
 
+  const nGenes = genes.length
+  const nSpecies = useMemo(
+    () => (speciesNodes ? speciesNodes.filter((n) => n.species).length : 0),
+    [speciesNodes],
+  )
+  const counterText = `${nGenes} genes · ${nSpecies} species`
+
   const isLoading = cl || sl || tl
   const error = ce || se || te
   const ready = cells && speciesNodes && clusterNodes
+
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current
+    if (!toolbar) return
+
+    let threshFull = 0
+    let threshCounterCompact = 0
+    let threshCompact = 0
+
+    function computeThresholds() {
+      const counterW = measureCounterRef.current?.offsetWidth ?? 0
+      const textBtnsW = measureBtnsRef.current?.offsetWidth ?? 0
+      const iconBtnsW = measureIconBtnsRef.current?.offsetWidth ?? 0
+      const toggleW = measureTogglesRef.current?.offsetWidth ?? 0
+      const toolbarPadding = 32
+      const toolbarGaps = 2 * 12
+      const counterChunk = counterW + 25
+      threshFull = toolbarPadding + toggleW + toolbarGaps + counterChunk + textBtnsW
+      threshCounterCompact = toolbarPadding + toggleW + toolbarGaps + counterChunk + iconBtnsW
+      threshCompact = toolbarPadding + toggleW + toolbarGaps + iconBtnsW
+    }
+
+    function check() {
+      const el = toolbarRef.current
+      if (!el) return
+      const w = el.clientWidth
+      if (w >= threshFull) setTbState("full")
+      else if (w >= threshCounterCompact) setTbState("counterCompact")
+      else if (w >= threshCompact) setTbState("compact")
+      else setTbState("wrapped")
+    }
+
+    computeThresholds()
+    check()
+    document.fonts.ready.then(() => {
+      computeThresholds()
+      check()
+    })
+
+    const ro = new ResizeObserver(check)
+    ro.observe(toolbar)
+    return () => ro.disconnect()
+  }, [counterText])
 
   async function handleNewick(kind: "species" | "gene") {
     setExportAnchor(null)
@@ -127,6 +187,52 @@ export default function Conservation() {
   }
 
   const floatBg = alpha(theme.palette.background.paper, 0.9)
+  const showCounter = tbState === "full" || tbState === "counterCompact"
+  const iconButtons = tbState === "compact" || tbState === "counterCompact"
+
+  const selectSx = {
+    fontSize: "0.8rem",
+    "& .MuiSelect-select": {
+      display: "flex",
+      alignItems: "center",
+      minHeight: "unset",
+      py: "7px",
+    },
+  }
+  const geneOrderControl = (
+    <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 0.75 }}>
+      <Tooltip title="Tree used to order the gene rows" placement="top" arrow>
+        <Select
+          size="small"
+          fullWidth
+          value={metric}
+          onChange={(e) => setMetric(e.target.value as Metric)}
+          startAdornment={
+            <AccountTreeIcon sx={{ fontSize: 18, color: "text.secondary", mr: 0.75 }} />
+          }
+          sx={selectSx}
+        >
+          {(["aa", "dna", "rna"] as Metric[]).map((m) => (
+            <MenuItem key={m} value={m}>
+              {METRIC_LABEL[m]}
+            </MenuItem>
+          ))}
+        </Select>
+      </Tooltip>
+      {metric === "rna" && (
+        <Select
+          size="small"
+          fullWidth
+          value={tissue}
+          onChange={(e) => setTissue(e.target.value as Tissue)}
+          sx={selectSx}
+        >
+          <MenuItem value="all">All tissues</MenuItem>
+          <MenuItem value="brain">Brain</MenuItem>
+        </Select>
+      )}
+    </Box>
+  )
 
   const searchPanel = (
     <>
@@ -211,104 +317,113 @@ export default function Conservation() {
         sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
       >
         <Box
-          sx={{ display: "flex", px: 2, py: 2, gap: 1.5, flexWrap: "wrap", alignItems: "center" }}
+          ref={toolbarRef}
+          sx={{
+            display: "flex",
+            px: 2,
+            py: 2,
+            gap: 1.5,
+            flexWrap: "wrap",
+            alignItems: tbState === "wrapped" ? "stretch" : "center",
+          }}
         >
           <ToggleButtonGroup
             size="small"
             exclusive
-            value={metric}
-            onChange={(_, v) => v && setMetric(v)}
-          >
-            {(["aa", "dna", "rna"] as Metric[]).map((m) => (
-              <ToggleButton key={m} value={m} sx={{ minWidth: 120 }}>
-                {METRIC_LABEL[m]}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-
-          {metric === "rna" && (
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={tissue}
-              onChange={(_, v) => v && setTissue(v)}
-            >
-              <ToggleButton value="all" sx={{ minWidth: 120 }}>
-                All tissues
-              </ToggleButton>
-              <ToggleButton value="brain" sx={{ minWidth: 120 }}>
-                Brain
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
-
-          <Box sx={{ flexGrow: 1 }} />
-
-          <ToggleButtonGroup
-            size="small"
-            exclusive
+            fullWidth={tbState === "wrapped"}
             value={cellMetric}
             onChange={(_, v) => v && setCellMetric(v)}
+            sx={{ width: tbState === "wrapped" ? "100%" : "auto" }}
           >
             {CELL_METRICS.map((m) => (
-              <ToggleButton key={m.key} value={m.key} sx={{ minWidth: 120 }}>
+              <ToggleButton
+                key={m.key}
+                value={m.key}
+                sx={{ minWidth: tbState === "wrapped" ? 0 : 120 }}
+              >
                 {m.label}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
 
-          <Divider orientation="vertical" flexItem />
+          {tbState !== "wrapped" && <Box sx={{ flexGrow: 1 }} />}
 
-          {isMobile ? (
-            <>
-              <Tooltip title="Reset view">
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              width: tbState === "wrapped" ? "100%" : "auto",
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="success.main"
+              sx={{ whiteSpace: "nowrap", display: showCounter ? "block" : "none" }}
+            >
+              {counterText}
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{ display: showCounter ? "block" : "none" }}
+            />
+            {iconButtons ? (
+              <>
+                <Tooltip title="Reset view">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => heatmapRef.current?.resetView()}
+                    sx={{ minWidth: 0, px: "16px", py: "5px" }}
+                  >
+                    <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Export">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={(e) => setExportAnchor(e.currentTarget)}
+                    sx={{ minWidth: 0, px: "16px", py: "5px" }}
+                  >
+                    <DownloadIcon fontSize="small" sx={{ display: "block" }} />
+                  </Button>
+                </Tooltip>
+              </>
+            ) : (
+              <>
                 <Button
                   size="small"
                   variant="outlined"
+                  startIcon={<RestartAltIcon />}
                   onClick={() => heatmapRef.current?.resetView()}
-                  sx={{ minWidth: 0, px: "16px", py: "5px" }}
+                  sx={{ whiteSpace: "nowrap", flex: tbState === "wrapped" ? 1 : "none" }}
                 >
-                  <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+                  Reset view
                 </Button>
-              </Tooltip>
-              <Tooltip title="Export">
                 <Button
                   size="small"
                   variant="outlined"
+                  startIcon={<DownloadIcon />}
                   onClick={(e) => setExportAnchor(e.currentTarget)}
-                  sx={{ minWidth: 0, px: "16px", py: "5px" }}
+                  sx={{ flex: tbState === "wrapped" ? 1 : "none" }}
                 >
-                  <DownloadIcon fontSize="small" sx={{ display: "block" }} />
+                  Export
                 </Button>
-              </Tooltip>
-            </>
-          ) : (
-            <>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<RestartAltIcon />}
-                onClick={() => heatmapRef.current?.resetView()}
-                sx={{ whiteSpace: "nowrap" }}
-              >
-                Reset view
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={(e) => setExportAnchor(e.currentTarget)}
-              >
-                Export
-              </Button>
-            </>
-          )}
-          <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>
-            <MenuItem onClick={() => handleExport("svg")}>Download SVG</MenuItem>
-            <MenuItem onClick={() => handleExport("png")}>Download PNG</MenuItem>
-            <MenuItem onClick={() => handleNewick("gene")}>Gene tree (.nwk)</MenuItem>
-            <MenuItem onClick={() => handleNewick("species")}>Species tree (.nwk)</MenuItem>
-          </Menu>
+              </>
+            )}
+            <Menu
+              anchorEl={exportAnchor}
+              open={!!exportAnchor}
+              onClose={() => setExportAnchor(null)}
+            >
+              <MenuItem onClick={() => handleExport("svg")}>Download SVG</MenuItem>
+              <MenuItem onClick={() => handleExport("png")}>Download PNG</MenuItem>
+              <MenuItem onClick={() => handleNewick("gene")}>Gene tree (.nwk)</MenuItem>
+              <MenuItem onClick={() => handleNewick("species")}>Species tree (.nwk)</MenuItem>
+            </Menu>
+          </Box>
         </Box>
         <Divider />
 
@@ -341,6 +456,7 @@ export default function Conservation() {
                 selectedGeneId={selectedGeneId}
                 onSelect={setSelectedGeneId}
                 geneById={geneById}
+                cornerSlot={geneOrderControl}
               />
 
               {!isMobile && (
@@ -419,6 +535,50 @@ export default function Conservation() {
           )}
         </Box>
       </Paper>
+
+      <Box
+        aria-hidden
+        sx={{
+          position: "fixed",
+          left: "-9999px",
+          visibility: "hidden",
+          pointerEvents: "none",
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+        }}
+      >
+        <Typography
+          ref={measureCounterRef as React.Ref<HTMLElement>}
+          variant="body2"
+          sx={{ whiteSpace: "nowrap" }}
+        >
+          {counterText}
+        </Typography>
+        <Box ref={measureBtnsRef} sx={{ display: "flex", gap: 1.5 }}>
+          <Button size="small" variant="outlined" startIcon={<RestartAltIcon />}>
+            Reset view
+          </Button>
+          <Button size="small" variant="outlined" startIcon={<DownloadIcon />}>
+            Export
+          </Button>
+        </Box>
+        <Box ref={measureIconBtnsRef} sx={{ display: "flex", gap: 1.5 }}>
+          <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
+            <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+          </Button>
+          <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
+            <DownloadIcon fontSize="small" sx={{ display: "block" }} />
+          </Button>
+        </Box>
+        <ToggleButtonGroup ref={measureTogglesRef} size="small">
+          {CELL_METRICS.map((m) => (
+            <ToggleButton key={m.key} value={m.key} sx={{ minWidth: 120 }}>
+              {m.label}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Box>
     </Box>
   )
 }
