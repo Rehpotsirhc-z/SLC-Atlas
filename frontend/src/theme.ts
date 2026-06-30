@@ -115,6 +115,11 @@ function buildTheme(mode: ThemeMode): Theme {
           root: { borderColor: mode === "dark" ? c.base4 : c.base3 },
         },
       },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          input: { transform: "translateY(1px)" }, // Translate input down to visually center
+        },
+      },
       MuiToggleButton: {
         styleOverrides: {
           root: {
