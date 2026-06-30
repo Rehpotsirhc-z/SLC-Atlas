@@ -2,20 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Join annotation.tsv with the cached Ensembl + NCBI lookups into
-genes.parquet and transcripts.parquet, matching the Gene/Transcript models
-in backend/app/models/gene.py.
+"""Join annotation + Ensembl coords + NCBI summaries into dataset/genes.tsv and
+dataset/transcripts.tsv (columns mirror the models in backend/app/models/gene.py).
 
-annotation.tsv must already contain the 'Family' column written by
-02_annotate_genes.py (the short family key derived from common symbol prefix).
-
-Usage:
-    python scripts/05_build_gene_tables.py [annotation.tsv] [ensembl_genes.tsv] \\
-        [ncbi_gene_summaries.tsv] [genes.parquet] [transcripts.parquet]
-
-Defaults to backend/data/raw/annotation.tsv, backend/data/raw/ensembl_genes.tsv,
-backend/data/raw/ncbi_gene_summaries.tsv, backend/data/genes.parquet, and
-backend/data/transcripts.parquet.
+Drops this family's pseudogenes and promotes an SLC* alias to the primary symbol
+where the HGNC approved symbol isn't SLC*.
 """
 
 import csv
@@ -24,17 +15,29 @@ from pathlib import Path
 
 import polars as pl
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_ANNOTATION_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_ENSEMBL_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 DEFAULT_NCBI_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
-DEFAULT_GENES_OUT_PATH = DATA_DIR / "genes.parquet"
-DEFAULT_TRANSCRIPTS_OUT_PATH = DATA_DIR / "transcripts.parquet"
+DEFAULT_GENES_OUT_PATH = DATA_DIR / "dataset" / "genes.tsv"
+DEFAULT_TRANSCRIPTS_OUT_PATH = DATA_DIR / "dataset" / "transcripts.tsv"
 
-PSEUDOGENE_EXCLUSIONS = frozenset({
-    "SLC19A4P", "SLC23A4P", "SLC66A1LP", "SLC68A2P", "SLC6A10P", "SLC6A21P",
-    "SLC7A15P", "SLCO1B7", "SLC22A20P", "SLC35E2A", "SLC71A3P", "SLC26A10P",
-})
+PSEUDOGENE_EXCLUSIONS = frozenset(
+    {
+        "SLC19A4P",
+        "SLC23A4P",
+        "SLC66A1LP",
+        "SLC68A2P",
+        "SLC6A10P",
+        "SLC6A21P",
+        "SLC7A15P",
+        "SLCO1B7",
+        "SLC22A20P",
+        "SLC35E2A",
+        "SLC71A3P",
+        "SLC26A10P",
+    }
+)
 
 GENE_SCHEMA = {
     "id": pl.Utf8,
@@ -186,8 +189,11 @@ def main() -> None:
 
     genes, transcripts = build_tables(rows, ensembl_genes, ncbi_summaries)
 
-    pl.DataFrame(genes, schema=GENE_SCHEMA).write_parquet(genes_out_path)
-    pl.DataFrame(transcripts, schema=TRANSCRIPT_SCHEMA).write_parquet(transcripts_out_path)
+    Path(genes_out_path).parent.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame(genes, schema=GENE_SCHEMA).write_csv(genes_out_path, separator="\t")
+    pl.DataFrame(transcripts, schema=TRANSCRIPT_SCHEMA).write_csv(
+        transcripts_out_path, separator="\t"
+    )
 
 
 if __name__ == "__main__":

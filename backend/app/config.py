@@ -10,8 +10,10 @@ _BACKEND_DIR = Path(__file__).parent.parent
 
 class Settings(BaseSettings):
     data_dir: Path = _BACKEND_DIR / "data"
+    api_title: str = "SLC Atlas API"
+    download_prefix: str = "slc"
 
-    model_config = SettingsConfigDict(env_prefix="SLC_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="ATLAS_", env_file=".env", extra="ignore")
 
 
 settings = Settings()

@@ -2,21 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Add functional-family columns to an HGNC gene-list TSV.
-
-Two columns are appended:
-  Family          short key from the HGNC group name's family number
-                  (e.g. 'Solute carrier family 40' -> 'SLC40'); see derive_family_keys
-  Functional family  display name — the first '- ' bullet under each '## <group>'
-                  heading in the family names Markdown file; falls back to the
-                  HGNC group name
-
-Usage:
-    python scripts/02_annotate_genes.py \\
-        [hgnc_genes.txt] [family_names.md] [output.tsv]
-
-Defaults to backend/data/raw/SLC.txt, reference/family_names.md,
-and backend/data/raw/annotation.tsv.
+"""Append two columns to an HGNC gene-list TSV:
+  Family            short family key from the HGNC group name (see derive_family_keys)
+  Functional family display name (first bullet under each heading in family_names.md)
 """
 
 import csv
@@ -25,9 +13,10 @@ from pathlib import Path
 
 from gene_family_utils import derive_family_keys
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
-REFERENCE_DIR = Path(__file__).resolve().parent.parent / "reference"
-DEFAULT_SLC_PATH = DATA_DIR / "raw" / "SLC.txt"
+ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = ROOT / "backend" / "data"
+REFERENCE_DIR = ROOT / "reference"
+DEFAULT_HGNC_PATH = DATA_DIR / "raw" / "hgnc_family.txt"
 DEFAULT_NAMES_PATH = REFERENCE_DIR / "family_names.md"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "annotation.tsv"
 
@@ -48,12 +37,12 @@ def parse_family_names(path: str) -> dict[str, str]:
 
 
 def annotate(
-    slc_path: str,
+    hgnc_path: str,
     name_by_group: dict[str, str],
     family_key_by_group: dict[str, str],
     out_path: str,
 ) -> None:
-    with open(slc_path, encoding="utf-8", newline="") as f:
+    with open(hgnc_path, encoding="utf-8", newline="") as f:
         reader = csv.reader(f, delimiter="\t")
         rows = list(reader)
 
@@ -85,16 +74,16 @@ def annotate(
 
 def main() -> None:
     args = sys.argv[1:]
-    slc_path = args[0] if len(args) > 0 else DEFAULT_SLC_PATH
+    hgnc_path = args[0] if len(args) > 0 else DEFAULT_HGNC_PATH
     names_path = args[1] if len(args) > 1 else DEFAULT_NAMES_PATH
     out_path = args[2] if len(args) > 2 else DEFAULT_OUT_PATH
 
-    with open(slc_path, encoding="utf-8", newline="") as f:
+    with open(hgnc_path, encoding="utf-8", newline="") as f:
         all_rows = list(csv.DictReader(f, delimiter="\t"))
 
     family_key_by_group = derive_family_keys(all_rows)
     name_by_group = parse_family_names(names_path)
-    annotate(slc_path, name_by_group, family_key_by_group, out_path)
+    annotate(hgnc_path, name_by_group, family_key_by_group, out_path)
 
 
 if __name__ == "__main__":

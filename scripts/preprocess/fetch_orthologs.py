@@ -2,21 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Fetch cross-species orthologs for every gene in genes.parquet from the Ensembl
-REST homology endpoint (Compara), restricted to the curated species in species.tsv.
+"""Fetch cross-species orthologs from the Ensembl REST homology endpoint (Compara),
+restricted to the species in reference/species.tsv.
 
-For each human gene we query /homology/id/human/{id} with type=orthologues and the
-species list passed as repeated target_species filters (keeps the payload to our ~20
-species instead of Compara's ~200). Among the orthologs in each species we keep the one
-with the highest target protein %identity, and also record how many orthologs that
-species has (one2many duplications are common in the SLC family).
-
-Writes backend/data/raw/orthologs.tsv with one row per (gene, species) that has at least
-one ortholog. Species with no ortholog get no row here; the dense gene x species grid is
-filled in by 11_build_conservation.py.
-
-Usage:
-    python scripts/09_fetch_orthologs.py [genes.parquet] [species.tsv] [orthologs.tsv]
+Keeps the highest-%identity ortholog per species plus the ortholog count, one row per
+(gene, species) with an ortholog; the dense grid is filled in by build_conservation.py.
+The species list is passed as repeated target_species filters to keep Compara's payload
+to our ~20 species instead of ~200.
 """
 
 import csv
@@ -29,11 +21,11 @@ from pathlib import Path
 
 import polars as pl
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-DATA_DIR = SCRIPT_DIR.parent / "backend" / "data"
-DEFAULT_GENES_PATH = DATA_DIR / "genes.parquet"
-DEFAULT_SPECIES_PATH = SCRIPT_DIR.parent / "reference" / "species.tsv"
-DEFAULT_OUT_PATH = DATA_DIR / "raw" / "orthologs.tsv"
+ROOT = Path(__file__).resolve().parents[2]
+DATASET_DIR = ROOT / "backend" / "data" / "dataset"
+DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"
+DEFAULT_SPECIES_PATH = ROOT / "reference" / "species.tsv"
+DEFAULT_OUT_PATH = DATASET_DIR / "orthologs.tsv"
 
 REST = "https://rest.ensembl.org"
 
@@ -119,7 +111,7 @@ def main() -> None:
 
     species = read_species(species_path)
     targets = [s for s in species if s != "homo_sapiens"]  # no self-orthologs
-    gene_ids = pl.read_parquet(genes_path, columns=["id"])["id"].to_list()
+    gene_ids = pl.read_csv(genes_path, separator="\t", columns=["id"])["id"].to_list()
     print(f"{len(gene_ids)} genes x {len(targets)} target species", file=sys.stderr)
 
     all_rows: list[dict] = []
@@ -144,6 +136,7 @@ def main() -> None:
         for g in missing:
             print(f"  {g}", file=sys.stderr)
 
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS, delimiter="\t")
         writer.writeheader()

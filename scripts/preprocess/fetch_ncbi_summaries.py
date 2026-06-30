@@ -2,16 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Fetch short gene-summary blurbs from NCBI E-utilities.
-
-Looks up every NCBI Gene ID in annotation.tsv via esummary and caches
-the id -> summary mapping as a TSV.
-
-Usage:
-    python scripts/04_fetch_ncbi_summaries.py [annotation.tsv] [output.tsv]
-
-Defaults to backend/data/raw/annotation.tsv -> backend/data/raw/ncbi_gene_summaries.tsv.
-"""
+"""Fetch short gene-summary blurbs from NCBI E-utilities (esummary) as a TSV."""
 
 import csv
 import json
@@ -20,7 +11,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
 

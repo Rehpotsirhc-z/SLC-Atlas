@@ -4,6 +4,7 @@
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
+from ..config import settings
 from ..deps import get_source
 from ..data.parquet_source import ParquetSource
 from ..models.clustering import ClusterNode
@@ -30,5 +31,7 @@ def get_clustering_newick(
     return PlainTextResponse(
         newick,
         media_type="text/x-nh",
-        headers={"Content-Disposition": f'attachment; filename="slc_{method}.nwk"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{settings.download_prefix}_{method}.nwk"'
+        },
     )

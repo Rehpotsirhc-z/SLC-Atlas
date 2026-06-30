@@ -2,16 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Fetch gene + transcript coordinates from Ensembl BioMart.
+"""Fetch gene + transcript coordinates from Ensembl BioMart in one bulk query.
 
-Looks up every Ensembl gene ID in annotation.tsv against the
-hsapiens_gene_ensembl dataset in a single bulk query and caches the raw
-TSV response (one row per transcript, gene fields repeated).
-
-Usage:
-    python scripts/03_fetch_ensembl_genes.py [annotation.tsv] [output.tsv]
-
-Defaults to backend/data/raw/annotation.tsv -> backend/data/raw/ensembl_genes.tsv.
+Caches the raw TSV response (one row per transcript, gene fields repeated).
 """
 
 import csv
@@ -20,7 +13,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 

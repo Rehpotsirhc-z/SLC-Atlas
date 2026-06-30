@@ -7,8 +7,8 @@
 Methods:
   aa_sequence            MAFFT MSA of canonical proteins -> p-distance -> UPGMA tree
   dna_sequence           MAFFT MSA of canonical CDS      -> p-distance -> UPGMA tree
-  rna_coexpression_all   GTEx TPM, all samples   -> 1 - Spearman corr -> UPGMA tree
-  rna_coexpression_brain GTEx TPM, brain samples -> 1 - Spearman corr -> UPGMA tree
+  rna_coexpression_all   expression, all samples   -> 1 - Spearman corr -> UPGMA tree
+  rna_coexpression_brain expression, brain samples -> 1 - Spearman corr -> UPGMA tree
 
 Every tree is serialized as a flat node table (one row per node) so the API can
 return it without a Newick parser on the client:
@@ -20,7 +20,7 @@ methods so topology and branch-length semantics are uniform across metrics. A
 Newick file per method is also written under backend/data/raw/ for inspection.
 
 Usage:
-    python scripts/08_build_clustering.py
+    python scripts/build/build_clustering.py
 """
 
 import subprocess
@@ -34,13 +34,14 @@ from scipy.cluster.hierarchy import linkage, to_tree
 from scipy.spatial.distance import squareform
 from scipy.stats import rankdata
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 RAW_DIR = DATA_DIR / "raw"
-GENES_PATH = DATA_DIR / "genes.parquet"
-CDS_FASTA = RAW_DIR / "cds.fasta"
-PROTEIN_FASTA = RAW_DIR / "protein.fasta"
-TPM_PATH = RAW_DIR / "gtex_tpm.parquet"
-TISSUE_PATH = RAW_DIR / "gtex_sample_tissue.tsv"
+DATASET_DIR = DATA_DIR / "dataset"
+GENES_PATH = DATASET_DIR / "genes.tsv"
+CDS_FASTA = DATASET_DIR / "cds.fasta"
+PROTEIN_FASTA = DATASET_DIR / "protein.fasta"
+TPM_PATH = DATASET_DIR / "expression.parquet"
+TISSUE_PATH = DATASET_DIR / "sample_tissue.tsv"
 OUT_PATH = DATA_DIR / "clustering.parquet"
 
 SCHEMA = {
@@ -220,7 +221,7 @@ def tree_rows(
 
 def main() -> None:
     sys.setrecursionlimit(10000)
-    genes = pl.read_parquet(GENES_PATH, columns=["id", "symbol", "family"])
+    genes = pl.read_csv(GENES_PATH, separator="\t", columns=["id", "symbol", "family"])
     meta = {
         r["id"]: {"symbol": r["symbol"], "family": r["family"]} for r in genes.iter_rows(named=True)
     }
@@ -229,7 +230,7 @@ def main() -> None:
     tpm = pl.read_parquet(TPM_PATH).filter(pl.col("gene_id").is_in(gene_ids_in_table))
     tissue = pl.read_csv(TISSUE_PATH, separator="\t")
     all_samples = [c for c in tpm.columns if c != "gene_id"]
-    brain_set = set(tissue.filter(pl.col("SMTS") == "Brain")["SAMPID"].to_list())
+    brain_set = set(tissue.filter(pl.col("tissue") == "Brain")["sample_id"].to_list())
     brain_samples = [c for c in all_samples if c in brain_set]
 
     # Align proteins once; reuse for the AA tree and as the scaffold for the

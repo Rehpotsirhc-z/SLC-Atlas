@@ -2,19 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Fetch canonical-transcript CDS and protein sequences for every gene in
-genes.parquet from the Ensembl REST API.
+"""Fetch canonical-transcript CDS and protein sequences from the Ensembl REST API.
 
-For each gene we resolve its canonical transcript (lookup/id), then fetch that
-single transcript's coding nucleotide sequence (type=cds) and its protein
-translation (type=protein). Using the same transcript for both keeps the DNA and
-amino-acid trees comparable.
-
-Usage:
-    python scripts/07_fetch_sequences.py [genes.parquet] [cds.fasta] [protein.fasta]
-
-Defaults to backend/data/genes.parquet -> backend/data/raw/cds.fasta and
-backend/data/raw/protein.fasta.
+The same canonical transcript is used for both CDS and protein so the DNA and
+amino-acid trees stay comparable.
 """
 
 import json
@@ -26,10 +17,10 @@ from pathlib import Path
 
 import polars as pl
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "backend" / "data"
-DEFAULT_GENES_PATH = DATA_DIR / "genes.parquet"
-DEFAULT_CDS_PATH = DATA_DIR / "raw" / "cds.fasta"
-DEFAULT_PROTEIN_PATH = DATA_DIR / "raw" / "protein.fasta"
+DATASET_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset"
+DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"
+DEFAULT_CDS_PATH = DATASET_DIR / "cds.fasta"
+DEFAULT_PROTEIN_PATH = DATASET_DIR / "protein.fasta"
 
 REST = "https://rest.ensembl.org"
 LOOKUP_BATCH = 1000  # /lookup/id POST limit
@@ -91,6 +82,7 @@ def fetch_sequences(tx_to_gene: dict[str, str], seq_type: str) -> dict[str, str]
 
 
 def write_fasta(path: Path, sequences: dict[str, str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         for gene_id, seq in sequences.items():
             f.write(f">{gene_id}\n")
@@ -104,7 +96,7 @@ def main() -> None:
     cds_path = Path(args[1]) if len(args) > 1 else DEFAULT_CDS_PATH
     protein_path = Path(args[2]) if len(args) > 2 else DEFAULT_PROTEIN_PATH
 
-    gene_ids = pl.read_parquet(genes_path, columns=["id"])["id"].to_list()
+    gene_ids = pl.read_csv(genes_path, separator="\t", columns=["id"])["id"].to_list()
     print(f"{len(gene_ids)} genes; resolving canonical transcripts...", file=sys.stderr)
 
     canonical = resolve_canonical(gene_ids)

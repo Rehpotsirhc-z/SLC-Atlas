@@ -4,6 +4,7 @@
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
+from ..config import settings
 from ..deps import get_source
 from ..data.parquet_source import ParquetSource
 from ..models.conservation import ConservationCell, SpeciesNode
@@ -30,5 +31,7 @@ def get_species_tree_newick(source: ParquetSource = Depends(get_source)):
     return PlainTextResponse(
         newick,
         media_type="text/x-nh",
-        headers={"Content-Disposition": 'attachment; filename="slc_species_tree.nwk"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{settings.download_prefix}_species_tree.nwk"'
+        },
     )

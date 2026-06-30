@@ -2,24 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Assemble the Conservation view's served Parquet files.
+"""Build conservation.parquet (dense gene x species ortholog matrix) and
+species_tree.parquet (flat node table) from the dataset.
 
-Inputs (curated + fetched):
-  reference/species.tsv              curated species list (committed)
-  backend/data/raw/orthologs.tsv     output of 09_fetch_orthologs.py
-  backend/data/raw/species_tree.nwk  output of 10_fetch_species_tree.py
-  backend/data/genes.parquet         symbol/family for each gene
-
-Outputs (served, not committed):
-  backend/data/conservation.parquet  dense gene x species matrix, one row per pair
-                                     (null metrics where no ortholog exists). Human is
-                                     included as a 100%-identity self column so the matrix
-                                     columns line up with the species-tree leaves.
-  backend/data/species_tree.parquet  flat node table mirroring clustering.parquet
-                                     (node_id, parent_id, branch_length, species, ...).
-
-Usage:
-    python scripts/11_build_conservation.py
+The reference species (homo_sapiens) is added as a 100%-identity self column so the
+matrix columns line up with the species-tree leaves.
 """
 
 import csv
@@ -29,13 +16,12 @@ from pathlib import Path
 import polars as pl
 from Bio import Phylo
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-DATA_DIR = SCRIPT_DIR.parent / "backend" / "data"
-RAW_DIR = DATA_DIR / "raw"
-SPECIES_PATH = SCRIPT_DIR.parent / "reference" / "species.tsv"
-ORTHOLOGS_PATH = RAW_DIR / "orthologs.tsv"
-TREE_PATH = RAW_DIR / "species_tree.nwk"
-GENES_PATH = DATA_DIR / "genes.parquet"
+DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATASET_DIR = DATA_DIR / "dataset"
+SPECIES_PATH = DATASET_DIR / "species.tsv"
+ORTHOLOGS_PATH = DATASET_DIR / "orthologs.tsv"
+TREE_PATH = DATASET_DIR / "species_tree.nwk"
+GENES_PATH = DATASET_DIR / "genes.tsv"
 CONSERVATION_OUT = DATA_DIR / "conservation.parquet"
 SPECIES_TREE_OUT = DATA_DIR / "species_tree.parquet"
 
@@ -79,18 +65,18 @@ def read_orthologs() -> dict[tuple[str, str], dict]:
 
 
 def build_matrix(species: list[dict], orthologs: dict[tuple[str, str], dict]) -> list[dict]:
-    genes = pl.read_parquet(GENES_PATH, columns=["id", "symbol", "family"])
+    genes = pl.read_csv(GENES_PATH, separator="\t", columns=["id", "symbol", "family"])
     rows = []
     for g in genes.iter_rows(named=True):
         gid = g["id"]
         for sp in species:
-            en = sp["ensembl_name"]
+            en = sp["species"]
             base = {
                 "gene_id": gid,
                 "symbol": g["symbol"],
                 "family": g["family"],
                 "species": en,
-                "species_label": sp["display_name"],
+                "species_label": sp["species_label"],
             }
             if en == "homo_sapiens":  # reference self column
                 rows.append({**base, "perc_id": 100.0, "perc_id_r1": 100.0, "perc_pos": 100.0,
@@ -112,8 +98,8 @@ def build_matrix(species: list[dict], orthologs: dict[tuple[str, str], dict]) ->
 
 
 def build_species_tree(species: list[dict]) -> list[dict]:
-    label = {s["ensembl_name"]: s["display_name"] for s in species}
-    taxon = {s["ensembl_name"]: int(s["taxon_id"]) for s in species}
+    label = {s["species"]: s["species_label"] for s in species}
+    taxon = {s["species"]: int(s["taxon_id"]) for s in species}
 
     tree = Phylo.read(TREE_PATH, "newick")
     clades = list(tree.find_clades())

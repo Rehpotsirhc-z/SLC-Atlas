@@ -2,28 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Fetch the "Also known as" aliases for every family in an HGNC gene group.
+"""Fetch each HGNC family's "Also known as" aliases into an editable Markdown file.
 
-Walks the HGNC parent gene group, then fetches each child family group to read
-its `aliases` field. Writes an editable Markdown file with one heading per
-family (the HGNC group name) and its aliases as bullets, in HGNC's listed order.
-
-The downstream pipeline (02_annotate_genes.py) treats the FIRST bullet under
-each family as that family's display name (the `category` column), so move your
-preferred line to the top to choose a different name.
-
-To preserve manual edits, this script never overwrites an existing names file:
-if the output already exists it leaves it untouched. Delete it first to re-fetch.
-
-Usage:
-    python scripts/01_fetch_hgnc_aliases.py [parent_group_id] [output.md]
-
-    parent_group_id  HGNC gene group ID for the parent family (default: 752 = SLC)
-    output.md        defaults to reference/family_names.md
-
-Examples:
-    python scripts/01_fetch_hgnc_aliases.py                  # SLC families
-    python scripts/01_fetch_hgnc_aliases.py 278              # voltage-gated ion channels
+The first bullet under each heading is taken as the family's display name (the
+`category` column), so reorder bullets to choose a different name. Never overwrites an
+existing file (delete to re-fetch). The parent group defaults to 752 (SLC).
 """
 
 import json
@@ -33,7 +16,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-REFERENCE_DIR = Path(__file__).resolve().parent.parent / "reference"
+REFERENCE_DIR = Path(__file__).resolve().parents[2] / "reference"
 DEFAULT_OUT_PATH = REFERENCE_DIR / "family_names.md"
 DEFAULT_PARENT_GROUP_ID = 752  # HGNC: Solute carrier families
 

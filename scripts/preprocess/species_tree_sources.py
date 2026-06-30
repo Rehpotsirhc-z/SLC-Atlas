@@ -2,19 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Swappable species-tree providers for the Conservation view's column dendrogram.
+"""Swappable species-tree providers: each is build(species) -> newick_str with leaves
+labeled by ensembl_name.
 
-Each provider is a function ``build(species) -> newick_str`` where ``species`` is the
-list of rows from ``species.tsv``. Every provider returns a Newick whose leaves are
-labeled with the Ensembl production name (the ``ensembl_name`` column), so everything
-downstream is provider-agnostic.
-
-The default is Ensembl Compara (same source as the orthologs, fully automated).
-TimeTree, UCSC and NCBI are drop-in alternatives: to swap, pass the provider
-name to ``10_fetch_species_tree.py`` (e.g. ``timetree``). TimeTree/UCSC read a
-curated Newick committed under reference/ and remap its leaves via the matching
-column in species.tsv. To add a new source, write a ``build`` function and
-register it in ``PROVIDERS``.
+Default is Ensembl Compara; timetree/ucsc read a curated Newick under reference/ and
+remap leaves via the matching species.tsv column. Add a source by registering a build
+function in PROVIDERS.
 """
 
 import io
@@ -33,7 +26,7 @@ ENSEMBL_TREE_URL = f"{_TREE_BASE}/vertebrates_species-tree_Ensembl.nh"
 NCBI_TREE_URL = f"{_TREE_BASE}/vertebrates_species-tree_NCBI_Taxonomy.nh"
 
 # Curated Newicks for the manual sources; committed under reference/ when used.
-REFERENCE_DIR = SCRIPT_DIR.parent / "reference"
+REFERENCE_DIR = SCRIPT_DIR.parents[1] / "reference"
 TIMETREE_NWK = REFERENCE_DIR / "species_tree_timetree.nwk"
 UCSC_NWK = REFERENCE_DIR / "species_tree_ucsc.nwk"
 
