@@ -41,7 +41,7 @@ function sortGenes(genes: Gene[], sortKey: SortKey, direction: SortDirection): G
     const av = a[sortKey]
     const bv = b[sortKey]
     if (typeof av === "number" && typeof bv === "number") return sign * (av - bv)
-    return sign * String(av ?? "").localeCompare(String(bv ?? ""))
+    return sign * String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true })
   })
 }
 
