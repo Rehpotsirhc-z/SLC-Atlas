@@ -120,17 +120,30 @@ def build_tables(
             skipped.append(row["Approved symbol"])
             continue
 
+        approved = row["Approved symbol"]
+        alias_raw = row["Alias symbols"].strip()
+        alias_parts = [a.strip() for a in alias_raw.split(",") if a.strip()] if alias_raw else []
+
+        slc_aliases = [a for a in alias_parts if a.startswith("SLC")]
+        if not approved.startswith("SLC") and slc_aliases:
+            symbol = slc_aliases[0]
+            remaining = [a for a in alias_parts if a != slc_aliases[0]]
+            alias_out = ", ".join([approved] + remaining) or None
+        else:
+            symbol = approved
+            alias_out = alias_raw or None
+
         genes.append(
             {
                 "id": ensembl_id,
-                "symbol": row["Approved symbol"],
+                "symbol": symbol,
                 "name": row["Approved name"],
                 "chromosome": egene["chromosome"],
                 "start": egene["start"],
                 "end": egene["end"],
                 "strand": "+" if egene["strand"] == 1 else "-",
                 "length": egene["end"] - egene["start"] + 1,
-                "alias": row["Alias symbols"].strip() or None,
+                "alias": alias_out,
                 "category": row["Functional family"].strip() or row["Group name"].strip(),
                 "family": row["Family"].strip(),
                 "family_name": row["Group name"].strip(),
