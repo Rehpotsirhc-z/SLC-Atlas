@@ -52,7 +52,7 @@ export default function GeneTable({
   onFamilyClick,
 }: GeneTableProps) {
   return (
-    <TableContainer>
+    <TableContainer sx={{ overflowX: "visible" }}>
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>

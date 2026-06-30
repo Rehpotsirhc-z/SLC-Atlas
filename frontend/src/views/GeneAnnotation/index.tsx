@@ -86,6 +86,7 @@ export default function GeneAnnotation() {
     table.style.width = "auto"
     const naturalWidth = table.offsetWidth
     table.style.width = prev
+    table.style.minWidth = `${naturalWidth}px`
     const slack = el.clientWidth - naturalWidth
     if (slack > 0) setTreeWidth(Math.min(600, 280 + slack))
   }, [isLoading])
