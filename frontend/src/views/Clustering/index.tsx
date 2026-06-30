@@ -174,7 +174,9 @@ export default function Clustering() {
     }
 
     function check() {
-      const w = toolbar.clientWidth
+      const el = toolbarRef.current
+      if (!el) return
+      const w = el.clientWidth
       if (w >= threshFull) setTbState("full")
       else if (w >= threshCounterCompact) setTbState("counterCompact")
       else if (w >= threshCompact) setTbState("compact")
