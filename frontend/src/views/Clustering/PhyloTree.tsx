@@ -76,7 +76,6 @@ function buildTree(data: ClusterNode[]): Tree | null {
   return root === null ? null : { nodes, root }
 }
 
-
 // Layout
 interface LeafLayout {
   id: number
@@ -304,7 +303,15 @@ function computeLayout(
     }
   })
 
-  return { width: 2 * C, height: 2 * C, edges, leaves: leafLayouts, maxDepth, treeLeft: 0, treeRight: 0 }
+  return {
+    width: 2 * C,
+    height: 2 * C,
+    edges,
+    leaves: leafLayouts,
+    maxDepth,
+    treeLeft: 0,
+    treeRight: 0,
+  }
 }
 
 interface Transform {
@@ -490,7 +497,10 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
       if (!isRadial) {
         const ys = familyLeaves.map((l) => l.y).sort((a, b) => a - b)
         const medianY = ys[Math.floor(ys.length / 2)]
-        containerRef.current?.scrollTo({ top: medianY * rectScale - size.h / 2, behavior: "smooth" })
+        containerRef.current?.scrollTo({
+          top: medianY * rectScale - size.h / 2,
+          behavior: "smooth",
+        })
       }
     },
     [layoutData, size, isRadial, rectScale],
@@ -885,7 +895,7 @@ function LeafLabel({
     return (
       <g>
         <circle cx={leaf.x} cy={leaf.y} r={4.5} fill={color} />
-        <text x={leaf.x + 10} y={leaf.y + 5.5} fontSize={16} fontFamily={monoFont} fill={color}>
+        <text x={leaf.x + 10} y={leaf.y + 4} fontSize={14} fontFamily={monoFont} fill={color}>
           {leaf.symbol}
         </text>
       </g>

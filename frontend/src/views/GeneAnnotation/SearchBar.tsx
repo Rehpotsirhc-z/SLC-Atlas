@@ -120,7 +120,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
                 component="div"
                 variant="body2"
                 fontWeight={600}
-                sx={{ m: 0, lineHeight: 1.2 }}
+                sx={{ m: 0, lineHeight: 1.2, fontSize: "0.9rem" }}
               >
                 {option.symbol}
               </Typography>
@@ -128,7 +128,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
                 component="div"
                 variant="caption"
                 color="text.secondary"
-                sx={{ m: 0, lineHeight: 1.2 }}
+                sx={{ m: 0, lineHeight: 1.2, fontSize: "0.8125rem" }}
               >
                 {option.name}
               </Typography>

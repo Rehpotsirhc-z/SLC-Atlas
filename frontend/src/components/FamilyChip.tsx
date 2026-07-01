@@ -27,11 +27,13 @@ export default function FamilyChip({ family, label, onClick }: FamilyChipProps) 
           color,
           fontWeight: 500,
           maxWidth: 220,
+          ml: "-8px",
           ...(onClick && { cursor: "pointer" }),
           "& .MuiChip-label": {
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            transform: "translateY(1px)",
           },
         }}
       />

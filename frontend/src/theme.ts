@@ -9,10 +9,10 @@ export type ThemeMode = "light" | "dark"
 
 declare module "@mui/material/styles" {
   interface Theme {
-    custom: { monoFontFamily: string }
+    custom: { monoFontFamily: string; monoFontSize: string }
   }
   interface ThemeOptions {
-    custom?: { monoFontFamily: string }
+    custom?: { monoFontFamily: string; monoFontSize: string }
   }
 }
 
@@ -75,8 +75,10 @@ export const doomColors = {
   },
 } as const
 
-const monoFontFamily =
-  'ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace'
+export const monoFontFamily = '"Source Code Pro", monospace'
+// Fixed size for monospace data (gene IDs, positions, sequences, etc.) so it
+// doesn't grow when typography.fontSize is tuned for the Source Sans 3 UI text.
+export const monoFontSize = "0.8125rem"
 
 function buildTheme(mode: ThemeMode): Theme {
   const c = doomColors[mode]
@@ -95,10 +97,10 @@ function buildTheme(mode: ThemeMode): Theme {
       divider: mode === "dark" ? c.base4 : c.base3,
     },
     typography: {
-      fontFamily: '"Inter", "Roboto", sans-serif',
-      fontSize: 13,
+      fontFamily: '"Source Sans 3", sans-serif',
+      fontSize: 15,
     },
-    custom: { monoFontFamily },
+    custom: { monoFontFamily, monoFontSize },
     components: {
       MuiTab: {
         styleOverrides: {
@@ -115,17 +117,12 @@ function buildTheme(mode: ThemeMode): Theme {
           root: { borderColor: mode === "dark" ? c.base4 : c.base3 },
         },
       },
-      MuiOutlinedInput: {
-        styleOverrides: {
-          input: { transform: "translateY(1px)" }, // Translate input down to visually center
-        },
-      },
       MuiToggleButton: {
         styleOverrides: {
           root: {
             textTransform: "uppercase",
             fontWeight: 600,
-            fontSize: "0.7rem",
+            fontSize: "0.8rem",
             letterSpacing: "0.06em",
             padding: "6px",
             color: mode === "dark" ? c.base6 : c.base5,
@@ -159,9 +156,15 @@ function buildTheme(mode: ThemeMode): Theme {
           list: { padding: 0 },
         },
       },
+      MuiSelect: {
+        styleOverrides: {
+          select: { fontFamily: monoFontFamily },
+        },
+      },
       MuiMenuItem: {
         styleOverrides: {
           root: {
+            fontFamily: monoFontFamily,
             fontSize: "0.8rem",
             fontWeight: 500,
             letterSpacing: "0.02em",

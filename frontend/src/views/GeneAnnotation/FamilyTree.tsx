@@ -89,7 +89,11 @@ export default function FamilyTree({
 
   return (
     <Paper variant="outlined" sx={{ width, flexShrink: 0, overflowY: "auto", p: 1 }}>
-      <Typography variant="overline" color="secondary" sx={{ pl: 1 }}>
+      <Typography
+        variant="overline"
+        color="secondary"
+        sx={{ pl: 1, display: "block", lineHeight: 1.6, mb: 0.5 }}
+      >
         Families
       </Typography>
       <SimpleTreeView

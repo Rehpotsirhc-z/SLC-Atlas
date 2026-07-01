@@ -5,6 +5,7 @@
 import React, { forwardRef, useContext, useImperativeHandle, useMemo, useRef } from "react"
 import { FixedSizeList, type ListChildComponentProps } from "react-window"
 import { autocompleteClasses, Popper, styled } from "@mui/material"
+import { monoFontFamily, monoFontSize } from "@/theme"
 
 const LISTBOX_PADDING = 2
 const MAX_VISIBLE = 8
@@ -75,7 +76,11 @@ export const acInputSx = {
   "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
     borderColor: "primary.main",
   },
-  "& .MuiOutlinedInput-input": { color: "primary.main", fontSize: "0.85rem" },
+  "& .MuiOutlinedInput-input": {
+    color: "primary.main",
+    fontFamily: monoFontFamily,
+    fontSize: monoFontSize,
+  },
   "& .MuiOutlinedInput-input::placeholder": { color: "primary.main", opacity: 0.6 },
 }
 

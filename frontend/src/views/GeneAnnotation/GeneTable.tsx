@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  Box,
   Table,
   TableBody,
   TableCell,
@@ -36,11 +37,13 @@ const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
 
 const headerCellSx = {
   fontWeight: 700,
-  fontSize: "0.7rem",
+  fontSize: "0.8rem",
   letterSpacing: 0.5,
   textTransform: "uppercase" as const,
   color: "text.secondary",
 }
+
+const HEADER_TEXT_NUDGE = "translateY(2px)"
 
 export default function GeneTable({
   genes,
@@ -64,13 +67,23 @@ export default function GeneTable({
                   direction={sortKey === key ? sortDirection : "asc"}
                   onClick={() => onSort(key)}
                 >
-                  {label}
+                  <Box component="span" sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}>
+                    {label}
+                  </Box>
                 </TableSortLabel>
               </TableCell>
             ))}
-            <TableCell sx={headerCellSx}>Alias</TableCell>
+            <TableCell sx={headerCellSx}>
+              <Box component="span" sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}>
+                Alias
+              </Box>
+            </TableCell>
             <TableCell padding="checkbox" sx={headerCellSx} />
-            <TableCell sx={headerCellSx}>Links</TableCell>
+            <TableCell sx={headerCellSx}>
+              <Box component="span" sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}>
+                Links
+              </Box>
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

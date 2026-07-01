@@ -50,15 +50,14 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
   const chipSx = {
     fontFamily: "inherit",
     fontSize: "inherit",
+    ml: "-7px",
     border: "1px solid transparent",
     bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.22) : "transparent",
     color: isSelected ? "primary.main" : "text.primary",
     "&:hover": { bgcolor: alpha(theme.palette.primary.main, isSelected ? 0.3 : 0.1) },
-    "& .MuiChip-label": { px: 0.75, transform: "translateY(2px)" },
+    "& .MuiChip-label": { px: 0.75 },
   }
 
-  // The monospace font renders a bit too high
-  const monoNudgeSx = { display: "inline-block", transform: "translateY(2px)" }
   const handleSelectClick = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     setSelectedGeneId(isSelected ? null : gene.id)
@@ -96,10 +95,10 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             )}
           </IconButton>
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
           <Chip size="small" label={gene.id} onClick={handleSelectClick} sx={chipSx} />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
           <Chip
             size="small"
             label={gene.symbol}
@@ -110,20 +109,17 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             }}
           />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
-          <Box component="span" sx={monoNudgeSx}>
-            {gene.name}
-          </Box>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+          {gene.name}
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
-          <Box component="span" sx={monoNudgeSx}>
-            {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
-          </Box>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+          {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
         </TableCell>
-        <TableCell align="right" sx={{ fontFamily: custom.monoFontFamily }}>
-          <Box component="span" sx={monoNudgeSx}>
-            {gene.length.toLocaleString()}
-          </Box>
+        <TableCell
+          align="right"
+          sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+        >
+          {gene.length.toLocaleString()}
         </TableCell>
         <TableCell
           onClick={
@@ -141,14 +137,12 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             onClick={onFamilyClick ? () => {} : undefined}
           />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
-          <Box component="span" sx={monoNudgeSx}>
-            {gene.alias ?? (
-              <Typography component="span" color="text.disabled" fontFamily="inherit">
-                —
-              </Typography>
-            )}
-          </Box>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+          {gene.alias ?? (
+            <Typography component="span" color="text.disabled" fontFamily="inherit">
+              —
+            </Typography>
+          )}
         </TableCell>
         <TableCell padding="checkbox">
           {gene.function_brief && (

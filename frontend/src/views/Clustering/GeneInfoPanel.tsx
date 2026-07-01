@@ -57,7 +57,7 @@ export default function GeneInfoPanel({
   onPosChange,
 }: GeneInfoPanelProps) {
   const { node, methodLabel, closestSymbol, gene } = info
-  const { palette } = useTheme()
+  const { palette, custom } = useTheme()
   const familyColor = getFamilyColor(node.family ?? "?", palette.mode)
   const currentPos = pos ?? DEFAULT_POS
   const panelRef = useRef<HTMLDivElement>(null)
@@ -190,7 +190,9 @@ export default function GeneInfoPanel({
             }}
           >
             <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
-            {node.family}
+            <Box component="span" sx={{ transform: "translateY(1.5px)" }}>
+              {node.family}
+            </Box>
           </Box>
         </Tooltip>
       ),
@@ -255,7 +257,11 @@ export default function GeneInfoPanel({
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace" }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+        >
           {node.gene_id}
         </Typography>
 
