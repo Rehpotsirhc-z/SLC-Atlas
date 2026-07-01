@@ -177,6 +177,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [hover, setHover] = useState<HoverState | null>(null)
     const [containerW, setContainerW] = useState(0)
+    const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
 
     useLayoutEffect(() => {
       const el = containerRef.current
@@ -260,6 +261,8 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const gridH = geneRows.length * cellH
     const fits = containerW > 0 && LEFT_W + gridW + RIGHT_PAD <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
+    const selectedCol =
+      selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
 
     const lineColor = theme.palette.divider
     const absentColor =
@@ -281,8 +284,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       },
       [metricDef, absentColor, theme.palette.background.paper, theme.palette.primary.main],
     )
-
-    const secondary = theme.palette.secondary.main
 
     const speciesHeader = useMemo(
       () => (
@@ -330,15 +331,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       () => (
         <svg width={LEFT_W} height={gridH} style={{ display: "block" }}>
           <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />
-          {selectedRow !== null && (
-            <rect
-              x={0}
-              y={selectedRow * cellH}
-              width={LEFT_W}
-              height={cellH}
-              fill={alpha(secondary, 0.18)}
-            />
-          )}
           {geneRows.map((g, i) => (
             <text
               key={g.geneId}
@@ -347,9 +339,17 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
               fontSize={geneFont}
               fontFamily={monoFont}
               fill={getFamilyColor(g.family ?? "?", mode)}
-              opacity={familyFilter !== null && g.family !== familyFilter ? 0.25 : 1}
+              opacity={
+                (familyFilter !== null && g.family !== familyFilter ? 0.25 : 1) *
+                (selectedRow !== null && i !== selectedRow ? 0.35 : 1)
+              }
               style={{ cursor: "pointer" }}
-              onClick={() => onSelect(g.geneId === selectedGeneId ? null : g.geneId)}
+              onClick={(e) => {
+                e.stopPropagation()
+                const deselecting = g.geneId === selectedGeneId
+                onSelect(deselecting ? null : g.geneId)
+                setSelectedCell(null)
+              }}
             >
               {g.symbol}
             </text>
@@ -369,7 +369,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         mode,
         muted,
         monoFont,
-        secondary,
       ],
     )
 
@@ -384,10 +383,13 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       ctx.fillStyle = lineColor
       ctx.fillRect(0, 0, gridW, gridH)
       for (let r = 0; r < matrix.length; r++) {
-        const dim = familyFilter !== null && geneRows[r].family !== familyFilter
-        ctx.globalAlpha = dim ? 0.15 : 1
+        const familyDim = familyFilter !== null && geneRows[r].family !== familyFilter
+        const rowDim = selectedRow !== null && r !== selectedRow
         const row = matrix[r]
         for (let c = 0; c < row.length; c++) {
+          let a = familyDim ? 0.15 : 1
+          if (rowDim) a *= 0.3
+          ctx.globalAlpha = a
           const cell = row[c]
           const v = cell ? (cell[metricDef.field] as number | null) : null
           ctx.fillStyle = cell && cell.orthology_type !== null ? colorFor(v) : absentColor
@@ -400,6 +402,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       geneRows,
       metricDef,
       familyFilter,
+      selectedRow,
       colorFor,
       lineColor,
       absentColor,
@@ -543,8 +546,18 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     return (
       <Box
         ref={containerRef}
-        sx={{ position: "relative", width: "100%", height: "100%", overflow: "auto" }}
+        sx={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          overflow: "auto",
+          pl: fits ? 0 : 1.5,
+        }}
         onPointerLeave={() => setHover(null)}
+        onClick={() => {
+          onSelect(null)
+          setSelectedCell(null)
+        }}
       >
         <Box sx={{ width: LEFT_W + gridW + RIGHT_PAD, mx: fits ? "auto" : 0 }}>
           <Box sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}>
@@ -560,6 +573,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 flexDirection: "column",
                 justifyContent: "flex-end",
               }}
+              onClick={(e) => e.stopPropagation()}
             >
               {cornerSlot}
             </Box>
@@ -585,24 +599,34 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 ref={canvasRef}
                 style={{ display: "block", width: gridW, height: gridH, cursor: "pointer" }}
                 onPointerMove={(e) => setHover(cellFromEvent(e))}
-                onClick={() => {
+                onPointerLeave={() => setHover(null)}
+                onClick={(e) => {
+                  e.stopPropagation()
                   if (hover) {
-                    const gid = geneRows[hover.row].geneId
-                    onSelect(gid === selectedGeneId ? null : gid)
+                    const deselecting =
+                      selectedCell !== null &&
+                      selectedCell.row === hover.row &&
+                      selectedCell.col === hover.col
+                    if (deselecting) {
+                      onSelect(null)
+                      setSelectedCell(null)
+                    } else {
+                      onSelect(geneRows[hover.row].geneId)
+                      setSelectedCell({ row: hover.row, col: hover.col })
+                    }
                   }
                 }}
               />
-              {selectedRow !== null && (
+              {selectedRow !== null && selectedCol !== null && (
                 <Box
                   sx={{
                     position: "absolute",
-                    left: 0,
-                    top: selectedRow * cellH,
-                    width: gridW,
-                    height: cellH,
+                    left: selectedCol * cellW,
+                    top: selectedRow * cellH + 0.5,
+                    width: cellW - 1,
+                    height: cellH - 1,
                     pointerEvents: "none",
-                    outline: `1.5px solid ${theme.palette.secondary.main}`,
-                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                    boxShadow: `inset 0 0 0 2px ${theme.palette.secondary.main}`,
                   }}
                 />
               )}
@@ -611,11 +635,11 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                   sx={{
                     position: "absolute",
                     left: hover.col * cellW,
-                    top: hover.row * cellH,
-                    width: cellW,
-                    height: cellH,
+                    top: hover.row * cellH + 0.5,
+                    width: cellW - 1,
+                    height: cellH - 1,
                     pointerEvents: "none",
-                    outline: `1.5px solid ${theme.palette.text.primary}`,
+                    boxShadow: `inset 0 0 0 2px ${theme.palette.secondary.main}`,
                   }}
                 />
               )}

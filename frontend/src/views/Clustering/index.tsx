@@ -383,7 +383,7 @@ export default function Clustering() {
                 geneById={geneById}
               />
 
-              {/* Floating search panel — desktop */}
+              {/* Floating search panel - desktop */}
               {!isMobile && (
                 <Paper
                   elevation={4}
@@ -470,7 +470,7 @@ export default function Clustering() {
                 </Paper>
               )}
 
-              {/* Floating search — mobile: panel pops above persistent circular toggle */}
+              {/* Floating search button - mobile */}
               {isMobile && (
                 <>
                   {searchOpen && (
@@ -643,7 +643,7 @@ export default function Clustering() {
           )}
         </Box>
       </Paper>
-      {/* Hidden measurement elements — never visible, always rendered */}
+
       <Box
         aria-hidden
         sx={{
