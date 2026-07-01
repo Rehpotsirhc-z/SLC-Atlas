@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { keyframes } from "@emotion/react"
-import { memo, useEffect, useRef, useState } from "react"
+import { memo, useEffect, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
@@ -11,6 +11,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import {
   Box,
   Button,
+  Chip,
   Collapse,
   IconButton,
   TableCell,
@@ -19,7 +20,9 @@ import {
   Typography,
   useTheme,
 } from "@mui/material"
+import { alpha } from "@mui/material/styles"
 import FamilyChip from "@/components/FamilyChip"
+import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
 import { formatPosition } from "@/utils/format"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
@@ -38,31 +41,33 @@ const rowFlash = keyframes`
 `
 
 function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) {
-  const rowRef = useRef<HTMLTableRowElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [flashing, setFlashing] = useState(false)
-  const { custom } = useTheme()
+  const theme = useTheme()
+  const { custom } = theme
+  const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+
+  const chipSx = {
+    fontFamily: "inherit",
+    fontSize: "inherit",
+    border: "1px solid transparent",
+    bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.22) : "transparent",
+    color: isSelected ? "primary.main" : "text.primary",
+    "&:hover": { bgcolor: alpha(theme.palette.primary.main, isSelected ? 0.3 : 0.1) },
+    "& .MuiChip-label": { px: 0.75, transform: "translateY(2px)" },
+  }
+
+  // The monospace font renders a bit too high
+  const monoNudgeSx = { display: "inline-block", transform: "translateY(2px)" }
+  const handleSelectClick = (e: React.SyntheticEvent) => {
+    e.stopPropagation()
+    setSelectedGeneId(isSelected ? null : gene.id)
+  }
 
   useEffect(() => {
     if (!isSelected) return
-    setExpanded(true)
-    const t = setTimeout(() => {
-      if (!rowRef.current) return
-      let fired = false
-      const startFlash = () => {
-        if (fired) return
-        fired = true
-        setFlashing(true)
-        setTimeout(() => setFlashing(false), 1400)
-      }
-      let scrollParent = rowRef.current.parentElement
-      while (scrollParent && scrollParent.scrollHeight <= scrollParent.clientHeight) {
-        scrollParent = scrollParent.parentElement
-      }
-      scrollParent?.addEventListener("scrollend", startFlash, { once: true })
-      rowRef.current.scrollIntoView({ block: "start", behavior: "smooth" })
-      setTimeout(startFlash, 600)
-    }, 300)
+    setFlashing(true)
+    const t = setTimeout(() => setFlashing(false), 1400)
     return () => clearTimeout(t)
   }, [isSelected])
 
@@ -73,11 +78,12 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
   return (
     <>
       <TableRow
-        ref={rowRef}
         hover
+        data-gene-id={gene.id}
         onClick={() => setExpanded((e) => !e)}
         sx={{
           cursor: "pointer",
+          ...(isSelected && { bgcolor: alpha(theme.palette.primary.main, 0.08) }),
           ...(flashing && { animation: `${rowFlash} 1.4s ease-out forwards` }),
         }}
       >
@@ -90,21 +96,44 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             )}
           </IconButton>
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{gene.id}</TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
-          <Typography variant="body2" component="span" fontWeight={700} fontFamily="inherit">
-            {gene.symbol}
-          </Typography>
+          <Chip size="small" label={gene.id} onClick={handleSelectClick} sx={chipSx} />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>{gene.name}</TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
-          {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
+          <Chip
+            size="small"
+            label={gene.symbol}
+            onClick={handleSelectClick}
+            sx={{
+              ...chipSx,
+              "& .MuiChip-label": { ...chipSx["& .MuiChip-label"], fontWeight: 700 },
+            }}
+          />
+        </TableCell>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
+          <Box component="span" sx={monoNudgeSx}>
+            {gene.name}
+          </Box>
+        </TableCell>
+        <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
+          <Box component="span" sx={monoNudgeSx}>
+            {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
+          </Box>
         </TableCell>
         <TableCell align="right" sx={{ fontFamily: custom.monoFontFamily }}>
-          {gene.length.toLocaleString()}
+          <Box component="span" sx={monoNudgeSx}>
+            {gene.length.toLocaleString()}
+          </Box>
         </TableCell>
         <TableCell
-          onClick={onFamilyClick ? (e) => { e.stopPropagation(); onFamilyClick(gene.family) } : undefined}
+          onClick={
+            onFamilyClick
+              ? (e) => {
+                  e.stopPropagation()
+                  onFamilyClick(gene.family)
+                }
+              : undefined
+          }
         >
           <FamilyChip
             family={gene.family}
@@ -113,11 +142,13 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
           />
         </TableCell>
         <TableCell sx={{ fontFamily: custom.monoFontFamily }}>
-          {gene.alias ?? (
-            <Typography component="span" color="text.disabled" fontFamily="inherit">
-              —
-            </Typography>
-          )}
+          <Box component="span" sx={monoNudgeSx}>
+            {gene.alias ?? (
+              <Typography component="span" color="text.disabled" fontFamily="inherit">
+                —
+              </Typography>
+            )}
+          </Box>
         </TableCell>
         <TableCell padding="checkbox">
           {gene.function_brief && (

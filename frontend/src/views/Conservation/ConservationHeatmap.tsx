@@ -448,6 +448,16 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       [cellH],
     )
 
+    const didInitialFocus = useRef(false)
+    useEffect(() => {
+      if (!selectedGeneId || didInitialFocus.current) return
+      if (containerW === 0) return
+      const row = rowByGene.get(selectedGeneId)
+      if (row === undefined) return
+      didInitialFocus.current = true
+      scrollToRow(row)
+    }, [selectedGeneId, rowByGene, scrollToRow, containerW])
+
     useImperativeHandle(
       ref,
       () => ({

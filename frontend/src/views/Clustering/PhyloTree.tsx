@@ -474,6 +474,14 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     [layoutData, size, isRadial, leafByGene, rectScale],
   )
 
+  const didInitialFocus = useRef(false)
+  useEffect(() => {
+    if (!selectedGeneId || didInitialFocus.current) return
+    if (!layoutData || size.w === 0) return
+    didInitialFocus.current = true
+    focusGene(selectedGeneId)
+  }, [selectedGeneId, layoutData, size, focusGene])
+
   const focusFamily = useCallback(
     (family: string) => {
       if (!layoutData || size.w === 0) return
@@ -583,7 +591,11 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     drag.current.active = false
     if (!wasDrag) {
       const hit = nearestLeaf(e.clientX, e.clientY)
-      if (hit?.leaf.geneId) onSelect(hit.leaf.geneId)
+      if (hit?.leaf.geneId) {
+        onSelect(hit.leaf.geneId === selectedGeneId ? null : hit.leaf.geneId)
+      } else {
+        onSelect(null)
+      }
     }
   }
 
