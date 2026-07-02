@@ -20,43 +20,51 @@ import { useRef } from "react"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
-import type { ClusterNode } from "@/types/clustering"
+import type { ConservationCell } from "@/types/conservation"
 import type { Gene } from "@/types/gene"
+import { CELL_METRICS, type CellMetricKey } from "./ConservationHeatmap"
 
 const glowFlash = keyframes`
   0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
   100% { outline: 2px solid rgba(144, 202, 249, 0); }
 `
 
-export interface GeneInfo {
-  node: ClusterNode
-  methodLabel: string
-  closestSymbol: string | null
+export interface ConservationGeneInfo {
+  geneId: string
+  symbol: string
+  family: string | null
   gene: Gene | null
+  cells: ConservationCell[]
 }
-
-export type { PanelPos }
 
 const DEFAULT_POS: PanelPos = { x: 12, y: 120 }
 
-interface GeneInfoPanelProps {
-  info: GeneInfo
+const ORTHOLOGY_LABEL: Record<string, string> = {
+  ortholog_one2one: "1:1",
+  ortholog_one2many: "1:many",
+  ortholog_many2many: "n:n",
+}
+
+interface GeneConservationPanelProps {
+  info: ConservationGeneInfo
+  metric: CellMetricKey
   onClose: () => void
   onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
 }
 
-export default function GeneInfoPanel({
+export default function GeneConservationPanel({
   info,
+  metric,
   onClose,
   onOpenInGenes,
   pos,
   onPosChange,
-}: GeneInfoPanelProps) {
-  const { node, methodLabel, closestSymbol, gene } = info
+}: GeneConservationPanelProps) {
+  const { geneId, symbol, family, gene, cells } = info
   const { palette, custom } = useTheme()
-  const familyColor = getFamilyColor(node.family ?? "?", palette.mode)
+  const familyColor = getFamilyColor(family ?? "?", palette.mode)
   const panelRef = useRef<HTMLDivElement>(null)
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
@@ -64,6 +72,22 @@ export default function GeneInfoPanel({
     onPosChange,
     DEFAULT_POS,
   )
+
+  const metricDef = CELL_METRICS.find((m) => m.key === metric) ?? CELL_METRICS[0]
+  const field = metricDef.field as keyof Pick<ConservationCell, "perc_id" | "perc_pos">
+
+  const oneToOneCount = cells.filter((c) => c.orthology_type === "ortholog_one2one").length
+  const values = cells.map((c) => c[field]).filter((v): v is number => v !== null)
+  const avgValue = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null
+
+  const sortedCells = [...cells].sort((a, b) => {
+    const av = a[field]
+    const bv = b[field]
+    if (av === null && bv === null) return 0
+    if (av === null) return 1
+    if (bv === null) return -1
+    return bv - av
+  })
 
   const rows: { label: string; value: React.ReactNode }[] = [
     {
@@ -114,15 +138,18 @@ export default function GeneInfoPanel({
           >
             <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
             <Box component="span" sx={{ transform: "translateY(1.5px)" }}>
-              {node.family}
+              {family ?? "?"}
             </Box>
           </Box>
         </Tooltip>
       ),
     },
-    { label: "Metric", value: methodLabel },
-    { label: "Branch length", value: node.branch_length.toFixed(3) },
-    ...(closestSymbol ? [{ label: "Closest relative", value: closestSymbol }] : []),
+    { label: "Species compared", value: cells.length },
+    { label: "1:1 orthologs", value: oneToOneCount },
+    {
+      label: `Avg ${metricDef.label}`,
+      value: avgValue !== null ? `${avgValue.toFixed(1)}%` : "—",
+    },
   ]
 
   return (
@@ -133,9 +160,9 @@ export default function GeneInfoPanel({
         position: "absolute",
         top: currentPos.y,
         left: currentPos.x,
-        width: 260,
+        width: 280,
         maxWidth: "calc(100% - 24px)",
-        zIndex: 3,
+        zIndex: 5,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,
@@ -174,7 +201,7 @@ export default function GeneInfoPanel({
             fontWeight={700}
             sx={{ color: familyColor, lineHeight: 1.2 }}
           >
-            {node.symbol}
+            {symbol}
           </Typography>
           <IconButton size="small" onClick={onClose} sx={{ mt: -0.5, mr: -0.5, color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
@@ -183,10 +210,15 @@ export default function GeneInfoPanel({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+          sx={{ display: "block", fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
         >
-          {node.gene_id}
+          {geneId}
         </Typography>
+        {gene?.name && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            {gene.name}
+          </Typography>
+        )}
 
         <Divider sx={{ my: 1 }} />
 
@@ -205,7 +237,47 @@ export default function GeneInfoPanel({
           ))}
         </Box>
 
-        <Divider sx={{ mt: 1, mb: 1.5 }} />
+        <Divider sx={{ mt: 1, mb: 0.75 }} />
+
+        <Box sx={{ maxHeight: 180, overflowY: "auto", pr: 0.5 }}>
+          {sortedCells.map((c) => (
+            <Box
+              key={c.species}
+              sx={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: 1,
+                py: 0.375,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {c.species_label ?? c.species}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ flexShrink: 0, fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+              >
+                {c[field] !== null ? `${c[field]!.toFixed(1)}%` : "—"}
+                {c.orthology_type && c.orthology_type !== "ortholog_one2one" && (
+                  <Box component="span" sx={{ color: "text.secondary" }}>
+                    {" "}
+                    ({ORTHOLOGY_LABEL[c.orthology_type] ?? c.orthology_type})
+                  </Box>
+                )}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+
+        <Divider sx={{ mt: 0.75, mb: 1.5 }} />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
           <Button
@@ -217,20 +289,18 @@ export default function GeneInfoPanel({
             Open in Genes view
           </Button>
           <Box sx={{ display: "flex", gap: 0.5 }}>
-            {node.gene_id && (
-              <Button
-                size="small"
-                variant="text"
-                startIcon={<OpenInNewIcon />}
-                component="a"
-                href={ensemblUrl(node.gene_id)}
-                target="_blank"
-                rel="noopener"
-                sx={{ flex: 1 }}
-              >
-                Ensembl
-              </Button>
-            )}
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<OpenInNewIcon />}
+              component="a"
+              href={ensemblUrl(geneId)}
+              target="_blank"
+              rel="noopener"
+              sx={{ flex: 1 }}
+            >
+              Ensembl
+            </Button>
             {gene && (
               <Button
                 size="small"

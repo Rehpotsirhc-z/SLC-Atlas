@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
@@ -34,6 +35,7 @@ import { useConservation, useSpeciesTree } from "@/api/hooks/useConservation"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore } from "@/store/uiStore"
+import type { PanelPos } from "@/utils/useDraggablePanel"
 import type { Gene } from "@/types/gene"
 import {
   acIndicatorSx,
@@ -46,6 +48,7 @@ import ConservationHeatmap, {
   type CellMetricKey,
   type ConservationHeatmapHandle,
 } from "./ConservationHeatmap"
+import GeneConservationPanel from "./GeneConservationPanel"
 
 type Metric = "aa" | "dna" | "rna"
 type Tissue = "all" | "brain"
@@ -75,6 +78,7 @@ export default function Conservation() {
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
+  const [panelPos, setPanelPos] = useState<PanelPos | null>(null)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -84,6 +88,7 @@ export default function Conservation() {
   const measureBtnsRef = useRef<HTMLDivElement>(null)
   const measureIconBtnsRef = useRef<HTMLDivElement>(null)
   const measureTogglesRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
@@ -98,6 +103,22 @@ export default function Conservation() {
     for (const g of allGenes ?? []) m.set(g.id, g)
     return m
   }, [allGenes])
+
+  const selectedConservationInfo = useMemo(() => {
+    if (!cells || !selectedGeneId) return null
+    const first = cells.find((c) => c.gene_id === selectedGeneId)
+    if (!first) return null
+    const geneCells = cells.filter(
+      (c) => c.gene_id === selectedGeneId && c.orthology_type !== "self",
+    )
+    return {
+      geneId: selectedGeneId,
+      symbol: first.symbol ?? selectedGeneId,
+      family: first.family,
+      gene: geneById.get(selectedGeneId) ?? null,
+      cells: geneCells,
+    }
+  }, [cells, selectedGeneId, geneById])
 
   const families = useMemo(() => {
     if (!cells) return []
@@ -467,6 +488,18 @@ export default function Conservation() {
                 geneById={geneById}
                 cornerSlot={geneOrderControl}
               />
+
+              {selectedConservationInfo && (
+                <GeneConservationPanel
+                  key={selectedConservationInfo.geneId}
+                  info={selectedConservationInfo}
+                  metric={cellMetric}
+                  onClose={() => setSelectedGeneId(null)}
+                  onOpenInGenes={() => navigate("/genes")}
+                  pos={panelPos}
+                  onPosChange={setPanelPos}
+                />
+              )}
 
               {!isMobile && (
                 <Paper
