@@ -70,7 +70,7 @@ export default function DownloadButton({ genes, compact }: DownloadButtonProps) 
           onClick={(e) => setAnchorEl(e.currentTarget)}
           variant="outlined"
           size="small"
-          sx={{ whiteSpace: "nowrap" }}
+          sx={{ whiteSpace: "nowrap", gap: "8px", "& .MuiButton-startIcon": { margin: 0 } }}
         >
           {`Download (${genes.length} genes)`}
         </Button>

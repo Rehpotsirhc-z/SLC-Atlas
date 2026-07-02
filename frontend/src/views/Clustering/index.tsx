@@ -326,7 +326,12 @@ export default function Clustering() {
                   variant="outlined"
                   startIcon={<RestartAltIcon />}
                   onClick={() => treeRef.current?.resetView()}
-                  sx={{ whiteSpace: "nowrap", flex: tbState === "wrapped" ? 1 : "none" }}
+                  sx={{
+                    whiteSpace: "nowrap",
+                    flex: tbState === "wrapped" ? 1 : "none",
+                    gap: "6px",
+                    "& .MuiButton-startIcon": { margin: 0 },
+                  }}
                 >
                   Reset view
                 </Button>
@@ -335,7 +340,11 @@ export default function Clustering() {
                   variant="outlined"
                   startIcon={<DownloadIcon />}
                   onClick={(e) => setExportAnchor(e.currentTarget)}
-                  sx={{ flex: tbState === "wrapped" ? 1 : "none" }}
+                  sx={{
+                    flex: tbState === "wrapped" ? 1 : "none",
+                    gap: "6px",
+                    "& .MuiButton-startIcon": { margin: 0 },
+                  }}
                 >
                   Export
                 </Button>
