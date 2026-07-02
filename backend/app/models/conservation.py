@@ -14,7 +14,6 @@ class ConservationCell(BaseModel):
     perc_id: float | None = None
     perc_id_r1: float | None = None
     perc_pos: float | None = None
-    dn_ds: float | None = None
     orthology_type: str | None = None
     ortholog_count: int = 0
     target_gene_id: str | None = None

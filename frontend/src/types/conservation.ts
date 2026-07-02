@@ -11,7 +11,6 @@ export interface ConservationCell {
   perc_id: number | null
   perc_id_r1: number | null
   perc_pos: number | null
-  dn_ds: number | null
   orthology_type: string | null
   ortholog_count: number
   target_gene_id: string | null

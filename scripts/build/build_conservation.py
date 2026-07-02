@@ -34,7 +34,6 @@ CONSERVATION_SCHEMA = {
     "perc_id": pl.Float64,
     "perc_id_r1": pl.Float64,
     "perc_pos": pl.Float64,
-    "dn_ds": pl.Float64,
     "orthology_type": pl.Utf8,
     "ortholog_count": pl.Int64,
     "target_gene_id": pl.Utf8,
@@ -80,17 +79,17 @@ def build_matrix(species: list[dict], orthologs: dict[tuple[str, str], dict]) ->
             }
             if en == "homo_sapiens":  # reference self column
                 rows.append({**base, "perc_id": 100.0, "perc_id_r1": 100.0, "perc_pos": 100.0,
-                             "dn_ds": None, "orthology_type": "self", "ortholog_count": 1,
+                             "orthology_type": "self", "ortholog_count": 1,
                              "target_gene_id": gid})
                 continue
             o = orthologs.get((gid, en))
             if o is None:
                 rows.append({**base, "perc_id": None, "perc_id_r1": None, "perc_pos": None,
-                             "dn_ds": None, "orthology_type": None, "ortholog_count": 0,
+                             "orthology_type": None, "ortholog_count": 0,
                              "target_gene_id": None})
             else:
                 rows.append({**base, "perc_id": _f(o["perc_id"]), "perc_id_r1": _f(o["perc_id_r1"]),
-                             "perc_pos": _f(o["perc_pos"]), "dn_ds": _f(o["dn_ds"]),
+                             "perc_pos": _f(o["perc_pos"]),
                              "orthology_type": o["orthology_type"] or None,
                              "ortholog_count": int(o["ortholog_count"]),
                              "target_gene_id": o["target_gene_id"] or None})

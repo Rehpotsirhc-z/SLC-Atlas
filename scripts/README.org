@@ -19,7 +19,7 @@ The pipeline has two independent phases with a clean handoff between them:
 | =protein.fasta=     | FASTA keyed by gene id                                                                                                             | clustering         |
 | =expression.parquet=| gene_id + one column per sample (Float32 TPM)                                                                                      | clustering         |
 | =sample_tissue.tsv= | sample_id, tissue, tissue_detail                                                                                                   | clustering         |
-| =orthologs.tsv=     | gene_id, species, target_gene_id, target_protein_id, perc_id, perc_id_r1, perc_pos, dn_ds, orthology_type, ortholog_count          | conservation       |
+| =orthologs.tsv=     | gene_id, species, target_gene_id, target_protein_id, perc_id, perc_id_r1, perc_pos, orthology_type, ortholog_count                 | conservation       |
 | =species.tsv=       | species, species_label, taxon_id                                                                                                   | conservation       |
 | =species_tree.nwk=  | Newick, leaves = species                                                                                                           | conservation       |
 |-------------------+------------------------------------------------------------------------------------------------------------------------------------+--------------------|

@@ -37,7 +37,6 @@ FIELDS = [
     "perc_id",  # % of target identical to human
     "perc_id_r1",  # % of human identical to target
     "perc_pos",  # % of target positionally similar to human
-    "dn_ds",  # Compara dN/dS (often null for distant species)
     "orthology_type",
     "ortholog_count",  # number of orthologs in this species (>= 1)
 ]
@@ -95,7 +94,6 @@ def fetch_gene(gene_id: str, species: list[str]) -> list[dict]:
                 "perc_id": tgt.get("perc_id"),
                 "perc_id_r1": best["source"].get("perc_id"),
                 "perc_pos": tgt.get("perc_pos"),
-                "dn_ds": best.get("dn_ds"),
                 "orthology_type": best.get("type"),
                 "ortholog_count": len(homs),
             }
