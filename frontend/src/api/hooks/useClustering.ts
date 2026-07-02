@@ -12,6 +12,20 @@ export type ClusterMethod =
   | "rna_coexpression_all"
   | "rna_coexpression_brain"
 
+export type TreeMetric = "aa" | "dna" | "rna"
+export type TreeTissue = "all" | "brain"
+
+export const CLUSTER_METHOD: Record<string, ClusterMethod> = {
+  aa: "aa_sequence",
+  dna: "dna_sequence",
+  "rna:all": "rna_coexpression_all",
+  "rna:brain": "rna_coexpression_brain",
+}
+
+export function resolveClusterMethod(metric: TreeMetric, tissue: TreeTissue): ClusterMethod {
+  return metric === "rna" ? CLUSTER_METHOD[`rna:${tissue}`] : CLUSTER_METHOD[metric]
+}
+
 export const useClustering = (method: ClusterMethod) =>
   useQuery({
     queryKey: ["clustering", method],

@@ -30,7 +30,12 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material"
-import { useClustering, type ClusterMethod } from "@/api/hooks/useClustering"
+import {
+  useClustering,
+  resolveClusterMethod,
+  type ClusterMethod,
+  type TreeMetric,
+} from "@/api/hooks/useClustering"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore } from "@/store/uiStore"
@@ -44,16 +49,9 @@ import {
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
 import GeneInfoPanel from "./GeneInfoPanel"
 
-type Metric = "aa" | "dna" | "rna"
+type Metric = TreeMetric
 type Tissue = "all" | "brain"
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
-
-const METHOD: Record<string, ClusterMethod> = {
-  aa: "aa_sequence",
-  dna: "dna_sequence",
-  "rna:all": "rna_coexpression_all",
-  "rna:brain": "rna_coexpression_brain",
-}
 
 const METRIC_LABEL: Record<Metric, string> = {
   aa: "Amino acid",
@@ -80,8 +78,6 @@ const LAYOUT_OPTIONS: { value: Layout; icon: React.ReactNode; label: string }[] 
 ]
 
 export default function Clustering() {
-  const [metric, setMetric] = useState<Metric>("aa")
-  const [tissue, setTissue] = useState<Tissue>("all")
   const [layout, setLayout] = useState<Layout>("rectangular")
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
@@ -91,6 +87,10 @@ export default function Clustering() {
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const metric = useUIStore((s) => s.treeMetric)
+  const setMetric = useUIStore((s) => s.setTreeMetric)
+  const tissue = useUIStore((s) => s.treeTissue)
+  const setTissue = useUIStore((s) => s.setTreeTissue)
   const treeRef = useRef<PhyloTreeHandle>(null)
   const graphRef = useRef<HTMLDivElement>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
@@ -103,7 +103,7 @@ export default function Clustering() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  const method = metric === "rna" ? METHOD[`rna:${tissue}`] : METHOD[metric]
+  const method = resolveClusterMethod(metric, tissue)
   const { data, isLoading, error } = useClustering(method)
   const { data: allGenes } = useGenes() // gene coordinates
 

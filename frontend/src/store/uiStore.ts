@@ -5,10 +5,15 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { ThemeMode } from "@/theme"
+import type { TreeMetric, TreeTissue } from "@/api/hooks/useClustering"
 
 interface UIState {
   selectedGeneId: string | null
   setSelectedGeneId: (id: string | null) => void
+  treeMetric: TreeMetric
+  setTreeMetric: (metric: TreeMetric) => void
+  treeTissue: TreeTissue
+  setTreeTissue: (tissue: TreeTissue) => void
   themeMode: ThemeMode
   toggleThemeMode: () => void
 }
@@ -18,6 +23,10 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       selectedGeneId: null,
       setSelectedGeneId: (id) => set({ selectedGeneId: id }),
+      treeMetric: "aa",
+      setTreeMetric: (metric) => set({ treeMetric: metric }),
+      treeTissue: "all",
+      setTreeTissue: (tissue) => set({ treeTissue: tissue }),
       themeMode: "light",
       toggleThemeMode: () => set((s) => ({ themeMode: s.themeMode === "dark" ? "light" : "dark" })),
     }),

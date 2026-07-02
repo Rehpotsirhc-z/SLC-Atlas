@@ -251,16 +251,38 @@ export default function GeneConservationPanel({
                 py: 0.375,
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {c.species_label ?? c.species}
-              </Typography>
+              {c.target_gene_id ? (
+                <Tooltip title={c.target_gene_id} placement="bottom" arrow>
+                  <Typography
+                    variant="caption"
+                    component="a"
+                    href={ensemblUrl(c.target_gene_id, c.species)}
+                    target="_blank"
+                    rel="noopener"
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      color: "text.primary",
+                      textDecoration: "none",
+                      "&:hover": { textDecoration: "underline", color: "primary.main" },
+                    }}
+                  >
+                    {c.species_label ?? c.species}
+                  </Typography>
+                </Tooltip>
+              ) : (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.species_label ?? c.species}
+                </Typography>
+              )}
               <Typography
                 variant="caption"
                 sx={{ flexShrink: 0, fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}

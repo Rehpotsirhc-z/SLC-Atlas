@@ -30,7 +30,12 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material"
-import { useClustering, type ClusterMethod } from "@/api/hooks/useClustering"
+import {
+  useClustering,
+  resolveClusterMethod,
+  type ClusterMethod,
+  type TreeMetric,
+} from "@/api/hooks/useClustering"
 import { useConservation, useSpeciesTree } from "@/api/hooks/useConservation"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
@@ -50,15 +55,8 @@ import ConservationHeatmap, {
 } from "./ConservationHeatmap"
 import GeneConservationPanel from "./GeneConservationPanel"
 
-type Metric = "aa" | "dna" | "rna"
+type Metric = TreeMetric
 type Tissue = "all" | "brain"
-
-const METHOD: Record<string, ClusterMethod> = {
-  aa: "aa_sequence",
-  dna: "dna_sequence",
-  "rna:all": "rna_coexpression_all",
-  "rna:brain": "rna_coexpression_brain",
-}
 
 const METRIC_LABEL: Record<Metric, string> = {
   aa: "Amino acid",
@@ -71,8 +69,6 @@ const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "bord
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
 export default function Conservation() {
-  const [metric, setMetric] = useState<Metric>("aa")
-  const [tissue, setTissue] = useState<Tissue>("all")
   const [cellMetric, setCellMetric] = useState<CellMetricKey>("perc_id")
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
@@ -82,6 +78,10 @@ export default function Conservation() {
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const metric = useUIStore((s) => s.treeMetric)
+  const setMetric = useUIStore((s) => s.setTreeMetric)
+  const tissue = useUIStore((s) => s.treeTissue)
+  const setTissue = useUIStore((s) => s.setTreeTissue)
   const heatmapRef = useRef<ConservationHeatmapHandle>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const measureCounterRef = useRef<HTMLElement>(null)
@@ -92,7 +92,7 @@ export default function Conservation() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  const method = metric === "rna" ? METHOD[`rna:${tissue}`] : METHOD[metric]
+  const method = resolveClusterMethod(metric, tissue)
   const { data: cells, isLoading: cl, error: ce } = useConservation()
   const { data: speciesNodes, isLoading: sl, error: se } = useSpeciesTree()
   const { data: clusterNodes, isLoading: tl, error: te } = useClustering(method)

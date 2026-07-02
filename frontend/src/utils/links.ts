@@ -4,8 +4,12 @@
 
 import type { Gene } from "@/types/gene"
 
-export function ensemblUrl(geneId: string): string {
-  return `https://www.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g=${geneId}`
+export function ensemblUrl(geneId: string, species = "homo_sapiens"): string {
+  const path = species
+    .split("_")
+    .map((w, i) => (i === 0 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join("_")
+  return `https://www.ensembl.org/${path}/Gene/Summary?db=core;g=${geneId}`
 }
 
 export function ucscUrl(gene: Pick<Gene, "chromosome" | "start" | "end">): string {
