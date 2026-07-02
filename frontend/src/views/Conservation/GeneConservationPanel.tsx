@@ -137,7 +137,7 @@ export default function GeneConservationPanel({
             }}
           >
             <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
-            <Box component="span" sx={{ transform: "translateY(1.5px)" }}>
+            <Box component="span" sx={{ transform: "translateY(1px)" }}>
               {family ?? "?"}
             </Box>
           </Box>
@@ -203,14 +203,22 @@ export default function GeneConservationPanel({
           >
             {symbol}
           </Typography>
-          <IconButton size="small" onClick={onClose} sx={{ mt: -0.5, mr: -0.5, color: "text.secondary" }}>
+          <IconButton
+            size="small"
+            onClick={onClose}
+            sx={{ mt: -0.5, mr: -0.5, color: "text.secondary" }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ display: "block", fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+          sx={{
+            display: "block",
+            fontFamily: custom.monoFontFamily,
+            fontSize: custom.monoFontSize,
+          }}
         >
           {geneId}
         </Typography>
@@ -252,7 +260,15 @@ export default function GeneConservationPanel({
               }}
             >
               {c.target_gene_id ? (
-                <Tooltip title={c.target_gene_id} placement="bottom" arrow>
+                <Tooltip
+                  title={
+                    <Box component="span" sx={{ display: "block", transform: "translateY(1px)" }}>
+                      {c.target_gene_id}
+                    </Box>
+                  }
+                  placement="right"
+                  arrow
+                >
                   <Typography
                     variant="caption"
                     component="a"
@@ -285,7 +301,11 @@ export default function GeneConservationPanel({
               )}
               <Typography
                 variant="caption"
-                sx={{ flexShrink: 0, fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                sx={{
+                  flexShrink: 0,
+                  fontFamily: custom.monoFontFamily,
+                  fontSize: custom.monoFontSize,
+                }}
               >
                 {c[field] !== null ? `${c[field]!.toFixed(1)}%` : "—"}
                 {c.orthology_type && c.orthology_type !== "ortholog_one2one" && (

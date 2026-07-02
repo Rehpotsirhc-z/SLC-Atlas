@@ -113,7 +113,7 @@ export default function GeneInfoPanel({
             }}
           >
             <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
-            <Box component="span" sx={{ transform: "translateY(1.5px)" }}>
+            <Box component="span" sx={{ transform: "translateY(1px)" }}>
               {node.family}
             </Box>
           </Box>
@@ -176,7 +176,11 @@ export default function GeneInfoPanel({
           >
             {node.symbol}
           </Typography>
-          <IconButton size="small" onClick={onClose} sx={{ mt: -0.5, mr: -0.5, color: "text.secondary" }}>
+          <IconButton
+            size="small"
+            onClick={onClose}
+            sx={{ mt: -0.5, mr: -0.5, color: "text.secondary" }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
