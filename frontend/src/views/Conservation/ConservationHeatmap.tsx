@@ -13,7 +13,9 @@ import {
   useState,
 } from "react"
 import type { MouseEvent } from "react"
-import { Box, Typography, useTheme } from "@mui/material"
+import { Box, IconButton, Tooltip, Typography, useTheme } from "@mui/material"
+import ExpandLessIcon from "@mui/icons-material/ExpandLess"
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { alpha } from "@mui/material/styles"
 import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
@@ -63,6 +65,8 @@ interface ConservationHeatmapProps {
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
   cornerSlot?: React.ReactNode
+  showSpeciesTree?: boolean
+  onToggleSpeciesTree?: () => void
 }
 
 interface GeneRow {
@@ -167,6 +171,8 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       onSelect,
       geneById,
       cornerSlot,
+      showSpeciesTree = true,
+      onToggleSpeciesTree,
     },
     ref,
   ) {
@@ -260,6 +266,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
 
     const gridW = speciesCols.length * cellW
     const gridH = geneRows.length * cellH
+    const topH = showSpeciesTree ? TOP_H : SPECIES_LABEL_H
     const fits = containerW > 0 && LEFT_W + gridW + RIGHT_PAD <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
     const selectedCol =
@@ -288,16 +295,18 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
 
     const speciesHeader = useMemo(
       () => (
-        <Box sx={{ position: "relative" }}>
-          <svg width={gridW} height={SPECIES_TREE_H} style={{ display: "block" }}>
-            <path
-              transform={`translate(0 ${SP_TREE_PAD})`}
-              d={speciesTree?.edges}
-              stroke={muted}
-              strokeWidth={0.7}
-              fill="none"
-            />
-          </svg>
+        <Box sx={{ position: "relative", display: "flex", flexDirection: "column" }}>
+          {showSpeciesTree && (
+            <svg width={gridW} height={SPECIES_TREE_H} style={{ display: "block" }}>
+              <path
+                transform={`translate(0 ${SP_TREE_PAD})`}
+                d={speciesTree?.edges}
+                stroke={muted}
+                strokeWidth={0.7}
+                fill="none"
+              />
+            </svg>
+          )}
           <svg
             width={gridW + RIGHT_PAD}
             height={SPECIES_LABEL_H}
@@ -323,9 +332,30 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
               )
             })}
           </svg>
+          {onToggleSpeciesTree && (
+            <Box
+              onClick={onToggleSpeciesTree}
+              sx={{
+                flex: 1,
+                minHeight: 14,
+                width: gridW + RIGHT_PAD,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "text.disabled",
+              }}
+            >
+              {showSpeciesTree ? (
+                <ExpandLessIcon sx={{ fontSize: 12 }} />
+              ) : (
+                <ExpandMoreIcon sx={{ fontSize: 12 }} />
+              )}
+            </Box>
+          )}
         </Box>
       ),
-      [speciesTree, speciesCols, gridW, cellW, speciesFont, muted, monoFont],
+      [showSpeciesTree, onToggleSpeciesTree, speciesTree, speciesCols, gridW, cellW, speciesFont, muted, monoFont],
     )
 
     const geneSidebar = useMemo(
@@ -453,9 +483,9 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       (row: number) => {
         const c = containerRef.current
         if (!c) return
-        c.scrollTo({ top: TOP_H + row * cellH - c.clientHeight / 2, behavior: "smooth" })
+        c.scrollTo({ top: topH + row * cellH - c.clientHeight / 2, behavior: "smooth" })
       },
-      [cellH],
+      [cellH, topH],
     )
 
     const didInitialFocus = useRef(false)
@@ -595,6 +625,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "flex-end",
+                minHeight: showSpeciesTree ? undefined : 163,
               }}
               onClick={(e) => e.stopPropagation()}
             >

@@ -71,6 +71,7 @@ export default function Conservation() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
   const [panelPos, setPanelPos] = useState<PanelPos | null>(null)
+  const [showSpeciesTree, setShowSpeciesTree] = useState(true)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -483,6 +484,8 @@ export default function Conservation() {
                 onSelect={setSelectedGeneId}
                 geneById={geneById}
                 cornerSlot={geneOrderControl}
+                showSpeciesTree={showSpeciesTree}
+                onToggleSpeciesTree={() => setShowSpeciesTree((v) => !v)}
               />
 
               {selectedConservationInfo && (
