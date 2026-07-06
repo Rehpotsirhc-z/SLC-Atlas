@@ -40,6 +40,8 @@ const GENE_LABEL_W = 92
 const SPECIES_TREE_H = 100
 const SPECIES_LABEL_H = 134
 const LEFT_W = GENE_TREE_W + GENE_LABEL_W
+const LEFT_GUTTER = 12
+const LEFT_COL_W = LEFT_W + LEFT_GUTTER
 const TOP_H = SPECIES_TREE_H + SPECIES_LABEL_H
 const GENE_LABEL_GAP = 10
 const SP_LABEL_GAP = 8
@@ -201,7 +203,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const nSpecies = useMemo(() => speciesNodes.filter((n) => n.species).length, [speciesNodes])
     const cellW = useMemo(() => {
       if (!nSpecies || !containerW) return MIN_CELL_W
-      const avail = containerW - LEFT_W
+      const avail = containerW - LEFT_COL_W
       return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(avail / nSpecies)))
     }, [containerW, nSpecies])
     const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
@@ -267,7 +269,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const gridW = speciesCols.length * cellW
     const gridH = geneRows.length * cellH
     const topH = showSpeciesTree ? TOP_H : SPECIES_LABEL_H
-    const fits = containerW > 0 && LEFT_W + gridW + RIGHT_PAD <= containerW
+    const fits = containerW > 0 && LEFT_COL_W + gridW + RIGHT_PAD <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
     const selectedCol =
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
@@ -338,7 +340,9 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
               sx={{
                 flex: 1,
                 minHeight: 14,
-                width: gridW + RIGHT_PAD,
+                position: fits ? "static" : "sticky",
+                left: LEFT_COL_W,
+                width: Math.min(gridW + RIGHT_PAD, Math.max(0, containerW - LEFT_COL_W)),
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -355,7 +359,19 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           )}
         </Box>
       ),
-      [showSpeciesTree, onToggleSpeciesTree, speciesTree, speciesCols, gridW, cellW, speciesFont, muted, monoFont],
+      [
+        showSpeciesTree,
+        onToggleSpeciesTree,
+        speciesTree,
+        speciesCols,
+        gridW,
+        cellW,
+        speciesFont,
+        muted,
+        monoFont,
+        fits,
+        containerW,
+      ],
     )
 
     const geneSidebar = useMemo(
@@ -604,7 +620,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           width: "100%",
           height: "100%",
           overflow: "auto",
-          pl: fits ? 0 : 1.5,
         }}
         onPointerLeave={() => setHover(null)}
         onClick={() => {
@@ -612,14 +627,15 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           setSelectedCell(null)
         }}
       >
-        <Box sx={{ width: LEFT_W + gridW + RIGHT_PAD, mx: fits ? "auto" : 0 }}>
+        <Box sx={{ width: LEFT_COL_W + gridW + RIGHT_PAD, ml: fits ? "auto" : 0, mr: fits ? "auto" : 0 }}>
           <Box sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}>
             <Box
               sx={{
                 position: fits ? "static" : "sticky",
                 left: 0,
                 zIndex: 1,
-                width: LEFT_W,
+                width: LEFT_COL_W,
+                pl: LEFT_GUTTER / 8,
                 flexShrink: 0,
                 bgcolor: stickyBg,
                 display: "flex",
@@ -640,7 +656,8 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 position: fits ? "static" : "sticky",
                 left: 0,
                 zIndex: 2,
-                width: LEFT_W,
+                width: LEFT_COL_W,
+                pl: LEFT_GUTTER / 8,
                 flexShrink: 0,
                 bgcolor: stickyBg,
               }}
