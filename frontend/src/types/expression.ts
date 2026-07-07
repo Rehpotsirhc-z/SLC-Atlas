@@ -4,6 +4,8 @@
 
 export interface ExpressionRow {
   gene_id: string
+  symbol: string | null
+  family: string | null
   tissue: string
   tpm: number
 }
