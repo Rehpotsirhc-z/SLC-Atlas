@@ -14,6 +14,10 @@ interface UIState {
   setTreeMetric: (metric: TreeMetric) => void
   treeTissue: TreeTissue
   setTreeTissue: (tissue: TreeTissue) => void
+  clusteringMetric: TreeMetric
+  setClusteringMetric: (metric: TreeMetric) => void
+  clusteringTissue: TreeTissue
+  setClusteringTissue: (tissue: TreeTissue) => void
   themeMode: ThemeMode
   toggleThemeMode: () => void
 }
@@ -23,10 +27,14 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       selectedGeneId: null,
       setSelectedGeneId: (id) => set({ selectedGeneId: id }),
-      treeMetric: "aa",
+      treeMetric: "ortho",
       setTreeMetric: (metric) => set({ treeMetric: metric }),
       treeTissue: "all",
       setTreeTissue: (tissue) => set({ treeTissue: tissue }),
+      clusteringMetric: "aa",
+      setClusteringMetric: (metric) => set({ clusteringMetric: metric }),
+      clusteringTissue: "all",
+      setClusteringTissue: (tissue) => set({ clusteringTissue: tissue }),
       themeMode: "light",
       toggleThemeMode: () => set((s) => ({ themeMode: s.themeMode === "dark" ? "light" : "dark" })),
     }),

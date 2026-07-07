@@ -11,7 +11,9 @@ from ..models.clustering import ClusterNode
 
 router = APIRouter()
 
-_METHOD_PATTERN = "^(aa_sequence|dna_sequence|rna_coexpression_all|rna_coexpression_brain)$"
+_METHOD_PATTERN = (
+    "^(aa_sequence|dna_sequence|rna_coexpression_all|rna_coexpression_brain|ortholog_identity)$"
+)
 
 
 @router.get("/clustering", response_model=list[ClusterNode])

@@ -33,6 +33,8 @@ import {
 import {
   useClustering,
   resolveClusterMethod,
+  METRIC_LABEL,
+  METRIC_ORDER,
   type ClusterMethod,
   type TreeMetric,
 } from "@/api/hooks/useClustering"
@@ -57,12 +59,6 @@ import GeneConservationPanel from "./GeneConservationPanel"
 
 type Metric = TreeMetric
 type Tissue = "all" | "brain"
-
-const METRIC_LABEL: Record<Metric, string> = {
-  aa: "Amino acid",
-  dna: "DNA",
-  rna: "Co-expression",
-}
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
 
@@ -233,7 +229,7 @@ export default function Conservation() {
           }
           sx={selectSx}
         >
-          {(["aa", "dna", "rna"] as Metric[]).map((m) => (
+          {METRIC_ORDER.map((m) => (
             <MenuItem key={m} value={m}>
               {METRIC_LABEL[m]}
             </MenuItem>

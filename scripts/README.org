@@ -65,7 +65,7 @@ On a fresh run the preprocess phase stops after writing =reference/family_names.
 
 ** Build steps (=scripts/build/=, general)
 - =build_gene_tables.py= :: Converts =dataset/genes.tsv= and =transcripts.tsv= to =genes.parquet= and =transcripts.parquet=.
-- =build_clustering.py= :: Runs MAFFT + UPGMA across four methods (amino-acid, DNA, all-tissue co-expression, brain co-expression) and outputs to =clustering.parquet=.
+- =build_clustering.py= :: Runs MAFFT + UPGMA across five methods (amino-acid, DNA, all-tissue co-expression, brain co-expression, and ortholog identity) and outputs to =clustering.parquet=.
 - =build_conservation.py= :: Converts a gene × species matrix and species-tree node table to =conservation.parquet= and =species_tree.parquet=.
 - =build_expression.py= :: Melts the sample-level GTEx TPM matrix and aggregates mean TPM per gene × tissue (both the 31 coarse GTEx tissues and, within Brain, the ~13 fine-grained subregions) into =expression.parquet=.
 

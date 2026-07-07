@@ -9,6 +9,8 @@ Methods:
   dna_sequence           MAFFT MSA of canonical CDS      -> p-distance -> UPGMA tree
   rna_coexpression_all   expression, all samples   -> 1 - Spearman corr -> UPGMA tree
   rna_coexpression_brain expression, brain samples -> 1 - Spearman corr -> UPGMA tree
+  ortholog_identity      per-gene ortholog %-identity profile across the conservation
+                         species (orthologs.tsv) -> 1 - Spearman corr -> UPGMA tree
 
 Every tree is serialized as a flat node table (one row per node) so the API can
 return it without a Newick parser on the client:
@@ -42,6 +44,7 @@ CDS_FASTA = DATASET_DIR / "cds.fasta"
 PROTEIN_FASTA = DATASET_DIR / "protein.fasta"
 TPM_PATH = DATASET_DIR / "expression.parquet"
 TISSUE_PATH = DATASET_DIR / "sample_tissue.tsv"
+ORTHOLOGS_PATH = DATASET_DIR / "orthologs.tsv"
 OUT_PATH = DATA_DIR / "clustering.parquet"
 
 SCHEMA = {
@@ -159,6 +162,27 @@ def corr_distance(tpm: pl.DataFrame, sample_cols: list[str]) -> tuple[list[str],
     return ids, dist
 
 
+def ortho_distance(gene_ids: list[str]) -> tuple[list[str], np.ndarray]:
+    """1 - Spearman correlation of per-gene ortholog %-identity profiles across the
+    conservation species. Each gene's profile is its perc_id in every species; a
+    species with no ortholog contributes 0 (no ortholog = 0% identity). Multiple
+    orthologs in one species collapse to the last row, mirroring build_conservation's
+    (gene, species) pick so the profile matches the heatmap cells. Genes with a flat
+    profile (e.g. no orthologs anywhere) are zero-variance and get dropped by
+    corr_distance."""
+    orth = pl.read_csv(
+        ORTHOLOGS_PATH, separator="\t", columns=["gene_id", "species", "perc_id"]
+    ).with_columns(pl.col("perc_id").cast(pl.Float64, strict=False))
+    orth = orth.group_by(["gene_id", "species"], maintain_order=True).agg(
+        pl.col("perc_id").last()
+    )
+    wide = orth.pivot(on="species", index="gene_id", values="perc_id")
+    wide = pl.DataFrame({"gene_id": gene_ids}).join(wide, on="gene_id", how="left")
+    species_cols = [c for c in wide.columns if c != "gene_id"]
+    wide = wide.with_columns(pl.col(species_cols).fill_null(0.0))
+    return corr_distance(wide, species_cols)
+
+
 def to_newick(node, labels: list[str], parent_dist: float) -> str:
     bl = max(0.0, parent_dist - node.dist)
     if node.is_leaf():
@@ -246,6 +270,7 @@ def main() -> None:
         ("dna_sequence", lambda: pdistance(cds_aln)),
         ("rna_coexpression_all", lambda: corr_distance(tpm, all_samples)),
         ("rna_coexpression_brain", lambda: corr_distance(tpm, brain_samples)),
+        ("ortholog_identity", lambda: ortho_distance(genes["id"].to_list())),
     ]:
         print(f"[{method}]", file=sys.stderr)
         ids, dist = build()

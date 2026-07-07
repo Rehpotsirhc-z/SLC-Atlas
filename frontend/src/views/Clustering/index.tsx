@@ -33,6 +33,8 @@ import {
 import {
   useClustering,
   resolveClusterMethod,
+  METRIC_LABEL,
+  METRIC_ORDER,
   type ClusterMethod,
   type TreeMetric,
 } from "@/api/hooks/useClustering"
@@ -53,17 +55,12 @@ type Metric = TreeMetric
 type Tissue = "all" | "brain"
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
-const METRIC_LABEL: Record<Metric, string> = {
-  aa: "Amino acid",
-  dna: "DNA",
-  rna: "Co-expression",
-}
-
 const METHOD_LABEL: Record<ClusterMethod, string> = {
   aa_sequence: "Amino-acid similarity",
   dna_sequence: "DNA (CDS) similarity",
   rna_coexpression_all: "RNA co-expression — all tissues",
   rna_coexpression_brain: "RNA co-expression — brain",
+  ortholog_identity: "Ortholog identity similarity",
 }
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
@@ -87,10 +84,10 @@ export default function Clustering() {
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
-  const metric = useUIStore((s) => s.treeMetric)
-  const setMetric = useUIStore((s) => s.setTreeMetric)
-  const tissue = useUIStore((s) => s.treeTissue)
-  const setTissue = useUIStore((s) => s.setTreeTissue)
+  const metric = useUIStore((s) => s.clusteringMetric)
+  const setMetric = useUIStore((s) => s.setClusteringMetric)
+  const tissue = useUIStore((s) => s.clusteringTissue)
+  const setTissue = useUIStore((s) => s.setClusteringTissue)
   const treeRef = useRef<PhyloTreeHandle>(null)
   const graphRef = useRef<HTMLDivElement>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
@@ -222,7 +219,8 @@ export default function Clustering() {
           Clustering
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          SLC similarity trees by amino-acid, DNA (CDS), and GTEx RNA co-expression
+          SLC similarity trees by amino-acid, DNA (CDS), GTEx RNA co-expression, and ortholog
+          identity
         </Typography>
       </Box>
 
@@ -249,7 +247,7 @@ export default function Clustering() {
             onChange={(_, v) => v && setMetric(v)}
             sx={{ width: tbState === "wrapped" ? "100%" : "auto" }}
           >
-            {(["aa", "dna", "rna"] as Metric[]).map((m) => (
+            {METRIC_ORDER.map((m) => (
               <ToggleButton key={m} value={m} sx={{ minWidth: tbState === "wrapped" ? 0 : 120 }}>
                 {METRIC_LABEL[m]}
               </ToggleButton>

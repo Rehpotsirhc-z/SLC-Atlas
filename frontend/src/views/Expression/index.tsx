@@ -33,6 +33,8 @@ import {
 import {
   useClustering,
   resolveClusterMethod,
+  METRIC_LABEL,
+  METRIC_ORDER,
   type TreeMetric,
   type TreeTissue,
 } from "@/api/hooks/useClustering"
@@ -57,12 +59,6 @@ const TISSUE_OPTIONS: { value: TreeTissue; label: string }[] = [
   { value: "all", label: "All tissues" },
   { value: "brain", label: "Brain" },
 ]
-
-const METRIC_LABEL: Record<TreeMetric, string> = {
-  aa: "Amino acid",
-  dna: "DNA",
-  rna: "Co-expression",
-}
 
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
@@ -219,7 +215,7 @@ export default function Expression() {
             },
           }}
         >
-          {(["aa", "dna", "rna"] as TreeMetric[]).map((m) => (
+          {METRIC_ORDER.map((m) => (
             <MenuItem key={m} value={m}>
               {METRIC_LABEL[m]}
             </MenuItem>
