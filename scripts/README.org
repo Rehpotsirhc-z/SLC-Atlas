@@ -10,19 +10,19 @@ The pipeline has two independent phases with a clean handoff between them:
 
 ** The standard-format dataset (=backend/data/dataset/=)
 
-|---------------------+-----------------------------------------------------------------------------------------------------------------------------------+--------------------|
-| File                | Columns / format                                                                                                                  | Used by            |
-|---------------------+-----------------------------------------------------------------------------------------------------------------------------------+--------------------|
-| =genes.tsv=         | id, symbol, name, chromosome, start, end, strand, length, alias, category, family, family_name, function_brief                     | gene tables        |
-| =transcripts.tsv=   | id, gene_id, name, type, start, end, length                                                                                       | gene tables        |
-| =cds.fasta=         | FASTA keyed by gene id                                                                                                             | clustering         |
-| =protein.fasta=     | FASTA keyed by gene id                                                                                                             | clustering         |
-| =expression.parquet=| gene_id + one column per sample (Float32 TPM)                                                                                      | clustering         |
-| =sample_tissue.tsv= | sample_id, tissue, tissue_detail                                                                                                   | clustering         |
-| =orthologs.tsv=     | gene_id, species, target_gene_id, target_protein_id, perc_id, perc_id_r1, perc_pos, orthology_type, ortholog_count                 | conservation       |
-| =species.tsv=       | species, species_label, taxon_id                                                                                                   | conservation       |
-| =species_tree.nwk=  | Newick, leaves = species                                                                                                           | conservation       |
-|-------------------+------------------------------------------------------------------------------------------------------------------------------------+--------------------|
+|----------------------+--------------------------------------------------------------------------------------------------------------------+------------------------|
+| File                 | Columns / format                                                                                                   | Used by                |
+|----------------------+--------------------------------------------------------------------------------------------------------------------+------------------------|
+| =genes.tsv=            | id, symbol, name, chromosome, start, end, strand, length, alias, category, family, family_name, function_brief     | gene tables            |
+| =transcripts.tsv=      | id, gene_id, name, type, start, end, length                                                                        | gene tables            |
+| =cds.fasta=            | FASTA keyed by gene id                                                                                             | clustering             |
+| =protein.fasta=        | FASTA keyed by gene id                                                                                             | clustering             |
+| =expression.parquet= | gene_id + one column per sample (Float32 TPM)                                                                      | clustering, expression |
+| =sample_tissue.tsv=    | sample_id, tissue, tissue_detail                                                                                   | clustering, expression |
+| =orthologs.tsv=        | gene_id, species, target_gene_id, target_protein_id, perc_id, perc_id_r1, perc_pos, orthology_type, ortholog_count | conservation           |
+| =species.tsv=          | species, species_label, taxon_id                                                                                   | conservation           |
+| =species_tree.nwk=     | Newick, leaves = species                                                                                           | conservation           |
+|----------------------+--------------------------------------------------------------------------------------------------------------------+------------------------|
 
 ** Prerequisites (raw downloads you provide)
 Place these in =backend/data/raw/= before running preprocess:
@@ -44,6 +44,7 @@ python scripts/build/run.py             # general, dataset -> served parquet
 # Skip the heavy/optional views (applies to both phases)
 python scripts/run_pipeline.py --skip-clustering      # skip steps that need GTEx + sequences
 python scripts/run_pipeline.py --skip-conservation    # skip orthologs + species tree
+python scripts/run_pipeline.py --skip-expression      # skip the gene x tissue expression matrix
 
 # Use a non-default HGNC file
 python scripts/run_pipeline.py path/to/my_family.txt
@@ -66,6 +67,7 @@ On a fresh run the preprocess phase stops after writing =reference/family_names.
 - =build_gene_tables.py= :: Converts =dataset/genes.tsv= and =transcripts.tsv= to =genes.parquet= and =transcripts.parquet=.
 - =build_clustering.py= :: Runs MAFFT + UPGMA across four methods (amino-acid, DNA, all-tissue co-expression, brain co-expression) and outputs to =clustering.parquet=.
 - =build_conservation.py= :: Converts a gene × species matrix and species-tree node table to =conservation.parquet= and =species_tree.parquet=.
+- =build_expression.py= :: Melts the sample-level GTEx TPM matrix and aggregates mean TPM per gene × tissue (both the 31 coarse GTEx tissues and, within Brain, the ~13 fine-grained subregions) into =expression.parquet=.
 
 ** Curated inputs (=reference/=)
 - =family_names.md= :: Per-family display names written by =fetch_family_names.py=. Reorder items (the first entry is used).
@@ -80,6 +82,7 @@ backend/data/
   clustering.parquet     ← served by /api/clustering
   conservation.parquet   ← served by /api/conservation
   species_tree.parquet   ← served by /api/conservation/species-tree
+  expression.parquet     ← served by /api/expression
 
   dataset/               ← standard-format handoff (preprocess output, not served)
     genes.tsv

@@ -4,8 +4,9 @@
 
 """Run the build phase: dataset/ -> the app-served Parquet files.
 
-build_gene_tables always runs; build_clustering and build_conservation are skipped
-with --skip-clustering / --skip-conservation.
+build_gene_tables always runs; build_clustering, build_conservation, and
+build_expression are skipped with --skip-clustering / --skip-conservation /
+--skip-expression.
 """
 
 import subprocess
@@ -25,12 +26,15 @@ def run_step(step: str) -> None:
 def main() -> None:
     skip_clustering = "--skip-clustering" in sys.argv[1:]
     skip_conservation = "--skip-conservation" in sys.argv[1:]
+    skip_expression = "--skip-expression" in sys.argv[1:]
 
     run_step("build_gene_tables")
     if not skip_clustering:
         run_step("build_clustering")
     if not skip_conservation:
         run_step("build_conservation")
+    if not skip_expression:
+        run_step("build_expression")
 
     print("\nBuild complete. App-served parquets:")
     for parquet in sorted(DATA_DIR.glob("*.parquet")):

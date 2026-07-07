@@ -5,12 +5,6 @@
 from pathlib import Path
 import polars as pl
 
-_EXPRESSION_FILES = {
-    "rna": "expression_rna.parquet",
-    "protein": "expression_protein.parquet",
-}
-
-
 class ParquetSource:
     def __init__(self, data_dir: Path) -> None:
         self._dir = data_dir
@@ -33,9 +27,10 @@ class ParquetSource:
     def get_transcripts(self, gene_id: str) -> pl.DataFrame:
         return self._scan("transcripts.parquet").filter(pl.col("gene_id") == gene_id).collect()
 
-    def get_expression(self, gene_id: str | None = None, modality: str = "rna") -> pl.DataFrame:
-        filename = _EXPRESSION_FILES.get(modality, "expression_rna.parquet")
-        lf = self._scan(filename)
+    def get_expression(
+        self, gene_id: str | None = None, modality: str = "rna", tissue_scope: str = "all"
+    ) -> pl.DataFrame:
+        lf = self._scan("expression.parquet").filter(pl.col("tissue_scope") == tissue_scope)
         if gene_id:
             lf = lf.filter(pl.col("gene_id") == gene_id)
         return lf.collect()
