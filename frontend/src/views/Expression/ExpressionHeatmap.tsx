@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from "react"
+import type { MouseEvent } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
@@ -26,10 +27,10 @@ const MAX_CELL_W = 44
 const ROW_H_MIN = 16
 const ROW_H_MAX = 34
 const GENE_TREE_W = 120
-const GENE_LABEL_W = 88
+const GENE_LABEL_W = 92
 const TISSUE_LABEL_H_MIN = 100
 const LEFT_W = GENE_TREE_W + GENE_LABEL_W
-const GENE_LABEL_GAP = 6
+const GENE_LABEL_GAP = 10
 const TISSUE_LABEL_GAP = 8
 const BOTTOM_PAD = 72
 const RIGHT_PAD = 14
@@ -278,29 +279,38 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       () => (
         <svg width={LEFT_W} height={gridH} style={{ display: "block" }}>
           <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />
-          {geneRows.map((g, i) => (
-            <text
-              key={g.geneId}
-              x={GENE_TREE_W + GENE_LABEL_GAP}
-              y={i * cellH + cellH / 2 + geneFont * 0.35}
-              fontSize={geneFont}
-              fontFamily={monoFont}
-              fill={getFamilyColor(g.family ?? "?", mode)}
-              opacity={
-                (familyFilter !== null && g.family !== familyFilter ? 0.25 : 1) *
-                (selectedRow !== null && i !== selectedRow ? 0.35 : 1)
-              }
-              style={{ cursor: "pointer" }}
-              onClick={(e) => {
-                e.stopPropagation()
-                const deselecting = g.geneId === selectedGeneId
-                onSelect(deselecting ? null : g.geneId)
-                setSelectedCell(null)
-              }}
-            >
-              {g.symbol}
-            </text>
-          ))}
+          {geneRows.map((g, i) => {
+            const opacity =
+              (familyFilter !== null && g.family !== familyFilter ? 0.25 : 1) *
+              (selectedRow !== null && i !== selectedRow ? 0.35 : 1)
+            const handleClick = (e: MouseEvent) => {
+              e.stopPropagation()
+              const deselecting = g.geneId === selectedGeneId
+              onSelect(deselecting ? null : g.geneId)
+              setSelectedCell(null)
+            }
+            return (
+              <g key={g.geneId} style={{ cursor: "pointer" }} onClick={handleClick}>
+                <circle
+                  cx={GENE_TREE_W}
+                  cy={i * cellH + cellH / 2}
+                  r={4.5}
+                  fill={getFamilyColor(g.family ?? "?", mode)}
+                  opacity={opacity}
+                />
+                <text
+                  x={GENE_TREE_W + GENE_LABEL_GAP}
+                  y={i * cellH + cellH / 2 + geneFont * 0.28}
+                  fontSize={geneFont}
+                  fontFamily={monoFont}
+                  fill={getFamilyColor(g.family ?? "?", mode)}
+                  opacity={opacity}
+                >
+                  {g.symbol}
+                </text>
+              </g>
+            )
+          })}
         </svg>
       ),
       [
@@ -458,10 +468,13 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         }
       }
       const geneLabels = geneRows
-        .map(
-          (g, i) =>
-            `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${topH + i * cellH + cellH / 2 + geneFont * 0.35}" font-size="${geneFont}" font-family="${monoFont}" fill="${getFamilyColor(g.family ?? "?", mode)}">${esc(g.symbol)}</text>`,
-        )
+        .map((g, i) => {
+          const color = getFamilyColor(g.family ?? "?", mode)
+          const cy = topH + i * cellH + cellH / 2
+          const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="4.5" fill="${color}"/>`
+          const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${monoFont}" fill="${color}">${esc(g.symbol)}</text>`
+          return circle + text
+        })
         .join("")
       const tissueLabels = tissueCols
         .map((t, i) => {
