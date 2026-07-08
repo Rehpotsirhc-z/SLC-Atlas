@@ -39,6 +39,7 @@ const GENE_TREE_W = 120
 const GENE_LABEL_W = 92
 const SPECIES_TREE_H = 100
 const SPECIES_LABEL_H = 134
+const SPECIES_TOGGLE_H = 14
 const LEFT_W = GENE_TREE_W + GENE_LABEL_W
 const LEFT_GUTTER = 12
 const LEFT_COL_W = LEFT_W + LEFT_GUTTER
@@ -338,22 +339,25 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
             <Box
               onClick={onToggleSpeciesTree}
               sx={{
-                flex: 1,
-                minHeight: 14,
+                mt: "auto",
+                flex: `0 0 ${SPECIES_TOGGLE_H}px`,
+                height: SPECIES_TOGGLE_H,
+                minHeight: SPECIES_TOGGLE_H,
                 position: fits ? "static" : "sticky",
                 left: LEFT_COL_W,
                 width: Math.min(gridW + RIGHT_PAD, Math.max(0, containerW - LEFT_COL_W)),
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                lineHeight: 0,
                 cursor: "pointer",
                 color: "text.disabled",
               }}
             >
               {showSpeciesTree ? (
-                <ExpandLessIcon sx={{ fontSize: 12 }} />
+                <ExpandLessIcon sx={{ fontSize: 12, display: "block" }} />
               ) : (
-                <ExpandMoreIcon sx={{ fontSize: 12 }} />
+                <ExpandMoreIcon sx={{ fontSize: 12, display: "block" }} />
               )}
             </Box>
           )}
@@ -627,7 +631,13 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           setSelectedCell(null)
         }}
       >
-        <Box sx={{ width: LEFT_COL_W + gridW + RIGHT_PAD, ml: fits ? "auto" : 0, mr: fits ? "auto" : 0 }}>
+        <Box
+          sx={{
+            width: LEFT_COL_W + gridW + RIGHT_PAD,
+            ml: fits ? "auto" : 0,
+            mr: fits ? "auto" : 0,
+          }}
+        >
           <Box sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}>
             <Box
               sx={{
