@@ -209,6 +209,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     }, [containerW, nSpecies])
     const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
     const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
+    const geneDotR = geneFont * (4.5 / 13)
     const speciesFont = Math.max(11, Math.min(13, Math.round(cellW * 0.3)))
 
     // Gene rows ordered by the clustering dendrogram leaf order
@@ -397,7 +398,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 <circle
                   cx={GENE_TREE_W}
                   cy={i * cellH + cellH / 2}
-                  r={4.5}
+                  r={geneDotR}
                   fill={getFamilyColor(g.family ?? "?", mode)}
                   opacity={opacity}
                 />
@@ -422,6 +423,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         gridH,
         cellH,
         geneFont,
+        geneDotR,
         selectedRow,
         familyFilter,
         selectedGeneId,
@@ -580,7 +582,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         .map((g, i) => {
           const color = getFamilyColor(g.family ?? "?", mode)
           const cy = TOP_H + i * cellH + cellH / 2
-          const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="4.5" fill="${color}"/>`
+          const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>`
           const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${monoFont}" fill="${color}">${esc(g.symbol)}</text>`
           return circle + text
         })

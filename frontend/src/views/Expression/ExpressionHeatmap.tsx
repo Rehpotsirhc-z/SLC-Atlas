@@ -180,6 +180,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     }, [containerW, nTissues])
     const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
     const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
+    const geneDotR = geneFont * (4.5 / 13)
     const tissueFont = Math.max(11, Math.min(13, Math.round(cellW * 0.3)))
 
     // Rotated tissue labels vary a lot in length (esp. brain subregion names) —
@@ -311,7 +312,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                 <circle
                   cx={GENE_TREE_W}
                   cy={i * cellH + cellH / 2}
-                  r={4.5}
+                  r={geneDotR}
                   fill={getFamilyColor(g.family ?? "?", mode)}
                   opacity={opacity}
                 />
@@ -336,6 +337,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         gridH,
         cellH,
         geneFont,
+        geneDotR,
         selectedRow,
         familyFilter,
         selectedGeneId,
@@ -517,7 +519,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         .map((g, i) => {
           const color = getFamilyColor(g.family ?? "?", mode)
           const cy = topH + i * cellH + cellH / 2
-          const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="4.5" fill="${color}"/>`
+          const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>`
           const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${monoFont}" fill="${color}">${esc(g.symbol)}</text>`
           return circle + text
         })
