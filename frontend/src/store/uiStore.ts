@@ -28,8 +28,7 @@ interface UIState {
   setAnatomogramSex: (sex: "female" | "male") => void
 }
 
-export const RAIL_MIN_WIDTH = 240
-export const RAIL_MAX_WIDTH = 620
+export const RAIL_MIN_WIDTH = 150
 
 export const useUIStore = create<UIState>()(
   persist(
@@ -49,8 +48,7 @@ export const useUIStore = create<UIState>()(
       railOpen: true,
       setRailOpen: (open) => set({ railOpen: open }),
       railWidth: 320,
-      setRailWidth: (width) =>
-        set({ railWidth: Math.max(RAIL_MIN_WIDTH, Math.min(RAIL_MAX_WIDTH, width)) }),
+      setRailWidth: (width) => set({ railWidth: Math.max(RAIL_MIN_WIDTH, width) }),
       anatomogramSex: "female",
       setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
     }),

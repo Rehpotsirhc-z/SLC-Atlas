@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
@@ -42,7 +42,7 @@ import {
 import { useExpressionMatrix } from "@/api/hooks/useExpression"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
-import { useUIStore, RAIL_MIN_WIDTH, RAIL_MAX_WIDTH } from "@/store/uiStore"
+import { useUIStore, RAIL_MIN_WIDTH } from "@/store/uiStore"
 import type { PanelPos } from "@/utils/useDraggablePanel"
 import type { Gene } from "@/types/gene"
 import {
@@ -63,6 +63,9 @@ const TISSUE_OPTIONS: { value: TreeTissue; label: string }[] = [
 ]
 
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
+
+const MIN_MAIN_CONTENT_WIDTH = 420
+const RAIL_HANDLE_WIDTH = 7
 
 export default function Expression() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
@@ -151,7 +154,26 @@ export default function Expression() {
 
   useEffect(() => () => void (railFlashTimer.current && clearTimeout(railFlashTimer.current)), [])
 
-  const effRailWidth = Math.min(Math.max(railWidth, RAIL_MIN_WIDTH), RAIL_MAX_WIDTH)
+  const railRowRef = useRef<HTMLDivElement>(null)
+  const [rowWidth, setRowWidth] = useState(0)
+
+  useEffect(() => {
+    const el = railRowRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => setRowWidth(entry.contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const [railFillWidth, setRailFillWidth] = useState(Infinity)
+
+  const maxAutoRailWidth = Math.max(
+    RAIL_MIN_WIDTH,
+    rowWidth - MIN_MAIN_CONTENT_WIDTH - RAIL_HANDLE_WIDTH,
+  )
+  const effRailWidth = Math.min(Math.max(railWidth, RAIL_MIN_WIDTH), railFillWidth)
+  const handleAutoWidth = useCallback((px: number) => setRailWidth(px), [setRailWidth])
+  const handleFillWidth = useCallback((px: number) => setRailFillWidth(px), [])
 
   function startRailResize(e: React.PointerEvent) {
     e.preventDefault()
@@ -488,7 +510,7 @@ export default function Expression() {
         </Box>
         <Divider />
 
-        <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+        <Box ref={railRowRef} sx={{ flex: 1, minHeight: 0, display: "flex" }}>
           <Box sx={{ flex: 1, position: "relative", minHeight: 0, minWidth: 0 }}>
             {error ? (
               <Box sx={{ p: 2 }}>
@@ -616,7 +638,7 @@ export default function Expression() {
                 onPointerDown={startRailResize}
                 sx={{
                   flexShrink: 0,
-                  width: "7px",
+                  width: `${RAIL_HANDLE_WIDTH}px`,
                   cursor: "col-resize",
                   borderLeft: 1,
                   borderColor: "divider",
@@ -630,6 +652,9 @@ export default function Expression() {
                   view={railView}
                   presentTissues={presentTissues}
                   selectedTissue={railTissue}
+                  maxWidth={maxAutoRailWidth}
+                  onAutoWidth={handleAutoWidth}
+                  onFillWidth={handleFillWidth}
                   onPickSex={(sex) => {
                     setAnatomogramSex(sex)
                     setTissue("all")

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   Box,
   ToggleButton,
@@ -16,7 +16,7 @@ import { alpha } from "@mui/material/styles"
 import PsychologyIcon from "@mui/icons-material/Psychology"
 import FemaleIcon from "@mui/icons-material/Female"
 import MaleIcon from "@mui/icons-material/Male"
-import PsychologyIcon from "@mui/icons-material/Psychology"
+import { RAIL_MIN_WIDTH } from "@/store/uiStore"
 import { displayTissue } from "@/utils/tissue"
 import femaleSvg from "./anatomogram/homo_sapiens.female.svg?raw"
 import maleSvg from "./anatomogram/homo_sapiens.male.svg?raw"
@@ -321,6 +321,9 @@ interface RailProps {
   view: RailView
   presentTissues: Set<string>
   selectedTissue: string | null
+  maxWidth: number
+  onAutoWidth: (px: number) => void
+  onFillWidth: (px: number) => void
   onPickSex: (sex: "female" | "male") => void
   onPickBrain: () => void
   onPickTissue: (tissue: string) => void
@@ -332,17 +335,69 @@ const SVG_FOR: Record<RailView, string> = {
   brain: brainSvg,
 }
 
+function getAspectRatio(svg: string): number {
+  const m = svg.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+) ([\d.]+)"/)
+  return m ? Number(m[1]) / Number(m[2]) : 1
+}
+
 export default function AnatomogramRail({
   view,
   presentTissues,
   selectedTissue,
+  maxWidth,
+  onAutoWidth,
+  onFillWidth,
   onPickSex,
   onPickBrain,
   onPickTissue,
 }: RailProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const figureWrapRef = useRef<HTMLDivElement>(null)
+  const aspectRatio = useMemo(() => getAspectRatio(SVG_FOR[view]), [view])
+
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    const header = headerRef.current
+    const figureWrap = figureWrapRef.current
+    if (!root || !header || !figureWrap) return
+
+    const figureStyle = getComputedStyle(figureWrap)
+    const padX = parseFloat(figureStyle.paddingLeft) + parseFloat(figureStyle.paddingRight)
+    const padY = parseFloat(figureStyle.paddingTop) + parseFloat(figureStyle.paddingBottom)
+
+    function recompute() {
+      if (!root || !header) return
+      // Small padding
+      const SAFETY_PX = 2
+      const availableFigureH = Math.max(
+        0,
+        root.clientHeight - header.offsetHeight - padY - SAFETY_PX,
+      )
+      const fillWidth = availableFigureH * aspectRatio + padX
+      onFillWidth(Math.round(Math.max(fillWidth, RAIL_MIN_WIDTH)))
+      onAutoWidth(Math.round(Math.min(Math.max(fillWidth, RAIL_MIN_WIDTH), maxWidth)))
+    }
+
+    recompute()
+    let lastHeight = root.clientHeight
+    const ro = new ResizeObserver(() => {
+      if (root.clientHeight !== lastHeight) {
+        lastHeight = root.clientHeight
+        recompute()
+      }
+    })
+    ro.observe(root)
+    return () => ro.disconnect()
+  }, [aspectRatio, maxWidth, onAutoWidth, onFillWidth])
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <Box
+      ref={rootRef}
+      sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}
+    >
       <Box
+        ref={headerRef}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -380,7 +435,19 @@ export default function AnatomogramRail({
         </ToggleButton>
       </Box>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", px: 1.5, pb: 1.5 }}>
+      <Box
+        ref={figureWrapRef}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+          px: 1.5,
+          pb: 1.5,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         <AnatomogramFigure
           key={view}
           svg={SVG_FOR[view]}
