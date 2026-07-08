@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
 import CloseIcon from "@mui/icons-material/Close"
+import AccessibilityNewIcon from "@mui/icons-material/AccessibilityNew"
 import { alpha } from "@mui/material/styles"
 import {
   Alert,
@@ -41,7 +42,7 @@ import {
 import { useExpressionMatrix } from "@/api/hooks/useExpression"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
-import { useUIStore } from "@/store/uiStore"
+import { useUIStore, RAIL_MIN_WIDTH, RAIL_MAX_WIDTH } from "@/store/uiStore"
 import type { PanelPos } from "@/utils/useDraggablePanel"
 import type { Gene } from "@/types/gene"
 import {
@@ -52,6 +53,7 @@ import {
 } from "@/components/VirtualListbox"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
 import GeneExpressionPanel from "./GeneExpressionPanel"
+import AnatomogramRail, { type RailView } from "./Anatomograms"
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
 
@@ -75,6 +77,14 @@ export default function Expression() {
   const setMetric = useUIStore((s) => s.setTreeMetric)
   const tissue = useUIStore((s) => s.treeTissue)
   const setTissue = useUIStore((s) => s.setTreeTissue)
+  const railOpen = useUIStore((s) => s.railOpen)
+  const setRailOpen = useUIStore((s) => s.setRailOpen)
+  const railWidth = useUIStore((s) => s.railWidth)
+  const setRailWidth = useUIStore((s) => s.setRailWidth)
+  const anatomogramSex = useUIStore((s) => s.anatomogramSex)
+  const setAnatomogramSex = useUIStore((s) => s.setAnatomogramSex)
+  const [railTissue, setRailTissue] = useState<string | null>(null)
+  const railFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const heatmapRef = useRef<ExpressionHeatmapHandle>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const measureCounterRef = useRef<HTMLElement>(null)
@@ -84,6 +94,7 @@ export default function Expression() {
   const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
 
   const method = resolveClusterMethod(metric, tissue)
   const { data: rows, isLoading: el, error: ee } = useExpressionMatrix(tissue)
@@ -125,8 +136,35 @@ export default function Expression() {
   }, [rows])
 
   const nGenes = genes.length
-  const nTissues = useMemo(() => (rows ? new Set(rows.map((r) => r.tissue)).size : 0), [rows])
+  const presentTissues = useMemo(() => new Set((rows ?? []).map((r) => r.tissue)), [rows])
+  const nTissues = presentTissues.size
   const counterText = `${nGenes} genes · ${nTissues} tissues`
+
+  const railView: RailView = tissue === "brain" ? "brain" : anatomogramSex
+
+  function pickTissue(t: string) {
+    if (railFlashTimer.current) clearTimeout(railFlashTimer.current)
+    setRailTissue(t)
+    heatmapRef.current?.focusTissue(t)
+    railFlashTimer.current = setTimeout(() => setRailTissue(null), reduceMotion ? 900 : 1200)
+  }
+
+  useEffect(() => () => void (railFlashTimer.current && clearTimeout(railFlashTimer.current)), [])
+
+  const effRailWidth = Math.min(Math.max(railWidth, RAIL_MIN_WIDTH), RAIL_MAX_WIDTH)
+
+  function startRailResize(e: React.PointerEvent) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = effRailWidth
+    const onMove = (ev: PointerEvent) => setRailWidth(startW + (startX - ev.clientX))
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+    }
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+  }
 
   const isLoading = el || tl
   const error = ee || te
@@ -337,6 +375,30 @@ export default function Expression() {
             ))}
           </ToggleButtonGroup>
 
+          {!isMobile && (
+            <Tooltip title={railOpen ? "Hide anatomograms" : "Show anatomograms"}>
+              <ToggleButton
+                size="small"
+                value="anatomograms"
+                selected={railOpen}
+                onChange={() => setRailOpen(!railOpen)}
+                sx={{
+                  gap: "8px",
+                  px: 1.5,
+                  whiteSpace: "nowrap",
+                  "& .MuiSvgIcon-root": { fontSize: 18 },
+                }}
+              >
+                <AccessibilityNewIcon />
+                {tbState === "full" && (
+                  <Box component="span" sx={{ fontSize: "0.8125rem" }}>
+                    Anatomograms
+                  </Box>
+                )}
+              </ToggleButton>
+            </Tooltip>
+          )}
+
           {tbState !== "wrapped" && <Box sx={{ flexGrow: 1 }} />}
 
           <Box
@@ -426,119 +488,156 @@ export default function Expression() {
         </Box>
         <Divider />
 
-        <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
-          {error ? (
-            <Box sx={{ p: 2 }}>
-              <Alert severity="error">Failed to load expression data.</Alert>
-            </Box>
-          ) : isLoading || !ready ? (
-            <Box
-              sx={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
-              <ExpressionHeatmap
-                ref={heatmapRef}
-                rows={rows}
-                clusterNodes={clusterNodes}
-                familyFilter={familyFilter}
-                selectedGeneId={selectedGeneId}
-                onSelect={setSelectedGeneId}
-                geneById={geneById}
-                cornerSlot={geneOrderControl}
-              />
-
-              {selectedExpressionInfo && (
-                <GeneExpressionPanel
-                  key={selectedExpressionInfo.geneId}
-                  info={selectedExpressionInfo}
-                  onClose={() => setSelectedGeneId(null)}
-                  onOpenInGenes={() => navigate("/genes")}
-                  pos={panelPos}
-                  onPosChange={setPanelPos}
+        <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+          <Box sx={{ flex: 1, position: "relative", minHeight: 0, minWidth: 0 }}>
+            {error ? (
+              <Box sx={{ p: 2 }}>
+                <Alert severity="error">Failed to load expression data.</Alert>
+              </Box>
+            ) : isLoading || !ready ? (
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                <ExpressionHeatmap
+                  ref={heatmapRef}
+                  rows={rows}
+                  clusterNodes={clusterNodes}
+                  familyFilter={familyFilter}
+                  selectedGeneId={selectedGeneId}
+                  onSelect={setSelectedGeneId}
+                  geneById={geneById}
+                  cornerSlot={geneOrderControl}
                 />
-              )}
 
-              {!isMobile && (
-                <Paper
-                  elevation={4}
-                  sx={{
-                    position: "absolute",
-                    top: 12,
-                    left: 12,
-                    zIndex: 4,
-                    bgcolor: floatBg,
-                    backdropFilter: "blur(10px)",
-                    border: 1,
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    p: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0.75,
-                    width: 216,
-                  }}
-                >
-                  {searchPanel}
-                </Paper>
-              )}
+                {selectedExpressionInfo && (
+                  <GeneExpressionPanel
+                    key={selectedExpressionInfo.geneId}
+                    info={selectedExpressionInfo}
+                    onClose={() => setSelectedGeneId(null)}
+                    onOpenInGenes={() => navigate("/genes")}
+                    pos={panelPos}
+                    onPosChange={setPanelPos}
+                  />
+                )}
 
-              {isMobile && (
-                <>
-                  {searchOpen && (
-                    <Paper
-                      elevation={4}
-                      sx={{
-                        position: "absolute",
-                        bottom: 64,
-                        right: 12,
-                        zIndex: 4,
-                        bgcolor: floatBg,
-                        backdropFilter: "blur(10px)",
-                        border: 1,
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0.75,
-                        width: 216,
-                      }}
-                    >
-                      {searchPanel}
-                    </Paper>
-                  )}
-                  <IconButton
-                    onClick={() => setSearchOpen((v) => !v)}
+                {!isMobile && (
+                  <Paper
+                    elevation={4}
                     sx={{
                       position: "absolute",
-                      bottom: 12,
-                      right: 12,
+                      top: 12,
+                      left: 12,
                       zIndex: 4,
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      boxShadow: 4,
-                      backdropFilter: "blur(10px)",
                       bgcolor: floatBg,
+                      backdropFilter: "blur(10px)",
                       border: 1,
                       borderColor: "divider",
-                      color: searchOpen ? "text.secondary" : "primary.main",
-                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
+                      borderRadius: 2,
+                      p: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.75,
+                      width: 216,
                     }}
                   >
-                    {searchOpen ? <CloseIcon fontSize="small" /> : <SearchIcon fontSize="small" />}
-                  </IconButton>
-                </>
-              )}
+                    {searchPanel}
+                  </Paper>
+                )}
+
+                {isMobile && (
+                  <>
+                    {searchOpen && (
+                      <Paper
+                        elevation={4}
+                        sx={{
+                          position: "absolute",
+                          bottom: 64,
+                          right: 12,
+                          zIndex: 4,
+                          bgcolor: floatBg,
+                          backdropFilter: "blur(10px)",
+                          border: 1,
+                          borderColor: "divider",
+                          borderRadius: 2,
+                          p: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.75,
+                          width: 216,
+                        }}
+                      >
+                        {searchPanel}
+                      </Paper>
+                    )}
+                    <IconButton
+                      onClick={() => setSearchOpen((v) => !v)}
+                      sx={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        zIndex: 4,
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        boxShadow: 4,
+                        backdropFilter: "blur(10px)",
+                        bgcolor: floatBg,
+                        border: 1,
+                        borderColor: "divider",
+                        color: searchOpen ? "text.secondary" : "primary.main",
+                        "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
+                      }}
+                    >
+                      {searchOpen ? (
+                        <CloseIcon fontSize="small" />
+                      ) : (
+                        <SearchIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </>
+                )}
+              </>
+            )}
+          </Box>
+
+          {railOpen && !isMobile && (
+            <>
+              <Box
+                onPointerDown={startRailResize}
+                sx={{
+                  flexShrink: 0,
+                  width: "7px",
+                  cursor: "col-resize",
+                  borderLeft: 1,
+                  borderColor: "divider",
+                  transition: "background-color 0.15s",
+                  "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.18) },
+                  touchAction: "none",
+                }}
+              />
+              <Box sx={{ width: effRailWidth, flexShrink: 0, minHeight: 0 }}>
+                <AnatomogramRail
+                  view={railView}
+                  presentTissues={presentTissues}
+                  selectedTissue={railTissue}
+                  onPickSex={(sex) => {
+                    setAnatomogramSex(sex)
+                    setTissue("all")
+                  }}
+                  onPickBrain={() => setTissue("brain")}
+                  onPickTissue={pickTissue}
+                />
+              </Box>
             </>
           )}
         </Box>

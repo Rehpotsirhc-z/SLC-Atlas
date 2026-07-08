@@ -20,7 +20,16 @@ interface UIState {
   setClusteringTissue: (tissue: TreeTissue) => void
   themeMode: ThemeMode
   toggleThemeMode: () => void
+  railOpen: boolean
+  setRailOpen: (open: boolean) => void
+  railWidth: number
+  setRailWidth: (width: number) => void
+  anatomogramSex: "female" | "male"
+  setAnatomogramSex: (sex: "female" | "male") => void
 }
+
+export const RAIL_MIN_WIDTH = 240
+export const RAIL_MAX_WIDTH = 620
 
 export const useUIStore = create<UIState>()(
   persist(
@@ -37,10 +46,22 @@ export const useUIStore = create<UIState>()(
       setClusteringTissue: (tissue) => set({ clusteringTissue: tissue }),
       themeMode: "light",
       toggleThemeMode: () => set((s) => ({ themeMode: s.themeMode === "dark" ? "light" : "dark" })),
+      railOpen: true,
+      setRailOpen: (open) => set({ railOpen: open }),
+      railWidth: 320,
+      setRailWidth: (width) =>
+        set({ railWidth: Math.max(RAIL_MIN_WIDTH, Math.min(RAIL_MAX_WIDTH, width)) }),
+      anatomogramSex: "female",
+      setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
     }),
     {
       name: "slc-atlas-ui",
-      partialize: (state) => ({ themeMode: state.themeMode }),
+      partialize: (state) => ({
+        themeMode: state.themeMode,
+        railOpen: state.railOpen,
+        railWidth: state.railWidth,
+        anatomogramSex: state.anatomogramSex,
+      }),
     },
   ),
 )

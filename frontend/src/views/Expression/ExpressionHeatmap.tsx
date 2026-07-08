@@ -13,7 +13,8 @@ import {
   useState,
 } from "react"
 import type { MouseEvent } from "react"
-import { Box, Typography, useTheme } from "@mui/material"
+import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
+import { alpha } from "@mui/material/styles"
 import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
@@ -39,6 +40,7 @@ export interface ExpressionHeatmapHandle {
   resetView: () => void
   focusGene: (geneId: string) => void
   focusFamily: (family: string) => void
+  focusTissue: (tissue: string) => void
   exportSvg: (filename: string) => void
   exportPng: (filename: string) => void
 }
@@ -142,6 +144,9 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     const [hover, setHover] = useState<HoverState | null>(null)
     const [containerW, setContainerW] = useState(0)
     const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
+    const [flashCol, setFlashCol] = useState<number | null>(null)
+    const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
 
     useLayoutEffect(() => {
       const el = containerRef.current
@@ -400,6 +405,29 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       [cellH, topH],
     )
 
+    const focusTissue = useCallback(
+      (tissue: string) => {
+        const col = tissueCols.indexOf(tissue)
+        if (col < 0) return
+        const c = containerRef.current
+        if (c) {
+          // Center the column within the tissue area
+          const target = col * cellW + cellW / 2 - (c.clientWidth - LEFT_W) / 2
+          const max = c.scrollWidth - c.clientWidth
+          c.scrollTo({
+            left: Math.max(0, Math.min(max, target)),
+            behavior: reduceMotion ? "auto" : "smooth",
+          })
+        }
+        if (flashTimer.current) clearTimeout(flashTimer.current)
+        setFlashCol(col)
+        flashTimer.current = setTimeout(() => setFlashCol(null), reduceMotion ? 900 : 1200)
+      },
+      [tissueCols, cellW, reduceMotion],
+    )
+
+    useEffect(() => () => void (flashTimer.current && clearTimeout(flashTimer.current)), [])
+
     const didInitialFocus = useRef(false)
     useEffect(() => {
       if (!selectedGeneId || didInitialFocus.current) return
@@ -422,6 +450,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           const rowIdxs = geneRows.flatMap((g, i) => (g.family === family ? [i] : []))
           if (rowIdxs.length) scrollToRow(rowIdxs[Math.floor(rowIdxs.length / 2)])
         },
+        focusTissue,
         exportSvg: (filename) => {
           const svg = buildFigureSvg()
           if (svg)
@@ -449,7 +478,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           img.src = url
         },
       }),
-      [rowByGene, geneRows, scrollToRow, gridW, gridH, topH, matrix, mode],
+      [rowByGene, geneRows, scrollToRow, focusTissue, gridW, gridH, topH, matrix, mode],
     )
 
     function buildFigureSvg(): string | null {
@@ -580,6 +609,32 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                   }
                 }}
               />
+              {flashCol !== null && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    left: flashCol * cellW,
+                    top: 0,
+                    width: cellW,
+                    height: gridH,
+                    pointerEvents: "none",
+                    zIndex: 1,
+                    boxShadow: `inset 0 0 0 2px ${theme.palette.secondary.main}`,
+                    bgcolor: alpha(theme.palette.secondary.main, 0.12),
+                    ...(reduceMotion
+                      ? {}
+                      : {
+                          animation: "tissueFlash 1.2s ease-out",
+                          "@keyframes tissueFlash": {
+                            "0%": { opacity: 0 },
+                            "15%": { opacity: 1 },
+                            "70%": { opacity: 0.55 },
+                            "100%": { opacity: 0 },
+                          },
+                        }),
+                  }}
+                />
+              )}
               {selectedRow !== null && selectedCol !== null && (
                 <Box
                   sx={{
@@ -589,6 +644,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                     width: cellW - 1,
                     height: cellH - 1,
                     pointerEvents: "none",
+                    zIndex: 2,
                     boxShadow: `inset 0 0 0 2px ${theme.palette.secondary.main}`,
                   }}
                 />
