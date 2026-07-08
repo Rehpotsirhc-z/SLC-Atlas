@@ -19,6 +19,7 @@ import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
 import { displayTissue, sortedTissues } from "@/utils/tissue"
+import { useTpmColorScale } from "@/utils/tpmColor"
 import type { ExpressionRow } from "@/types/expression"
 import type { ClusterNode } from "@/types/clustering"
 import type { Gene } from "@/types/gene"
@@ -59,18 +60,6 @@ interface GeneRow {
   geneId: string
   symbol: string
   family: string | null
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace("#", "")
-  const v =
-    h.length === 3
-      ? h
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : h
-  return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)]
 }
 
 function formatTpm(value: number): string {
@@ -232,11 +221,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       return m
     }, [geneRows])
 
-    const domainMax = useMemo(() => {
-      let max = 0
-      for (const r of rows) max = Math.max(max, Math.log2(r.tpm + 1))
-      return max || 1
-    }, [rows])
+    const { colorFor } = useTpmColorScale(rows)
 
     const gridW = tissueCols.length * cellW
     const gridH = geneRows.length * cellH
@@ -246,21 +231,6 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
 
     const lineColor = theme.palette.divider
-    const absentColor = theme.palette.action.disabledBackground
-
-    const colorFor = useCallback(
-      (tpm: number | null): string => {
-        if (tpm === null) return absentColor
-        const t = Math.max(0, Math.min(1, Math.log2(tpm + 1) / domainMax))
-        const [br, bg, bb] = hexToRgb(theme.palette.background.paper)
-        const [pr, pg, pb] = hexToRgb(theme.palette.primary.main)
-        const r = Math.round(br + (pr - br) * t)
-        const g = Math.round(bg + (pg - bg) * t)
-        const b = Math.round(bb + (pb - bb) * t)
-        return `rgb(${r},${g},${b})`
-      },
-      [domainMax, absentColor, theme.palette.background.paper, theme.palette.primary.main],
-    )
 
     const tissueHeader = useMemo(
       () => (

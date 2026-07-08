@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   Box,
   ToggleButton,
@@ -18,6 +18,7 @@ import FemaleIcon from "@mui/icons-material/Female"
 import MaleIcon from "@mui/icons-material/Male"
 import { RAIL_MIN_WIDTH } from "@/store/uiStore"
 import { displayTissue } from "@/utils/tissue"
+import { hexToRgb, tpmIntensity } from "@/utils/tpmColor"
 import femaleSvg from "./anatomogram/homo_sapiens.female.svg?raw"
 import maleSvg from "./anatomogram/homo_sapiens.male.svg?raw"
 import brainSvg from "./anatomogram/homo_sapiens.brain.svg?raw"
@@ -95,10 +96,26 @@ interface FigureProps {
   view: RailView
   presentTissues: Set<string>
   selectedTissue: string | null
+  tpmByTissue: Map<string, number> | null
+  domainMax: number
   onPick: (tissues: string[]) => void
 }
 
-function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }: FigureProps) {
+// Merged hotspots render one shape for several tissues, so just average whichever of them have data
+function groupTpm(tissues: string[], tpmByTissue: Map<string, number>): number | null {
+  const vals = tissues.map((t) => tpmByTissue.get(t)).filter((v): v is number => v !== undefined)
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+}
+
+function AnatomogramFigure({
+  svg,
+  view,
+  presentTissues,
+  selectedTissue,
+  tpmByTissue,
+  domainMax,
+  onPick,
+}: FigureProps) {
   const theme = useTheme()
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -110,17 +127,36 @@ function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }
 
   const colors = useMemo(() => {
     const base = theme.palette.text.primary
+    const restAlpha = theme.palette.mode === "dark" ? 0.16 : 0.13
+    const hoverAlpha = 0.6
     return {
       base,
       silhouetteOpacity: theme.palette.mode === "dark" ? 0.34 : 0.28,
       idle: "transparent",
-      rest: alpha(base, theme.palette.mode === "dark" ? 0.16 : 0.13),
-      hover: alpha(theme.palette.primary.main, 0.6),
-      selected: theme.palette.primary.main,
+      rest: alpha(base, restAlpha),
+      hover: alpha(theme.palette.primary.main, hoverAlpha),
       attribution: theme.palette.text.secondary,
       attributionDisc: alpha(theme.palette.text.secondary, 0.16),
+      restAlpha,
+      hoverAlpha,
+      restRgb: hexToRgb(base),
+      hoverRgb: hexToRgb(theme.palette.primary.main),
     }
   }, [theme])
+
+  const intensityFill = useCallback(
+    (tpm: number | null): string => {
+      const t = tpmIntensity(tpm, domainMax)
+      const [r0, g0, b0] = colors.restRgb
+      const [r1, g1, b1] = colors.hoverRgb
+      const r = Math.round(r0 + (r1 - r0) * t)
+      const g = Math.round(g0 + (g1 - g0) * t)
+      const b = Math.round(b0 + (b1 - b0) * t)
+      const a = colors.restAlpha + (colors.hoverAlpha - colors.restAlpha) * t
+      return `rgba(${r},${g},${b},${a.toFixed(3)})`
+    },
+    [domainMax, colors],
+  )
 
   useEffect(() => {
     const wrap = wrapRef.current
@@ -277,10 +313,14 @@ function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }
     for (const entry of partsRef.current.values()) {
       if (seen.has(entry) || !entry.present) continue
       seen.add(entry)
-      const fill =
-        selectedTissue !== null && entry.tissues.includes(selectedTissue)
-          ? colors.selected
-          : colors.rest
+      let fill: string
+      if (selectedTissue !== null && entry.tissues.includes(selectedTissue)) {
+        fill = colors.hover
+      } else if (tpmByTissue) {
+        fill = intensityFill(groupTpm(entry.tissues, tpmByTissue))
+      } else {
+        fill = colors.rest
+      }
       for (const el of entry.paint) fills.set(el, fill)
     }
     if (hover) {
@@ -288,7 +328,7 @@ function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }
       if (entry?.present) for (const el of entry.paint) fills.set(el, colors.hover)
     }
     for (const [el, fill] of fills) el.style.fill = fill
-  }, [built, hover, selectedTissue, colors])
+  }, [built, hover, selectedTissue, colors, tpmByTissue, intensityFill])
 
   function tissueAt(e: React.MouseEvent): string | null {
     const wrap = wrapRef.current
@@ -375,6 +415,8 @@ interface RailProps {
   view: RailView
   presentTissues: Set<string>
   selectedTissue: string | null
+  tpmByTissue: Map<string, number> | null
+  domainMax: number
   maxWidth: number
   onAutoWidth: (px: number) => void
   onFillWidth: (px: number) => void
@@ -398,6 +440,8 @@ export default function AnatomogramRail({
   view,
   presentTissues,
   selectedTissue,
+  tpmByTissue,
+  domainMax,
   maxWidth,
   onAutoWidth,
   onFillWidth,
@@ -508,6 +552,8 @@ export default function AnatomogramRail({
           view={view}
           presentTissues={presentTissues}
           selectedTissue={selectedTissue}
+          tpmByTissue={tpmByTissue}
+          domainMax={domainMax}
           onPick={onPickTissue}
         />
       </Box>
