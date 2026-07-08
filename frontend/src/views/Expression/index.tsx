@@ -145,10 +145,10 @@ export default function Expression() {
 
   const railView: RailView = tissue === "brain" ? "brain" : anatomogramSex
 
-  function pickTissue(t: string) {
+  function pickTissue(tissues: string[]) {
     if (railFlashTimer.current) clearTimeout(railFlashTimer.current)
-    setRailTissue(t)
-    heatmapRef.current?.focusTissue(t)
+    setRailTissue(tissues[0] ?? null)
+    heatmapRef.current?.focusTissue(tissues)
     railFlashTimer.current = setTimeout(() => setRailTissue(null), reduceMotion ? 900 : 1200)
   }
 

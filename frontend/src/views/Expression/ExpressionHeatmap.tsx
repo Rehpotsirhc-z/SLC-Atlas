@@ -40,7 +40,7 @@ export interface ExpressionHeatmapHandle {
   resetView: () => void
   focusGene: (geneId: string) => void
   focusFamily: (family: string) => void
-  focusTissue: (tissue: string) => void
+  focusTissue: (tissue: string | string[]) => void
   exportSvg: (filename: string) => void
   exportPng: (filename: string) => void
 }
@@ -144,9 +144,21 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     const [hover, setHover] = useState<HoverState | null>(null)
     const [containerW, setContainerW] = useState(0)
     const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
-    const [flashCol, setFlashCol] = useState<number | null>(null)
+    const [flashCols, setFlashCols] = useState<Set<number>>(new Set())
     const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
+
+    // Group adjacent flashed columns into one span
+    const flashSpans = useMemo(() => {
+      const sorted = [...flashCols].sort((a, b) => a - b)
+      const spans: [number, number][] = []
+      for (const col of sorted) {
+        const last = spans[spans.length - 1]
+        if (last && col === last[1] + 1) last[1] = col
+        else spans.push([col, col])
+      }
+      return spans
+    }, [flashCols])
 
     useLayoutEffect(() => {
       const el = containerRef.current
@@ -406,13 +418,18 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     )
 
     const focusTissue = useCallback(
-      (tissue: string) => {
-        const col = tissueCols.indexOf(tissue)
-        if (col < 0) return
+      (tissue: string | string[]) => {
+        const cols = (Array.isArray(tissue) ? tissue : [tissue])
+          .map((t) => tissueCols.indexOf(t))
+          .filter((col) => col >= 0)
+        if (cols.length === 0) return
         const c = containerRef.current
         if (c) {
-          // Center the column within the tissue area
-          const target = col * cellW + cellW / 2 - (c.clientWidth - LEFT_W) / 2
+          // Center the midpoint of the focused columns' span within the tissue area
+          const minCol = Math.min(...cols)
+          const maxCol = Math.max(...cols)
+          const midX = ((minCol + maxCol + 1) / 2) * cellW
+          const target = midX - (c.clientWidth - LEFT_W) / 2
           const max = c.scrollWidth - c.clientWidth
           c.scrollTo({
             left: Math.max(0, Math.min(max, target)),
@@ -420,8 +437,8 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           })
         }
         if (flashTimer.current) clearTimeout(flashTimer.current)
-        setFlashCol(col)
-        flashTimer.current = setTimeout(() => setFlashCol(null), reduceMotion ? 900 : 1200)
+        setFlashCols(new Set(cols))
+        flashTimer.current = setTimeout(() => setFlashCols(new Set()), reduceMotion ? 900 : 1200)
       },
       [tissueCols, cellW, reduceMotion],
     )
@@ -609,13 +626,14 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                   }
                 }}
               />
-              {flashCol !== null && (
+              {flashSpans.map(([start, end]) => (
                 <Box
+                  key={start}
                   sx={{
                     position: "absolute",
-                    left: flashCol * cellW,
+                    left: start * cellW,
                     top: 0,
-                    width: cellW,
+                    width: (end - start + 1) * cellW,
                     height: gridH,
                     pointerEvents: "none",
                     zIndex: 1,
@@ -634,7 +652,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                         }),
                   }}
                 />
-              )}
+              ))}
               {selectedRow !== null && selectedCol !== null && (
                 <Box
                   sx={{

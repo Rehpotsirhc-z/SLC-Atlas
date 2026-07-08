@@ -85,9 +85,9 @@ function idToTissue(view: RailView): Record<string, string> {
 }
 
 interface PartEntry {
-  hit: SVGElement[] // elements that carry the mapped id and receive pointer events
+  tissues: string[] // every mapped tissue that renders this exact shape
   paint: SVGElement[] // shapes to fill
-  present: boolean // tissue exists in the loaded data
+  present: boolean // at least one of `tissues` exists in the loaded data
 }
 
 interface FigureProps {
@@ -95,7 +95,7 @@ interface FigureProps {
   view: RailView
   presentTissues: Set<string>
   selectedTissue: string | null
-  onPick: (tissue: string) => void
+  onPick: (tissues: string[]) => void
 }
 
 function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }: FigureProps) {
@@ -196,43 +196,91 @@ function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }
       return [el]
     }
 
-    const parts = new Map<string, PartEntry>()
+    const shapeKey = (el: SVGElement): string => {
+      if (el.tagName.toLowerCase() === "use") {
+        const href = el.getAttribute("href") ?? el.getAttribute("xlink:href")
+        if (href?.startsWith("#")) return href.slice(1)
+      }
+      return el.id
+    }
+
+    // Group tissues with same shape into one interactive hotspot
+    const rawEntries: { tissue: string; hit: SVGElement }[] = []
     for (const [id, tissue] of Object.entries(idMap)) {
-      const idEls = wrap.querySelectorAll<SVGElement>(`[id="${CSS.escape(id)}"]`)
-      idEls.forEach((idEl) => {
+      wrap.querySelectorAll<SVGElement>(`[id="${CSS.escape(id)}"]`).forEach((idEl) => {
         const hit = (
           idEl.tagName.toLowerCase() === "title" ? idEl.parentElement : idEl
         ) as SVGElement | null
-        if (!hit) return
-        const targets = fillTargets(hit)
-        const present = presentTissues.has(tissue)
-        if (present) {
-          hit.dataset.tissue = tissue
-          hit.style.pointerEvents = "auto"
-          hit.style.cursor = "pointer"
-          for (const t of targets) {
-            t.style.pointerEvents = "auto"
-            t.style.fill = colors.rest
-            if (!reduceMotion) t.style.transition = "fill 300ms ease-out"
-          }
-        }
-        const entry = parts.get(tissue) ?? { hit: [], paint: [], present }
-        entry.hit.push(hit)
-        entry.paint.push(...targets)
-        entry.present = present
-        parts.set(tissue, entry)
+        if (hit) rawEntries.push({ tissue, hit })
       })
     }
+
+    const groupByShape = new Map<string, { tissue: string; hit: SVGElement }[]>()
+    for (const entry of rawEntries) {
+      const key = shapeKey(entry.hit)
+      const group = groupByShape.get(key) ?? []
+      group.push(entry)
+      groupByShape.set(key, group)
+    }
+
+    const parts = new Map<string, PartEntry>()
+    const canonicalHits = new Set<SVGElement>()
+    const activeTargetIds = new Set<string>()
+    let hideDefs: SVGElement | null = null
+
+    for (const group of groupByShape.values()) {
+      const canonical = group[0].hit
+      const tissues = group.map((g) => g.tissue)
+      const present = tissues.some((t) => presentTissues.has(t))
+      const targets = fillTargets(canonical)
+
+      if (present) {
+        canonical.dataset.tissue = group[0].tissue
+        canonical.style.pointerEvents = "auto"
+        canonical.style.cursor = "pointer"
+        for (const t of targets) {
+          t.style.pointerEvents = "auto"
+          t.style.fill = colors.rest
+          if (!reduceMotion) t.style.transition = "fill 300ms ease-out"
+        }
+      }
+
+      const entry: PartEntry = { paint: targets, present, tissues }
+      for (const tissue of tissues) parts.set(tissue, entry)
+      canonicalHits.add(canonical)
+
+      const targetId = shapeKey(canonical)
+      activeTargetIds.add(targetId)
+      const base = wrap.querySelector<SVGElement>(`[id="${CSS.escape(targetId)}"]`)
+      if (base && base !== canonical) {
+        if (!hideDefs) {
+          hideDefs =
+            wrap.querySelector<SVGElement>("defs") ??
+            svgEl.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "defs"))
+        }
+        hideDefs.appendChild(base)
+      }
+    }
+
+    efo?.querySelectorAll<SVGUseElement>("use").forEach((use) => {
+      if (canonicalHits.has(use)) return
+      if (activeTargetIds.has(shapeKey(use))) use.style.display = "none"
+    })
+
     partsRef.current = parts
     setBuilt((n) => n + 1)
   }, [svg, idMap, presentTissues, colors, reduceMotion])
 
   useEffect(() => {
-    // Some tissues alias another's shape (e.g. cerebellar hemisphere and cerebellum), so resolve per-element instead of per-tissue
     const fills = new Map<SVGElement, string>()
-    for (const [tissue, entry] of partsRef.current) {
-      if (!entry.present) continue
-      const fill = selectedTissue === tissue ? colors.selected : colors.rest
+    const seen = new Set<PartEntry>()
+    for (const entry of partsRef.current.values()) {
+      if (seen.has(entry) || !entry.present) continue
+      seen.add(entry)
+      const fill =
+        selectedTissue !== null && entry.tissues.includes(selectedTissue)
+          ? colors.selected
+          : colors.rest
       for (const el of entry.paint) fills.set(el, fill)
     }
     if (hover) {
@@ -287,7 +335,11 @@ function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }
         onMouseLeave={() => setHover(null)}
         onClick={(e) => {
           const tissue = tissueAt(e)
-          if (tissue) onPick(tissue)
+          if (!tissue) return
+          const tissues = (partsRef.current.get(tissue)?.tissues ?? [tissue]).filter((t) =>
+            presentTissues.has(t),
+          )
+          if (tissues.length) onPick(tissues)
         }}
       />
       {hover && (
@@ -309,7 +361,9 @@ function AnatomogramFigure({ svg, view, presentTissues, selectedTissue, onPick }
           }}
         >
           <Typography variant="caption" sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-            {displayTissue(hover.tissue)}
+            {(partsRef.current.get(hover.tissue)?.tissues ?? [hover.tissue])
+              .map(displayTissue)
+              .join(", ")}
           </Typography>
         </Box>
       )}
@@ -326,7 +380,7 @@ interface RailProps {
   onFillWidth: (px: number) => void
   onPickSex: (sex: "female" | "male") => void
   onPickBrain: () => void
-  onPickTissue: (tissue: string) => void
+  onPickTissue: (tissues: string[]) => void
 }
 
 const SVG_FOR: Record<RailView, string> = {
