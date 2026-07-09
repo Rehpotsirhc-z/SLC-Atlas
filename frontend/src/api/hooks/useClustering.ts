@@ -12,8 +12,9 @@ export type ClusterMethod =
   | "rna_coexpression_all"
   | "rna_coexpression_brain"
   | "ortholog_identity"
+  | "family_grouping"
 
-export type TreeMetric = "aa" | "dna" | "rna" | "ortho"
+export type TreeMetric = "aa" | "dna" | "rna" | "ortho" | "family"
 export type TreeTissue = "all" | "brain"
 
 export const CLUSTER_METHOD: Record<string, ClusterMethod> = {
@@ -22,15 +23,17 @@ export const CLUSTER_METHOD: Record<string, ClusterMethod> = {
   "rna:all": "rna_coexpression_all",
   "rna:brain": "rna_coexpression_brain",
   ortho: "ortholog_identity",
+  family: "family_grouping",
 }
 
-export const METRIC_ORDER: TreeMetric[] = ["aa", "dna", "rna", "ortho"]
+export const METRIC_ORDER: TreeMetric[] = ["aa", "dna", "rna", "ortho", "family"]
 
 export const METRIC_LABEL: Record<TreeMetric, string> = {
   aa: "Amino acid",
   dna: "DNA",
   rna: "Co-expression",
   ortho: "Orthology",
+  family: "Family",
 }
 
 export function resolveClusterMethod(metric: TreeMetric, tissue: TreeTissue): ClusterMethod {

@@ -14,6 +14,10 @@ interface UIState {
   setTreeMetric: (metric: TreeMetric) => void
   treeTissue: TreeTissue
   setTreeTissue: (tissue: TreeTissue) => void
+  expressionMetric: TreeMetric
+  setExpressionMetric: (metric: TreeMetric) => void
+  expressionTissue: TreeTissue
+  setExpressionTissue: (tissue: TreeTissue) => void
   clusteringMetric: TreeMetric
   setClusteringMetric: (metric: TreeMetric) => void
   clusteringTissue: TreeTissue
@@ -39,6 +43,10 @@ export const useUIStore = create<UIState>()(
       setTreeMetric: (metric) => set({ treeMetric: metric }),
       treeTissue: "all",
       setTreeTissue: (tissue) => set({ treeTissue: tissue }),
+      expressionMetric: "rna",
+      setExpressionMetric: (metric) => set({ expressionMetric: metric }),
+      expressionTissue: "all",
+      setExpressionTissue: (tissue) => set({ expressionTissue: tissue }),
       clusteringMetric: "aa",
       setClusteringMetric: (metric) => set({ clusteringMetric: metric }),
       clusteringTissue: "all",

@@ -36,7 +36,6 @@ import {
   METRIC_LABEL,
   METRIC_ORDER,
   type ClusterMethod,
-  type TreeMetric,
 } from "@/api/hooks/useClustering"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
@@ -51,8 +50,6 @@ import {
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
 import GeneInfoPanel from "./GeneInfoPanel"
 
-type Metric = TreeMetric
-type Tissue = "all" | "brain"
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
 const METHOD_LABEL: Record<ClusterMethod, string> = {
@@ -61,6 +58,7 @@ const METHOD_LABEL: Record<ClusterMethod, string> = {
   rna_coexpression_all: "RNA co-expression — all tissues",
   rna_coexpression_brain: "RNA co-expression — brain",
   ortholog_identity: "Ortholog identity similarity",
+  family_grouping: "Grouped by family",
 }
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
@@ -687,7 +685,7 @@ export default function Clustering() {
           </Button>
         </Box>
         <ToggleButtonGroup ref={measureTogglesRef} size="small">
-          {(["aa", "dna", "rna"] as Metric[]).map((m) => (
+          {METRIC_ORDER.map((m) => (
             <ToggleButton key={m} value={m} sx={{ minWidth: 120 }}>
               {METRIC_LABEL[m]}
             </ToggleButton>

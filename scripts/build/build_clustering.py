@@ -11,6 +11,8 @@ Methods:
   rna_coexpression_brain expression, brain samples -> 1 - Spearman corr -> UPGMA tree
   ortholog_identity      per-gene ortholog %-identity profile across the conservation
                          species (orthologs.tsv) -> 1 - Spearman corr -> UPGMA tree
+  family_grouping        flat grouping by HGNC family (not a distance tree): root ->
+                         one node per family -> gene leaves, all branch lengths zero
 
 Every tree is serialized as a flat node table (one row per node) so the API can
 return it without a Newick parser on the client:
@@ -181,6 +183,53 @@ def ortho_distance(gene_ids: list[str]) -> tuple[list[str], np.ndarray]:
     return corr_distance(wide, species_cols)
 
 
+def family_grouping(
+    gene_ids: list[str], meta: dict[str, dict], method: str
+) -> tuple[list[dict], str]:
+    """Flat family grouping: root -> one internal node per family -> gene leaves.
+    All branch lengths are zero because this expresses family membership, not
+    distance. Families are ordered alphabetically and genes by symbol within each
+    family so the layout is stable."""
+    fam_to_genes: dict[str, list[str]] = {}
+    for gid in gene_ids:
+        fam = meta.get(gid, {}).get("family") or "Unassigned"
+        fam_to_genes.setdefault(fam, []).append(gid)
+
+    rows: list[dict] = []
+    next_id = 0
+
+    def add(parent_id: int | None, gid: str | None = None) -> int:
+        nonlocal next_id
+        node_id = next_id
+        next_id += 1
+        m = meta.get(gid, {}) if gid else {}
+        rows.append(
+            {
+                "method": method,
+                "node_id": node_id,
+                "parent_id": parent_id,
+                "branch_length": 0.0,
+                "gene_id": gid,
+                "symbol": m.get("symbol") if gid else None,
+                "family": m.get("family") if gid else None,
+            }
+        )
+        return node_id
+
+    root_id = add(None)
+    fam_parts: list[str] = []
+    for fam in sorted(fam_to_genes):
+        fam_id = add(root_id)
+        genes = sorted(fam_to_genes[fam], key=lambda g: (meta.get(g, {}).get("symbol") or g))
+        leaf_parts = []
+        for gid in genes:
+            add(fam_id, gid)
+            leaf_parts.append(f"{meta.get(gid, {}).get('symbol') or gid}:0.00000")
+        fam_parts.append("(" + ",".join(leaf_parts) + "):0.00000")
+    newick = "(" + ",".join(fam_parts) + ");"
+    return rows, newick
+
+
 def tree_rows(
     dist: np.ndarray, labels: list[str], meta: dict[str, dict], method: str
 ) -> tuple[list[dict], str]:
@@ -271,6 +320,13 @@ def main() -> None:
         (RAW_DIR / f"tree_{method}.nwk").write_text(newick)
         n_leaves = sum(1 for r in rows if r["gene_id"])
         print(f"  {n_leaves} leaves, {len(rows)} nodes", file=sys.stderr)
+
+    print("[family_grouping]", file=sys.stderr)
+    rows, newick = family_grouping(genes["id"].to_list(), meta, "family_grouping")
+    all_rows.extend(rows)
+    (RAW_DIR / "tree_family_grouping.nwk").write_text(newick)
+    n_leaves = sum(1 for r in rows if r["gene_id"])
+    print(f"  {n_leaves} leaves, {len(rows)} nodes", file=sys.stderr)
 
     pl.DataFrame(all_rows, schema=SCHEMA).write_parquet(OUT_PATH)
     print(f"wrote {OUT_PATH}", file=sys.stderr)

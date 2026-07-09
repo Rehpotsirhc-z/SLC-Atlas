@@ -12,7 +12,8 @@ from ..models.clustering import ClusterNode
 router = APIRouter()
 
 _METHOD_PATTERN = (
-    "^(aa_sequence|dna_sequence|rna_coexpression_all|rna_coexpression_brain|ortholog_identity)$"
+    "^(aa_sequence|dna_sequence|rna_coexpression_all|rna_coexpression_brain"
+    "|ortholog_identity|family_grouping)$"
 )
 
 

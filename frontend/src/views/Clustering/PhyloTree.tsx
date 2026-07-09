@@ -203,11 +203,29 @@ function computeLayout(
   const { nodes } = tree
   const { depth, leaves } = depthAndLeafOrder(tree)
   const maxDepth = Math.max(1e-9, ...leaves.map((l) => depth.get(l)!))
+  const flat = maxDepth < 1e-6
+
+  const level = new Map<number, number>([[tree.root, 0]])
+  if (flat) {
+    const stack = [tree.root]
+    while (stack.length) {
+      const id = stack.pop()!
+      const l = level.get(id)!
+      for (const c of nodes.get(id)!.children) {
+        level.set(c, l + 1)
+        stack.push(c)
+      }
+    }
+  }
+  const maxLevel = Math.max(1, ...level.values())
   const pos = new Map<number, { x: number; y: number; angle: number | null }>()
   const order = postOrder(tree)
 
   if (layout === "rectangular") {
-    const x = (id: number) => RECT.left + (depth.get(id)! / maxDepth) * drawW
+    const x = (id: number) =>
+      flat
+        ? RECT.left + (level.get(id)! / maxLevel) * drawW
+        : RECT.left + (depth.get(id)! / maxDepth) * drawW
     const y = new Map<number, number>()
 
     leaves.forEach((l, i) => y.set(l, RECT.top + i * RECT.rowH))
@@ -273,7 +291,8 @@ function computeLayout(
   }
 
   const C = RADIAL.maxR + RADIAL.labelMargin
-  const rOf = (id: number) => (depth.get(id)! / maxDepth) * RADIAL.maxR
+  const rOf = (id: number) =>
+    flat ? (level.get(id)! / maxLevel) * RADIAL.maxR : (depth.get(id)! / maxDepth) * RADIAL.maxR
 
   for (const id of nodes.keys()) {
     const r = rOf(id)
@@ -698,6 +717,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
 
   const selectedLeaf = selectedGeneId ? leafByGene.get(selectedGeneId) : undefined
   const hoverGene = hover?.leaf.geneId ? geneById.get(hover.leaf.geneId) : undefined
+  const flat = layoutData.maxDepth < 1e-6
 
   const content = (
     <>
@@ -754,58 +774,60 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
         </svg>
       ) : (
         <>
-          <Box
-            sx={{
-              position: "sticky",
-              top: 0,
-              zIndex: 1,
-              bgcolor: "background.paper",
-              pb: 1.5,
-            }}
-          >
-            <svg
-              width={layoutData.width * rectScale}
-              height={AXIS_H}
-              viewBox={`0 0 ${layoutData.width} ${AXIS_H}`}
-              style={{ display: "block", margin: "0 auto" }}
+          {!flat && (
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                bgcolor: "background.paper",
+                pb: 1.5,
+              }}
             >
-              <line
-                x1={layoutData.treeLeft}
-                y1={AXIS_H - 1}
-                x2={layoutData.treeRight}
-                y2={AXIS_H - 1}
-                stroke={edgeColor}
-                strokeWidth={0.5}
-              />
-              {niceAxisTicks(layoutData.maxDepth).map((t) => {
-                const x =
-                  layoutData.treeLeft +
-                  (t / layoutData.maxDepth) * (layoutData.treeRight - layoutData.treeLeft)
-                return (
-                  <g key={t}>
-                    <line
-                      x1={x}
-                      y1={AXIS_H - 1}
-                      x2={x}
-                      y2={AXIS_H - 7}
-                      stroke={edgeColor}
-                      strokeWidth={0.5}
-                    />
-                    <text
-                      x={x}
-                      y={AXIS_H - 10}
-                      textAnchor="middle"
-                      fontSize={isMobile ? 9 : 11}
-                      fontFamily={monoFont}
-                      fill={edgeColor}
-                    >
-                      {formatTick(t)}
-                    </text>
-                  </g>
-                )
-              })}
-            </svg>
-          </Box>
+              <svg
+                width={layoutData.width * rectScale}
+                height={AXIS_H}
+                viewBox={`0 0 ${layoutData.width} ${AXIS_H}`}
+                style={{ display: "block", margin: "0 auto" }}
+              >
+                <line
+                  x1={layoutData.treeLeft}
+                  y1={AXIS_H - 1}
+                  x2={layoutData.treeRight}
+                  y2={AXIS_H - 1}
+                  stroke={edgeColor}
+                  strokeWidth={0.5}
+                />
+                {niceAxisTicks(layoutData.maxDepth).map((t) => {
+                  const x =
+                    layoutData.treeLeft +
+                    (t / layoutData.maxDepth) * (layoutData.treeRight - layoutData.treeLeft)
+                  return (
+                    <g key={t}>
+                      <line
+                        x1={x}
+                        y1={AXIS_H - 1}
+                        x2={x}
+                        y2={AXIS_H - 7}
+                        stroke={edgeColor}
+                        strokeWidth={0.5}
+                      />
+                      <text
+                        x={x}
+                        y={AXIS_H - 10}
+                        textAnchor="middle"
+                        fontSize={isMobile ? 9 : 11}
+                        fontFamily={monoFont}
+                        fill={edgeColor}
+                      >
+                        {formatTick(t)}
+                      </text>
+                    </g>
+                  )
+                })}
+              </svg>
+            </Box>
+          )}
           <svg
             {...svgCommon}
             width={layoutData.width * rectScale}

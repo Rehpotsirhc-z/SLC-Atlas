@@ -125,6 +125,21 @@ export function computeDendrogram(
   const { depth, leaves } = depthAndLeafOrder(nodes, root)
   const maxDepth = Math.max(1e-9, ...leaves.map((l) => depth.get(l)!))
 
+  const flat = maxDepth < 1e-6
+  const level = new Map<number, number>([[root, 0]])
+  if (flat) {
+    const stack = [root]
+    while (stack.length) {
+      const id = stack.pop()!
+      const l = level.get(id)!
+      for (const c of nodes.get(id)!.children) {
+        level.set(c, l + 1)
+        stack.push(c)
+      }
+    }
+  }
+  const maxLevel = Math.max(1, ...level.values())
+
   const cross = new Map<number, number>()
   leaves.forEach((l, i) => cross.set(l, i * step + step / 2))
   for (const id of postOrder(nodes, root)) {
@@ -137,7 +152,11 @@ export function computeDendrogram(
 
   const pos = new Map<number, { x: number; y: number }>()
   for (const [id, n] of nodes) {
-    const dfrac = n.children.length ? depth.get(id)! / maxDepth : 1
+    const dfrac = n.children.length
+      ? flat
+        ? level.get(id)! / maxLevel
+        : depth.get(id)! / maxDepth
+      : 1
     const along = cross.get(id)!
     pos.set(
       id,
