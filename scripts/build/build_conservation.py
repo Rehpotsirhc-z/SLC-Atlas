@@ -25,6 +25,8 @@ GENES_PATH = DATASET_DIR / "genes.tsv"
 CONSERVATION_OUT = DATA_DIR / "conservation.parquet"
 SPECIES_TREE_OUT = DATA_DIR / "species_tree.parquet"
 
+REFERENCE_SPECIES = "homo_sapiens"
+
 CONSERVATION_SCHEMA = {
     "gene_id": pl.Utf8,
     "symbol": pl.Utf8,
@@ -77,7 +79,7 @@ def build_matrix(species: list[dict], orthologs: dict[tuple[str, str], dict]) ->
                 "species": en,
                 "species_label": sp["species_label"],
             }
-            if en == "homo_sapiens":  # reference self column
+            if en == REFERENCE_SPECIES:  # reference self column
                 rows.append({**base, "perc_id": 100.0, "perc_id_r1": 100.0, "perc_pos": 100.0,
                              "orthology_type": "self", "ortholog_count": 1,
                              "target_gene_id": gid})
@@ -96,11 +98,25 @@ def build_matrix(species: list[dict], orthologs: dict[tuple[str, str], dict]) ->
     return rows
 
 
+def ladderize_reference_first(clade, reference: str) -> None:
+    """Ladderize (larger subtree first) so basal branches don't scatter across the
+    layout; among equal-size siblings, place the reference-containing subtree first so
+    the reference species lands at the layout's near (left) edge. This is the mirror of
+    the size-ascending ladder, reversing the whole left-to-right order."""
+    for child in clade.clades:
+        ladderize_reference_first(child, reference)
+    clade.clades.sort(
+        key=lambda c: (c.count_terminals(), any(t.name == reference for t in c.get_terminals()))
+    )
+    clade.clades.reverse()
+
+
 def build_species_tree(species: list[dict]) -> list[dict]:
     label = {s["species"]: s["species_label"] for s in species}
     taxon = {s["species"]: int(s["taxon_id"]) for s in species}
 
     tree = Phylo.read(TREE_PATH, "newick")
+    ladderize_reference_first(tree.root, REFERENCE_SPECIES)
     clades = list(tree.find_clades())
     id_of = {id(c): i for i, c in enumerate(clades)}
     parent_of: dict[int, int] = {}

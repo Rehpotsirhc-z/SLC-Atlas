@@ -173,9 +173,7 @@ def ortho_distance(gene_ids: list[str]) -> tuple[list[str], np.ndarray]:
     orth = pl.read_csv(
         ORTHOLOGS_PATH, separator="\t", columns=["gene_id", "species", "perc_id"]
     ).with_columns(pl.col("perc_id").cast(pl.Float64, strict=False))
-    orth = orth.group_by(["gene_id", "species"], maintain_order=True).agg(
-        pl.col("perc_id").last()
-    )
+    orth = orth.group_by(["gene_id", "species"], maintain_order=True).agg(pl.col("perc_id").last())
     wide = orth.pivot(on="species", index="gene_id", values="perc_id")
     wide = pl.DataFrame({"gene_id": gene_ids}).join(wide, on="gene_id", how="left")
     species_cols = [c for c in wide.columns if c != "gene_id"]
@@ -183,63 +181,57 @@ def ortho_distance(gene_ids: list[str]) -> tuple[list[str], np.ndarray]:
     return corr_distance(wide, species_cols)
 
 
-def to_newick(node, labels: list[str], parent_dist: float) -> str:
-    bl = max(0.0, parent_dist - node.dist)
-    if node.is_leaf():
-        return f"{labels[node.id]}:{bl:.5f}"
-    left = to_newick(node.get_left(), labels, node.dist)
-    right = to_newick(node.get_right(), labels, node.dist)
-    return f"({left},{right}):{bl:.5f}"
-
-
 def tree_rows(
     dist: np.ndarray, labels: list[str], meta: dict[str, dict], method: str
 ) -> tuple[list[dict], str]:
-    """UPGMA linkage -> flat node rows + a Newick string."""
+    """UPGMA linkage with ladderized flat node rows and matching Newick string.
+
+    Children are ordered smaller-subtree-first at every split (ladderized) so basal
+    and singleton branches stay on one side instead of scattering across the layout,
+    and node_ids are assigned in the resulting preorder so the flat table's sibling
+    order is stable regardless of how the client reads it."""
     z = linkage(squareform(dist, checks=False), method="average")
-    n = len(labels)
+    root = to_tree(z)
 
-    height = {i: 0.0 for i in range(n)}
-    parent = {}
-    for i, (c1, c2, d, _) in enumerate(z):
-        node = n + i
-        height[node] = float(d)
-        parent[int(c1)] = node
-        parent[int(c2)] = node
+    rows: list[dict] = []
+    next_id = 0
 
-    rows = []
-    for node in range(n + len(z)):
-        p = parent.get(node)
-        bl = (height[p] - height[node]) if p is not None else 0.0
-        if node < n:
-            gid = labels[node]
+    def visit(node, parent_id: int | None, parent_dist: float) -> str:
+        nonlocal next_id
+        node_id = next_id
+        next_id += 1
+        bl = max(0.0, parent_dist - node.dist) if parent_id is not None else 0.0
+        if node.is_leaf():
+            gid = labels[node.id]
             m = meta.get(gid, {})
             rows.append(
                 {
                     "method": method,
-                    "node_id": node,
-                    "parent_id": p,
-                    "branch_length": max(0.0, bl),
+                    "node_id": node_id,
+                    "parent_id": parent_id,
+                    "branch_length": bl,
                     "gene_id": gid,
                     "symbol": m.get("symbol"),
                     "family": m.get("family"),
                 }
             )
-        else:
-            rows.append(
-                {
-                    "method": method,
-                    "node_id": node,
-                    "parent_id": p,
-                    "branch_length": max(0.0, bl),
-                    "gene_id": None,
-                    "symbol": None,
-                    "family": None,
-                }
-            )
+            return f"{gid}:{bl:.5f}"
+        rows.append(
+            {
+                "method": method,
+                "node_id": node_id,
+                "parent_id": parent_id,
+                "branch_length": bl,
+                "gene_id": None,
+                "symbol": None,
+                "family": None,
+            }
+        )
+        kids = sorted([node.get_left(), node.get_right()], key=lambda c: c.count)
+        parts = [visit(c, node_id, node.dist) for c in kids]
+        return f"({','.join(parts)}):{bl:.5f}"
 
-    root = to_tree(z)
-    newick = to_newick(root, labels, root.dist) + ";"
+    newick = visit(root, None, 0.0) + ";"
     return rows, newick
 
 
