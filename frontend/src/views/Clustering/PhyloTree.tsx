@@ -13,6 +13,7 @@ import {
   useState,
 } from "react"
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
+import HoverTooltip from "@/components/HoverTooltip"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
 import type { ClusterNode } from "@/types/clustering"
@@ -368,7 +369,11 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
 
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [transform, setTransform] = useState<Transform>({ k: 1, x: 0, y: 0 })
-  const [hover, setHover] = useState<{ leaf: LeafLayout; sx: number; sy: number } | null>(null)
+  const [hover, setHover] = useState<{
+    leaf: LeafLayout
+    clientX: number
+    clientY: number
+  } | null>(null)
 
   const layoutData = useMemo(() => {
     const tree = buildTree(data)
@@ -437,7 +442,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   }, [isRadial])
 
   const nearestLeaf = useCallback(
-    (clientX: number, clientY: number): { leaf: LeafLayout; sx: number; sy: number } | null => {
+    (clientX: number, clientY: number): { leaf: LeafLayout; clientX: number; clientY: number } | null => {
       if (!layoutData || !svgRef.current || !containerRef.current) return null
       const svgRect = svgRef.current.getBoundingClientRect()
       const scale = isRadial ? transform.k : rectScale
@@ -477,8 +482,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
         if (best && (bestDiff > RECT.rowH * 0.6 || vx < best.x - RECT.rowH * 3)) best = null
       }
       if (!best) return null
-      const crect = containerRef.current.getBoundingClientRect()
-      return { leaf: best, sx: clientX - crect.left, sy: clientY - crect.top }
+      return { leaf: best, clientX, clientY }
     },
     [layoutData, transform, isRadial, size, rectScale],
   )
@@ -840,22 +844,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
         </>
       )}
       {hover && (
-        <Box
-          sx={{
-            position: "absolute",
-            left: hover.sx + 14,
-            top: hover.sy + 14,
-            pointerEvents: "none",
-            bgcolor: "background.default",
-            border: 1,
-            borderColor: "divider",
-            borderRadius: 1,
-            px: 1,
-            py: 0.5,
-            maxWidth: 260,
-            boxShadow: 3,
-          }}
-        >
+        <HoverTooltip x={hover.clientX} y={hover.clientY}>
           <Typography
             variant="caption"
             sx={{ fontFamily: monoFont, display: "block", fontWeight: 600, fontSize: 13 }}
@@ -894,7 +883,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
               </Box>
             )}
           </Typography>
-        </Box>
+        </HoverTooltip>
       )}
     </Box>
   )

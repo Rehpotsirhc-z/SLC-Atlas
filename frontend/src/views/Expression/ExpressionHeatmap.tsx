@@ -15,6 +15,7 @@ import {
 import type { MouseEvent } from "react"
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { alpha } from "@mui/material/styles"
+import HoverTooltip from "@/components/HoverTooltip"
 import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
@@ -73,28 +74,12 @@ interface HoverState {
   name: string | null
   tissue: string
   value: number | null
-  tipX: number
-  tipY: number
+  clientX: number
+  clientY: number
 }
 
 const HoverTip = ({ hover, monoFont }: { hover: HoverState; monoFont: string }) => (
-  <Box
-    sx={{
-      position: "absolute",
-      left: hover.tipX + 14,
-      top: hover.tipY + 14,
-      pointerEvents: "none",
-      zIndex: 10,
-      bgcolor: "background.default",
-      border: 1,
-      borderColor: "divider",
-      borderRadius: 1,
-      px: 1,
-      py: 0.5,
-      maxWidth: 260,
-      boxShadow: 3,
-    }}
-  >
+  <HoverTooltip x={hover.clientX} y={hover.clientY}>
     <Typography
       variant="caption"
       sx={{ fontFamily: monoFont, display: "block", fontWeight: 600, fontSize: 13 }}
@@ -116,7 +101,7 @@ const HoverTip = ({ hover, monoFont }: { hover: HoverState; monoFont: string }) 
         {hover.value !== null ? formatTpm(hover.value) : "—"}
       </Box>
     </Typography>
-  </Box>
+  </HoverTooltip>
 )
 
 const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapProps>(
@@ -365,7 +350,6 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         const row = Math.floor((e.clientY - cr.top) / cellH)
         if (row < 0 || row >= geneRows.length || col < 0 || col >= tissueCols.length) return null
         const cell = matrix[row][col]
-        const contRect = container.getBoundingClientRect()
         return {
           row,
           col,
@@ -373,8 +357,8 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           name: geneById.get(geneRows[row].geneId)?.name ?? null,
           tissue: displayTissue(tissueCols[col]),
           value: cell ? cell.tpm : null,
-          tipX: e.clientX - contRect.left + container.scrollLeft,
-          tipY: e.clientY - contRect.top + container.scrollTop,
+          clientX: e.clientX,
+          clientY: e.clientY,
         }
       },
       [geneRows, tissueCols, matrix, geneById, cellW, cellH],

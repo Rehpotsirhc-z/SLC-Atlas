@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
 import {
   Box,
   ToggleButton,
@@ -17,6 +16,7 @@ import { alpha } from "@mui/material/styles"
 import PsychologyIcon from "@mui/icons-material/Psychology"
 import FemaleIcon from "@mui/icons-material/Female"
 import MaleIcon from "@mui/icons-material/Male"
+import HoverTooltip from "@/components/HoverTooltip"
 import { RAIL_MIN_WIDTH } from "@/store/uiStore"
 import { displayTissue } from "@/utils/tissue"
 import { hexToRgb, tpmIntensity } from "@/utils/tpmColor"
@@ -123,8 +123,6 @@ function AnatomogramFigure({
   const partsRef = useRef<Map<string, PartEntry>>(new Map())
   const [built, setBuilt] = useState(0)
   const [hover, setHover] = useState<{ tissue: string; cx: number; cy: number } | null>(null)
-  const tipRef = useRef<HTMLDivElement>(null)
-  const [tipPos, setTipPos] = useState<{ left: number; top: number } | null>(null)
 
   const idMap = useMemo(() => idToTissue(view), [view])
 
@@ -333,19 +331,6 @@ function AnatomogramFigure({
     for (const [el, fill] of fills) el.style.fill = fill
   }, [built, hover, selectedTissue, colors, tpmByTissue, intensityFill])
 
-  useLayoutEffect(() => {
-    if (!hover || !tipRef.current) return
-    const tip = tipRef.current
-    const margin = 8
-    let left = hover.cx + 12
-    let top = hover.cy + 12
-    if (left + tip.offsetWidth + margin > window.innerWidth) left = hover.cx - 12 - tip.offsetWidth
-    if (top + tip.offsetHeight + margin > window.innerHeight) top = hover.cy - 12 - tip.offsetHeight
-    left = Math.max(margin, left)
-    top = Math.max(margin, top)
-    setTipPos({ left, top })
-  }, [hover])
-
   function tissueAt(e: React.MouseEvent): string | null {
     const wrap = wrapRef.current
     if (!wrap) return null
@@ -396,34 +381,15 @@ function AnatomogramFigure({
           if (tissues.length) onPick(tissues)
         }}
       />
-      {hover &&
-        createPortal(
-          <Box
-            ref={tipRef}
-            sx={{
-              position: "fixed",
-              left: tipPos ? tipPos.left : hover.cx + 12,
-              top: tipPos ? tipPos.top : hover.cy + 12,
-              pointerEvents: "none",
-              zIndex: (t) => t.zIndex.tooltip,
-              bgcolor: "background.default",
-              border: 1,
-              borderColor: "divider",
-              borderRadius: 1,
-              px: 1,
-              py: 0.25,
-              boxShadow: 3,
-              maxWidth: 220,
-            }}
-          >
-            <Typography variant="caption" sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-              {(partsRef.current.get(hover.tissue)?.tissues ?? [hover.tissue])
-                .map(displayTissue)
-                .join(", ")}
-            </Typography>
-          </Box>,
-          document.body,
-        )}
+      {hover && (
+        <HoverTooltip x={hover.cx} y={hover.cy} maxWidth={220} sx={{ py: 0.25 }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+            {(partsRef.current.get(hover.tissue)?.tissues ?? [hover.tissue])
+              .map(displayTissue)
+              .join(", ")}
+          </Typography>
+        </HoverTooltip>
+      )}
     </Box>
   )
 }

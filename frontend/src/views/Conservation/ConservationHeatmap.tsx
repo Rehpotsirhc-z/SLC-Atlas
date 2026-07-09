@@ -17,6 +17,7 @@ import { Box, IconButton, Tooltip, Typography, useTheme } from "@mui/material"
 import ExpandLessIcon from "@mui/icons-material/ExpandLess"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { alpha } from "@mui/material/styles"
+import HoverTooltip from "@/components/HoverTooltip"
 import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
 import { triggerDownload } from "@/utils/download"
@@ -99,23 +100,7 @@ const HoverTip = ({
   metricLabel: string
   monoFont: string
 }) => (
-  <Box
-    sx={{
-      position: "absolute",
-      left: hover.tipX + 14,
-      top: hover.tipY + 14,
-      pointerEvents: "none",
-      zIndex: 10,
-      bgcolor: "background.default",
-      border: 1,
-      borderColor: "divider",
-      borderRadius: 1,
-      px: 1,
-      py: 0.5,
-      maxWidth: 260,
-      boxShadow: 3,
-    }}
-  >
+  <HoverTooltip x={hover.clientX} y={hover.clientY}>
     <Typography
       variant="caption"
       sx={{ fontFamily: monoFont, display: "block", fontWeight: 600, fontSize: 13 }}
@@ -147,7 +132,7 @@ const HoverTip = ({
         No ortholog
       </Typography>
     )}
-  </Box>
+  </HoverTooltip>
 )
 
 interface HoverState {
@@ -158,8 +143,8 @@ interface HoverState {
   speciesLabel: string
   value: number | null
   cell: ConservationCell | undefined
-  tipX: number
-  tipY: number
+  clientX: number
+  clientY: number
 }
 
 const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHeatmapProps>(
@@ -485,7 +470,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         if (row < 0 || row >= geneRows.length || col < 0 || col >= speciesCols.length) return null
         const cell = matrix[row][col]
         const value = cell ? (cell[metricDef.field] as number | null) : null
-        const contRect = container.getBoundingClientRect()
         return {
           row,
           col,
@@ -494,8 +478,8 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           speciesLabel: speciesCols[col].label,
           value: cell && cell.orthology_type !== null ? value : null,
           cell,
-          tipX: e.clientX - contRect.left + container.scrollLeft,
-          tipY: e.clientY - contRect.top + container.scrollTop,
+          clientX: e.clientX,
+          clientY: e.clientY,
         }
       },
       [geneRows, speciesCols, matrix, metricDef, geneById, cellW, cellH],
