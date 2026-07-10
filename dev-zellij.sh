@@ -4,5 +4,8 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-source ".venv/bin/activate"
+# Run inside the dev container (after ./enter-dev.sh).
+# Launches Zellij: FastAPI on :8000, Vite on :3000.
+# The venv is already on PATH via devcontainer.json's remoteEnv, so no activation.
+
 zellij --layout zellij-layout.kdl

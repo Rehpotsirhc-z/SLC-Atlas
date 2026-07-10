@@ -6,9 +6,14 @@
 
 set -e
 
-if ! docker compose ps --status running | grep -q slc-atlas; then
-    echo "Container not running. Starting it..."
-    docker compose up -d --build
-fi
+cd "$(dirname "$0")"
 
-docker compose exec dev bash
+# Idempotent: builds + starts on first run, reuses the container afterwards.
+# Discard the JSON result line on stdout; errors still surface via stderr + exit code.
+devcontainer up --workspace-folder . >/dev/null
+
+# Re-run the lifecycle hooks (post-create) against the existing container so edits
+# to post-create.sh take effect without a rebuild. The script is idempotent.
+devcontainer exec --workspace-folder . .devcontainer/post-create.sh
+
+devcontainer exec --workspace-folder . bash
