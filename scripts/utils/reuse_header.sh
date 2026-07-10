@@ -4,19 +4,19 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-# Usage: ./scripts/reuse-header.sh [--license LICENSE] <file> [file ...]
+# Usage: scripts/utils/reuse_header.sh [--license LICENSE] <file> [file ...]
 #
 # Adds an Apache-2.0 SPDX header to source files. Pass --license CC0-1.0
 # to use CC0 instead (e.g. for config/boilerplate files).
 #
 # Examples:
-#   ./scripts/reuse-header.sh backend/app/routers/new_router.py
-#   ./scripts/reuse-header.sh --license CC0-1.0 some-config-file.yml
+#   scripts/utils/reuse_header.sh backend/app/routers/new_router.py
+#   scripts/utils/reuse_header.sh --license CC0-1.0 some-config-file.yml
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 LICENSE="Apache-2.0"
 

@@ -14,7 +14,14 @@ path = [
   "zellij-layout.kdl",
   ".gitattributes",
   "README.org",
+  "scripts/README.org",
   "reference/**",
+  "frontend/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.md"
 ]
 SPDX-FileCopyrightText = "2026 Dong Lab, Yale School of Medicine <https://donglab.org>"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "frontend/src/views/Expression/Anatomograms/anatomogram/*.svg"
+SPDX-FileCopyrightText = "EMBL-EBI (Expression Atlas anatomogram)"
+SPDX-License-Identifier = "CC-BY-4.0"
