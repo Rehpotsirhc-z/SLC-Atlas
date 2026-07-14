@@ -217,7 +217,7 @@ export default function Conservation() {
     },
   }
   const geneOrderControl = (
-    <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 0.75 }}>
+    <Box sx={{ py: 1, pr: 1.5, display: "flex", flexDirection: "column", gap: 0.75 }}>
       <Tooltip title="Tree used to order the gene rows" placement="top" arrow>
         <Select
           size="small"

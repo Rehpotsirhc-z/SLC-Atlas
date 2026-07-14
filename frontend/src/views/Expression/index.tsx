@@ -273,7 +273,7 @@ export default function Expression() {
   const iconButtons = tbState === "compact" || tbState === "counterCompact"
 
   const geneOrderControl = (
-    <Box sx={{ p: 1 }}>
+    <Box sx={{ py: 1, pr: 1.5 }}>
       <Tooltip title="Tree used to order the gene rows" placement="top" arrow>
         <Select
           size="small"
