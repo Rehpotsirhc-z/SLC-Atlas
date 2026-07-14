@@ -118,7 +118,9 @@ export default function Conservation() {
 
   const families = useMemo(() => {
     if (!cells) return []
-    return [...new Set(cells.filter((c) => c.family).map((c) => c.family as string))].sort()
+    return [...new Set(cells.filter((c) => c.family).map((c) => c.family as string))].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    )
   }, [cells])
 
   const genes = useMemo(() => {
@@ -127,7 +129,7 @@ export default function Conservation() {
     for (const c of cells) if (c.symbol && !seen.has(c.gene_id)) seen.set(c.gene_id, c.symbol)
     return [...seen.entries()]
       .map(([id, symbol]) => ({ id, symbol }))
-      .sort((a, b) => a.symbol.localeCompare(b.symbol))
+      .sort((a, b) => a.symbol.localeCompare(b.symbol, undefined, { numeric: true }))
   }, [cells])
 
   const nGenes = genes.length

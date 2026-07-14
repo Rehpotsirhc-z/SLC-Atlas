@@ -55,7 +55,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
         const aPrefix = a.lc_symbol.startsWith(q)
         const bPrefix = b.lc_symbol.startsWith(q)
         if (aPrefix !== bPrefix) return aPrefix ? -1 : 1
-        return a.lc_symbol.localeCompare(b.lc_symbol)
+        return a.lc_symbol.localeCompare(b.lc_symbol, undefined, { numeric: true })
       })
       .map((item) => item.gene)
       .slice(0, 200)

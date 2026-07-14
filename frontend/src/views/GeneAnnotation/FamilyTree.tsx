@@ -43,7 +43,9 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
     .map(([family, members]) => ({
       family,
       label: `${family}${members[0].category ? ` \u00B7 ${members[0].category}` : ""} (${members.length})`,
-      members: [...members].sort((a, b) => a.symbol.localeCompare(b.symbol)),
+      members: [...members].sort((a, b) =>
+        a.symbol.localeCompare(b.symbol, undefined, { numeric: true }),
+      ),
     }))
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
 }

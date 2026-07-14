@@ -123,7 +123,9 @@ export default function Clustering() {
 
   const families = useMemo(() => {
     if (!data) return []
-    return [...new Set(data.filter((n) => n.family).map((n) => n.family as string))].sort()
+    return [...new Set(data.filter((n) => n.family).map((n) => n.family as string))].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    )
   }, [data])
 
   const genes = useMemo(() => {
@@ -131,7 +133,7 @@ export default function Clustering() {
     return data
       .filter((n) => n.gene_id && n.symbol)
       .map((n) => ({ id: n.gene_id as string, symbol: n.symbol as string }))
-      .sort((a, b) => a.symbol.localeCompare(b.symbol))
+      .sort((a, b) => a.symbol.localeCompare(b.symbol, undefined, { numeric: true }))
   }, [data])
 
   useEffect(() => {

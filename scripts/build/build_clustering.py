@@ -27,6 +27,7 @@ Usage:
     python scripts/build/build_clustering.py
 """
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -48,6 +49,13 @@ TPM_PATH = DATASET_DIR / "expression.parquet"
 TISSUE_PATH = DATASET_DIR / "sample_tissue.tsv"
 ORTHOLOGS_PATH = DATASET_DIR / "orthologs.tsv"
 OUT_PATH = DATA_DIR / "clustering.parquet"
+
+
+def natural_key(s: str) -> list:
+    """Chunk a label into text/number runs so SLC genes sort numerically:
+    SLC2 before SLC10, SLC17A2 before SLC17A10 (plain string sort gets both wrong)."""
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
+
 
 SCHEMA = {
     "method": pl.Utf8,
@@ -188,8 +196,8 @@ def family_grouping(
 ) -> tuple[list[dict], str]:
     """Flat family grouping: root -> one internal node per family -> gene leaves.
     All branch lengths are zero because this expresses family membership, not
-    distance. Families are ordered alphabetically and genes by symbol within each
-    family so the layout is stable."""
+    distance. Families are ordered numerically (SLC2 before SLC10) and genes by
+    symbol within each family so the layout is stable."""
     fam_to_genes: dict[str, list[str]] = {}
     for gid in gene_ids:
         fam = meta.get(gid, {}).get("family") or "Unassigned"
@@ -218,9 +226,11 @@ def family_grouping(
 
     root_id = add(None)
     fam_parts: list[str] = []
-    for fam in sorted(fam_to_genes):
+    for fam in sorted(fam_to_genes, key=natural_key):
         fam_id = add(root_id)
-        genes = sorted(fam_to_genes[fam], key=lambda g: (meta.get(g, {}).get("symbol") or g))
+        genes = sorted(
+            fam_to_genes[fam], key=lambda g: natural_key(meta.get(g, {}).get("symbol") or g)
+        )
         leaf_parts = []
         for gid in genes:
             add(fam_id, gid)

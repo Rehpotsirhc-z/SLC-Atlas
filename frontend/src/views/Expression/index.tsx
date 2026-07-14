@@ -130,7 +130,9 @@ export default function Expression() {
 
   const families = useMemo(() => {
     if (!rows) return []
-    return [...new Set(rows.filter((r) => r.family).map((r) => r.family as string))].sort()
+    return [...new Set(rows.filter((r) => r.family).map((r) => r.family as string))].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    )
   }, [rows])
 
   const genes = useMemo(() => {
@@ -139,7 +141,7 @@ export default function Expression() {
     for (const r of rows) if (r.symbol && !seen.has(r.gene_id)) seen.set(r.gene_id, r.symbol)
     return [...seen.entries()]
       .map(([id, symbol]) => ({ id, symbol }))
-      .sort((a, b) => a.symbol.localeCompare(b.symbol))
+      .sort((a, b) => a.symbol.localeCompare(b.symbol, undefined, { numeric: true }))
   }, [rows])
 
   const nGenes = genes.length
