@@ -494,15 +494,16 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       [cellH, topH],
     )
 
-    const didInitialFocus = useRef(false)
+    const lastFocus = useRef<{ nodes: ClusterNode[]; gene: string } | null>(null)
     useEffect(() => {
-      if (!selectedGeneId || didInitialFocus.current) return
-      if (containerW === 0) return
+      if (!selectedGeneId || containerW === 0) return
       const row = rowByGene.get(selectedGeneId)
       if (row === undefined) return
-      didInitialFocus.current = true
+      if (lastFocus.current?.nodes === clusterNodes && lastFocus.current?.gene === selectedGeneId)
+        return
+      lastFocus.current = { nodes: clusterNodes, gene: selectedGeneId }
       scrollToRow(row)
-    }, [selectedGeneId, rowByGene, scrollToRow, containerW])
+    }, [clusterNodes, selectedGeneId, rowByGene, scrollToRow, containerW])
 
     useImperativeHandle(
       ref,

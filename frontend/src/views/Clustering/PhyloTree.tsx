@@ -504,13 +504,13 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     [layoutData, size, isRadial, leafByGene, rectScale],
   )
 
-  const didInitialFocus = useRef(false)
+  const lastFocus = useRef<{ data: ClusterNode[]; gene: string } | null>(null)
   useEffect(() => {
-    if (!selectedGeneId || didInitialFocus.current) return
-    if (!layoutData || size.w === 0) return
-    didInitialFocus.current = true
+    if (!selectedGeneId || !layoutData || size.w === 0) return
+    if (lastFocus.current?.data === data && lastFocus.current?.gene === selectedGeneId) return
+    lastFocus.current = { data, gene: selectedGeneId }
     focusGene(selectedGeneId)
-  }, [selectedGeneId, layoutData, size, focusGene])
+  }, [data, selectedGeneId, layoutData, size, focusGene])
 
   const focusFamily = useCallback(
     (family: string) => {
