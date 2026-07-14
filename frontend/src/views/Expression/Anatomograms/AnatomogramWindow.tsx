@@ -160,6 +160,7 @@ export default function AnatomogramWindow({
       <Box
         onMouseDown={handleDragStart}
         onTouchStart={handleTouchStart}
+        onDoubleClick={onPopIn}
         sx={{
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
@@ -175,13 +176,14 @@ export default function AnatomogramWindow({
         }}
       >
         <Box />
-        <Box sx={{ justifySelf: "center" }}>
+        <Box sx={{ justifySelf: "center" }} onDoubleClick={(e) => e.stopPropagation()}>
           <AnatomogramViewToggles view={view} onPickSex={onPickSex} onPickBrain={onPickBrain} />
         </Box>
         <Box
           sx={{ justifySelf: "end", display: "flex", gap: 0.25 }}
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
         >
           <Tooltip title="Dock to sidebar" arrow>
             <IconButton size="small" onClick={onPopIn} sx={{ color: "text.secondary", p: "7px" }}>
