@@ -148,7 +148,7 @@ export default function GeneExpressionPanel({
       ref={panelRef}
       elevation={6}
       sx={{
-        position: "absolute",
+        position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
         width: 280,

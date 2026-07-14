@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useRef, type RefObject } from "react"
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react"
 
 export interface PanelPos {
   x: number
@@ -19,22 +19,29 @@ export function useDraggablePanel(
   const posRef = useRef(currentPos)
   posRef.current = currentPos
 
+  useLayoutEffect(() => {
+    if (pos !== null) return
+    const container = panelRef.current?.parentElement
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    onPosChange({ x: rect.left + defaultPos.x, y: rect.top + defaultPos.y })
+  }, [pos, defaultPos, onPosChange, panelRef])
+
   useEffect(() => {
     const panel = panelRef.current
-    const container = panel?.parentElement
-    if (!panel || !container) return
+    if (!panel) return
     const pad = 12
     const clamp = () => {
       const { offsetWidth: pw, offsetHeight: ph } = panel
-      const { clientWidth: cw, clientHeight: ch } = container
+      const cw = window.innerWidth
+      const ch = window.innerHeight
       const p = posRef.current
       const x = Math.max(pad, Math.min(p.x, cw - pw - pad))
       const y = Math.max(pad, Math.min(p.y, ch - ph - pad))
       if (x !== p.x || y !== p.y) onPosChange({ x, y })
     }
-    const ro = new ResizeObserver(clamp)
-    ro.observe(container)
-    return () => ro.disconnect()
+    window.addEventListener("resize", clamp)
+    return () => window.removeEventListener("resize", clamp)
   }, [onPosChange, panelRef])
 
   function startDrag(startX: number, startY: number) {
@@ -49,15 +56,14 @@ export function useDraggablePanel(
     let finalY = initY
 
     function move(clientX: number, clientY: number) {
-      const container = panel?.parentElement
       const pad = 12
       let x = initX + (clientX - startX)
       let y = initY + (clientY - startY)
-      if (panel && container) {
+      if (panel) {
         const handleH = 28
         const grip = 40
-        x = Math.max(pad - panel.offsetWidth + grip, Math.min(x, container.clientWidth - grip - pad))
-        y = Math.max(pad, Math.min(y, container.clientHeight - handleH - pad))
+        x = Math.max(pad - panel.offsetWidth + grip, Math.min(x, window.innerWidth - grip - pad))
+        y = Math.max(pad, Math.min(y, window.innerHeight - handleH - pad))
       }
       finalX = x
       finalY = y
