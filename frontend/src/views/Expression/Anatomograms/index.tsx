@@ -18,6 +18,7 @@ import PsychologyIcon from "@mui/icons-material/Psychology"
 import FemaleIcon from "@mui/icons-material/Female"
 import MaleIcon from "@mui/icons-material/Male"
 import { PopOutIcon } from "./icons"
+import AnatomogramAttribution from "./Attribution"
 import HoverTooltip from "@/components/HoverTooltip"
 import { RAIL_MIN_WIDTH } from "@/store/uiStore"
 import { displayTissue } from "@/utils/tissue"
@@ -141,8 +142,6 @@ export function AnatomogramFigure({
       idle: "transparent",
       rest: alpha(base, restAlpha),
       hover: alpha(theme.palette.primary.main, hoverAlpha),
-      attribution: theme.palette.text.secondary,
-      attributionDisc: alpha(theme.palette.text.secondary, 0.16),
       restAlpha,
       hoverAlpha,
       restRgb: hexToRgb(base),
@@ -202,23 +201,6 @@ export function AnatomogramFigure({
       el.style.pointerEvents = "none"
       delete el.dataset.tissue
     })
-
-    const attribution = wrap.querySelector<SVGAElement>("a")
-    if (attribution) {
-      svgEl.appendChild(attribution)
-      attribution.setAttribute("target", "_blank")
-      attribution.setAttribute("rel", "noopener noreferrer")
-      attribution.style.opacity = "1"
-      attribution.style.pointerEvents = "auto"
-      attribution.style.cursor = "pointer"
-      attribution.querySelectorAll<SVGElement>("*").forEach((el) => {
-        el.style.fill = colors.attribution
-        el.style.fillOpacity = "1"
-        el.style.opacity = "1"
-      })
-      const disc = attribution.querySelector<SVGElement>("circle")
-      if (disc) disc.style.fill = colors.attributionDisc
-    }
 
     const SHAPE_SEL = "path, polygon, circle, ellipse, rect"
 
@@ -544,7 +526,13 @@ export default function AnatomogramRail({
   return (
     <Box
       ref={rootRef}
-      sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}
+      sx={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+      }}
     >
       <Box
         ref={headerRef}
@@ -596,6 +584,8 @@ export default function AnatomogramRail({
           onPick={onPickTissue}
         />
       </Box>
+
+      <AnatomogramAttribution />
     </Box>
   )
 }

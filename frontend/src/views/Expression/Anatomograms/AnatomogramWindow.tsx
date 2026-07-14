@@ -10,6 +10,7 @@ import { useUIStore } from "@/store/uiStore"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
 import { AnatomogramFigure, AnatomogramViewToggles, SVG_FOR, type RailView } from "./index"
 import { PopInIcon } from "./icons"
+import AnatomogramAttribution from "./Attribution"
 
 const DEFAULT_POS: PanelPos = { x: 64, y: 96 }
 const MIN_W = 260
@@ -219,6 +220,8 @@ export default function AnatomogramWindow({
           fit="contain"
         />
       </Box>
+
+      <AnatomogramAttribution />
 
       {HANDLES.map((hnd) => (
         <Box
