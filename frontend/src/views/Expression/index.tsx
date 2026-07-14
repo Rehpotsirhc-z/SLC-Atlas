@@ -42,7 +42,6 @@ import {
 import { useExpressionMatrix } from "@/api/hooks/useExpression"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
-import { useTpmColorScale } from "@/utils/tpmColor"
 import { useUIStore, RAIL_MIN_WIDTH } from "@/store/uiStore"
 import type { PanelPos } from "@/utils/useDraggablePanel"
 import type { Gene } from "@/types/gene"
@@ -144,10 +143,16 @@ export default function Expression() {
   const nTissues = presentTissues.size
   const counterText = `${nGenes} genes · ${nTissues} tissues`
 
-  const { domainMax } = useTpmColorScale(rows ?? [])
   const tpmByTissue = useMemo(() => {
     if (!selectedExpressionInfo) return null
     return new Map(selectedExpressionInfo.rows.map((r) => [r.tissue, r.tpm]))
+  }, [selectedExpressionInfo])
+
+  const railDomainMax = useMemo(() => {
+    if (!selectedExpressionInfo) return 1
+    let m = 0
+    for (const r of selectedExpressionInfo.rows) m = Math.max(m, Math.log2(r.tpm + 1))
+    return m || 1
   }, [selectedExpressionInfo])
 
   const railView: RailView = tissue === "brain" ? "brain" : anatomogramSex
@@ -663,7 +668,7 @@ export default function Expression() {
                   onAutoWidth={handleAutoWidth}
                   onFillWidth={handleFillWidth}
                   tpmByTissue={tpmByTissue}
-                  domainMax={domainMax}
+                  domainMax={railDomainMax}
                   onPickSex={(sex) => {
                     setAnatomogramSex(sex)
                     setTissue("all")

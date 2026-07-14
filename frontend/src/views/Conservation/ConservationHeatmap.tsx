@@ -13,7 +13,7 @@ import {
   useState,
 } from "react"
 import type { MouseEvent } from "react"
-import { Box, IconButton, Tooltip, Typography, useTheme } from "@mui/material"
+import { Box, Typography, useTheme } from "@mui/material"
 import ExpandLessIcon from "@mui/icons-material/ExpandLess"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { alpha } from "@mui/material/styles"

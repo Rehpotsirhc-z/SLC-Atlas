@@ -35,7 +35,6 @@ import {
   resolveClusterMethod,
   METRIC_LABEL,
   METRIC_ORDER,
-  type ClusterMethod,
   type TreeMetric,
 } from "@/api/hooks/useClustering"
 import { useConservation, useSpeciesTree } from "@/api/hooks/useConservation"

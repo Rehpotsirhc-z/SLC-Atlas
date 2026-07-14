@@ -23,13 +23,17 @@ export function tpmIntensity(tpm: number | null, domainMax: number): number {
   return Math.max(0, Math.min(1, Math.log2(tpm + 1) / domainMax))
 }
 
+// Cap the scale at this percentile of the loaded values to prevent a few highly expressed genes from ruining the whole heatmap
+const SCALE_PERCENTILE = 0.99
+
 export function useTpmColorScale(rows: ExpressionRow[]) {
   const theme = useTheme()
 
   const domainMax = useMemo(() => {
-    let max = 0
-    for (const r of rows) max = Math.max(max, Math.log2(r.tpm + 1))
-    return max || 1
+    if (rows.length === 0) return 1
+    const vals = rows.map((r) => Math.log2(r.tpm + 1)).sort((a, b) => a - b)
+    const idx = Math.floor(SCALE_PERCENTILE * (vals.length - 1))
+    return vals[idx] || 1
   }, [rows])
 
   const absentColor = theme.palette.action.disabledBackground
