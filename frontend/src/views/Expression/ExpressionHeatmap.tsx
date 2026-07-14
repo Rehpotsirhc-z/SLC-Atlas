@@ -33,6 +33,8 @@ const GENE_TREE_W = 120
 const GENE_LABEL_W = 92
 const TISSUE_LABEL_H_MIN = 100
 const LEFT_W = GENE_TREE_W + GENE_LABEL_W
+const LEFT_GUTTER = 12
+const LEFT_COL_W = LEFT_W + LEFT_GUTTER
 const GENE_LABEL_GAP = 10
 const TISSUE_LABEL_GAP = 8
 const BOTTOM_PAD = 72
@@ -149,7 +151,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     const nTissues = tissueCols.length
     const cellW = useMemo(() => {
       if (!nTissues || !containerW) return MIN_CELL_W
-      const avail = containerW - LEFT_W
+      const avail = containerW - LEFT_COL_W
       return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(avail / nTissues)))
     }, [containerW, nTissues])
     const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
@@ -210,7 +212,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
 
     const gridW = tissueCols.length * cellW
     const gridH = geneRows.length * cellH
-    const fits = containerW > 0 && LEFT_W + gridW + RIGHT_PAD <= containerW
+    const fits = containerW > 0 && LEFT_COL_W + gridW + RIGHT_PAD <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
     const selectedCol =
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
@@ -385,7 +387,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           const minCol = Math.min(...cols)
           const maxCol = Math.max(...cols)
           const midX = ((minCol + maxCol + 1) / 2) * cellW
-          const target = midX - (c.clientWidth - LEFT_W) / 2
+          const target = midX - (c.clientWidth - LEFT_COL_W) / 2
           const max = c.scrollWidth - c.clientWidth
           c.scrollTo({
             left: Math.max(0, Math.min(max, target)),
@@ -517,7 +519,6 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           width: "100%",
           height: "100%",
           overflow: "auto",
-          pl: fits ? 0 : 1.5,
         }}
         onPointerLeave={() => setHover(null)}
         onClick={() => {
@@ -525,14 +526,21 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           setSelectedCell(null)
         }}
       >
-        <Box sx={{ width: LEFT_W + gridW + RIGHT_PAD, mx: fits ? "auto" : 0 }}>
+        <Box
+          sx={{
+            width: LEFT_COL_W + gridW + RIGHT_PAD,
+            ml: fits ? "auto" : 0,
+            mr: fits ? "auto" : 0,
+          }}
+        >
           <Box sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}>
             <Box
               sx={{
                 position: fits ? "static" : "sticky",
                 left: 0,
                 zIndex: 1,
-                width: LEFT_W,
+                width: LEFT_COL_W,
+                pl: LEFT_GUTTER / 8,
                 flexShrink: 0,
                 bgcolor: stickyBg,
                 display: "flex",
@@ -552,7 +560,8 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                 position: fits ? "static" : "sticky",
                 left: 0,
                 zIndex: 2,
-                width: LEFT_W,
+                width: LEFT_COL_W,
+                pl: LEFT_GUTTER / 8,
                 flexShrink: 0,
                 bgcolor: stickyBg,
               }}
