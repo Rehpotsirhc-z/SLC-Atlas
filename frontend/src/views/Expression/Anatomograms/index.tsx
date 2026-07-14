@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   Box,
+  IconButton,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
@@ -16,6 +17,7 @@ import { alpha } from "@mui/material/styles"
 import PsychologyIcon from "@mui/icons-material/Psychology"
 import FemaleIcon from "@mui/icons-material/Female"
 import MaleIcon from "@mui/icons-material/Male"
+import { PopOutIcon } from "./icons"
 import HoverTooltip from "@/components/HoverTooltip"
 import { RAIL_MIN_WIDTH } from "@/store/uiStore"
 import { displayTissue } from "@/utils/tissue"
@@ -100,6 +102,8 @@ interface FigureProps {
   tpmByTissue: Map<string, number> | null
   domainMax: number
   onPick: (tissues: string[]) => void
+  // "width": fill container width (docked rail). "contain": fit inside a fixed box (floating window).
+  fit?: "width" | "contain"
 }
 
 // Merged hotspots render one shape for several tissues, so just average whichever of them have data
@@ -108,7 +112,7 @@ function groupTpm(tissues: string[], tpmByTissue: Map<string, number>): number |
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
 }
 
-function AnatomogramFigure({
+export function AnatomogramFigure({
   svg,
   view,
   presentTissues,
@@ -116,6 +120,7 @@ function AnatomogramFigure({
   tpmByTissue,
   domainMax,
   onPick,
+  fit = "width",
 }: FigureProps) {
   const theme = useTheme()
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
@@ -167,7 +172,12 @@ function AnatomogramFigure({
     if (!svgEl) return
     svgEl.removeAttribute("width")
     svgEl.removeAttribute("height")
-    Object.assign(svgEl.style, { width: "100%", height: "auto", display: "block" })
+    Object.assign(
+      svgEl.style,
+      fit === "contain"
+        ? { maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", display: "block" }
+        : { width: "100%", height: "auto", display: "block" },
+    )
 
     const efo = wrap.querySelector<SVGGElement>("#LAYER_EFO")
     const outline = wrap.querySelector<SVGGElement>("#LAYER_OUTLINE")
@@ -306,7 +316,7 @@ function AnatomogramFigure({
 
     partsRef.current = parts
     setBuilt((n) => n + 1)
-  }, [svg, idMap, presentTissues, colors, reduceMotion])
+  }, [svg, idMap, presentTissues, colors, reduceMotion, fit])
 
   useEffect(() => {
     const fills = new Map<SVGElement, string>()
@@ -354,6 +364,8 @@ function AnatomogramFigure({
     return best
   }
 
+  const contain = fit === "contain"
+
   return (
     <Box
       sx={{
@@ -361,11 +373,23 @@ function AnatomogramFigure({
         width: "100%",
         display: "flex",
         justifyContent: "center",
+        ...(contain && { height: "100%", minHeight: 0, alignItems: "center" }),
       }}
     >
       <Box
         ref={wrapRef}
-        sx={{ width: "100%" }}
+        sx={
+          contain
+            ? {
+                width: "100%",
+                height: "100%",
+                minHeight: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }
+            : { width: "100%" }
+        }
         onMouseMove={(e) => {
           const tissue = tissueAt(e)
           if (tissue) setHover({ tissue, cx: e.clientX, cy: e.clientY })
@@ -394,6 +418,49 @@ function AnatomogramFigure({
   )
 }
 
+interface ViewTogglesProps {
+  view: RailView
+  onPickSex: (sex: "female" | "male") => void
+  onPickBrain: () => void
+}
+
+export function AnatomogramViewToggles({ view, onPickSex, onPickBrain }: ViewTogglesProps) {
+  return (
+    <Box
+      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
+      <ToggleButtonGroup
+        size="small"
+        exclusive
+        value={view === "brain" ? null : view}
+        onChange={(_, v) => v && onPickSex(v)}
+      >
+        <ToggleButton value="female" sx={{ px: 1.5 }}>
+          <Tooltip title="Female body" arrow>
+            <FemaleIcon fontSize="small" />
+          </Tooltip>
+        </ToggleButton>
+        <ToggleButton value="male" sx={{ px: 1.5 }}>
+          <Tooltip title="Male body" arrow>
+            <MaleIcon fontSize="small" />
+          </Tooltip>
+        </ToggleButton>
+      </ToggleButtonGroup>
+      <ToggleButton
+        size="small"
+        value="brain"
+        selected={view === "brain"}
+        onChange={() => onPickBrain()}
+        sx={{ px: 1.5, gap: 0.5 }}
+      >
+        <PsychologyIcon fontSize="small" />
+      </ToggleButton>
+    </Box>
+  )
+}
+
 interface RailProps {
   view: RailView
   presentTissues: Set<string>
@@ -406,9 +473,10 @@ interface RailProps {
   onPickSex: (sex: "female" | "male") => void
   onPickBrain: () => void
   onPickTissue: (tissues: string[]) => void
+  onPopOut: () => void
 }
 
-const SVG_FOR: Record<RailView, string> = {
+export const SVG_FOR: Record<RailView, string> = {
   female: femaleSvg,
   male: maleSvg,
   brain: brainSvg,
@@ -431,6 +499,7 @@ export default function AnatomogramRail({
   onPickSex,
   onPickBrain,
   onPickTissue,
+  onPopOut,
 }: RailProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
@@ -480,40 +549,27 @@ export default function AnatomogramRail({
       <Box
         ref={headerRef}
         sx={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-          px: 1.5,
-          py: 1.5,
+          gap: 0.5,
+          px: 1,
+          py: 1,
+          borderBottom: 1,
+          borderColor: "divider",
         }}
       >
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={view === "brain" ? null : view}
-          onChange={(_, v) => v && onPickSex(v)}
-        >
-          <ToggleButton value="female" sx={{ px: 1.5 }}>
-            <Tooltip title="Female body" arrow>
-              <FemaleIcon fontSize="small" />
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="male" sx={{ px: 1.5 }}>
-            <Tooltip title="Male body" arrow>
-              <MaleIcon fontSize="small" />
-            </Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
-        <ToggleButton
-          size="small"
-          value="brain"
-          selected={view === "brain"}
-          onChange={() => onPickBrain()}
-          sx={{ px: 1.5, gap: 0.5 }}
-        >
-          <PsychologyIcon fontSize="small" />
-        </ToggleButton>
+        <Box />
+        <Box sx={{ justifySelf: "center" }}>
+          <AnatomogramViewToggles view={view} onPickSex={onPickSex} onPickBrain={onPickBrain} />
+        </Box>
+        <Box sx={{ justifySelf: "end" }}>
+          <Tooltip title="Pop out to a floating window" arrow>
+            <IconButton size="small" onClick={onPopOut} sx={{ color: "text.secondary", p: "7px" }}>
+              <PopOutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       <Box
@@ -523,7 +579,7 @@ export default function AnatomogramRail({
           minHeight: 0,
           overflow: "auto",
           px: 1.5,
-          pb: 1.5,
+          py: 1.5,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",

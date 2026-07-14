@@ -9,7 +9,8 @@ import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
 import CloseIcon from "@mui/icons-material/Close"
-import AccessibilityNewIcon from "@mui/icons-material/AccessibilityNew"
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft"
+import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import { alpha } from "@mui/material/styles"
 import {
   Alert,
@@ -54,6 +55,7 @@ import {
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
 import GeneExpressionPanel from "./GeneExpressionPanel"
 import AnatomogramRail, { type RailView } from "./Anatomograms"
+import AnatomogramWindow from "./Anatomograms/AnatomogramWindow"
 
 const acOptionStyle: React.CSSProperties = { padding: "0 12px", boxSizing: "border-box" }
 
@@ -65,7 +67,7 @@ const TISSUE_OPTIONS: { value: TreeTissue; label: string }[] = [
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
 const MIN_MAIN_CONTENT_WIDTH = 420
-const RAIL_HANDLE_WIDTH = 7
+const RAIL_EDGE_WIDTH = 22
 
 export default function Expression() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
@@ -84,6 +86,8 @@ export default function Expression() {
   const setRailOpen = useUIStore((s) => s.setRailOpen)
   const railWidth = useUIStore((s) => s.railWidth)
   const setRailWidth = useUIStore((s) => s.setRailWidth)
+  const railFloating = useUIStore((s) => s.railFloating)
+  const setRailFloating = useUIStore((s) => s.setRailFloating)
   const anatomogramSex = useUIStore((s) => s.anatomogramSex)
   const setAnatomogramSex = useUIStore((s) => s.setAnatomogramSex)
   const [railTissue, setRailTissue] = useState<string | null>(null)
@@ -181,7 +185,7 @@ export default function Expression() {
 
   const maxAutoRailWidth = Math.max(
     RAIL_MIN_WIDTH,
-    rowWidth - MIN_MAIN_CONTENT_WIDTH - RAIL_HANDLE_WIDTH,
+    rowWidth - MIN_MAIN_CONTENT_WIDTH - RAIL_EDGE_WIDTH,
   )
   const effRailWidth = Math.min(Math.max(railWidth, RAIL_MIN_WIDTH), railFillWidth)
   const handleAutoWidth = useCallback((px: number) => setRailWidth(px), [setRailWidth])
@@ -191,7 +195,9 @@ export default function Expression() {
     e.preventDefault()
     const startX = e.clientX
     const startW = effRailWidth
-    const onMove = (ev: PointerEvent) => setRailWidth(startW + (startX - ev.clientX))
+    const onMove = (ev: PointerEvent) => {
+      setRailWidth(startW + (startX - ev.clientX))
+    }
     const onUp = () => {
       window.removeEventListener("pointermove", onMove)
       window.removeEventListener("pointerup", onUp)
@@ -409,30 +415,6 @@ export default function Expression() {
             ))}
           </ToggleButtonGroup>
 
-          {!isMobile && (
-            <Tooltip title={railOpen ? "Hide anatomograms" : "Show anatomograms"}>
-              <ToggleButton
-                size="small"
-                value="anatomograms"
-                selected={railOpen}
-                onChange={() => setRailOpen(!railOpen)}
-                sx={{
-                  gap: "8px",
-                  px: 1.5,
-                  whiteSpace: "nowrap",
-                  "& .MuiSvgIcon-root": { fontSize: 18 },
-                }}
-              >
-                <AccessibilityNewIcon />
-                {tbState === "full" && (
-                  <Box component="span" sx={{ fontSize: "0.8125rem" }}>
-                    Anatomograms
-                  </Box>
-                )}
-              </ToggleButton>
-            </Tooltip>
-          )}
-
           {tbState !== "wrapped" && <Box sx={{ flexGrow: 1 }} />}
 
           <Box
@@ -522,7 +504,7 @@ export default function Expression() {
         </Box>
         <Divider />
 
-        <Box ref={railRowRef} sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+        <Box ref={railRowRef} sx={{ flex: 1, minHeight: 0, display: "flex", position: "relative" }}>
           <Box sx={{ flex: 1, position: "relative", minHeight: 0, minWidth: 0 }}>
             {error ? (
               <Box sx={{ p: 2 }}>
@@ -644,40 +626,110 @@ export default function Expression() {
             )}
           </Box>
 
-          {railOpen && !isMobile && (
-            <>
-              <Box
-                onPointerDown={startRailResize}
-                sx={{
-                  flexShrink: 0,
-                  width: `${RAIL_HANDLE_WIDTH}px`,
-                  cursor: "col-resize",
-                  borderLeft: 1,
-                  borderColor: "divider",
-                  transition: "background-color 0.15s",
-                  "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.18) },
-                  touchAction: "none",
-                }}
-              />
-              <Box sx={{ width: effRailWidth, flexShrink: 0, minHeight: 0 }}>
-                <AnatomogramRail
-                  view={railView}
-                  presentTissues={presentTissues}
-                  selectedTissue={railTissue}
-                  maxWidth={maxAutoRailWidth}
-                  onAutoWidth={handleAutoWidth}
-                  onFillWidth={handleFillWidth}
-                  tpmByTissue={tpmByTissue}
-                  domainMax={railDomainMax}
-                  onPickSex={(sex) => {
-                    setAnatomogramSex(sex)
-                    setTissue("all")
+          {!isMobile && !railFloating && (
+            <Box sx={{ flexShrink: 0, display: "flex", position: "relative" }}>
+              <Tooltip
+                title={railOpen ? "Hide anatomograms" : "Show anatomograms"}
+                placement="left"
+                arrow
+              >
+                <Box
+                  role="button"
+                  aria-label={railOpen ? "Hide anatomograms" : "Show anatomograms"}
+                  onClick={() => setRailOpen(!railOpen)}
+                  sx={{
+                    flexShrink: 0,
+                    width: `${RAIL_EDGE_WIDTH}px`,
+                    cursor: "pointer",
+                    borderLeft: 1,
+                    borderRight: railOpen ? 1 : 0,
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "text.disabled",
+                    transition: "background-color 0.15s, color 0.15s",
+                    "&:hover": {
+                      color: "primary.main",
+                      bgcolor: "action.hover",
+                    },
                   }}
-                  onPickBrain={() => setTissue("brain")}
-                  onPickTissue={pickTissue}
+                >
+                  {railOpen ? (
+                    <ChevronRightIcon fontSize="small" />
+                  ) : (
+                    <ChevronLeftIcon fontSize="small" />
+                  )}
+                </Box>
+              </Tooltip>
+
+              {railOpen && (
+                <Box
+                  onPointerDown={startRailResize}
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: 6,
+                    cursor: "col-resize",
+                    touchAction: "none",
+                    zIndex: 1,
+                  }}
                 />
+              )}
+
+              <Box
+                sx={{
+                  width: railOpen ? effRailWidth : 0,
+                  flexShrink: 0,
+                  minHeight: 0,
+                  overflow: "hidden",
+                  transition: reduceMotion ? "none" : "width 0.22s ease",
+                }}
+              >
+                <Box sx={{ width: effRailWidth, height: "100%", minHeight: 0 }}>
+                  <AnatomogramRail
+                    view={railView}
+                    presentTissues={presentTissues}
+                    selectedTissue={railTissue}
+                    maxWidth={maxAutoRailWidth}
+                    onAutoWidth={handleAutoWidth}
+                    onFillWidth={handleFillWidth}
+                    tpmByTissue={tpmByTissue}
+                    domainMax={railDomainMax}
+                    onPickSex={(sex) => {
+                      setAnatomogramSex(sex)
+                      setTissue("all")
+                    }}
+                    onPickBrain={() => setTissue("brain")}
+                    onPickTissue={pickTissue}
+                    onPopOut={() => setRailFloating(true)}
+                  />
+                </Box>
               </Box>
-            </>
+            </Box>
+          )}
+
+          {railOpen && !isMobile && railFloating && (
+            <AnatomogramWindow
+              view={railView}
+              presentTissues={presentTissues}
+              selectedTissue={railTissue}
+              tpmByTissue={tpmByTissue}
+              domainMax={railDomainMax}
+              onPickSex={(sex) => {
+                setAnatomogramSex(sex)
+                setTissue("all")
+              }}
+              onPickBrain={() => setTissue("brain")}
+              onPickTissue={pickTissue}
+              onClose={() => {
+                setRailOpen(false)
+                setRailFloating(false)
+              }}
+              onPopIn={() => setRailFloating(false)}
+            />
           )}
         </Box>
       </Paper>

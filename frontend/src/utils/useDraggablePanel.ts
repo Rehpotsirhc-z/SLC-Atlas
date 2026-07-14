@@ -21,10 +21,16 @@ export function useDraggablePanel(
 
   useLayoutEffect(() => {
     if (pos !== null) return
-    const container = panelRef.current?.parentElement
-    if (!container) return
+    const panel = panelRef.current
+    const container = panel?.parentElement
+    if (!panel || !container) return
     const rect = container.getBoundingClientRect()
-    onPosChange({ x: rect.left + defaultPos.x, y: rect.top + defaultPos.y })
+    const pad = 12
+    const x = rect.left + defaultPos.x
+    const y = rect.top + defaultPos.y
+    const fitX = Math.max(pad, Math.min(x, window.innerWidth - panel.offsetWidth - pad))
+    const fitY = Math.max(pad, Math.min(y, window.innerHeight - panel.offsetHeight - pad))
+    onPosChange({ x: fitX, y: fitY })
   }, [pos, defaultPos, onPosChange, panelRef])
 
   useEffect(() => {

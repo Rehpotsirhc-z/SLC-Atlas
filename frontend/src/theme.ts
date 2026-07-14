@@ -76,8 +76,6 @@ export const doomColors = {
 } as const
 
 export const monoFontFamily = '"Source Code Pro", monospace'
-// Fixed size for monospace data (gene IDs, positions, sequences, etc.) so it
-// doesn't grow when typography.fontSize is tuned for the Source Sans 3 UI text.
 export const monoFontSize = "0.8125rem"
 
 function buildTheme(mode: ThemeMode): Theme {

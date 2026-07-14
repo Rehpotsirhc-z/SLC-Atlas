@@ -6,6 +6,12 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { ThemeMode } from "@/theme"
 import type { TreeMetric, TreeTissue } from "@/api/hooks/useClustering"
+import type { PanelPos } from "@/utils/useDraggablePanel"
+
+export interface PanelSize {
+  w: number
+  h: number
+}
 
 interface UIState {
   selectedGeneId: string | null
@@ -28,11 +34,18 @@ interface UIState {
   setRailOpen: (open: boolean) => void
   railWidth: number
   setRailWidth: (width: number) => void
+  railFloating: boolean
+  setRailFloating: (floating: boolean) => void
+  railFloatPos: PanelPos | null
+  setRailFloatPos: (pos: PanelPos) => void
+  railFloatSize: PanelSize
+  setRailFloatSize: (size: PanelSize) => void
   anatomogramSex: "female" | "male"
   setAnatomogramSex: (sex: "female" | "male") => void
 }
 
-export const RAIL_MIN_WIDTH = 150
+export const RAIL_MIN_WIDTH = 220
+export const RAIL_FLOAT_DEFAULT_SIZE: PanelSize = { w: 300, h: 480 }
 
 export const useUIStore = create<UIState>()(
   persist(
@@ -57,6 +70,12 @@ export const useUIStore = create<UIState>()(
       setRailOpen: (open) => set({ railOpen: open }),
       railWidth: 320,
       setRailWidth: (width) => set({ railWidth: Math.max(RAIL_MIN_WIDTH, width) }),
+      railFloating: false,
+      setRailFloating: (floating) => set({ railFloating: floating }),
+      railFloatPos: null,
+      setRailFloatPos: (pos) => set({ railFloatPos: pos }),
+      railFloatSize: RAIL_FLOAT_DEFAULT_SIZE,
+      setRailFloatSize: (size) => set({ railFloatSize: size }),
       anatomogramSex: "female",
       setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
     }),
@@ -66,6 +85,9 @@ export const useUIStore = create<UIState>()(
         themeMode: state.themeMode,
         railOpen: state.railOpen,
         railWidth: state.railWidth,
+        railFloating: state.railFloating,
+        railFloatPos: state.railFloatPos,
+        railFloatSize: state.railFloatSize,
         anatomogramSex: state.anatomogramSex,
       }),
     },
