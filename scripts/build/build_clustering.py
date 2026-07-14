@@ -235,10 +235,12 @@ def tree_rows(
 ) -> tuple[list[dict], str]:
     """UPGMA linkage with ladderized flat node rows and matching Newick string.
 
-    Children are ordered smaller-subtree-first at every split (ladderized) so basal
-    and singleton branches stay on one side instead of scattering across the layout,
-    and node_ids are assigned in the resulting preorder so the flat table's sibling
-    order is stable regardless of how the client reads it."""
+    Children are ordered larger-subtree-first at every split, the mirror of a plain
+    smaller-first ladderization: it keeps basal/singleton branches together on one
+    side while orienting the layout so the denser, higher-signal clades sit at the top
+    of the row order instead of the bottom. node_ids are assigned in the resulting
+    preorder so the flat table's sibling order is stable regardless of how the client
+    reads it."""
     z = linkage(squareform(dist, checks=False), method="average")
     root = to_tree(z)
 
@@ -276,7 +278,7 @@ def tree_rows(
                 "family": None,
             }
         )
-        kids = sorted([node.get_left(), node.get_right()], key=lambda c: c.count)
+        kids = sorted([node.get_left(), node.get_right()], key=lambda c: c.count)[::-1]
         parts = [visit(c, node_id, node.dist) for c in kids]
         return f"({','.join(parts)}):{bl:.5f}"
 

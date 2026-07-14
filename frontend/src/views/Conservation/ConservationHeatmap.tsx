@@ -262,6 +262,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
 
     const lineColor = theme.palette.divider
+    const paper = theme.palette.background.paper
     const absentColor =
       mode === "dark"
         ? alpha(theme.palette.common.white, 0.06)
@@ -384,6 +385,12 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                   cx={GENE_TREE_W}
                   cy={i * cellH + cellH / 2}
                   r={geneDotR}
+                  fill={paper}
+                />
+                <circle
+                  cx={GENE_TREE_W}
+                  cy={i * cellH + cellH / 2}
+                  r={geneDotR}
                   fill={getFamilyColor(g.family ?? "?", mode)}
                   opacity={opacity}
                 />
@@ -416,6 +423,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         mode,
         muted,
         monoFont,
+        paper,
       ],
     )
 

@@ -218,6 +218,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
 
     const lineColor = theme.palette.divider
+    const paper = theme.palette.background.paper
 
     const tissueHeader = useMemo(
       () => (
@@ -270,6 +271,12 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                   cx={GENE_TREE_W}
                   cy={i * cellH + cellH / 2}
                   r={geneDotR}
+                  fill={paper}
+                />
+                <circle
+                  cx={GENE_TREE_W}
+                  cy={i * cellH + cellH / 2}
+                  r={geneDotR}
                   fill={getFamilyColor(g.family ?? "?", mode)}
                   opacity={opacity}
                 />
@@ -302,6 +309,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         mode,
         muted,
         monoFont,
+        paper,
       ],
     )
 
