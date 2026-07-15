@@ -529,14 +529,12 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         exportPng: (filename) => {
           const svg = buildFigureSvg()
           if (!svg) return
-          const w = LEFT_W + gridW + RIGHT_PAD
-          const h = TOP_H + gridH
           const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }))
           const img = new Image()
           img.onload = () => {
             const canvas = document.createElement("canvas")
-            canvas.width = w * 2
-            canvas.height = h * 2
+            canvas.width = img.naturalWidth * 2
+            canvas.height = img.naturalHeight * 2
             const ctx = canvas.getContext("2d")!
             ctx.scale(2, 2)
             ctx.drawImage(img, 0, 0)
@@ -553,9 +551,12 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
 
     function buildFigureSvg(): string | null {
       if (!geneTree || !speciesTree || gridW === 0) return null
-      const w = LEFT_W + gridW + RIGHT_PAD
-      const h = TOP_H + gridH
+      const margin = RIGHT_PAD
+      const contentTop = SP_TREE_PAD
+      const w = LEFT_W + gridW + margin * 2
+      const h = TOP_H - contentTop + gridH + margin * 2
       const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      const svgFont = monoFont.replace(/"/g, "&quot;")
       const rects: string[] = []
       for (let r = 0; r < matrix.length; r++) {
         for (let c = 0; c < matrix[r].length; c++) {
@@ -572,7 +573,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           const color = getFamilyColor(g.family ?? "?", mode)
           const cy = TOP_H + i * cellH + cellH / 2
           const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>`
-          const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${monoFont}" fill="${color}">${esc(g.symbol)}</text>`
+          const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${svgFont}" fill="${color}">${esc(g.symbol)}</text>`
           return circle + text
         })
         .join("")
@@ -580,17 +581,19 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         .map((s, i) => {
           const x = LEFT_W + i * cellW + cellW / 2
           const y = SPECIES_TREE_H + SP_LABEL_GAP
-          return `<text x="${x}" y="${y}" font-size="${speciesFont}" font-family="${monoFont}" fill="${muted}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(s.label)}</text>`
+          return `<text x="${x}" y="${y}" font-size="${speciesFont}" font-family="${svgFont}" fill="${muted}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(s.label)}</text>`
         })
         .join("")
       return (
         `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
         `<rect width="${w}" height="${h}" fill="${theme.palette.background.paper}"/>` +
+        `<g transform="translate(${margin} ${margin - contentTop})">` +
         `<path transform="translate(0 ${TOP_H})" d="${geneTree.edges}" stroke="${muted}" stroke-width="0.7" fill="none"/>` +
         `<path transform="translate(${LEFT_W} ${SP_TREE_PAD})" d="${speciesTree.edges}" stroke="${muted}" stroke-width="0.7" fill="none"/>` +
         rects.join("") +
         geneLabels +
         speciesLabels +
+        `</g>` +
         `</svg>`
       )
     }

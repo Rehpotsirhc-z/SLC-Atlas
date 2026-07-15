@@ -443,14 +443,12 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         exportPng: (filename) => {
           const svg = buildFigureSvg()
           if (!svg) return
-          const w = LEFT_W + gridW + RIGHT_PAD
-          const h = topH + gridH
           const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }))
           const img = new Image()
           img.onload = () => {
             const canvas = document.createElement("canvas")
-            canvas.width = w * 2
-            canvas.height = h * 2
+            canvas.width = img.naturalWidth * 2
+            canvas.height = img.naturalHeight * 2
             const ctx = canvas.getContext("2d")!
             ctx.scale(2, 2)
             ctx.drawImage(img, 0, 0)
@@ -467,9 +465,12 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
 
     function buildFigureSvg(): string | null {
       if (!geneTree || gridW === 0) return null
-      const w = LEFT_W + gridW + RIGHT_PAD
-      const h = topH + gridH
+      const margin = RIGHT_PAD
+      const contentTop = TISSUE_LABEL_GAP
+      const w = LEFT_W + gridW + margin * 2
+      const h = topH - contentTop + gridH + margin * 2
       const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      const svgFont = monoFont.replace(/"/g, "&quot;")
       const rects: string[] = []
       for (let r = 0; r < matrix.length; r++) {
         for (let c = 0; c < matrix[r].length; c++) {
@@ -485,7 +486,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           const color = getFamilyColor(g.family ?? "?", mode)
           const cy = topH + i * cellH + cellH / 2
           const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>`
-          const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${monoFont}" fill="${color}">${esc(g.symbol)}</text>`
+          const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${svgFont}" fill="${color}">${esc(g.symbol)}</text>`
           return circle + text
         })
         .join("")
@@ -493,16 +494,18 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         .map((t, i) => {
           const x = LEFT_W + i * cellW + cellW / 2
           const y = TISSUE_LABEL_GAP
-          return `<text x="${x}" y="${y}" font-size="${tissueFont}" font-family="${monoFont}" fill="${muted}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(displayTissue(t))}</text>`
+          return `<text x="${x}" y="${y}" font-size="${tissueFont}" font-family="${svgFont}" fill="${muted}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(displayTissue(t))}</text>`
         })
         .join("")
       return (
         `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
         `<rect width="${w}" height="${h}" fill="${theme.palette.background.paper}"/>` +
+        `<g transform="translate(${margin} ${margin - contentTop})">` +
         `<path transform="translate(0 ${topH})" d="${geneTree.edges}" stroke="${muted}" stroke-width="0.7" fill="none"/>` +
         rects.join("") +
         geneLabels +
         tissueLabels +
+        `</g>` +
         `</svg>`
       )
     }
