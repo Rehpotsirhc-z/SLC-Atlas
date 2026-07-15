@@ -16,7 +16,6 @@ import type { MouseEvent } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import ExpandLessIcon from "@mui/icons-material/ExpandLess"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
-import { alpha } from "@mui/material/styles"
 import HoverTooltip from "@/components/HoverTooltip"
 import { computeDendrogram } from "@/utils/dendrogram"
 import { getFamilyColor } from "@/utils/familyColor"
@@ -263,10 +262,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
 
     const lineColor = theme.palette.divider
     const paper = theme.palette.background.paper
-    const absentColor =
-      mode === "dark"
-        ? alpha(theme.palette.common.white, 0.06)
-        : alpha(theme.palette.common.black, 0.05)
+    const absentColor = paper
 
     const colorFor = useCallback(
       (value: number | null): string => {
