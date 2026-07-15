@@ -16,7 +16,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material"
-import { useRef } from "react"
+import { useLayoutEffect, useRef } from "react"
 import MiniBar from "@/components/MiniBar"
 import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
@@ -41,7 +41,7 @@ export interface ExpressionGeneInfo {
   rows: ExpressionRow[]
 }
 
-const DEFAULT_POS: PanelPos = { x: 12, y: 120 }
+const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
 const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
 const MIN_W = 280
 const MIN_H = 320
@@ -86,7 +86,14 @@ export default function GeneExpressionPanel({
     onPosChange,
     DEFAULT_POS,
   )
-  const currentSize = size ?? DEFAULT_SIZE
+  const currentSize = {
+    w: Math.max(size?.w ?? DEFAULT_SIZE.w, MIN_W),
+    h: Math.max(size?.h ?? DEFAULT_SIZE.h, MIN_H),
+  }
+  useLayoutEffect(() => {
+    if (!size || size.w < MIN_W || size.h < MIN_H) onSizeChange(currentSize)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size])
   const { startResize } = useResizablePanel(
     currentPos,
     onPosChange,

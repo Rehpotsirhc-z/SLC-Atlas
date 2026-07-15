@@ -19,6 +19,7 @@ import {
   useTheme,
 } from "@mui/material"
 import ThemeToggle from "./components/ThemeToggle"
+import GeneInfoPopup from "./components/GeneInfoPopup"
 import GeneAnnotation from "./views/GeneAnnotation"
 import Clustering from "./views/Clustering"
 import Conservation from "./views/Conservation"
@@ -105,6 +106,7 @@ export default function App() {
           <Route path="/pet" element={<PetScan />} />
         </Routes>
       </Box>
+      <GeneInfoPopup />
     </Box>
   )
 }

@@ -7,11 +7,20 @@ import { persist } from "zustand/middleware"
 import type { ThemeMode } from "@/theme"
 import type { TreeMetric, TreeTissue } from "@/api/hooks/useClustering"
 import type { PanelPos } from "@/utils/useDraggablePanel"
+import type { GeneInfo } from "@/views/Clustering/GeneInfoPanel"
+import type { ConservationGeneInfo } from "@/views/Conservation/GeneConservationPanel"
+import type { ExpressionGeneInfo } from "@/views/Expression/GeneExpressionPanel"
+import type { CellMetricKey } from "@/views/Conservation/ConservationHeatmap"
 
 export interface PanelSize {
   w: number
   h: number
 }
+
+export type PopupContent =
+  | { kind: "clustering"; info: GeneInfo }
+  | { kind: "conservation"; info: ConservationGeneInfo; metric: CellMetricKey }
+  | { kind: "expression"; info: ExpressionGeneInfo }
 
 interface UIState {
   selectedGeneId: string | null
@@ -40,6 +49,12 @@ interface UIState {
   setRailFloatPos: (pos: PanelPos) => void
   railFloatSize: PanelSize
   setRailFloatSize: (size: PanelSize) => void
+  popupPos: PanelPos | null
+  setPopupPos: (pos: PanelPos) => void
+  popupSize: PanelSize | null
+  setPopupSize: (size: PanelSize) => void
+  popupContent: PopupContent | null
+  setPopupContent: (content: PopupContent | null) => void
   anatomogramSex: "female" | "male"
   setAnatomogramSex: (sex: "female" | "male") => void
 }
@@ -76,6 +91,12 @@ export const useUIStore = create<UIState>()(
       setRailFloatPos: (pos) => set({ railFloatPos: pos }),
       railFloatSize: RAIL_FLOAT_DEFAULT_SIZE,
       setRailFloatSize: (size) => set({ railFloatSize: size }),
+      popupPos: null,
+      setPopupPos: (pos) => set({ popupPos: pos }),
+      popupSize: null,
+      setPopupSize: (size) => set({ popupSize: size }),
+      popupContent: null,
+      setPopupContent: (content) => set({ popupContent: content }),
       anatomogramSex: "female",
       setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
     }),

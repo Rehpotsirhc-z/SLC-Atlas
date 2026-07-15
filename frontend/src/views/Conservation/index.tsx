@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
@@ -41,8 +40,6 @@ import { useConservation, useSpeciesTree } from "@/api/hooks/useConservation"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore } from "@/store/uiStore"
-import type { PanelPos } from "@/utils/useDraggablePanel"
-import type { PanelSize } from "@/utils/useResizablePanel"
 import type { Gene } from "@/types/gene"
 import {
   acIndicatorSx,
@@ -55,7 +52,6 @@ import ConservationHeatmap, {
   type CellMetricKey,
   type ConservationHeatmapHandle,
 } from "./ConservationHeatmap"
-import GeneConservationPanel from "./GeneConservationPanel"
 
 type Metric = TreeMetric
 type Tissue = "all" | "brain"
@@ -70,12 +66,11 @@ export default function Conservation() {
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
-  const [panelPos, setPanelPos] = useState<PanelPos | null>(null)
-  const [panelSize, setPanelSize] = useState<PanelSize | null>(null)
   const [showSpeciesTree, setShowSpeciesTree] = useState(true)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const setPopupContent = useUIStore((s) => s.setPopupContent)
   const metric = useUIStore((s) => s.treeMetric)
   const setMetric = useUIStore((s) => s.setTreeMetric)
   const tissue = useUIStore((s) => s.treeTissue)
@@ -86,7 +81,6 @@ export default function Conservation() {
   const measureBtnsRef = useRef<HTMLDivElement>(null)
   const measureIconBtnsRef = useRef<HTMLDivElement>(null)
   const measureTogglesRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
@@ -117,6 +111,15 @@ export default function Conservation() {
       cells: geneCells,
     }
   }, [cells, selectedGeneId, geneById])
+
+  useEffect(() => {
+    if (selectedConservationInfo)
+      setPopupContent({
+        kind: "conservation",
+        info: selectedConservationInfo,
+        metric: cellMetric,
+      })
+  }, [selectedConservationInfo, cellMetric, setPopupContent])
 
   const families = useMemo(() => {
     if (!cells) return []
@@ -491,19 +494,6 @@ export default function Conservation() {
                 onToggleSpeciesTree={() => setShowSpeciesTree((v) => !v)}
               />
 
-              {selectedConservationInfo && (
-                <GeneConservationPanel
-                  key={selectedConservationInfo.geneId}
-                  info={selectedConservationInfo}
-                  metric={cellMetric}
-                  onClose={() => setSelectedGeneId(null)}
-                  onOpenInGenes={() => navigate("/genes")}
-                  pos={panelPos}
-                  onPosChange={setPanelPos}
-                  size={panelSize}
-                  onSizeChange={setPanelSize}
-                />
-              )}
 
               {!isMobile && (
                 <Paper

@@ -16,7 +16,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material"
-import { useRef } from "react"
+import { useLayoutEffect, useRef } from "react"
 import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
@@ -39,10 +39,10 @@ export interface GeneInfo {
 
 export type { PanelPos }
 
-const DEFAULT_POS: PanelPos = { x: 12, y: 120 }
-const DEFAULT_SIZE: PanelSize = { w: 260, h: 340 }
-const MIN_W = 220
-const MIN_H = 260
+const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
+const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
+const MIN_W = 280
+const MIN_H = 320
 
 interface GeneInfoPanelProps {
   info: GeneInfo
@@ -65,7 +65,8 @@ export default function GeneInfoPanel({
 }: GeneInfoPanelProps) {
   const { node, methodLabel, closestSymbol, gene } = info
   const { palette, custom } = useTheme()
-  const familyColor = getFamilyColor(node.family ?? "?", palette.mode)
+  const family = gene?.family ?? node.family ?? "?"
+  const familyColor = getFamilyColor(family, palette.mode)
   const panelRef = useRef<HTMLDivElement>(null)
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
@@ -73,7 +74,14 @@ export default function GeneInfoPanel({
     onPosChange,
     DEFAULT_POS,
   )
-  const currentSize = size ?? DEFAULT_SIZE
+  const currentSize = {
+    w: Math.max(size?.w ?? DEFAULT_SIZE.w, MIN_W),
+    h: Math.max(size?.h ?? DEFAULT_SIZE.h, MIN_H),
+  }
+  useLayoutEffect(() => {
+    if (!size || size.w < MIN_W || size.h < MIN_H) onSizeChange(currentSize)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size])
   const { startResize } = useResizablePanel(
     currentPos,
     onPosChange,
@@ -132,7 +140,7 @@ export default function GeneInfoPanel({
           >
             <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
             <Box component="span" sx={{ transform: "translateY(1px)" }}>
-              {node.family}
+              {family}
             </Box>
           </Box>
         </Tooltip>
@@ -207,10 +215,19 @@ export default function GeneInfoPanel({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+          sx={{
+            display: "block",
+            fontFamily: custom.monoFontFamily,
+            fontSize: custom.monoFontSize,
+          }}
         >
           {node.gene_id}
         </Typography>
+        {gene?.name && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            {gene.name}
+          </Typography>
+        )}
 
         <Divider sx={{ my: 1 }} />
 

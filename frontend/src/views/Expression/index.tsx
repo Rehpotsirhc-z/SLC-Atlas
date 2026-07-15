@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
@@ -44,8 +43,6 @@ import { useExpressionMatrix } from "@/api/hooks/useExpression"
 import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore, RAIL_MIN_WIDTH } from "@/store/uiStore"
-import type { PanelPos } from "@/utils/useDraggablePanel"
-import type { PanelSize } from "@/utils/useResizablePanel"
 import type { Gene } from "@/types/gene"
 import {
   acIndicatorSx,
@@ -54,7 +51,6 @@ import {
   VirtualListboxSm,
 } from "@/components/VirtualListbox"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
-import GeneExpressionPanel from "./GeneExpressionPanel"
 import AnatomogramRail, { type RailView } from "./Anatomograms"
 import AnatomogramWindow from "./Anatomograms/AnatomogramWindow"
 
@@ -75,11 +71,10 @@ export default function Expression() {
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
-  const [panelPos, setPanelPos] = useState<PanelPos | null>(null)
-  const [panelSize, setPanelSize] = useState<PanelSize | null>(null)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const setPopupContent = useUIStore((s) => s.setPopupContent)
   const metric = useUIStore((s) => s.expressionMetric)
   const setMetric = useUIStore((s) => s.setExpressionMetric)
   const tissue = useUIStore((s) => s.expressionTissue)
@@ -100,7 +95,6 @@ export default function Expression() {
   const measureBtnsRef = useRef<HTMLDivElement>(null)
   const measureIconBtnsRef = useRef<HTMLDivElement>(null)
   const measureTogglesRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
@@ -129,6 +123,11 @@ export default function Expression() {
       rows: geneRows,
     }
   }, [rows, selectedGeneId, geneById])
+
+  useEffect(() => {
+    if (selectedExpressionInfo)
+      setPopupContent({ kind: "expression", info: selectedExpressionInfo })
+  }, [selectedExpressionInfo, setPopupContent])
 
   const families = useMemo(() => {
     if (!rows) return []
@@ -539,18 +538,6 @@ export default function Expression() {
                   cornerSlot={geneOrderControl}
                 />
 
-                {selectedExpressionInfo && (
-                  <GeneExpressionPanel
-                    key={selectedExpressionInfo.geneId}
-                    info={selectedExpressionInfo}
-                    onClose={() => setSelectedGeneId(null)}
-                    onOpenInGenes={() => navigate("/genes")}
-                    pos={panelPos}
-                    onPosChange={setPanelPos}
-                    size={panelSize}
-                    onSizeChange={setPanelSize}
-                  />
-                )}
 
                 {!isMobile && (
                   <Paper

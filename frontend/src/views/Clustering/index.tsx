@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import HubIcon from "@mui/icons-material/Hub"
@@ -48,8 +47,6 @@ import {
   VirtualListboxSm,
 } from "@/components/VirtualListbox"
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
-import GeneInfoPanel from "./GeneInfoPanel"
-import type { PanelSize } from "@/utils/useResizablePanel"
 
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
@@ -77,13 +74,12 @@ export default function Clustering() {
   const [layout, setLayout] = useState<Layout>("rectangular")
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
-  const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null)
-  const [panelSize, setPanelSize] = useState<PanelSize | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const setPopupContent = useUIStore((s) => s.setPopupContent)
   const metric = useUIStore((s) => s.clusteringMetric)
   const setMetric = useUIStore((s) => s.setClusteringMetric)
   const tissue = useUIStore((s) => s.clusteringTissue)
@@ -96,7 +92,6 @@ export default function Clustering() {
   const measureIconBtnsRef = useRef<HTMLDivElement>(null)
   const measureTogglesRef = useRef<HTMLDivElement>(null)
   const measureTissueRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
@@ -116,6 +111,10 @@ export default function Clustering() {
     const gene = allGenes?.find((g) => g.id === selectedGeneId) ?? null
     return { node, methodLabel: METHOD_LABEL[method], closestSymbol, gene }
   }, [data, selectedGeneId, method, allGenes])
+
+  useEffect(() => {
+    if (selectedInfo) setPopupContent({ kind: "clustering", info: selectedInfo })
+  }, [selectedInfo, setPopupContent])
 
   const geneById = useMemo(() => {
     const m = new Map<string, Gene>()
@@ -162,10 +161,7 @@ export default function Clustering() {
       const toolbarPadding = 32
       const isRna = metric === "rna"
       const togglesW = isRna ? metricToggleW + tissueToggleW : metricToggleW
-      // Gaps between flex children [metricToggle, (tissueToggle?), spacer, rightBox]
       const toolbarGaps = (isRna ? 3 : 2) * 12
-      // counterChunk = counter + gap(12) + divider(1) + gap(12) preceding the buttons.
-      // btn widths (text/icon) already include the inter-button gap.
       const counterChunk = counterW + 25
       threshFull = toolbarPadding + togglesW + toolbarGaps + counterChunk + textBtnsW
       threshCounterCompact = toolbarPadding + togglesW + toolbarGaps + counterChunk + iconBtnsW
@@ -638,18 +634,6 @@ export default function Clustering() {
                 ))}
               </Paper>
 
-              {selectedInfo && (
-                <GeneInfoPanel
-                  key={selectedInfo.node.gene_id}
-                  info={selectedInfo}
-                  onClose={() => setSelectedGeneId(null)}
-                  onOpenInGenes={() => navigate("/genes")}
-                  pos={panelPos}
-                  onPosChange={setPanelPos}
-                  size={panelSize}
-                  onSizeChange={setPanelSize}
-                />
-              )}
             </>
           )}
         </Box>
