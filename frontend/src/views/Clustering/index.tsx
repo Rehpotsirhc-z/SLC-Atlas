@@ -49,6 +49,7 @@ import {
 } from "@/components/VirtualListbox"
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
 import GeneInfoPanel from "./GeneInfoPanel"
+import type { PanelSize } from "@/utils/useResizablePanel"
 
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
@@ -77,6 +78,7 @@ export default function Clustering() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null)
+  const [panelSize, setPanelSize] = useState<PanelSize | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
 
@@ -644,6 +646,8 @@ export default function Clustering() {
                   onOpenInGenes={() => navigate("/genes")}
                   pos={panelPos}
                   onPosChange={setPanelPos}
+                  size={panelSize}
+                  onSizeChange={setPanelSize}
                 />
               )}
             </>

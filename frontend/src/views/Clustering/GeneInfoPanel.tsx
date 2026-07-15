@@ -17,9 +17,11 @@ import {
   useTheme,
 } from "@mui/material"
 import { useRef } from "react"
+import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ClusterNode } from "@/types/clustering"
 import type { Gene } from "@/types/gene"
 
@@ -38,6 +40,9 @@ export interface GeneInfo {
 export type { PanelPos }
 
 const DEFAULT_POS: PanelPos = { x: 12, y: 120 }
+const DEFAULT_SIZE: PanelSize = { w: 260, h: 340 }
+const MIN_W = 220
+const MIN_H = 260
 
 interface GeneInfoPanelProps {
   info: GeneInfo
@@ -45,6 +50,8 @@ interface GeneInfoPanelProps {
   onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
+  size: PanelSize | null
+  onSizeChange: (size: PanelSize) => void
 }
 
 export default function GeneInfoPanel({
@@ -53,6 +60,8 @@ export default function GeneInfoPanel({
   onOpenInGenes,
   pos,
   onPosChange,
+  size,
+  onSizeChange,
 }: GeneInfoPanelProps) {
   const { node, methodLabel, closestSymbol, gene } = info
   const { palette, custom } = useTheme()
@@ -63,6 +72,15 @@ export default function GeneInfoPanel({
     pos,
     onPosChange,
     DEFAULT_POS,
+  )
+  const currentSize = size ?? DEFAULT_SIZE
+  const { startResize } = useResizablePanel(
+    currentPos,
+    onPosChange,
+    currentSize,
+    onSizeChange,
+    MIN_W,
+    MIN_H,
   )
 
   const rows: { label: string; value: React.ReactNode }[] = [
@@ -133,13 +151,15 @@ export default function GeneInfoPanel({
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
-        width: 260,
-        maxWidth: "calc(100% - 24px)",
+        width: currentSize.w,
+        height: currentSize.h,
         zIndex: 3,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Drag handle */}
@@ -167,7 +187,7 @@ export default function GeneInfoPanel({
         />
       </Box>
 
-      <Box sx={{ p: 1.5 }}>
+      <Box sx={{ px: 1.5, pt: 1.5, flexShrink: 0 }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <Typography
             variant="subtitle1"
@@ -208,8 +228,12 @@ export default function GeneInfoPanel({
             </Box>
           ))}
         </Box>
+      </Box>
 
-        <Divider sx={{ mt: 1, mb: 1.5 }} />
+      <Box sx={{ flex: 1, minHeight: 0 }} />
+
+      <Box sx={{ px: 1.5, pb: 1.5, pt: 1, flexShrink: 0 }}>
+        <Divider sx={{ mb: 1.5 }} />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
           <Button
@@ -252,6 +276,8 @@ export default function GeneInfoPanel({
           </Box>
         </Box>
       </Box>
+
+      <ResizeHandles onResize={startResize} />
     </Paper>
   )
 }

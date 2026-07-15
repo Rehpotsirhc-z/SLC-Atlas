@@ -17,10 +17,14 @@ import {
   useTheme,
 } from "@mui/material"
 import { useRef } from "react"
+import MiniBar from "@/components/MiniBar"
+import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { displayTissue } from "@/utils/tissue"
+import { tpmIntensity } from "@/utils/tpmColor"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ExpressionRow } from "@/types/expression"
 import type { Gene } from "@/types/gene"
 
@@ -38,6 +42,9 @@ export interface ExpressionGeneInfo {
 }
 
 const DEFAULT_POS: PanelPos = { x: 12, y: 120 }
+const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
+const MIN_W = 280
+const MIN_H = 320
 
 function median(values: number[]): number | null {
   if (!values.length) return null
@@ -56,6 +63,8 @@ interface GeneExpressionPanelProps {
   onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
+  size: PanelSize | null
+  onSizeChange: (size: PanelSize) => void
 }
 
 export default function GeneExpressionPanel({
@@ -64,6 +73,8 @@ export default function GeneExpressionPanel({
   onOpenInGenes,
   pos,
   onPosChange,
+  size,
+  onSizeChange,
 }: GeneExpressionPanelProps) {
   const { geneId, symbol, family, gene, rows } = info
   const { palette, custom } = useTheme()
@@ -75,10 +86,20 @@ export default function GeneExpressionPanel({
     onPosChange,
     DEFAULT_POS,
   )
+  const currentSize = size ?? DEFAULT_SIZE
+  const { startResize } = useResizablePanel(
+    currentPos,
+    onPosChange,
+    currentSize,
+    onSizeChange,
+    MIN_W,
+    MIN_H,
+  )
 
   const sortedRows = [...rows].sort((a, b) => b.tpm - a.tpm)
   const maxRow = sortedRows[0] ?? null
   const medianTpm = median(rows.map((r) => r.tpm))
+  const domainMax = Math.max(...rows.map((r) => Math.log2(r.tpm + 1)), 1)
 
   const statRows: { label: string; value: React.ReactNode }[] = [
     {
@@ -151,13 +172,15 @@ export default function GeneExpressionPanel({
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
-        width: 280,
-        maxWidth: "calc(100% - 24px)",
+        width: currentSize.w,
+        height: currentSize.h,
         zIndex: 5,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Drag handle */}
@@ -185,7 +208,7 @@ export default function GeneExpressionPanel({
         />
       </Box>
 
-      <Box sx={{ p: 1.5 }}>
+      <Box sx={{ px: 1.5, pt: 1.5, flexShrink: 0 }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <Typography
             variant="subtitle1"
@@ -237,44 +260,57 @@ export default function GeneExpressionPanel({
         </Box>
 
         <Divider sx={{ mt: 1, mb: 0.75 }} />
+      </Box>
 
-        <Box sx={{ maxHeight: 180, overflowY: "auto", pr: 0.5 }}>
-          {sortedRows.map((r) => (
-            <Box
-              key={r.tissue}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          px: 1.5,
+          display: "grid",
+          gridTemplateColumns: "minmax(0, max-content) minmax(48px, 1fr) max-content",
+          alignItems: "center",
+          columnGap: 1,
+          rowGap: 0.75,
+          alignContent: "start",
+        }}
+      >
+        {sortedRows.map((r) => (
+          <Box key={r.tissue} sx={{ display: "contents" }}>
+            <Typography
+              variant="caption"
               sx={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: 1,
-                py: 0.375,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {displayTissue(r.tissue)}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  flexShrink: 0,
-                  fontFamily: custom.monoFontFamily,
-                  fontSize: custom.monoFontSize,
-                }}
-              >
-                {formatTpm(r.tpm)}
-              </Typography>
+              {displayTissue(r.tissue)}
+            </Typography>
+            <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
+              <MiniBar
+                fraction={tpmIntensity(r.tpm, domainMax)}
+                title={`${formatTpm(r.tpm)} TPM`}
+              />
             </Box>
-          ))}
-        </Box>
+            <Typography
+              variant="caption"
+              sx={{
+                textAlign: "right",
+                fontFamily: custom.monoFontFamily,
+                fontSize: custom.monoFontSize,
+              }}
+            >
+              {formatTpm(r.tpm)}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
 
-        <Divider sx={{ mt: 0.75, mb: 1.5 }} />
+      <Box sx={{ px: 1.5, pb: 1.5, pt: 0.75, flexShrink: 0 }}>
+        <Divider sx={{ mb: 1.5 }} />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
           <Button
@@ -315,6 +351,8 @@ export default function GeneExpressionPanel({
           </Box>
         </Box>
       </Box>
+
+      <ResizeHandles onResize={startResize} />
     </Paper>
   )
 }

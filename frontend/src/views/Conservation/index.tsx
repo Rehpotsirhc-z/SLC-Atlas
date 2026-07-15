@@ -42,6 +42,7 @@ import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore } from "@/store/uiStore"
 import type { PanelPos } from "@/utils/useDraggablePanel"
+import type { PanelSize } from "@/utils/useResizablePanel"
 import type { Gene } from "@/types/gene"
 import {
   acIndicatorSx,
@@ -70,6 +71,7 @@ export default function Conservation() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
   const [panelPos, setPanelPos] = useState<PanelPos | null>(null)
+  const [panelSize, setPanelSize] = useState<PanelSize | null>(null)
   const [showSpeciesTree, setShowSpeciesTree] = useState(true)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
@@ -498,6 +500,8 @@ export default function Conservation() {
                   onOpenInGenes={() => navigate("/genes")}
                   pos={panelPos}
                   onPosChange={setPanelPos}
+                  size={panelSize}
+                  onSizeChange={setPanelSize}
                 />
               )}
 

@@ -45,6 +45,7 @@ import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore, RAIL_MIN_WIDTH } from "@/store/uiStore"
 import type { PanelPos } from "@/utils/useDraggablePanel"
+import type { PanelSize } from "@/utils/useResizablePanel"
 import type { Gene } from "@/types/gene"
 import {
   acIndicatorSx,
@@ -75,6 +76,7 @@ export default function Expression() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
   const [panelPos, setPanelPos] = useState<PanelPos | null>(null)
+  const [panelSize, setPanelSize] = useState<PanelSize | null>(null)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -545,6 +547,8 @@ export default function Expression() {
                     onOpenInGenes={() => navigate("/genes")}
                     pos={panelPos}
                     onPosChange={setPanelPos}
+                    size={panelSize}
+                    onSizeChange={setPanelSize}
                   />
                 )}
 

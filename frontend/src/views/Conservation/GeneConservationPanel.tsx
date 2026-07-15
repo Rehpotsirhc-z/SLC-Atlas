@@ -17,9 +17,12 @@ import {
   useTheme,
 } from "@mui/material"
 import { useRef } from "react"
+import MiniBar from "@/components/MiniBar"
+import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ConservationCell } from "@/types/conservation"
 import type { Gene } from "@/types/gene"
 import { CELL_METRICS, type CellMetricKey } from "./ConservationHeatmap"
@@ -38,6 +41,9 @@ export interface ConservationGeneInfo {
 }
 
 const DEFAULT_POS: PanelPos = { x: 12, y: 120 }
+const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
+const MIN_W = 280
+const MIN_H = 320
 
 const ORTHOLOGY_LABEL: Record<string, string> = {
   ortholog_one2one: "1:1",
@@ -52,6 +58,8 @@ interface GeneConservationPanelProps {
   onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
+  size: PanelSize | null
+  onSizeChange: (size: PanelSize) => void
 }
 
 export default function GeneConservationPanel({
@@ -61,6 +69,8 @@ export default function GeneConservationPanel({
   onOpenInGenes,
   pos,
   onPosChange,
+  size,
+  onSizeChange,
 }: GeneConservationPanelProps) {
   const { geneId, symbol, family, gene, cells } = info
   const { palette, custom } = useTheme()
@@ -71,6 +81,15 @@ export default function GeneConservationPanel({
     pos,
     onPosChange,
     DEFAULT_POS,
+  )
+  const currentSize = size ?? DEFAULT_SIZE
+  const { startResize } = useResizablePanel(
+    currentPos,
+    onPosChange,
+    currentSize,
+    onSizeChange,
+    MIN_W,
+    MIN_H,
   )
 
   const metricDef = CELL_METRICS.find((m) => m.key === metric) ?? CELL_METRICS[0]
@@ -160,13 +179,15 @@ export default function GeneConservationPanel({
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
-        width: 280,
-        maxWidth: "calc(100% - 24px)",
+        width: currentSize.w,
+        height: currentSize.h,
         zIndex: 5,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Drag handle */}
@@ -194,7 +215,7 @@ export default function GeneConservationPanel({
         />
       </Box>
 
-      <Box sx={{ p: 1.5 }}>
+      <Box sx={{ px: 1.5, pt: 1.5, flexShrink: 0 }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <Typography
             variant="subtitle1"
@@ -246,19 +267,30 @@ export default function GeneConservationPanel({
         </Box>
 
         <Divider sx={{ mt: 1, mb: 0.75 }} />
+      </Box>
 
-        <Box sx={{ maxHeight: 180, overflowY: "auto", pr: 0.5 }}>
-          {sortedCells.map((c) => (
-            <Box
-              key={c.species}
-              sx={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: 1,
-                py: 0.375,
-              }}
-            >
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          px: 1.5,
+          display: "grid",
+          gridTemplateColumns: "minmax(0, max-content) minmax(48px, 1fr) max-content",
+          alignItems: "center",
+          columnGap: 1,
+          rowGap: 0.75,
+          alignContent: "start",
+        }}
+      >
+        {sortedCells.map((c) => {
+          const value = c[field]
+          const orthoLabel = c.orthology_type
+            ? (ORTHOLOGY_LABEL[c.orthology_type] ?? c.orthology_type)
+            : null
+          const barHover = orthoLabel ? `${orthoLabel} ortholog` : "No ortholog"
+          return (
+            <Box key={c.species} sx={{ display: "contents" }}>
               {c.target_gene_id ? (
                 <Tooltip
                   title={
@@ -276,6 +308,7 @@ export default function GeneConservationPanel({
                     target="_blank"
                     rel="noopener"
                     sx={{
+                      minWidth: 0,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -291,6 +324,7 @@ export default function GeneConservationPanel({
                 <Typography
                   variant="caption"
                   sx={{
+                    minWidth: 0,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -299,27 +333,28 @@ export default function GeneConservationPanel({
                   {c.species_label ?? c.species}
                 </Typography>
               )}
+              <Tooltip title={barHover} placement="top" arrow>
+                <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, pl: 5 }}>
+                  <MiniBar fraction={value !== null ? value / 100 : 0} />
+                </Box>
+              </Tooltip>
               <Typography
                 variant="caption"
                 sx={{
-                  flexShrink: 0,
+                  textAlign: "right",
                   fontFamily: custom.monoFontFamily,
                   fontSize: custom.monoFontSize,
                 }}
               >
-                {c[field] !== null ? `${c[field]!.toFixed(1)}%` : "—"}
-                {c.orthology_type && c.orthology_type !== "ortholog_one2one" && (
-                  <Box component="span" sx={{ color: "text.secondary" }}>
-                    {" "}
-                    ({ORTHOLOGY_LABEL[c.orthology_type] ?? c.orthology_type})
-                  </Box>
-                )}
+                {value !== null ? `${value.toFixed(1)}%` : "—"}
               </Typography>
             </Box>
-          ))}
-        </Box>
+          )
+        })}
+      </Box>
 
-        <Divider sx={{ mt: 0.75, mb: 1.5 }} />
+      <Box sx={{ px: 1.5, pb: 1.5, pt: 0.75, flexShrink: 0 }}>
+        <Divider sx={{ mb: 1.5 }} />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
           <Button
@@ -360,6 +395,8 @@ export default function GeneConservationPanel({
           </Box>
         </Box>
       </Box>
+
+      <ResizeHandles onResize={startResize} />
     </Paper>
   )
 }

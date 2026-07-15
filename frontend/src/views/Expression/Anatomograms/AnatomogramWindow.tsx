@@ -4,10 +4,11 @@
 
 import { useRef } from "react"
 import { Box, IconButton, Paper, Tooltip } from "@mui/material"
-import type { SxProps, Theme } from "@mui/material/styles"
 import CloseIcon from "@mui/icons-material/Close"
+import ResizeHandles from "@/components/ResizeHandles"
 import { useUIStore } from "@/store/uiStore"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useResizablePanel } from "@/utils/useResizablePanel"
 import { AnatomogramFigure, AnatomogramViewToggles, SVG_FOR, type RailView } from "./index"
 import { PopInIcon } from "./icons"
 import AnatomogramAttribution from "./Attribution"
@@ -15,57 +16,6 @@ import AnatomogramAttribution from "./Attribution"
 const DEFAULT_POS: PanelPos = { x: 64, y: 96 }
 const MIN_W = 260
 const MIN_H = 280
-
-interface ResizeDirs {
-  top?: boolean
-  bottom?: boolean
-  left?: boolean
-  right?: boolean
-}
-
-// Edge and corner grips
-const HANDLES: { id: string; dirs: ResizeDirs; sx: SxProps<Theme> }[] = [
-  {
-    id: "n",
-    dirs: { top: true },
-    sx: { top: 0, left: 10, right: 10, height: 6, cursor: "ns-resize" },
-  },
-  {
-    id: "s",
-    dirs: { bottom: true },
-    sx: { bottom: 0, left: 10, right: 10, height: 6, cursor: "ns-resize" },
-  },
-  {
-    id: "w",
-    dirs: { left: true },
-    sx: { left: 0, top: 10, bottom: 10, width: 6, cursor: "ew-resize" },
-  },
-  {
-    id: "e",
-    dirs: { right: true },
-    sx: { right: 0, top: 10, bottom: 10, width: 6, cursor: "ew-resize" },
-  },
-  {
-    id: "nw",
-    dirs: { top: true, left: true },
-    sx: { top: 0, left: 0, width: 12, height: 12, cursor: "nwse-resize" },
-  },
-  {
-    id: "ne",
-    dirs: { top: true, right: true },
-    sx: { top: 0, right: 0, width: 12, height: 12, cursor: "nesw-resize" },
-  },
-  {
-    id: "sw",
-    dirs: { bottom: true, left: true },
-    sx: { bottom: 0, left: 0, width: 12, height: 12, cursor: "nesw-resize" },
-  },
-  {
-    id: "se",
-    dirs: { bottom: true, right: true },
-    sx: { bottom: 0, right: 0, width: 16, height: 16, cursor: "nwse-resize" },
-  },
-]
 
 interface AnatomogramWindowProps {
   view: RailView
@@ -104,40 +54,7 @@ export default function AnatomogramWindow({
     setPos,
     DEFAULT_POS,
   )
-
-  function startResize(e: React.PointerEvent, dirs: ResizeDirs) {
-    e.preventDefault()
-    e.stopPropagation()
-    const startX = e.clientX
-    const startY = e.clientY
-    const s = { x: currentPos.x, y: currentPos.y, w: size.w, h: size.h }
-    const pad = 8
-    const onMove = (ev: PointerEvent) => {
-      let { x, y, w, h } = s
-      const dx = ev.clientX - startX
-      const dy = ev.clientY - startY
-      if (dirs.right) w = Math.max(MIN_W, Math.min(s.w + dx, window.innerWidth - s.x - pad))
-      if (dirs.bottom) h = Math.max(MIN_H, Math.min(s.h + dy, window.innerHeight - s.y - pad))
-      if (dirs.left) {
-        const right = s.x + s.w
-        w = Math.max(MIN_W, Math.min(s.w - dx, right - pad))
-        x = right - w
-      }
-      if (dirs.top) {
-        const bottom = s.y + s.h
-        h = Math.max(MIN_H, Math.min(s.h - dy, bottom - pad))
-        y = bottom - h
-      }
-      setSize({ w, h })
-      if (dirs.left || dirs.top) setPos({ x, y })
-    }
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
-    }
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-  }
+  const { startResize } = useResizablePanel(currentPos, setPos, size, setSize, MIN_W, MIN_H)
 
   return (
     <Paper
@@ -225,31 +142,7 @@ export default function AnatomogramWindow({
 
       <AnatomogramAttribution />
 
-      {HANDLES.map((hnd) => (
-        <Box
-          key={hnd.id}
-          onPointerDown={(e) => startResize(e, hnd.dirs)}
-          sx={{
-            position: "absolute",
-            zIndex: 1,
-            touchAction: "none",
-            ...hnd.sx,
-            ...(hnd.id === "se" && {
-              color: "text.secondary",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                right: 3,
-                bottom: 3,
-                width: 8,
-                height: 8,
-                borderRight: "2px solid currentColor",
-                borderBottom: "2px solid currentColor",
-              },
-            }),
-          }}
-        />
-      ))}
+      <ResizeHandles onResize={startResize} />
     </Paper>
   )
 }
