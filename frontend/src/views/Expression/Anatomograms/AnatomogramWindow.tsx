@@ -82,6 +82,24 @@ export default function AnatomogramWindow({
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
           userSelect: "none",
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          py: 0.875,
+        }}
+      >
+        <Box sx={{ width: "52%", height: 3, borderRadius: 1.5, bgcolor: "divider" }} />
+      </Box>
+
+      <Box
+        onMouseDown={handleDragStart}
+        onTouchStart={handleTouchStart}
+        onDoubleClick={onPopIn}
+        sx={{
+          cursor: "grab",
+          "&:active": { cursor: "grabbing" },
+          userSelect: "none",
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
