@@ -19,6 +19,7 @@ export default function ThemeToggle() {
         size="small"
         color="inherit"
         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        sx={{ mr: { xs: -1, sm: -1.5 } }}
       >
         {isDark ? (
           <LightModeOutlinedIcon fontSize="small" />
