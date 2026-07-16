@@ -164,12 +164,17 @@ export default function Expression() {
 
   const railView: RailView = tissue === "brain" ? "brain" : anatomogramSex
 
-  function pickTissue(tissues: string[]) {
-    if (railFlashTimer.current) clearTimeout(railFlashTimer.current)
-    setRailTissue(tissues[0] ?? null)
-    heatmapRef.current?.focusTissue(tissues)
-    railFlashTimer.current = setTimeout(() => setRailTissue(null), reduceMotion ? 900 : 1200)
-  }
+  const pickTissue = useCallback(
+    (tissues: string[]) => {
+      if (railFlashTimer.current) clearTimeout(railFlashTimer.current)
+      setRailTissue(tissues[0] ?? null)
+      heatmapRef.current?.focusTissue(tissues)
+      railFlashTimer.current = setTimeout(() => setRailTissue(null), reduceMotion ? 900 : 1200)
+    },
+    [reduceMotion],
+  )
+
+  const handleTissueClick = useCallback((t: string) => pickTissue([t]), [pickTissue])
 
   useEffect(() => () => void (railFlashTimer.current && clearTimeout(railFlashTimer.current)), [])
 
@@ -536,8 +541,8 @@ export default function Expression() {
                   onSelect={setSelectedGeneId}
                   geneById={geneById}
                   cornerSlot={geneOrderControl}
+                  onTissueClick={handleTissueClick}
                 />
-
 
                 {!isMobile && (
                   <Paper

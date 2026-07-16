@@ -57,6 +57,7 @@ interface ExpressionHeatmapProps {
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
   cornerSlot?: React.ReactNode
+  onTissueClick?: (tissue: string) => void
 }
 
 interface GeneRow {
@@ -108,18 +109,20 @@ const HoverTip = ({ hover, monoFont }: { hover: HoverState; monoFont: string }) 
 
 const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapProps>(
   function ExpressionHeatmap(
-    { rows, clusterNodes, familyFilter, selectedGeneId, onSelect, geneById, cornerSlot },
+    { rows, clusterNodes, familyFilter, selectedGeneId, onSelect, geneById, cornerSlot, onTissueClick },
     ref,
   ) {
     const theme = useTheme()
     const mode = theme.palette.mode
     const monoFont = theme.custom.monoFontFamily
     const muted = theme.palette.text.secondary
+    const accent = theme.palette.secondary.main
     const containerRef = useRef<HTMLDivElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [hover, setHover] = useState<HoverState | null>(null)
     const [containerW, setContainerW] = useState(0)
     const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
+    const [hoverHeaderCol, setHoverHeaderCol] = useState<number | null>(null)
     const [flashCols, setFlashCols] = useState<Set<number>>(new Set())
     const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
@@ -227,9 +230,28 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           height={topH}
           style={{ display: "block", overflow: "visible" }}
         >
+          {onTissueClick &&
+            tissueCols.map((t, i) => (
+              <rect
+                key={`hit-${t}`}
+                x={i * cellW}
+                y={0}
+                width={cellW}
+                height={topH}
+                fill={hoverHeaderCol === i ? alpha(accent, 0.12) : "transparent"}
+                style={{ cursor: "pointer" }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onTissueClick(t)
+                }}
+                onPointerEnter={() => setHoverHeaderCol(i)}
+                onPointerLeave={() => setHoverHeaderCol((c) => (c === i ? null : c))}
+              />
+            ))}
           {tissueCols.map((t, i) => {
             const x = i * cellW + cellW / 2
             const y = TISSUE_LABEL_GAP
+            const active = hoverHeaderCol === i
             return (
               <text
                 key={t}
@@ -237,10 +259,12 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                 y={y}
                 fontSize={tissueFont}
                 fontFamily={monoFont}
-                fill={muted}
+                fill={active ? accent : muted}
+                fontWeight={active ? 600 : undefined}
                 textAnchor="start"
                 dominantBaseline="central"
                 transform={`rotate(90 ${x} ${y})`}
+                style={{ pointerEvents: "none" }}
               >
                 {displayTissue(t)}
               </text>
@@ -248,7 +272,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           })}
         </svg>
       ),
-      [tissueCols, gridW, cellW, tissueFont, muted, monoFont, topH],
+      [tissueCols, gridW, cellW, tissueFont, muted, monoFont, topH, onTissueClick, hoverHeaderCol, accent],
     )
 
     const geneSidebar = useMemo(
