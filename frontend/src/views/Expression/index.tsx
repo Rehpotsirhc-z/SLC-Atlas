@@ -51,6 +51,8 @@ import {
   VirtualListboxSm,
 } from "@/components/VirtualListbox"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
+import HeatmapColorLegend, { type LegendTick } from "@/components/HeatmapColorLegend"
+import { useTpmColorScale, lerpHex } from "@/utils/tpmColor"
 import AnatomogramRail, { type RailView } from "./Anatomograms"
 import AnatomogramWindow from "./Anatomograms/AnatomogramWindow"
 
@@ -65,6 +67,12 @@ type TbState = "full" | "counterCompact" | "compact" | "wrapped"
 
 const MIN_MAIN_CONTENT_WIDTH = 420
 const RAIL_EDGE_WIDTH = 22
+
+function fmtTpm(v: number): string {
+  if (v >= 100) return Math.round(v).toLocaleString()
+  if (v >= 10) return v.toFixed(0)
+  return v.toFixed(1)
+}
 
 export default function Expression() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
@@ -277,6 +285,22 @@ export default function Expression() {
   }
 
   const floatBg = alpha(theme.palette.background.paper, 0.9)
+
+  const { domainMax: tpmDomainMax } = useTpmColorScale(rows ?? [])
+  const legendColorAt = useCallback(
+    (t: number) => lerpHex(theme.palette.background.paper, theme.palette.primary.main, t),
+    [theme.palette.background.paper, theme.palette.primary.main],
+  )
+  const tpmTicks: LegendTick[] = useMemo(() => {
+    const maxTpm = Math.pow(2, tpmDomainMax) - 1
+    const midTpm = Math.pow(2, tpmDomainMax / 2) - 1
+    return [
+      { frac: 0, label: "0" },
+      { frac: 0.5, label: fmtTpm(midTpm) },
+      { frac: 1, label: `≥${fmtTpm(maxTpm)}` },
+    ]
+  }, [tpmDomainMax])
+
   const showCounter = tbState === "full" || tbState === "counterCompact"
   const iconButtons = tbState === "compact" || tbState === "counterCompact"
 
@@ -542,6 +566,17 @@ export default function Expression() {
                   geneById={geneById}
                   cornerSlot={geneOrderControl}
                   onTissueClick={handleTissueClick}
+                  legendSlot={
+                    <HeatmapColorLegend
+                      title="TPM"
+                      colorAt={legendColorAt}
+                      ticks={tpmTicks}
+                      absent={{
+                        color: theme.palette.action.disabledBackground,
+                        label: "no data",
+                      }}
+                    />
+                  }
                 />
 
                 {!isMobile && (

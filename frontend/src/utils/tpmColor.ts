@@ -18,6 +18,14 @@ export function hexToRgb(hex: string): [number, number, number] {
   return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)]
 }
 
+// Linear interpolation between two hex colors, clamped to [0,1]
+export function lerpHex(from: string, to: string, t: number): string {
+  const u = Math.max(0, Math.min(1, t))
+  const [ar, ag, ab] = hexToRgb(from)
+  const [br, bg, bb] = hexToRgb(to)
+  return `rgb(${Math.round(ar + (br - ar) * u)},${Math.round(ag + (bg - ag) * u)},${Math.round(ab + (bb - ab) * u)})`
+}
+
 export function tpmIntensity(tpm: number | null, domainMax: number): number {
   if (tpm === null) return 0
   return Math.max(0, Math.min(1, Math.log2(tpm + 1) / domainMax))

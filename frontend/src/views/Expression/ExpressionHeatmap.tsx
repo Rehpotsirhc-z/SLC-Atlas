@@ -39,6 +39,7 @@ const GENE_LABEL_GAP = 10
 const TISSUE_LABEL_GAP = 8
 const BOTTOM_PAD = 72
 const RIGHT_PAD = 14
+const LEGEND_W = 100
 
 export interface ExpressionHeatmapHandle {
   resetView: () => void
@@ -58,6 +59,7 @@ interface ExpressionHeatmapProps {
   geneById: Map<string, Gene>
   cornerSlot?: React.ReactNode
   onTissueClick?: (tissue: string) => void
+  legendSlot?: React.ReactNode
 }
 
 interface GeneRow {
@@ -109,7 +111,17 @@ const HoverTip = ({ hover, monoFont }: { hover: HoverState; monoFont: string }) 
 
 const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapProps>(
   function ExpressionHeatmap(
-    { rows, clusterNodes, familyFilter, selectedGeneId, onSelect, geneById, cornerSlot, onTissueClick },
+    {
+      rows,
+      clusterNodes,
+      familyFilter,
+      selectedGeneId,
+      onSelect,
+      geneById,
+      cornerSlot,
+      onTissueClick,
+      legendSlot,
+    },
     ref,
   ) {
     const theme = useTheme()
@@ -119,8 +131,11 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     const accent = theme.palette.secondary.main
     const containerRef = useRef<HTMLDivElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const headerRef = useRef<HTMLDivElement>(null)
     const [hover, setHover] = useState<HoverState | null>(null)
     const [containerW, setContainerW] = useState(0)
+    const [containerH, setContainerH] = useState(0)
+    const [headerH, setHeaderH] = useState(0)
     const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
     const [hoverHeaderCol, setHoverHeaderCol] = useState<number | null>(null)
     const [flashCols, setFlashCols] = useState<Set<number>>(new Set())
@@ -142,7 +157,22 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     useLayoutEffect(() => {
       const el = containerRef.current
       if (!el) return
-      const update = () => setContainerW(el.clientWidth)
+      const update = () => {
+        setContainerW(el.clientWidth)
+        setContainerH(el.clientHeight)
+      }
+      update()
+      const ro = new ResizeObserver(update)
+      ro.observe(el)
+      return () => ro.disconnect()
+    }, [])
+
+    // Measure the actual sticky-header height so the color legend sticks flush
+    // against it instead of jumping on the first scroll.
+    useLayoutEffect(() => {
+      const el = headerRef.current
+      if (!el) return
+      const update = () => setHeaderH(el.offsetHeight)
       update()
       const ro = new ResizeObserver(update)
       ro.observe(el)
@@ -152,11 +182,18 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     const tissueCols = useMemo(() => sortedTissues(rows), [rows])
 
     const nTissues = tissueCols.length
+    // Reserve room for the inline colorbar next to the grid, but only when the
+    // grid still fits at its minimum cell size — otherwise the legend hides and
+    // the grid keeps the full width (small screens).
+    const legendReserve =
+      !!legendSlot && containerW - LEFT_COL_W - LEGEND_W - RIGHT_PAD >= nTissues * MIN_CELL_W
+        ? LEGEND_W
+        : 0
     const cellW = useMemo(() => {
       if (!nTissues || !containerW) return MIN_CELL_W
-      const avail = containerW - LEFT_COL_W
+      const avail = containerW - LEFT_COL_W - legendReserve
       return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(avail / nTissues)))
-    }, [containerW, nTissues])
+    }, [containerW, nTissues, legendReserve])
     const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
     const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
     const geneDotR = geneFont * (4.5 / 13)
@@ -215,7 +252,10 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
 
     const gridW = tissueCols.length * cellW
     const gridH = geneRows.length * cellH
-    const fits = containerW > 0 && LEFT_COL_W + gridW + RIGHT_PAD <= containerW
+    const baseW = LEFT_COL_W + gridW + RIGHT_PAD
+    const showLegend = legendReserve > 0
+    const contentW = baseW + legendReserve
+    const fits = containerW > 0 && contentW <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
     const selectedCol =
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
@@ -272,7 +312,18 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           })}
         </svg>
       ),
-      [tissueCols, gridW, cellW, tissueFont, muted, monoFont, topH, onTissueClick, hoverHeaderCol, accent],
+      [
+        tissueCols,
+        gridW,
+        cellW,
+        tissueFont,
+        muted,
+        monoFont,
+        topH,
+        onTissueClick,
+        hoverHeaderCol,
+        accent,
+      ],
     )
 
     const geneSidebar = useMemo(
@@ -291,12 +342,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
             }
             return (
               <g key={g.geneId} style={{ cursor: "pointer" }} onClick={handleClick}>
-                <circle
-                  cx={GENE_TREE_W}
-                  cy={i * cellH + cellH / 2}
-                  r={geneDotR}
-                  fill={paper}
-                />
+                <circle cx={GENE_TREE_W} cy={i * cellH + cellH / 2} r={geneDotR} fill={paper} />
                 <circle
                   cx={GENE_TREE_W}
                   cy={i * cellH + cellH / 2}
@@ -566,12 +612,15 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       >
         <Box
           sx={{
-            width: LEFT_COL_W + gridW + RIGHT_PAD,
+            width: contentW,
             ml: fits ? "auto" : 0,
             mr: fits ? "auto" : 0,
           }}
         >
-          <Box sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}>
+          <Box
+            ref={headerRef}
+            sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}
+          >
             <Box
               sx={{
                 position: fits ? "static" : "sticky",
@@ -685,6 +734,26 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                 />
               )}
             </Box>
+
+            {showLegend && (
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  flexShrink: 0,
+                  width: LEGEND_W,
+                  pl: 1.5,
+                  position: "sticky",
+                  top: headerH,
+                  height: Math.max(0, containerH - headerH),
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "stretch",
+                }}
+              >
+                {legendSlot}
+              </Box>
+            )}
           </Box>
 
           <Box sx={{ height: BOTTOM_PAD }} />

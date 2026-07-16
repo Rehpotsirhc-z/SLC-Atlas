@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
@@ -52,6 +52,8 @@ import ConservationHeatmap, {
   type CellMetricKey,
   type ConservationHeatmapHandle,
 } from "./ConservationHeatmap"
+import HeatmapColorLegend, { type LegendTick } from "@/components/HeatmapColorLegend"
+import { lerpHex } from "@/utils/tpmColor"
 
 type Metric = TreeMetric
 type Tissue = "all" | "brain"
@@ -211,6 +213,20 @@ export default function Conservation() {
   }
 
   const floatBg = alpha(theme.palette.background.paper, 0.9)
+
+  const metricDef = CELL_METRICS.find((m) => m.key === cellMetric)!
+  const legendColorAt = useCallback(
+    (t: number) => lerpHex(theme.palette.background.paper, theme.palette.primary.main, t),
+    [theme.palette.background.paper, theme.palette.primary.main],
+  )
+  const consTicks: LegendTick[] = useMemo(() => {
+    const [lo, hi] = metricDef.domain
+    return [
+      { frac: 0, label: String(lo) },
+      { frac: 0.5, label: String((lo + hi) / 2) },
+      { frac: 1, label: String(hi) },
+    ]
+  }, [metricDef])
   const showCounter = tbState === "full" || tbState === "counterCompact"
   const iconButtons = tbState === "compact" || tbState === "counterCompact"
 
@@ -492,8 +508,15 @@ export default function Conservation() {
                 cornerSlot={geneOrderControl}
                 showSpeciesTree={showSpeciesTree}
                 onToggleSpeciesTree={() => setShowSpeciesTree((v) => !v)}
+                legendSlot={
+                  <HeatmapColorLegend
+                    title={metricDef.label}
+                    colorAt={legendColorAt}
+                    ticks={consTicks}
+                    absent={{ color: theme.palette.background.paper, label: "no ortholog" }}
+                  />
+                }
               />
-
 
               {!isMobile && (
                 <Paper

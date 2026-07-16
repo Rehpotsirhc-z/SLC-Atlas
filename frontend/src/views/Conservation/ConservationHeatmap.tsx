@@ -48,6 +48,7 @@ const GENE_LABEL_GAP = 10
 const SP_LABEL_GAP = 8
 const BOTTOM_PAD = 72
 const RIGHT_PAD = 14
+const LEGEND_W = 100
 const SP_TREE_PAD = 20
 
 export interface ConservationHeatmapHandle {
@@ -70,6 +71,7 @@ interface ConservationHeatmapProps {
   cornerSlot?: React.ReactNode
   showSpeciesTree?: boolean
   onToggleSpeciesTree?: () => void
+  legendSlot?: React.ReactNode
 }
 
 interface GeneRow {
@@ -160,6 +162,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       cornerSlot,
       showSpeciesTree = true,
       onToggleSpeciesTree,
+      legendSlot,
     },
     ref,
   ) {
@@ -169,14 +172,30 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const muted = theme.palette.text.secondary
     const containerRef = useRef<HTMLDivElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const headerRef = useRef<HTMLDivElement>(null)
     const [hover, setHover] = useState<HoverState | null>(null)
     const [containerW, setContainerW] = useState(0)
+    const [containerH, setContainerH] = useState(0)
+    const [headerH, setHeaderH] = useState(0)
     const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
 
     useLayoutEffect(() => {
       const el = containerRef.current
       if (!el) return
-      const update = () => setContainerW(el.clientWidth)
+      const update = () => {
+        setContainerW(el.clientWidth)
+        setContainerH(el.clientHeight)
+      }
+      update()
+      const ro = new ResizeObserver(update)
+      ro.observe(el)
+      return () => ro.disconnect()
+    }, [])
+
+    useLayoutEffect(() => {
+      const el = headerRef.current
+      if (!el) return
+      const update = () => setHeaderH(el.offsetHeight)
       update()
       const ro = new ResizeObserver(update)
       ro.observe(el)
@@ -186,11 +205,16 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const metricDef = useMemo(() => CELL_METRICS.find((m) => m.key === metric)!, [metric])
 
     const nSpecies = useMemo(() => speciesNodes.filter((n) => n.species).length, [speciesNodes])
+
+    const legendReserve =
+      !!legendSlot && containerW - LEFT_COL_W - LEGEND_W - RIGHT_PAD >= nSpecies * MIN_CELL_W
+        ? LEGEND_W
+        : 0
     const cellW = useMemo(() => {
       if (!nSpecies || !containerW) return MIN_CELL_W
-      const avail = containerW - LEFT_COL_W
+      const avail = containerW - LEFT_COL_W - legendReserve
       return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(avail / nSpecies)))
-    }, [containerW, nSpecies])
+    }, [containerW, nSpecies, legendReserve])
     const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
     const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
     const geneDotR = geneFont * (4.5 / 13)
@@ -255,7 +279,9 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const gridW = speciesCols.length * cellW
     const gridH = geneRows.length * cellH
     const topH = showSpeciesTree ? TOP_H : SPECIES_LABEL_H
-    const fits = containerW > 0 && LEFT_COL_W + gridW + RIGHT_PAD <= containerW
+    const showLegend = legendReserve > 0
+    const contentW = LEFT_COL_W + gridW + RIGHT_PAD + legendReserve
+    const fits = containerW > 0 && contentW <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
     const selectedCol =
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
@@ -377,12 +403,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
             }
             return (
               <g key={g.geneId} style={{ cursor: "pointer" }} onClick={handleClick}>
-                <circle
-                  cx={GENE_TREE_W}
-                  cy={i * cellH + cellH / 2}
-                  r={geneDotR}
-                  fill={paper}
-                />
+                <circle cx={GENE_TREE_W} cy={i * cellH + cellH / 2} r={geneDotR} fill={paper} />
                 <circle
                   cx={GENE_TREE_W}
                   cy={i * cellH + cellH / 2}
@@ -627,12 +648,15 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       >
         <Box
           sx={{
-            width: LEFT_COL_W + gridW + RIGHT_PAD,
+            width: contentW,
             ml: fits ? "auto" : 0,
             mr: fits ? "auto" : 0,
           }}
         >
-          <Box sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}>
+          <Box
+            ref={headerRef}
+            sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}
+          >
             <Box
               sx={{
                 position: fits ? "static" : "sticky",
@@ -719,6 +743,26 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                 />
               )}
             </Box>
+
+            {showLegend && (
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  flexShrink: 0,
+                  width: LEGEND_W,
+                  pl: 1.5,
+                  position: "sticky",
+                  top: headerH,
+                  height: Math.max(0, containerH - headerH),
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "stretch",
+                }}
+              >
+                {legendSlot}
+              </Box>
+            )}
           </Box>
 
           <Box sx={{ height: BOTTOM_PAD }} />
