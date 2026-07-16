@@ -333,10 +333,13 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           ctx.globalAlpha = a
           const cell = row[c]
           ctx.fillStyle = colorFor(cell ? cell.tpm : null)
-          ctx.fillRect(c * cellW, r * cellH + 0.5, cellW - 1, cellH - 1)
+          ctx.fillRect(c * cellW, r * cellH, cellW - 1, cellH - 1)
         }
       }
       ctx.globalAlpha = 1
+      ctx.fillStyle = lineColor
+      ctx.fillRect(0, 0, 1, gridH)
+      ctx.fillRect(0, 0, gridW, 1)
     }, [
       matrix,
       geneRows,
