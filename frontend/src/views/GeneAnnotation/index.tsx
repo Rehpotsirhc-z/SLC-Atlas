@@ -297,7 +297,7 @@ export default function GeneAnnotation() {
                     sortDirection={sortDirection}
                     onSort={toggleSort}
                     scrollToGeneId={selectedGeneId}
-                    autoExpandGeneId={visibleGenes.length <= 3 ? selectedGeneId : null}
+                    autoExpandGeneId={selectedGeneId}
                     onFamilyClick={setFamilyFilter}
                   />
                 )}
