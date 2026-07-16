@@ -37,19 +37,35 @@ export function useTpmColorScale(rows: ExpressionRow[]) {
   }, [rows])
 
   const absentColor = theme.palette.action.disabledBackground
+  const paper = theme.palette.background.paper
+  const primary = theme.palette.primary.main
+
+  // Precompute a 256-entry paper→primary gradient once per theme. The heatmap
+  // redraw calls colorFor tens of thousands of times (once per cell) on every
+  // theme toggle; using a lookup table turns each call into a single array
+  // index instead.
+  const lut = useMemo(() => {
+    const [br, bg, bb] = hexToRgb(paper)
+    const [pr, pg, pb] = hexToRgb(primary)
+    const N = 256
+    const arr = new Array<string>(N)
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1)
+      const r = Math.round(br + (pr - br) * t)
+      const g = Math.round(bg + (pg - bg) * t)
+      const b = Math.round(bb + (pb - bb) * t)
+      arr[i] = `rgb(${r},${g},${b})`
+    }
+    return arr
+  }, [paper, primary])
 
   const colorFor = useCallback(
     (tpm: number | null): string => {
       if (tpm === null) return absentColor
       const t = tpmIntensity(tpm, domainMax)
-      const [br, bg, bb] = hexToRgb(theme.palette.background.paper)
-      const [pr, pg, pb] = hexToRgb(theme.palette.primary.main)
-      const r = Math.round(br + (pr - br) * t)
-      const g = Math.round(bg + (pg - bg) * t)
-      const b = Math.round(bb + (pb - bb) * t)
-      return `rgb(${r},${g},${b})`
+      return lut[Math.round(t * (lut.length - 1))]
     },
-    [domainMax, absentColor, theme.palette.background.paper, theme.palette.primary.main],
+    [domainMax, absentColor, lut],
   )
 
   return { colorFor, domainMax }
