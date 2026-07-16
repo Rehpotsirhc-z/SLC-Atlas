@@ -24,6 +24,7 @@ import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { displayTissue } from "@/utils/tissue"
 import { tpmIntensity } from "@/utils/tpmColor"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ExpressionRow } from "@/types/expression"
 import type { Gene } from "@/types/gene"
@@ -42,7 +43,7 @@ export interface ExpressionGeneInfo {
 }
 
 const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
-const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
+const DEFAULT_SIZE: PanelSize = { w: 420, h: 520 }
 const MIN_W = 280
 const MIN_H = 320
 
@@ -80,6 +81,7 @@ export default function GeneExpressionPanel({
   const { palette, custom } = useTheme()
   const familyColor = getFamilyColor(family ?? "?", palette.mode)
   const panelRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
     pos,
@@ -107,6 +109,8 @@ export default function GeneExpressionPanel({
   const maxRow = sortedRows[0] ?? null
   const medianTpm = median(rows.map((r) => r.tpm))
   const domainMax = Math.max(...rows.map((r) => Math.log2(r.tpm + 1)), 1)
+  const labelKey = sortedRows.map((r) => r.tissue).join("|")
+  usePopupAutoWidth(gridRef, labelKey, currentPos.x, currentSize.h, onSizeChange)
 
   const statRows: { label: string; value: React.ReactNode }[] = [
     {
@@ -270,6 +274,7 @@ export default function GeneExpressionPanel({
       </Box>
 
       <Box
+        ref={gridRef}
         sx={{
           flex: 1,
           minHeight: 0,

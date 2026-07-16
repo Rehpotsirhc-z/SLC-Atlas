@@ -22,6 +22,7 @@ import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ConservationCell } from "@/types/conservation"
 import type { Gene } from "@/types/gene"
@@ -41,7 +42,7 @@ export interface ConservationGeneInfo {
 }
 
 const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
-const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
+const DEFAULT_SIZE: PanelSize = { w: 420, h: 520 }
 const MIN_W = 280
 const MIN_H = 320
 
@@ -76,6 +77,7 @@ export default function GeneConservationPanel({
   const { palette, custom } = useTheme()
   const familyColor = getFamilyColor(family ?? "?", palette.mode)
   const panelRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
     pos,
@@ -114,6 +116,8 @@ export default function GeneConservationPanel({
     if (bv === null) return -1
     return bv - av
   })
+  const labelKey = sortedCells.map((c) => c.species).join("|")
+  usePopupAutoWidth(gridRef, labelKey, currentPos.x, currentSize.h, onSizeChange)
 
   const rows: { label: string; value: React.ReactNode }[] = [
     {
@@ -277,6 +281,7 @@ export default function GeneConservationPanel({
       </Box>
 
       <Box
+        ref={gridRef}
         sx={{
           flex: 1,
           minHeight: 0,
