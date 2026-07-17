@@ -301,12 +301,11 @@ export default function GeneExpressionPanel({
             >
               {displayTissue(r.tissue)}
             </Typography>
-            <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
-              <MiniBar
-                fraction={tpmIntensity(r.tpm, domainMax)}
-                title={`${formatTpm(r.tpm)} TPM`}
-              />
-            </Box>
+            <Tooltip title={`${formatTpm(r.tpm)} TPM`} placement="top" arrow>
+              <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
+                <MiniBar fraction={tpmIntensity(r.tpm, domainMax)} />
+              </Box>
+            </Tooltip>
             <Typography
               variant="caption"
               sx={{
