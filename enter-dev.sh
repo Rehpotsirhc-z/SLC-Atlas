@@ -8,7 +8,16 @@ set -e
 
 cd "$(dirname "$0")"
 
-# Idempotent: builds + starts on first run, reuses the container afterwards.
+# Container name is the workspace folder basename (devcontainer.json's --name runArg).
+CONTAINER="$(basename "$PWD")"
+
+# Fast path: if the container is already running, drop straight into a shell —
+# skip `devcontainer up` and the post-create re-run.
+if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)" = "true" ]; then
+    exec devcontainer exec --workspace-folder . bash
+fi
+
+# First run (or the container is stopped): build/start, apply post-create, then enter.
 # Discard the JSON result line on stdout; errors still surface via stderr + exit code.
 devcontainer up --workspace-folder . >/dev/null
 
@@ -16,4 +25,4 @@ devcontainer up --workspace-folder . >/dev/null
 # to post-create.sh take effect without a rebuild. The script is idempotent.
 devcontainer exec --workspace-folder . .devcontainer/post-create.sh
 
-devcontainer exec --workspace-folder . bash
+exec devcontainer exec --workspace-folder . bash

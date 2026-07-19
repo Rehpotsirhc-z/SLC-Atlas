@@ -16,7 +16,9 @@ for s in pyright-langserver typescript-language-server tsserver; do
     command -v "$s" >/dev/null 2>&1 || need_ls=1
 done
 if [ "$need_ls" = 1 ]; then
-    npm install -g pyright typescript typescript-language-server
+    # Pin typescript to the 5.x line: typescript-language-server needs the
+    # tsserver library it ships, which the 7.x native port dropped.
+    npm install -g pyright 'typescript@^5.7' typescript-language-server
     NPM_BIN="$(npm config get prefix)/bin"
     for s in pyright-langserver typescript-language-server tsserver; do
         [ -e "$NPM_BIN/$s" ] && sudo ln -sf "$NPM_BIN/$s" "/usr/local/bin/$s"
