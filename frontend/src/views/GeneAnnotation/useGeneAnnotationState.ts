@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useDeferredValue, useMemo, useState } from "react"
+import { useCallback, useEffect, useDeferredValue, useMemo, useState } from "react"
 import { useGenes } from "@/api/hooks/useGenes"
 import type { Gene } from "@/types/gene"
 
@@ -54,6 +54,11 @@ export function useGeneAnnotationState() {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(50)
 
+  const search = useCallback((text: string) => {
+    setSearchText(text)
+    if (text.trim()) setFamilyFilter(null)
+  }, [])
+
   const deferredSearchText = useDeferredValue(searchText)
   const visibleGenes = useMemo(
     () => sortGenes(filterGenes(genes, deferredSearchText, familyFilter), sortKey, sortDirection),
@@ -79,7 +84,7 @@ export function useGeneAnnotationState() {
     error,
     visibleGenes,
     searchText,
-    setSearchText,
+    setSearchText: search,
     familyFilter,
     setFamilyFilter,
     sortKey,
