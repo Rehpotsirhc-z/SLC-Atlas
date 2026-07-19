@@ -746,7 +746,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
 
             {showLegend && (
               <Box
-                onClick={(e) => e.stopPropagation()}
                 sx={{
                   flexShrink: 0,
                   width: LEGEND_W,
@@ -760,7 +759,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
                   alignItems: "stretch",
                 }}
               >
-                {legendSlot}
+                <Box onClick={(e) => e.stopPropagation()}>{legendSlot}</Box>
               </Box>
             )}
           </Box>

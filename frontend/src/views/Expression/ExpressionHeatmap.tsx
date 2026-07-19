@@ -737,7 +737,6 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
 
             {showLegend && (
               <Box
-                onClick={(e) => e.stopPropagation()}
                 sx={{
                   flexShrink: 0,
                   width: LEGEND_W,
@@ -751,7 +750,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                   alignItems: "stretch",
                 }}
               >
-                {legendSlot}
+                <Box onClick={(e) => e.stopPropagation()}>{legendSlot}</Box>
               </Box>
             )}
           </Box>
