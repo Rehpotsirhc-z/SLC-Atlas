@@ -263,13 +263,9 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     const lineColor = theme.palette.divider
     const paper = theme.palette.background.paper
 
-    const tissueHeader = useMemo(
+    const tissueHeaderBase = useMemo(
       () => (
-        <svg
-          width={gridW + RIGHT_PAD}
-          height={topH}
-          style={{ display: "block", overflow: "visible" }}
-        >
+        <>
           {onTissueClick &&
             tissueCols.map((t, i) => (
               <rect
@@ -278,7 +274,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                 y={0}
                 width={cellW}
                 height={topH}
-                fill={hoverHeaderCol === i ? alpha(accent, 0.12) : "transparent"}
+                fill="transparent"
                 style={{ cursor: "pointer" }}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -291,7 +287,6 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
           {tissueCols.map((t, i) => {
             const x = i * cellW + cellW / 2
             const y = TISSUE_LABEL_GAP
-            const active = hoverHeaderCol === i
             return (
               <text
                 key={t}
@@ -299,8 +294,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                 y={y}
                 fontSize={tissueFont}
                 fontFamily={monoFont}
-                fill={active ? accent : muted}
-                fontWeight={active ? 600 : undefined}
+                fill={muted}
                 textAnchor="start"
                 dominantBaseline="central"
                 transform={`rotate(90 ${x} ${y})`}
@@ -310,20 +304,46 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
               </text>
             )
           })}
-        </svg>
+        </>
       ),
-      [
-        tissueCols,
-        gridW,
-        cellW,
-        tissueFont,
-        muted,
-        monoFont,
-        topH,
-        onTissueClick,
-        hoverHeaderCol,
-        accent,
-      ],
+      [tissueCols, cellW, tissueFont, muted, monoFont, topH, onTissueClick],
+    )
+
+    const hoveredTissue = hoverHeaderCol !== null ? tissueCols[hoverHeaderCol] : undefined
+    const hoverX = hoverHeaderCol !== null ? hoverHeaderCol * cellW + cellW / 2 : 0
+
+    const tissueHeader = (
+      <svg
+        width={gridW + RIGHT_PAD}
+        height={topH}
+        style={{ display: "block", overflow: "visible" }}
+      >
+        {tissueHeaderBase}
+        {hoverHeaderCol !== null && hoveredTissue && (
+          <g style={{ pointerEvents: "none" }}>
+            <rect
+              x={hoverHeaderCol * cellW}
+              y={0}
+              width={cellW}
+              height={topH}
+              fill={alpha(accent, 0.12)}
+            />
+            <text
+              x={hoverX}
+              y={TISSUE_LABEL_GAP}
+              fontSize={tissueFont}
+              fontFamily={monoFont}
+              fill={accent}
+              fontWeight={600}
+              textAnchor="start"
+              dominantBaseline="central"
+              transform={`rotate(90 ${hoverX} ${TISSUE_LABEL_GAP})`}
+            >
+              {displayTissue(hoveredTissue)}
+            </text>
+          </g>
+        )}
+      </svg>
     )
 
     const selectedGeneIdRef = useRef(selectedGeneId)

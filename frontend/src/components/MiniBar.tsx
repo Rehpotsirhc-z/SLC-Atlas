@@ -8,16 +8,14 @@ interface MiniBarProps {
   fraction: number
   color?: string
   width?: number | string
-  title?: string
 }
 
-export default function MiniBar({ fraction, color, width = "100%", title }: MiniBarProps) {
+export default function MiniBar({ fraction, color, width = "100%" }: MiniBarProps) {
   const theme = useTheme()
   const fill = color ?? theme.palette.primary.main
   const clamped = Math.max(0, Math.min(1, Number.isFinite(fraction) ? fraction : 0))
   return (
     <Box
-      title={title}
       sx={{
         width,
         minWidth: 0,
