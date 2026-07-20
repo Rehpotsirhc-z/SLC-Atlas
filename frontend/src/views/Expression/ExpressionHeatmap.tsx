@@ -326,61 +326,56 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       ],
     )
 
-    const geneSidebar = useMemo(
-      () => (
-        <svg width={LEFT_W} height={gridH} style={{ display: "block" }}>
-          <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />
-          {geneRows.map((g, i) => {
-            const opacity =
-              (familyFilter !== null && g.family !== familyFilter ? 0.25 : 1) *
-              (selectedRow !== null && i !== selectedRow ? 0.35 : 1)
-            const handleClick = (e: MouseEvent) => {
+    const selectedGeneIdRef = useRef(selectedGeneId)
+    selectedGeneIdRef.current = selectedGeneId
+
+    const renderGeneRow = useCallback(
+      (g: GeneRow, i: number) => {
+        const familyOpacity = familyFilter !== null && g.family !== familyFilter ? 0.25 : 1
+        const color = getFamilyColor(g.family ?? "?", mode)
+        const cy = i * cellH + cellH / 2
+        return (
+          <g
+            key={g.geneId}
+            style={{ cursor: "pointer" }}
+            onClick={(e: MouseEvent) => {
               e.stopPropagation()
-              const deselecting = g.geneId === selectedGeneId
+              const deselecting = g.geneId === selectedGeneIdRef.current
               onSelect(deselecting ? null : g.geneId)
               setSelectedCell(null)
-            }
-            return (
-              <g key={g.geneId} style={{ cursor: "pointer" }} onClick={handleClick}>
-                <circle cx={GENE_TREE_W} cy={i * cellH + cellH / 2} r={geneDotR} fill={paper} />
-                <circle
-                  cx={GENE_TREE_W}
-                  cy={i * cellH + cellH / 2}
-                  r={geneDotR}
-                  fill={getFamilyColor(g.family ?? "?", mode)}
-                  opacity={opacity}
-                />
-                <text
-                  x={GENE_TREE_W + GENE_LABEL_GAP}
-                  y={i * cellH + cellH / 2 + geneFont * 0.28}
-                  fontSize={geneFont}
-                  fontFamily={monoFont}
-                  fill={getFamilyColor(g.family ?? "?", mode)}
-                  opacity={opacity}
-                >
-                  {g.symbol}
-                </text>
-              </g>
-            )
-          })}
-        </svg>
-      ),
-      [
-        geneTree,
-        geneRows,
-        gridH,
-        cellH,
-        geneFont,
-        geneDotR,
-        selectedRow,
-        familyFilter,
-        selectedGeneId,
-        onSelect,
-        mode,
-        muted,
-        monoFont,
-        paper,
-      ],
+            }}
+          >
+            <circle cx={GENE_TREE_W} cy={cy} r={geneDotR} fill={paper} />
+            <circle cx={GENE_TREE_W} cy={cy} r={geneDotR} fill={color} opacity={familyOpacity} />
+            <text
+              x={GENE_TREE_W + GENE_LABEL_GAP}
+              y={cy + geneFont * 0.28}
+              fontSize={geneFont}
+              fontFamily={monoFont}
+              fill={color}
+              opacity={familyOpacity}
+            >
+              {g.symbol}
+            </text>
+          </g>
+        )
+      },
+      [familyFilter, cellH, geneDotR, geneFont, mode, monoFont, paper, onSelect],
+    )
+
+    const geneRowEls = useMemo(
+      () => geneRows.map((g, i) => renderGeneRow(g, i)),
+      [geneRows, renderGeneRow],
+    )
+
+    const geneSidebar = (
+      <svg width={LEFT_W} height={gridH} style={{ display: "block" }}>
+        <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />
+        <g opacity={selectedRow !== null ? 0.35 : 1}>{geneRowEls}</g>
+        {selectedRow !== null && geneRows[selectedRow] && (
+          <g>{renderGeneRow(geneRows[selectedRow], selectedRow)}</g>
+        )}
+      </svg>
     )
 
     useEffect(() => {
