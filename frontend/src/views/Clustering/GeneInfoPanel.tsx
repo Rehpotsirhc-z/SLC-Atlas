@@ -6,17 +6,9 @@ import CloseIcon from "@mui/icons-material/Close"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import TableRowsIcon from "@mui/icons-material/TableRows"
 import { keyframes } from "@mui/system"
-import {
-  Box,
-  Button,
-  Divider,
-  IconButton,
-  Paper,
-  Tooltip,
-  Typography,
-  useTheme,
-} from "@mui/material"
+import { Box, Button, Divider, IconButton, Paper, Typography, useTheme } from "@mui/material"
 import { useLayoutEffect, useRef } from "react"
+import FamilyLabel from "@/components/FamilyLabel"
 import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
@@ -95,55 +87,12 @@ export default function GeneInfoPanel({
     {
       label: "Family",
       value: (
-        <Tooltip
-          placement="left"
-          disableHoverListener={!gene?.category}
-          slotProps={{
-            tooltip: {
-              sx: {
-                bgcolor: "background.default",
-                color: "text.primary",
-                border: 1,
-                borderColor: "divider",
-                borderRadius: 1,
-                boxShadow: 3,
-                py: 1,
-                px: 1.25,
-                m: 0,
-                maxWidth: 240,
-                fontSize: "0.7rem",
-                lineHeight: 1.45,
-              },
-            },
-          }}
-          title={
-            gene?.category ? (
-              <>
-                {gene.family_name && (
-                  <Box sx={{ fontWeight: 600, display: "block" }}>{gene.family_name}</Box>
-                )}
-                <Box sx={{ color: "text.secondary", display: "block" }}>{gene.category}</Box>
-              </>
-            ) : (
-              ""
-            )
-          }
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: 0.75,
-              cursor: gene?.category ? "help" : "default",
-            }}
-          >
-            <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: familyColor }} />
-            <Box component="span" sx={{ transform: "translateY(1px)" }}>
-              {family}
-            </Box>
-          </Box>
-        </Tooltip>
+        <FamilyLabel
+          label={family}
+          color={familyColor}
+          familyName={gene?.family_name}
+          category={gene?.category}
+        />
       ),
     },
     { label: "Metric", value: methodLabel },
