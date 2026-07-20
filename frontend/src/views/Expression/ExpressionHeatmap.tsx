@@ -671,7 +671,9 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
               {geneSidebar}
             </Box>
 
-            <Box sx={{ position: "relative", width: gridW, height: gridH, flexShrink: 0 }}>
+            <Box
+              sx={{ position: "relative", zIndex: 0, width: gridW, height: gridH, flexShrink: 0 }}
+            >
               <canvas
                 ref={canvasRef}
                 style={{ display: "block", width: gridW, height: gridH, cursor: "pointer" }}
