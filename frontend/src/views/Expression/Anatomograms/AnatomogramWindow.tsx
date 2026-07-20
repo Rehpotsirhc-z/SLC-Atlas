@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Box, IconButton, Paper, Tooltip } from "@mui/material"
 import CloseIcon from "@mui/icons-material/Close"
 import ResizeHandles from "@/components/ResizeHandles"
@@ -28,6 +28,7 @@ interface AnatomogramWindowProps {
   onPickTissue: (tissues: string[]) => void
   onClose: () => void
   onPopIn: () => void
+  hideDock?: boolean
 }
 
 export default function AnatomogramWindow({
@@ -41,6 +42,7 @@ export default function AnatomogramWindow({
   onPickTissue,
   onClose,
   onPopIn,
+  hideDock = false,
 }: AnatomogramWindowProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const size = useUIStore((s) => s.railFloatSize)
@@ -56,6 +58,18 @@ export default function AnatomogramWindow({
   )
   const { startResize } = useResizablePanel(currentPos, setPos, size, setSize, MIN_W, MIN_H)
 
+  // The stored size is shared with the desktop pop-out and persisted, so it can
+  // exceed a smaller viewport (a narrower screen, or a phone). Clamp what we
+  // render to the viewport without mutating the stored preference.
+  const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
+  useEffect(() => {
+    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+  const width = Math.min(size.w, vp.w - 24)
+  const height = Math.min(size.h, vp.h - 24)
+
   return (
     <Paper
       ref={panelRef}
@@ -64,8 +78,8 @@ export default function AnatomogramWindow({
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
-        width: size.w,
-        height: size.h,
+        width,
+        height,
         zIndex: 6,
         border: 1,
         borderColor: "divider",
@@ -77,7 +91,7 @@ export default function AnatomogramWindow({
       <Box
         onMouseDown={handleDragStart}
         onTouchStart={handleTouchStart}
-        onDoubleClick={onPopIn}
+        onDoubleClick={hideDock ? undefined : onPopIn}
         sx={{
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
@@ -95,7 +109,7 @@ export default function AnatomogramWindow({
       <Box
         onMouseDown={handleDragStart}
         onTouchStart={handleTouchStart}
-        onDoubleClick={onPopIn}
+        onDoubleClick={hideDock ? undefined : onPopIn}
         sx={{
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
@@ -120,11 +134,13 @@ export default function AnatomogramWindow({
           onTouchStart={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
-          <Tooltip title="Dock to sidebar" arrow>
-            <IconButton size="small" onClick={onPopIn} sx={{ color: "text.secondary", p: "7px" }}>
-              <PopInIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {!hideDock && (
+            <Tooltip title="Dock to sidebar" arrow>
+              <IconButton size="small" onClick={onPopIn} sx={{ color: "text.secondary", p: "7px" }}>
+                <PopInIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title="Close" arrow>
             <IconButton size="small" onClick={onClose} sx={{ color: "text.secondary", p: "7px" }}>
               <CloseIcon fontSize="small" />

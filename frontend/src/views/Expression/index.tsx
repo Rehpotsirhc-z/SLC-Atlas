@@ -7,6 +7,7 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
+import AccessibilityNewIcon from "@mui/icons-material/AccessibilityNew"
 import CloseIcon from "@mui/icons-material/Close"
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
@@ -78,6 +79,7 @@ export default function Expression() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileRailOpen, setMobileRailOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
@@ -203,7 +205,11 @@ export default function Expression() {
     RAIL_MIN_WIDTH,
     rowWidth - MIN_MAIN_CONTENT_WIDTH - RAIL_EDGE_WIDTH,
   )
-  const effRailWidth = Math.min(Math.max(railWidth, RAIL_MIN_WIDTH), railFillWidth)
+  const effRailWidth = Math.min(
+    Math.max(railWidth, RAIL_MIN_WIDTH),
+    railFillWidth,
+    maxAutoRailWidth,
+  )
   const handleAutoWidth = useCallback((px: number) => setRailWidth(px), [setRailWidth])
   const handleFillWidth = useCallback((px: number) => setRailFillWidth(px), [])
 
@@ -605,6 +611,33 @@ export default function Expression() {
 
                 {isMobile && (
                   <>
+                    <Tooltip title={mobileRailOpen ? "Hide anatomograms" : "Show anatomograms"}>
+                      <IconButton
+                        onClick={() => setMobileRailOpen((v) => !v)}
+                        sx={{
+                          position: "absolute",
+                          bottom: 12,
+                          right: 64,
+                          zIndex: 4,
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          boxShadow: 4,
+                          backdropFilter: "blur(10px)",
+                          bgcolor: floatBg,
+                          border: 1,
+                          borderColor: "divider",
+                          color: mobileRailOpen ? "text.secondary" : "primary.main",
+                          "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
+                        }}
+                      >
+                        {mobileRailOpen ? (
+                          <CloseIcon fontSize="small" />
+                        ) : (
+                          <AccessibilityNewIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Tooltip>
                     {searchOpen && (
                       <Paper
                         elevation={4}
@@ -762,6 +795,25 @@ export default function Expression() {
                 setRailFloating(false)
               }}
               onPopIn={() => setRailFloating(false)}
+            />
+          )}
+
+          {isMobile && mobileRailOpen && (
+            <AnatomogramWindow
+              view={railView}
+              presentTissues={presentTissues}
+              selectedTissue={railTissue}
+              tpmByTissue={tpmByTissue}
+              domainMax={railDomainMax}
+              onPickSex={(sex) => {
+                setAnatomogramSex(sex)
+                setTissue("all")
+              }}
+              onPickBrain={() => setTissue("brain")}
+              onPickTissue={pickTissue}
+              onClose={() => setMobileRailOpen(false)}
+              onPopIn={() => setMobileRailOpen(false)}
+              hideDock
             />
           )}
         </Box>

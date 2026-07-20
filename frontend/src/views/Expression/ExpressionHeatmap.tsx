@@ -284,7 +284,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
                   e.stopPropagation()
                   onTissueClick(t)
                 }}
-                onPointerEnter={() => setHoverHeaderCol(i)}
+                onPointerEnter={(e) => e.pointerType !== "touch" && setHoverHeaderCol(i)}
                 onPointerLeave={() => setHoverHeaderCol((c) => (c === i ? null : c))}
               />
             ))}
@@ -424,7 +424,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
     ])
 
     const cellFromEvent = useCallback(
-      (e: React.PointerEvent): HoverState | null => {
+      (e: React.MouseEvent): HoverState | null => {
         const canvas = canvasRef.current
         const container = containerRef.current
         if (!canvas || !container) return null
@@ -660,22 +660,25 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
               <canvas
                 ref={canvasRef}
                 style={{ display: "block", width: gridW, height: gridH, cursor: "pointer" }}
-                onPointerMove={(e) => setHover(cellFromEvent(e))}
+                onPointerMove={(e) => {
+                  if (e.pointerType === "touch") return
+                  setHover(cellFromEvent(e))
+                }}
                 onPointerLeave={() => setHover(null)}
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (hover) {
-                    const deselecting =
-                      selectedCell !== null &&
-                      selectedCell.row === hover.row &&
-                      selectedCell.col === hover.col
-                    if (deselecting) {
-                      onSelect(null)
-                      setSelectedCell(null)
-                    } else {
-                      onSelect(geneRows[hover.row].geneId)
-                      setSelectedCell({ row: hover.row, col: hover.col })
-                    }
+                  const cell = cellFromEvent(e)
+                  if (!cell) return
+                  const deselecting =
+                    selectedCell !== null &&
+                    selectedCell.row === cell.row &&
+                    selectedCell.col === cell.col
+                  if (deselecting) {
+                    onSelect(null)
+                    setSelectedCell(null)
+                  } else {
+                    onSelect(geneRows[cell.row].geneId)
+                    setSelectedCell({ row: cell.row, col: cell.col })
                   }
                 }}
               />

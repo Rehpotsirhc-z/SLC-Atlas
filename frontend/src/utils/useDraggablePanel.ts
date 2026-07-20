@@ -46,6 +46,7 @@ export function useDraggablePanel(
       const y = Math.max(pad, Math.min(p.y, ch - ph - pad))
       if (x !== p.x || y !== p.y) onPosChange({ x, y })
     }
+    clamp()
     window.addEventListener("resize", clamp)
     return () => window.removeEventListener("resize", clamp)
   }, [onPosChange, panelRef])
