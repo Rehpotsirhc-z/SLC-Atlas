@@ -4,11 +4,7 @@
 
 import { useCallback } from "react"
 import type { MouseEvent, RefObject } from "react"
-
-interface CellHit {
-  row: number
-  col: number
-}
+import type { CellPos } from "./types"
 
 export function useCellHitTest(
   canvasRef: RefObject<HTMLCanvasElement | null>,
@@ -18,7 +14,7 @@ export function useCellHitTest(
   nCols: number,
 ) {
   return useCallback(
-    (e: MouseEvent): CellHit | null => {
+    (e: MouseEvent): CellPos | null => {
       const canvas = canvasRef.current
       if (!canvas) return null
       const cr = canvas.getBoundingClientRect()

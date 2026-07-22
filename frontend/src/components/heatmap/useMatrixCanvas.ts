@@ -4,6 +4,7 @@
 
 import { useEffect } from "react"
 import type { RefObject } from "react"
+import { cellRect } from "./geometry"
 
 interface MatrixCanvasOptions {
   canvasRef: RefObject<HTMLCanvasElement | null>
@@ -47,9 +48,10 @@ export function useMatrixCanvas({
     for (let r = 0; r < nRows; r++) {
       const a = alphaFor(r)
       for (let c = 0; c < nCols; c++) {
+        const { x, y, w, h } = cellRect(r, c, cellW, cellH, cellYOffset)
         ctx.globalAlpha = a
         ctx.fillStyle = fillFor(r, c)
-        ctx.fillRect(c * cellW, r * cellH + cellYOffset, cellW - 1, cellH - 1)
+        ctx.fillRect(x, y, w, h)
       }
     }
     ctx.globalAlpha = 1

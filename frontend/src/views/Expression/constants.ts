@@ -8,3 +8,4 @@ export const RAIL_RESIZE_GRIP_W = 6
 export const RAIL_TRANSITION = "width 0.22s ease"
 export const TISSUE_FLASH_MS = 1200
 export const TISSUE_FLASH_MS_REDUCED = 900
+export const TISSUE_LABEL_H_MIN = 100

@@ -5,6 +5,7 @@
 import type { PaletteMode } from "@mui/material"
 import { getFamilyColor } from "@/utils/familyColor"
 import { GENE_LABEL_GAP, GENE_TREE_W, LEFT_W } from "./constants"
+import { cellRect } from "./geometry"
 import type { GeneRow } from "./useGeneRows"
 
 export const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -23,8 +24,9 @@ export function cellRectsSvg(opts: {
   const rects: string[] = []
   for (let r = 0; r < nRows; r++) {
     for (let c = 0; c < nCols; c++) {
+      const { x, y, w, h } = cellRect(r, c, cellW, cellH)
       rects.push(
-        `<rect x="${LEFT_W + c * cellW}" y="${y0 + r * cellH}" width="${cellW - 1}" height="${cellH - 1}" fill="${fillFor(r, c)}"/>`,
+        `<rect x="${LEFT_W + x}" y="${y0 + y}" width="${w}" height="${h}" fill="${fillFor(r, c)}"/>`,
       )
     }
   }
