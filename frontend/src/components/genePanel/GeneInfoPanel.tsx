@@ -6,57 +6,32 @@ import CloseIcon from "@mui/icons-material/Close"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import TableRowsIcon from "@mui/icons-material/TableRows"
 import { keyframes } from "@mui/system"
-import {
-  Box,
-  Button,
-  Divider,
-  IconButton,
-  Paper,
-  Tooltip,
-  Typography,
-  useTheme,
-} from "@mui/material"
+import { Box, Button, Divider, IconButton, Paper, Typography, useTheme } from "@mui/material"
 import { useLayoutEffect, useRef } from "react"
 import FamilyLabel from "@/components/FamilyLabel"
-import MiniBar from "@/components/MiniBar"
 import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
 import { useFloatingWindow } from "@/utils/useFloatingWindow"
-import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
-import type { ConservationCell } from "@/types/conservation"
-import type { Gene } from "@/types/gene"
-import { CELL_METRICS, type CellMetricKey } from "./ConservationHeatmap"
 
 const glowFlash = keyframes`
   0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
   100% { outline: 2px solid rgba(144, 202, 249, 0); }
 `
 
-export interface ConservationGeneInfo {
-  geneId: string
-  symbol: string
-  family: string | null
-  gene: Gene | null
-  cells: ConservationCell[]
-}
+import type { GeneInfo } from "@/types/popup"
+
+export type { PanelPos }
 
 const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
-const DEFAULT_SIZE: PanelSize = { w: 420, h: 520 }
+const DEFAULT_SIZE: PanelSize = { w: 340, h: 520 }
 const MIN_W = 280
 const MIN_H = 320
 
-const ORTHOLOGY_LABEL: Record<string, string> = {
-  ortholog_one2one: "1:1",
-  ortholog_one2many: "1:many",
-  ortholog_many2many: "n:n",
-}
-
-interface GeneConservationPanelProps {
-  info: ConservationGeneInfo
-  metric: CellMetricKey
+interface GeneInfoPanelProps {
+  info: GeneInfo
   onClose: () => void
   onOpenInGenes: () => void
   pos: PanelPos | null
@@ -65,21 +40,20 @@ interface GeneConservationPanelProps {
   onSizeChange: (size: PanelSize) => void
 }
 
-export default function GeneConservationPanel({
+export default function GeneInfoPanel({
   info,
-  metric,
   onClose,
   onOpenInGenes,
   pos,
   onPosChange,
   size,
   onSizeChange,
-}: GeneConservationPanelProps) {
-  const { geneId, symbol, family, gene, cells } = info
+}: GeneInfoPanelProps) {
+  const { node, methodLabel, closestSymbol, gene } = info
   const { palette, custom } = useTheme()
-  const familyColor = getFamilyColor(family ?? "?", palette.mode)
+  const family = gene?.family ?? node.family ?? "?"
+  const familyColor = getFamilyColor(family, palette.mode)
   const panelRef = useRef<HTMLDivElement>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
     pos,
@@ -104,42 +78,21 @@ export default function GeneConservationPanel({
   )
   const { zIndex, focusProps } = useFloatingWindow("gene-popup")
 
-  const metricDef = CELL_METRICS.find((m) => m.key === metric) ?? CELL_METRICS[0]
-  const field = metricDef.field as keyof Pick<ConservationCell, "perc_id" | "perc_pos">
-
-  const oneToOneCount = cells.filter((c) => c.orthology_type === "ortholog_one2one").length
-  const values = cells.map((c) => c[field]).filter((v): v is number => v !== null)
-  const avgValue = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null
-
-  const sortedCells = [...cells].sort((a, b) => {
-    const av = a[field]
-    const bv = b[field]
-    if (av === null && bv === null) return 0
-    if (av === null) return 1
-    if (bv === null) return -1
-    return bv - av
-  })
-  const labelKey = sortedCells.map((c) => c.species).join("|")
-  usePopupAutoWidth(gridRef, labelKey, currentPos.x, currentSize.h, onSizeChange)
-
   const rows: { label: string; value: React.ReactNode }[] = [
     {
       label: "Family",
       value: (
         <FamilyLabel
-          label={family ?? "?"}
+          label={family}
           color={familyColor}
           familyName={gene?.family_name}
           category={gene?.category}
         />
       ),
     },
-    { label: "Species compared", value: cells.length },
-    { label: "1:1 orthologs", value: oneToOneCount },
-    {
-      label: `Avg ${metricDef.label}`,
-      value: avgValue !== null ? `${avgValue.toFixed(1)}%` : "—",
-    },
+    { label: "Metric", value: methodLabel },
+    { label: "Branch length", value: node.branch_length.toFixed(3) },
+    ...(closestSymbol ? [{ label: "Closest relative", value: closestSymbol }] : []),
   ]
 
   return (
@@ -194,7 +147,7 @@ export default function GeneConservationPanel({
             fontWeight={700}
             sx={{ color: familyColor, lineHeight: 1.2 }}
           >
-            {symbol}
+            {node.symbol}
           </Typography>
           <IconButton
             size="small"
@@ -213,7 +166,7 @@ export default function GeneConservationPanel({
             fontSize: custom.monoFontSize,
           }}
         >
-          {geneId}
+          {node.gene_id}
         </Typography>
         {gene?.name && (
           <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
@@ -237,96 +190,11 @@ export default function GeneConservationPanel({
             </Box>
           ))}
         </Box>
-
-        <Divider sx={{ mt: 1, mb: 0.75 }} />
       </Box>
 
-      <Box
-        ref={gridRef}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          px: 1.5,
-          display: "grid",
-          gridTemplateColumns: "minmax(0, max-content) minmax(48px, 1fr) max-content",
-          alignItems: "center",
-          columnGap: 1,
-          rowGap: 0.75,
-          alignContent: "start",
-        }}
-      >
-        {sortedCells.map((c) => {
-          const value = c[field]
-          const orthoLabel = c.orthology_type
-            ? (ORTHOLOGY_LABEL[c.orthology_type] ?? c.orthology_type)
-            : null
-          const barHover = orthoLabel ? `${orthoLabel} ortholog` : "No ortholog"
-          return (
-            <Box key={c.species} sx={{ display: "contents" }}>
-              {c.target_gene_id ? (
-                <Tooltip
-                  title={
-                    <Box component="span" sx={{ display: "block", transform: "translateY(1px)" }}>
-                      {c.target_gene_id}
-                    </Box>
-                  }
-                  placement="right"
-                  arrow
-                >
-                  <Typography
-                    variant="caption"
-                    component="a"
-                    href={ensemblUrl(c.target_gene_id, c.species)}
-                    target="_blank"
-                    rel="noopener"
-                    sx={{
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      color: "text.primary",
-                      textDecoration: "none",
-                      "&:hover": { textDecoration: "underline", color: "primary.main" },
-                    }}
-                  >
-                    {c.species_label ?? c.species}
-                  </Typography>
-                </Tooltip>
-              ) : (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    minWidth: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {c.species_label ?? c.species}
-                </Typography>
-              )}
-              <Tooltip title={barHover} placement="top" arrow>
-                <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, pl: 5 }}>
-                  <MiniBar fraction={value !== null ? value / 100 : 0} />
-                </Box>
-              </Tooltip>
-              <Typography
-                variant="caption"
-                sx={{
-                  textAlign: "right",
-                  fontFamily: custom.monoFontFamily,
-                  fontSize: custom.monoFontSize,
-                }}
-              >
-                {value !== null ? `${value.toFixed(1)}%` : "—"}
-              </Typography>
-            </Box>
-          )
-        })}
-      </Box>
+      <Box sx={{ flex: 1, minHeight: 0 }} />
 
-      <Box sx={{ px: 1.5, pb: 1.5, pt: 0.75, flexShrink: 0 }}>
+      <Box sx={{ px: 1.5, pb: 1.5, pt: 1, flexShrink: 0 }}>
         <Divider sx={{ mb: 1.5 }} />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
@@ -339,18 +207,20 @@ export default function GeneConservationPanel({
             Open in Genes view
           </Button>
           <Box sx={{ display: "flex", gap: 0.5 }}>
-            <Button
-              size="small"
-              variant="text"
-              startIcon={<OpenInNewIcon />}
-              component="a"
-              href={ensemblUrl(geneId)}
-              target="_blank"
-              rel="noopener"
-              sx={{ flex: 1 }}
-            >
-              Ensembl
-            </Button>
+            {node.gene_id && (
+              <Button
+                size="small"
+                variant="text"
+                startIcon={<OpenInNewIcon />}
+                component="a"
+                href={ensemblUrl(node.gene_id)}
+                target="_blank"
+                rel="noopener"
+                sx={{ flex: 1 }}
+              >
+                Ensembl
+              </Button>
+            )}
             {gene && (
               <Button
                 size="small"

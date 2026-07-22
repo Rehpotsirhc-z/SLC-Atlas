@@ -7,7 +7,7 @@ import ToolbarMeasureProbe from "@/components/view/ToolbarMeasureProbe"
 import ViewToolbar from "@/components/view/ViewToolbar"
 import ViewToolbarActions, { type ExportItem } from "@/components/view/ViewToolbarActions"
 import { useToolbarFit } from "@/components/view/useToolbarFit"
-import { CELL_METRICS, type CellMetricKey } from "./ConservationHeatmap"
+import { CELL_METRICS, type CellMetricKey } from "@/types/conservation"
 
 interface Props {
   cellMetric: CellMetricKey

@@ -2,6 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+export const CELL_METRICS = [
+  { key: "perc_id", label: "% identity", field: "perc_id", domain: [0, 100] },
+  { key: "perc_pos", label: "% positives", field: "perc_pos", domain: [0, 100] },
+] as const
+
+export type CellMetricKey = (typeof CELL_METRICS)[number]["key"]
+
 export interface ConservationCell {
   gene_id: string
   symbol: string | null

@@ -7,20 +7,13 @@ import { persist } from "zustand/middleware"
 import type { ThemeMode } from "@/theme"
 import type { TreeMetric, TreeTissue } from "@/api/hooks/useClustering"
 import type { PanelPos } from "@/utils/useDraggablePanel"
-import type { GeneInfo } from "@/views/Clustering/GeneInfoPanel"
-import type { ConservationGeneInfo } from "@/views/Conservation/GeneConservationPanel"
-import type { ExpressionGeneInfo } from "@/views/Expression/GeneExpressionPanel"
-import type { CellMetricKey } from "@/views/Conservation/ConservationHeatmap"
+export type { PopupContent }
+import type { PopupContent } from "@/types/popup"
 
 export interface PanelSize {
   w: number
   h: number
 }
-
-export type PopupContent =
-  | { kind: "clustering"; info: GeneInfo }
-  | { kind: "conservation"; info: ConservationGeneInfo; metric: CellMetricKey }
-  | { kind: "expression"; info: ExpressionGeneInfo }
 
 interface UIState {
   selectedGeneId: string | null

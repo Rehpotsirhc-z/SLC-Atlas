@@ -16,7 +16,7 @@ import ConservationLegend from "./ConservationLegend"
 import ConservationToolbar from "./ConservationToolbar"
 import GeneOrderControl from "./GeneOrderControl"
 import { useConservationState } from "./useConservationState"
-import type { CellMetricKey } from "./ConservationHeatmap"
+import type { CellMetricKey } from "@/types/conservation"
 
 export default function Conservation() {
   const [cellMetric, setCellMetric] = useState<CellMetricKey>("perc_id")

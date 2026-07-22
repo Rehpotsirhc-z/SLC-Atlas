@@ -14,7 +14,7 @@ import { useGeneById } from "@/api/hooks/useGenes"
 import { useUIStore } from "@/store/uiStore"
 import { usePublishPopup } from "@/store/usePublishPopup"
 import { uniqueFamilies, uniqueGeneOptions } from "@/utils/geneOptions"
-import type { CellMetricKey } from "./ConservationHeatmap"
+import type { CellMetricKey } from "@/types/conservation"
 
 export function useConservationState(cellMetric: CellMetricKey) {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)

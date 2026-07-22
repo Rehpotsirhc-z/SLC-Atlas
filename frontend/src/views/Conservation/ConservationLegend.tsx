@@ -6,7 +6,7 @@ import { useCallback, useMemo } from "react"
 import { useTheme } from "@mui/material"
 import HeatmapColorLegend, { type LegendTick } from "@/components/HeatmapColorLegend"
 import { lerpHex } from "@/utils/tpmColor"
-import { CELL_METRICS, type CellMetricKey } from "./ConservationHeatmap"
+import { CELL_METRICS, type CellMetricKey } from "@/types/conservation"
 
 interface Props {
   metric: CellMetricKey

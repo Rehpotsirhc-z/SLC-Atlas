@@ -22,43 +22,34 @@ import MiniBar from "@/components/MiniBar"
 import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
-import { formatTpm } from "@/utils/format"
-import { displayTissue } from "@/utils/tissue"
-import { tpmIntensity } from "@/utils/tpmColor"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
 import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
-import type { ExpressionRow } from "@/types/expression"
-import type { Gene } from "@/types/gene"
+import type { ConservationCell } from "@/types/conservation"
+import { CELL_METRICS, type CellMetricKey } from "@/types/conservation"
 
 const glowFlash = keyframes`
   0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
   100% { outline: 2px solid rgba(144, 202, 249, 0); }
 `
 
-export interface ExpressionGeneInfo {
-  geneId: string
-  symbol: string
-  family: string | null
-  gene: Gene | null
-  rows: ExpressionRow[]
-}
+import type { ConservationGeneInfo } from "@/types/popup"
 
 const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
 const DEFAULT_SIZE: PanelSize = { w: 420, h: 520 }
 const MIN_W = 280
 const MIN_H = 320
 
-function median(values: number[]): number | null {
-  if (!values.length) return null
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+const ORTHOLOGY_LABEL: Record<string, string> = {
+  ortholog_one2one: "1:1",
+  ortholog_one2many: "1:many",
+  ortholog_many2many: "n:n",
 }
 
-interface GeneExpressionPanelProps {
-  info: ExpressionGeneInfo
+interface GeneConservationPanelProps {
+  info: ConservationGeneInfo
+  metric: CellMetricKey
   onClose: () => void
   onOpenInGenes: () => void
   pos: PanelPos | null
@@ -67,16 +58,17 @@ interface GeneExpressionPanelProps {
   onSizeChange: (size: PanelSize) => void
 }
 
-export default function GeneExpressionPanel({
+export default function GeneConservationPanel({
   info,
+  metric,
   onClose,
   onOpenInGenes,
   pos,
   onPosChange,
   size,
   onSizeChange,
-}: GeneExpressionPanelProps) {
-  const { geneId, symbol, family, gene, rows } = info
+}: GeneConservationPanelProps) {
+  const { geneId, symbol, family, gene, cells } = info
   const { palette, custom } = useTheme()
   const familyColor = getFamilyColor(family ?? "?", palette.mode)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -103,17 +95,27 @@ export default function GeneExpressionPanel({
     MIN_W,
     MIN_H,
   )
-
   const { zIndex, focusProps } = useFloatingWindow("gene-popup")
 
-  const sortedRows = [...rows].sort((a, b) => b.tpm - a.tpm)
-  const maxRow = sortedRows[0] ?? null
-  const medianTpm = median(rows.map((r) => r.tpm))
-  const domainMax = Math.max(...rows.map((r) => Math.log2(r.tpm + 1)), 1)
-  const labelKey = sortedRows.map((r) => r.tissue).join("|")
+  const metricDef = CELL_METRICS.find((m) => m.key === metric) ?? CELL_METRICS[0]
+  const field = metricDef.field as keyof Pick<ConservationCell, "perc_id" | "perc_pos">
+
+  const oneToOneCount = cells.filter((c) => c.orthology_type === "ortholog_one2one").length
+  const values = cells.map((c) => c[field]).filter((v): v is number => v !== null)
+  const avgValue = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null
+
+  const sortedCells = [...cells].sort((a, b) => {
+    const av = a[field]
+    const bv = b[field]
+    if (av === null && bv === null) return 0
+    if (av === null) return 1
+    if (bv === null) return -1
+    return bv - av
+  })
+  const labelKey = sortedCells.map((c) => c.species).join("|")
   usePopupAutoWidth(gridRef, labelKey, currentPos.x, currentSize.h, onSizeChange)
 
-  const statRows: { label: string; value: React.ReactNode }[] = [
+  const rows: { label: string; value: React.ReactNode }[] = [
     {
       label: "Family",
       value: (
@@ -125,12 +127,12 @@ export default function GeneExpressionPanel({
         />
       ),
     },
-    { label: "Tissues shown", value: rows.length },
+    { label: "Species compared", value: cells.length },
+    { label: "1:1 orthologs", value: oneToOneCount },
     {
-      label: "Max TPM",
-      value: maxRow ? `${formatTpm(maxRow.tpm)} (${displayTissue(maxRow.tissue)})` : "—",
+      label: `Avg ${metricDef.label}`,
+      value: avgValue !== null ? `${avgValue.toFixed(1)}%` : "—",
     },
-    { label: "Median TPM", value: medianTpm !== null ? formatTpm(medianTpm) : "—" },
   ]
 
   return (
@@ -217,7 +219,7 @@ export default function GeneExpressionPanel({
         <Box
           sx={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 1.5, rowGap: 0.75 }}
         >
-          {statRows.map((r) => (
+          {rows.map((r) => (
             <Box key={r.label} sx={{ display: "contents" }}>
               <Typography variant="caption" color="text.secondary">
                 {r.label}
@@ -247,36 +249,74 @@ export default function GeneExpressionPanel({
           alignContent: "start",
         }}
       >
-        {sortedRows.map((r) => (
-          <Box key={r.tissue} sx={{ display: "contents" }}>
-            <Typography
-              variant="caption"
-              sx={{
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {displayTissue(r.tissue)}
-            </Typography>
-            <Tooltip title={`${formatTpm(r.tpm)} TPM`} placement="top" arrow>
-              <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
-                <MiniBar fraction={tpmIntensity(r.tpm, domainMax)} />
-              </Box>
-            </Tooltip>
-            <Typography
-              variant="caption"
-              sx={{
-                textAlign: "right",
-                fontFamily: custom.monoFontFamily,
-                fontSize: custom.monoFontSize,
-              }}
-            >
-              {formatTpm(r.tpm)}
-            </Typography>
-          </Box>
-        ))}
+        {sortedCells.map((c) => {
+          const value = c[field]
+          const orthoLabel = c.orthology_type
+            ? (ORTHOLOGY_LABEL[c.orthology_type] ?? c.orthology_type)
+            : null
+          const barHover = orthoLabel ? `${orthoLabel} ortholog` : "No ortholog"
+          return (
+            <Box key={c.species} sx={{ display: "contents" }}>
+              {c.target_gene_id ? (
+                <Tooltip
+                  title={
+                    <Box component="span" sx={{ display: "block", transform: "translateY(1px)" }}>
+                      {c.target_gene_id}
+                    </Box>
+                  }
+                  placement="right"
+                  arrow
+                >
+                  <Typography
+                    variant="caption"
+                    component="a"
+                    href={ensemblUrl(c.target_gene_id, c.species)}
+                    target="_blank"
+                    rel="noopener"
+                    sx={{
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      color: "text.primary",
+                      textDecoration: "none",
+                      "&:hover": { textDecoration: "underline", color: "primary.main" },
+                    }}
+                  >
+                    {c.species_label ?? c.species}
+                  </Typography>
+                </Tooltip>
+              ) : (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.species_label ?? c.species}
+                </Typography>
+              )}
+              <Tooltip title={barHover} placement="top" arrow>
+                <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, pl: 5 }}>
+                  <MiniBar fraction={value !== null ? value / 100 : 0} />
+                </Box>
+              </Tooltip>
+              <Typography
+                variant="caption"
+                sx={{
+                  textAlign: "right",
+                  fontFamily: custom.monoFontFamily,
+                  fontSize: custom.monoFontSize,
+                }}
+              >
+                {value !== null ? `${value.toFixed(1)}%` : "—"}
+              </Typography>
+            </Box>
+          )
+        })}
       </Box>
 
       <Box sx={{ px: 1.5, pb: 1.5, pt: 0.75, flexShrink: 0 }}>

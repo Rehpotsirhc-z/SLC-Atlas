@@ -6,9 +6,9 @@ import { useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useUIStore } from "@/store/uiStore"
 import { POPUP_PATHS } from "@/routes"
-import GeneInfoPanel from "@/views/Clustering/GeneInfoPanel"
-import GeneConservationPanel from "@/views/Conservation/GeneConservationPanel"
-import GeneExpressionPanel from "@/views/Expression/GeneExpressionPanel"
+import GeneInfoPanel from "./genePanel/GeneInfoPanel"
+import GeneConservationPanel from "./genePanel/GeneConservationPanel"
+import GeneExpressionPanel from "./genePanel/GeneExpressionPanel"
 
 export default function GeneInfoPopup() {
   const content = useUIStore((s) => s.popupContent)
