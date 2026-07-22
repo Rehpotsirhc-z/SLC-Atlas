@@ -60,9 +60,6 @@ export default function AnatomogramWindow({
   const { startResize } = useResizablePanel(currentPos, setPos, size, setSize, MIN_W, MIN_H)
   const { zIndex, focusProps } = useFloatingWindow("anatomogram")
 
-  // The stored size is shared with the desktop pop-out and persisted, so it can
-  // exceed a smaller viewport (a narrower screen, or a phone). Clamp what we
-  // render to the viewport without mutating the stored preference.
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
   useEffect(() => {
     const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })

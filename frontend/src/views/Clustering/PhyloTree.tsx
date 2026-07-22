@@ -7,7 +7,6 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -15,7 +14,17 @@ import {
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
 import HoverTooltip from "@/components/HoverTooltip"
 import { getFamilyColor } from "@/utils/familyColor"
-import { triggerDownload } from "@/utils/download"
+import { figureExportHandlers } from "@/utils/exportFigure"
+import { useElementSize } from "@/utils/useElementSize"
+import {
+  R,
+  buildTree,
+  depthAndLeafOrder,
+  levelOrder,
+  midpointSpread,
+  rectConnector,
+} from "@/utils/tree"
+import type { Tree } from "@/utils/tree"
 import type { ClusterNode } from "@/types/clustering"
 import type { Gene } from "@/types/gene"
 
@@ -36,45 +45,6 @@ interface PhyloTreeProps {
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
-}
-
-// Tree Model
-interface RNode {
-  id: number
-  parent: number | null
-  branchLength: number
-  geneId: string | null
-  symbol: string | null
-  family: string | null
-  children: number[]
-}
-
-interface Tree {
-  nodes: Map<number, RNode>
-  root: number
-}
-
-function buildTree(data: ClusterNode[]): Tree | null {
-  const nodes = new Map<number, RNode>()
-  for (const n of data) {
-    nodes.set(n.node_id, {
-      id: n.node_id,
-      parent: n.parent_id,
-      branchLength: n.branch_length,
-      geneId: n.gene_id,
-      symbol: n.symbol,
-      family: n.family,
-      children: [],
-    })
-  }
-
-  let root: number | null = null
-  for (const n of nodes.values()) {
-    if (n.parent === null) root = n.id
-    else nodes.get(n.parent)?.children.push(n.id)
-  }
-
-  return root === null ? null : { nodes, root }
 }
 
 // Layout
@@ -115,16 +85,6 @@ function formatTick(v: number): string {
 
 const RECT = { rowH: 30, drawW: 950, left: 14, labelArea: 160, top: 20 }
 const RADIAL = { maxR: 560, labelMargin: 170 }
-const R = (v: number) => Math.round(v * 10) / 10
-
-function rectConnector(px: number, kids: { x: number; y: number }[]): string {
-  const k = [...kids].sort((a, b) => a.y - b.y)
-  const top = k[0]
-  const bot = k[k.length - 1]
-  let d = `M${R(top.x)} ${R(top.y)}L${R(px)} ${R(top.y)}L${R(px)} ${R(bot.y)}L${R(bot.x)} ${R(bot.y)}`
-  for (let i = 1; i < k.length - 1; i++) d += `M${R(px)} ${R(k[i].y)}L${R(k[i].x)} ${R(k[i].y)}`
-  return d
-}
 
 function radialConnector(C: number, pr: number, kids: { angle: number; r: number }[]): string {
   const x = (r: number, a: number) => R(C + r * Math.cos(a))
@@ -155,48 +115,8 @@ function radialConnector(C: number, pr: number, kids: { angle: number; r: number
   return d
 }
 
-function postOrder(tree: Tree): number[] {
-  const out: number[] = []
-  const stack: [number, boolean][] = [[tree.root, false]]
-
-  while (stack.length) {
-    const [id, done] = stack.pop()!
-    if (done) {
-      out.push(id)
-    } else {
-      stack.push([id, true])
-      for (const c of tree.nodes.get(id)!.children) stack.push([c, false])
-    }
-  }
-
-  return out
-}
-
-function depthAndLeafOrder(tree: Tree): { depth: Map<number, number>; leaves: number[] } {
-  const depth = new Map<number, number>([[tree.root, 0]])
-  const leaves: number[] = []
-  const stack = [tree.root]
-
-  while (stack.length) {
-    const id = stack.pop()!
-    const n = tree.nodes.get(id)!
-    const d = depth.get(id)!
-    if (n.children.length === 0) {
-      leaves.push(id)
-    } else {
-      for (let i = n.children.length - 1; i >= 0; i--) {
-        const c = n.children[i]
-        depth.set(c, d + tree.nodes.get(c)!.branchLength)
-        stack.push(c)
-      }
-    }
-  }
-
-  return { depth, leaves }
-}
-
 function computeLayout(
-  tree: Tree,
+  tree: Tree<ClusterNode>,
   layout: Layout,
   drawW = RECT.drawW,
   labelArea = RECT.labelArea,
@@ -206,21 +126,9 @@ function computeLayout(
   const maxDepth = Math.max(1e-9, ...leaves.map((l) => depth.get(l)!))
   const flat = maxDepth < 1e-6
 
-  const level = new Map<number, number>([[tree.root, 0]])
-  if (flat) {
-    const stack = [tree.root]
-    while (stack.length) {
-      const id = stack.pop()!
-      const l = level.get(id)!
-      for (const c of nodes.get(id)!.children) {
-        level.set(c, l + 1)
-        stack.push(c)
-      }
-    }
-  }
+  const level = flat ? levelOrder(tree) : new Map<number, number>([[tree.root, 0]])
   const maxLevel = Math.max(1, ...level.values())
   const pos = new Map<number, { x: number; y: number; angle: number | null }>()
-  const order = postOrder(tree)
 
   if (layout === "rectangular") {
     const x = (id: number) =>
@@ -230,14 +138,7 @@ function computeLayout(
     const y = new Map<number, number>()
 
     leaves.forEach((l, i) => y.set(l, RECT.top + i * RECT.rowH))
-
-    for (const id of order) {
-      const n = nodes.get(id)!
-      if (n.children.length) {
-        const ys = n.children.map((c) => y.get(c)!)
-        y.set(id, (Math.min(...ys) + Math.max(...ys)) / 2)
-      }
-    }
+    midpointSpread(tree, y)
 
     for (const id of nodes.keys()) pos.set(id, { x: x(id), y: y.get(id)!, angle: null })
 
@@ -260,9 +161,9 @@ function computeLayout(
         x: p.x,
         y: p.y,
         angle: null,
-        symbol: n.symbol,
-        family: n.family,
-        geneId: n.geneId,
+        symbol: n.data.symbol,
+        family: n.data.family,
+        geneId: n.data.gene_id,
       }
     })
 
@@ -282,14 +183,7 @@ function computeLayout(
   const angle = new Map<number, number>()
 
   leaves.forEach((l, i) => angle.set(l, -Math.PI / 2 + i * step))
-
-  for (const id of order) {
-    const n = nodes.get(id)!
-    if (n.children.length) {
-      const a = n.children.map((c) => angle.get(c)!)
-      angle.set(id, (Math.min(...a) + Math.max(...a)) / 2)
-    }
-  }
+  midpointSpread(tree, angle)
 
   const C = RADIAL.maxR + RADIAL.labelMargin
   const rOf = (id: number) =>
@@ -317,9 +211,9 @@ function computeLayout(
       x: p.x,
       y: p.y,
       angle: p.angle,
-      symbol: n.symbol,
-      family: n.family,
-      geneId: n.geneId,
+      symbol: n.data.symbol,
+      family: n.data.family,
+      geneId: n.data.gene_id,
     }
   })
 
@@ -352,7 +246,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const bgColor = theme.palette.background.paper
   const isRadial = layout === "radial"
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, size] = useElementSize<HTMLDivElement>()
   const svgRef = useRef<SVGSVGElement>(null)
   const treeGroupRef = useRef<SVGGElement>(null)
   const drag = useRef({ active: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 })
@@ -367,7 +261,6 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     ty: number
   } | null>(null)
 
-  const [size, setSize] = useState({ w: 0, h: 0 })
   const [transform, setTransform] = useState<Transform>({ k: 1, x: 0, y: 0 })
   const [hover, setHover] = useState<{
     leaf: LeafLayout
@@ -393,17 +286,6 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
 
   const rectScale =
     layoutData && size.w > 0 ? Math.min(size.w, layoutData.width) / layoutData.width : 1
-
-  // Measure container
-  useLayoutEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const update = () => setSize({ w: el.clientWidth, h: el.clientHeight })
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   const fit = useCallback(() => {
     if (!isRadial || !layoutData || size.w === 0 || size.h === 0) return
@@ -442,7 +324,10 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   }, [isRadial])
 
   const nearestLeaf = useCallback(
-    (clientX: number, clientY: number): { leaf: LeafLayout; clientX: number; clientY: number } | null => {
+    (
+      clientX: number,
+      clientY: number,
+    ): { leaf: LeafLayout; clientX: number; clientY: number } | null => {
       if (!layoutData || !svgRef.current || !containerRef.current) return null
       const svgRect = svgRef.current.getBoundingClientRect()
       const scale = isRadial ? transform.k : rectScale
@@ -647,31 +532,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
       resetView: reset,
       focusGene,
       focusFamily,
-      exportSvg: (filename) => {
-        const svg = buildSvgString()
-        if (!svg) return
-        triggerDownload(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }), filename)
-      },
-      exportPng: (filename) => {
-        const svg = buildSvgString()
-        if (!svg || !layoutData) return
-        const scale = 2
-        const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }))
-        const img = new Image()
-        img.onload = () => {
-          const canvas = document.createElement("canvas")
-          canvas.width = layoutData.width * scale
-          canvas.height = layoutData.height * scale
-          const ctx = canvas.getContext("2d")!
-          ctx.scale(scale, scale)
-          ctx.drawImage(img, 0, 0)
-          canvas.toBlob((blob) => {
-            if (blob) triggerDownload(blob, filename)
-            URL.revokeObjectURL(url)
-          }, "image/png")
-        }
-        img.src = url
-      },
+      ...figureExportHandlers(buildSvgString),
     }),
     [buildSvgString, layoutData, reset, focusGene, focusFamily],
   )

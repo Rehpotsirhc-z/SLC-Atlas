@@ -4,8 +4,6 @@
 
 import { doomColors, type ThemeMode } from "@/theme"
 
-// "darkBlue" is a selection-background hue in Doom themes, not a foreground/text
-// color, and its light-mode value is too pale to read as chip text — excluded.
 const ACCENT_HUES = [
   "red",
   "orange",

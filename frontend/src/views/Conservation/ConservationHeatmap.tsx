@@ -2,24 +2,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
-import type { MouseEvent } from "react"
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import ExpandLessIcon from "@mui/icons-material/ExpandLess"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import HoverTooltip from "@/components/HoverTooltip"
-import { computeDendrogram } from "@/utils/dendrogram"
-import { getFamilyColor } from "@/utils/familyColor"
-import { triggerDownload } from "@/utils/download"
+import CellOutline from "@/components/heatmap/CellOutline"
+import GeneSidebar from "@/components/heatmap/GeneSidebar"
+import HeatmapShell from "@/components/heatmap/HeatmapShell"
+import { COL_LABEL_GAP, LEFT_COL_W, LEFT_W, RIGHT_PAD } from "@/components/heatmap/constants"
+import {
+  cellRectsSvg,
+  columnLabelsSvg,
+  figureSvgDocument,
+  geneLabelsSvg,
+  svgFontFamily,
+  treePathSvg,
+} from "@/components/heatmap/figureSvg"
+import { useCellHitTest } from "@/components/heatmap/useCellHitTest"
+import { useElementSize } from "@/utils/useElementSize"
+import { useDendroLeaves, useGeneRows } from "@/components/heatmap/useGeneRows"
+import { useHeatmapMetrics } from "@/components/heatmap/useHeatmapMetrics"
+import { useMatrixCanvas } from "@/components/heatmap/useMatrixCanvas"
+import { useRowFocus } from "@/components/heatmap/useRowFocus"
+import { figureExportHandlers } from "@/utils/exportFigure"
 import type { ConservationCell, SpeciesNode } from "@/types/conservation"
 import type { ClusterNode } from "@/types/clustering"
 import type { Gene } from "@/types/gene"
@@ -31,25 +37,12 @@ export const CELL_METRICS = [
 
 export type CellMetricKey = (typeof CELL_METRICS)[number]["key"]
 
-const MIN_CELL_W = 22
-const MAX_CELL_W = 44
-const ROW_H_MIN = 16
-const ROW_H_MAX = 34
-const GENE_TREE_W = 120
-const GENE_LABEL_W = 92
 const SPECIES_TREE_H = 100
 const SPECIES_LABEL_H = 134
 const SPECIES_TOGGLE_H = 14
-const LEFT_W = GENE_TREE_W + GENE_LABEL_W
-const LEFT_GUTTER = 12
-const LEFT_COL_W = LEFT_W + LEFT_GUTTER
 const TOP_H = SPECIES_TREE_H + SPECIES_LABEL_H
-const GENE_LABEL_GAP = 10
-const SP_LABEL_GAP = 8
-const BOTTOM_PAD = 72
-const RIGHT_PAD = 14
-const LEGEND_W = 100
 const SP_TREE_PAD = 20
+const COLLAPSED_CORNER_H = 163
 
 export interface ConservationHeatmapHandle {
   resetView: () => void
@@ -72,12 +65,6 @@ interface ConservationHeatmapProps {
   showSpeciesTree?: boolean
   onToggleSpeciesTree?: () => void
   legendSlot?: React.ReactNode
-}
-
-interface GeneRow {
-  geneId: string
-  symbol: string
-  family: string | null
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -170,95 +157,36 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
     const mode = theme.palette.mode
     const monoFont = theme.custom.monoFontFamily
     const muted = theme.palette.text.secondary
-    const containerRef = useRef<HTMLDivElement>(null)
+    const [containerRef, container] = useElementSize<HTMLDivElement>()
+    const [headerRef, header] = useElementSize<HTMLDivElement>("offset")
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const headerRef = useRef<HTMLDivElement>(null)
     const [hover, setHover] = useState<HoverState | null>(null)
-    const [containerW, setContainerW] = useState(0)
-    const [containerH, setContainerH] = useState(0)
-    const [headerH, setHeaderH] = useState(0)
     const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
-
-    useLayoutEffect(() => {
-      const el = containerRef.current
-      if (!el) return
-      const update = () => {
-        setContainerW(el.clientWidth)
-        setContainerH(el.clientHeight)
-      }
-      update()
-      const ro = new ResizeObserver(update)
-      ro.observe(el)
-      return () => ro.disconnect()
-    }, [])
-
-    useLayoutEffect(() => {
-      const el = headerRef.current
-      if (!el) return
-      const update = () => setHeaderH(el.offsetHeight)
-      update()
-      const ro = new ResizeObserver(update)
-      ro.observe(el)
-      return () => ro.disconnect()
-    }, [])
+    const containerW = container.w
 
     const metricDef = useMemo(() => CELL_METRICS.find((m) => m.key === metric)!, [metric])
 
     const nSpecies = useMemo(() => speciesNodes.filter((n) => n.species).length, [speciesNodes])
 
-    const legendReserve =
-      !!legendSlot && containerW - LEFT_COL_W - LEGEND_W - RIGHT_PAD >= nSpecies * MIN_CELL_W
-        ? LEGEND_W
-        : 0
-    const cellW = useMemo(() => {
-      if (!nSpecies || !containerW) return MIN_CELL_W
-      const avail = containerW - LEFT_COL_W - legendReserve
-      return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(avail / nSpecies)))
-    }, [containerW, nSpecies, legendReserve])
-    const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
-    const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
-    const geneDotR = geneFont * (4.5 / 13)
-    const speciesFont = Math.max(11, Math.min(13, Math.round(cellW * 0.3)))
+    const {
+      cellW,
+      cellH,
+      geneFont,
+      geneDotR,
+      colFont: speciesFont,
+      legendReserve,
+      showLegend,
+    } = useHeatmapMetrics(containerW, nSpecies, !!legendSlot)
 
-    // Gene rows ordered by the clustering dendrogram leaf order
-    const geneTree = useMemo(
-      () => computeDendrogram(clusterNodes, "left", cellH, GENE_TREE_W),
-      [clusterNodes, cellH],
-    )
-    const clusterMeta = useMemo(() => {
-      const m = new Map<number, ClusterNode>()
-      for (const n of clusterNodes) m.set(n.node_id, n)
-      return m
-    }, [clusterNodes])
-    const geneRows: GeneRow[] = useMemo(() => {
-      if (!geneTree) return []
-      return geneTree.order
-        .map((id) => clusterMeta.get(id))
-        .filter((n): n is ClusterNode => !!n?.gene_id)
-        .map((n) => ({
-          geneId: n.gene_id as string,
-          symbol: n.symbol ?? n.gene_id!,
-          family: n.family,
-        }))
-    }, [geneTree, clusterMeta])
+    const { geneTree, geneRows, rowByGene } = useGeneRows(clusterNodes, cellH)
 
-    // Species columns ordered by the species dendrogram leaf order
-    const speciesTree = useMemo(
-      () => computeDendrogram(speciesNodes, "top", cellW, SPECIES_TREE_H - SP_TREE_PAD),
-      [speciesNodes, cellW],
+    const { tree: speciesTree, items: speciesCols } = useDendroLeaves(
+      speciesNodes,
+      "top",
+      cellW,
+      SPECIES_TREE_H - SP_TREE_PAD,
+      (n) => (n.species ? { species: n.species, label: n.species_label ?? n.species } : null),
     )
-    const speciesMeta = useMemo(() => {
-      const m = new Map<number, SpeciesNode>()
-      for (const n of speciesNodes) m.set(n.node_id, n)
-      return m
-    }, [speciesNodes])
-    const speciesCols = useMemo(() => {
-      if (!speciesTree) return []
-      return speciesTree.order
-        .map((id) => speciesMeta.get(id))
-        .filter((n): n is SpeciesNode => !!n?.species)
-        .map((n) => ({ species: n.species as string, label: n.species_label ?? n.species! }))
-    }, [speciesTree, speciesMeta])
 
     const cellMap = useMemo(() => {
       const m = new Map<string, ConservationCell>()
@@ -270,16 +198,9 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       return geneRows.map((g) => speciesCols.map((s) => cellMap.get(`${g.geneId}__${s.species}`)))
     }, [geneRows, speciesCols, cellMap])
 
-    const rowByGene = useMemo(() => {
-      const m = new Map<string, number>()
-      geneRows.forEach((g, i) => m.set(g.geneId, i))
-      return m
-    }, [geneRows])
-
     const gridW = speciesCols.length * cellW
     const gridH = geneRows.length * cellH
     const topH = showSpeciesTree ? TOP_H : SPECIES_LABEL_H
-    const showLegend = legendReserve > 0
     const contentW = LEFT_COL_W + gridW + RIGHT_PAD + legendReserve
     const fits = containerW > 0 && contentW <= containerW
     const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
@@ -287,8 +208,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       selectedCell !== null && selectedCell.row === selectedRow ? selectedCell.col : null
 
     const lineColor = theme.palette.divider
-    const paper = theme.palette.background.paper
-    const absentColor = paper
+    const absentColor = theme.palette.background.paper
 
     const colorFor = useCallback(
       (value: number | null): string => {
@@ -303,6 +223,24 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         return `rgb(${r},${g},${b})`
       },
       [metricDef, absentColor, theme.palette.background.paper, theme.palette.primary.main],
+    )
+
+    const cellFill = useCallback(
+      (r: number, c: number) => {
+        const cell = matrix[r][c]
+        if (!cell || cell.orthology_type === null) return absentColor
+        return colorFor(cell[metricDef.field] as number | null)
+      },
+      [matrix, metricDef, colorFor, absentColor],
+    )
+
+    const rowAlpha = useCallback(
+      (r: number) => {
+        let a = familyFilter !== null && geneRows[r].family !== familyFilter ? 0.15 : 1
+        if (selectedRow !== null && r !== selectedRow) a *= 0.3
+        return a
+      },
+      [familyFilter, geneRows, selectedRow],
     )
 
     const speciesHeader = useMemo(
@@ -326,7 +264,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
           >
             {speciesCols.map((s, i) => {
               const x = i * cellW + cellW / 2
-              const y = SP_LABEL_GAP
+              const y = COL_LABEL_GAP
               return (
                 <text
                   key={s.species}
@@ -387,232 +325,105 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       ],
     )
 
-    const selectedGeneIdRef = useRef(selectedGeneId)
-    selectedGeneIdRef.current = selectedGeneId
-
-    const renderGeneRow = useCallback(
-      (g: GeneRow, i: number) => {
-        const familyOpacity = familyFilter !== null && g.family !== familyFilter ? 0.25 : 1
-        const color = getFamilyColor(g.family ?? "?", mode)
-        const cy = i * cellH + cellH / 2
-        return (
-          <g
-            key={g.geneId}
-            style={{ cursor: "pointer" }}
-            onClick={(e: MouseEvent) => {
-              e.stopPropagation()
-              const deselecting = g.geneId === selectedGeneIdRef.current
-              onSelect(deselecting ? null : g.geneId)
-              setSelectedCell(null)
-            }}
-          >
-            <circle cx={GENE_TREE_W} cy={cy} r={geneDotR} fill={paper} />
-            <circle cx={GENE_TREE_W} cy={cy} r={geneDotR} fill={color} opacity={familyOpacity} />
-            <text
-              x={GENE_TREE_W + GENE_LABEL_GAP}
-              y={cy + geneFont * 0.28}
-              fontSize={geneFont}
-              fontFamily={monoFont}
-              fill={color}
-              opacity={familyOpacity}
-            >
-              {g.symbol}
-            </text>
-          </g>
-        )
+    const pickGene = useCallback(
+      (geneId: string | null) => {
+        onSelect(geneId)
+        setSelectedCell(null)
       },
-      [familyFilter, cellH, geneDotR, geneFont, mode, monoFont, paper, onSelect],
+      [onSelect],
     )
 
-    const geneRowEls = useMemo(
-      () => geneRows.map((g, i) => renderGeneRow(g, i)),
-      [geneRows, renderGeneRow],
-    )
-
-    const geneSidebar = (
-      <svg width={LEFT_W} height={gridH} style={{ display: "block" }}>
-        <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />
-        <g opacity={selectedRow !== null ? 0.35 : 1}>{geneRowEls}</g>
-        {selectedRow !== null && geneRows[selectedRow] && (
-          <g>{renderGeneRow(geneRows[selectedRow], selectedRow)}</g>
-        )}
-      </svg>
-    )
-
-    useEffect(() => {
-      const canvas = canvasRef.current
-      if (!canvas || gridW === 0 || gridH === 0) return
-      const dpr = window.devicePixelRatio || 1
-      canvas.width = gridW * dpr
-      canvas.height = gridH * dpr
-      const ctx = canvas.getContext("2d")!
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.fillStyle = lineColor
-      ctx.fillRect(0, 0, gridW, gridH)
-      for (let r = 0; r < matrix.length; r++) {
-        const familyDim = familyFilter !== null && geneRows[r].family !== familyFilter
-        const rowDim = selectedRow !== null && r !== selectedRow
-        const row = matrix[r]
-        for (let c = 0; c < row.length; c++) {
-          let a = familyDim ? 0.15 : 1
-          if (rowDim) a *= 0.3
-          ctx.globalAlpha = a
-          const cell = row[c]
-          const v = cell ? (cell[metricDef.field] as number | null) : null
-          ctx.fillStyle = cell && cell.orthology_type !== null ? colorFor(v) : absentColor
-          ctx.fillRect(c * cellW, r * cellH + 0.5, cellW - 1, cellH - 1)
-        }
-      }
-      ctx.globalAlpha = 1
-    }, [
-      matrix,
-      geneRows,
-      metricDef,
-      familyFilter,
-      selectedRow,
-      colorFor,
-      lineColor,
-      absentColor,
+    useMatrixCanvas({
+      canvasRef,
+      nRows: matrix.length,
+      nCols: speciesCols.length,
       gridW,
       gridH,
       cellW,
       cellH,
-    ])
+      background: lineColor,
+      fillFor: cellFill,
+      alphaFor: rowAlpha,
+      cellYOffset: 0.5,
+    })
 
-    const cellFromEvent = useCallback(
+    const hitTest = useCellHitTest(canvasRef, cellW, cellH, geneRows.length, speciesCols.length)
+
+    const hoverFromEvent = useCallback(
       (e: React.MouseEvent): HoverState | null => {
-        const canvas = canvasRef.current
-        const container = containerRef.current
-        if (!canvas || !container) return null
-        const cr = canvas.getBoundingClientRect()
-        const col = Math.floor((e.clientX - cr.left) / cellW)
-        const row = Math.floor((e.clientY - cr.top) / cellH)
-        if (row < 0 || row >= geneRows.length || col < 0 || col >= speciesCols.length) return null
-        const cell = matrix[row][col]
+        const hit = hitTest(e)
+        if (!hit) return null
+        const cell = matrix[hit.row][hit.col]
         const value = cell ? (cell[metricDef.field] as number | null) : null
         return {
-          row,
-          col,
-          symbol: geneRows[row].symbol,
-          name: geneById.get(geneRows[row].geneId)?.name ?? null,
-          speciesLabel: speciesCols[col].label,
+          ...hit,
+          symbol: geneRows[hit.row].symbol,
+          name: geneById.get(geneRows[hit.row].geneId)?.name ?? null,
+          speciesLabel: speciesCols[hit.col].label,
           value: cell && cell.orthology_type !== null ? value : null,
           cell,
           clientX: e.clientX,
           clientY: e.clientY,
         }
       },
-      [geneRows, speciesCols, matrix, metricDef, geneById, cellW, cellH],
+      [hitTest, geneRows, speciesCols, matrix, metricDef, geneById],
     )
 
-    const scrollToRow = useCallback(
-      (row: number) => {
-        const c = containerRef.current
-        if (!c) return
-        c.scrollTo({ top: topH + row * cellH - c.clientHeight / 2, behavior: "smooth" })
-      },
-      [cellH, topH],
-    )
-
-    const lastFocus = useRef<{ nodes: ClusterNode[]; gene: string } | null>(null)
-    useEffect(() => {
-      if (!selectedGeneId || containerW === 0) return
-      const row = rowByGene.get(selectedGeneId)
-      if (row === undefined) return
-      if (lastFocus.current?.nodes === clusterNodes && lastFocus.current?.gene === selectedGeneId)
-        return
-      lastFocus.current = { nodes: clusterNodes, gene: selectedGeneId }
-      scrollToRow(row)
-    }, [clusterNodes, selectedGeneId, rowByGene, scrollToRow, containerW])
-
-    useImperativeHandle(
-      ref,
-      () => ({
-        resetView: () => containerRef.current?.scrollTo({ top: 0, behavior: "smooth" }),
-        focusGene: (geneId) => {
-          const r = rowByGene.get(geneId)
-          if (r !== undefined) scrollToRow(r)
-        },
-        focusFamily: (family) => {
-          const rows = geneRows.flatMap((g, i) => (g.family === family ? [i] : []))
-          if (rows.length) scrollToRow(rows[Math.floor(rows.length / 2)])
-        },
-        exportSvg: (filename) => {
-          const svg = buildFigureSvg()
-          if (svg)
-            triggerDownload(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }), filename)
-        },
-        exportPng: (filename) => {
-          const svg = buildFigureSvg()
-          if (!svg) return
-          const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }))
-          const img = new Image()
-          img.onload = () => {
-            const canvas = document.createElement("canvas")
-            canvas.width = img.naturalWidth * 2
-            canvas.height = img.naturalHeight * 2
-            const ctx = canvas.getContext("2d")!
-            ctx.scale(2, 2)
-            ctx.drawImage(img, 0, 0)
-            canvas.toBlob((blob) => {
-              if (blob) triggerDownload(blob, filename)
-              URL.revokeObjectURL(url)
-            }, "image/png")
-          }
-          img.src = url
-        },
-      }),
-      [rowByGene, geneRows, scrollToRow, gridW, gridH, matrix, metricDef, mode],
-    )
+    const { resetView, focusGene, focusFamily } = useRowFocus({
+      containerRef,
+      clusterNodes,
+      geneRows,
+      rowByGene,
+      cellH,
+      topH,
+      selectedGeneId,
+      containerW,
+    })
 
     function buildFigureSvg(): string | null {
       if (!geneTree || !speciesTree || gridW === 0) return null
       const margin = RIGHT_PAD
       const contentTop = SP_TREE_PAD
-      const w = LEFT_W + gridW + margin * 2
-      const h = TOP_H - contentTop + gridH + margin * 2
-      const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-      const svgFont = monoFont.replace(/"/g, "&quot;")
-      const rects: string[] = []
-      for (let r = 0; r < matrix.length; r++) {
-        for (let c = 0; c < matrix[r].length; c++) {
-          const cell = matrix[r][c]
-          const v = cell ? (cell[metricDef.field] as number | null) : null
-          const fill = cell && cell.orthology_type !== null ? colorFor(v) : absentColor
-          rects.push(
-            `<rect x="${LEFT_W + c * cellW}" y="${TOP_H + r * cellH}" width="${cellW - 1}" height="${cellH - 1}" fill="${fill}"/>`,
-          )
-        }
-      }
-      const geneLabels = geneRows
-        .map((g, i) => {
-          const color = getFamilyColor(g.family ?? "?", mode)
-          const cy = TOP_H + i * cellH + cellH / 2
-          const circle = `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>`
-          const text = `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${svgFont}" fill="${color}">${esc(g.symbol)}</text>`
-          return circle + text
-        })
-        .join("")
-      const speciesLabels = speciesCols
-        .map((s, i) => {
-          const x = LEFT_W + i * cellW + cellW / 2
-          const y = SPECIES_TREE_H + SP_LABEL_GAP
-          return `<text x="${x}" y="${y}" font-size="${speciesFont}" font-family="${svgFont}" fill="${muted}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(s.label)}</text>`
-        })
-        .join("")
-      return (
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-        `<rect width="${w}" height="${h}" fill="${theme.palette.background.paper}"/>` +
-        `<g transform="translate(${margin} ${margin - contentTop})">` +
-        `<path transform="translate(0 ${TOP_H})" d="${geneTree.edges}" stroke="${muted}" stroke-width="0.7" fill="none"/>` +
-        `<path transform="translate(${LEFT_W} ${SP_TREE_PAD})" d="${speciesTree.edges}" stroke="${muted}" stroke-width="0.7" fill="none"/>` +
-        rects.join("") +
-        geneLabels +
-        speciesLabels +
-        `</g>` +
-        `</svg>`
-      )
+      const svgFont = svgFontFamily(monoFont)
+      return figureSvgDocument({
+        width: LEFT_W + gridW + margin * 2,
+        height: TOP_H - contentTop + gridH + margin * 2,
+        margin,
+        contentTop,
+        background: theme.palette.background.paper,
+        body:
+          treePathSvg(geneTree.edges, 0, TOP_H, muted) +
+          treePathSvg(speciesTree.edges, LEFT_W, SP_TREE_PAD, muted) +
+          cellRectsSvg({
+            nRows: matrix.length,
+            nCols: speciesCols.length,
+            y0: TOP_H,
+            cellW,
+            cellH,
+            fillFor: cellFill,
+          }) +
+          geneLabelsSvg({ geneRows, y0: TOP_H, cellH, geneDotR, geneFont, svgFont, mode }) +
+          columnLabelsSvg({
+            labels: speciesCols.map((s) => s.label),
+            y: SPECIES_TREE_H + COL_LABEL_GAP,
+            cellW,
+            font: speciesFont,
+            svgFont,
+            fill: muted,
+          }),
+      })
     }
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        resetView,
+        focusGene,
+        focusFamily,
+        ...figureExportHandlers(buildFigureSvg),
+      }),
+      [resetView, focusGene, focusFamily, gridW, gridH, matrix, metricDef, mode],
+    )
 
     if (!geneTree || !speciesTree || geneRows.length === 0 || speciesCols.length === 0) {
       return (
@@ -624,151 +435,73 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       )
     }
 
-    const stickyBg = theme.palette.background.paper
-
     return (
-      <Box
-        ref={containerRef}
-        sx={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          overflow: "auto",
-        }}
+      <HeatmapShell
+        containerRef={containerRef}
+        headerRef={headerRef}
+        contentW={contentW}
+        fits={fits}
+        cornerSlot={cornerSlot}
+        cornerMinHeight={showSpeciesTree ? undefined : COLLAPSED_CORNER_H}
+        headerSlot={speciesHeader}
+        showLegend={showLegend}
+        legendSlot={legendSlot}
+        headerH={header.h}
+        containerH={container.h}
+        overlay={
+          hover ? (
+            <HoverTip hover={hover} metricLabel={metricDef.label} monoFont={monoFont} />
+          ) : null
+        }
         onPointerLeave={() => setHover(null)}
-        onClick={() => {
-          onSelect(null)
-          setSelectedCell(null)
-        }}
+        onBackgroundClick={() => pickGene(null)}
+        sidebar={
+          <GeneSidebar
+            geneTree={geneTree}
+            geneRows={geneRows}
+            familyFilter={familyFilter}
+            selectedGeneId={selectedGeneId}
+            selectedRow={selectedRow}
+            cellH={cellH}
+            geneFont={geneFont}
+            geneDotR={geneDotR}
+            height={gridH}
+            onPick={pickGene}
+          />
+        }
       >
-        <Box
-          sx={{
-            width: contentW,
-            ml: fits ? "auto" : 0,
-            mr: fits ? "auto" : 0,
-          }}
-        >
-          <Box
-            ref={headerRef}
-            sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}
-          >
-            <Box
-              sx={{
-                position: fits ? "static" : "sticky",
-                left: 0,
-                zIndex: 1,
-                width: LEFT_COL_W,
-                pl: LEFT_GUTTER / 8,
-                flexShrink: 0,
-                bgcolor: stickyBg,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                minHeight: showSpeciesTree ? undefined : 163,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {cornerSlot}
-            </Box>
-            {speciesHeader}
-          </Box>
-
-          <Box sx={{ display: "flex" }}>
-            <Box
-              sx={{
-                position: fits ? "static" : "sticky",
-                left: 0,
-                zIndex: 2,
-                width: LEFT_COL_W,
-                pl: LEFT_GUTTER / 8,
-                flexShrink: 0,
-                bgcolor: stickyBg,
-              }}
-            >
-              {geneSidebar}
-            </Box>
-
-            <Box
-              sx={{ position: "relative", zIndex: 0, width: gridW, height: gridH, flexShrink: 0 }}
-            >
-              <canvas
-                ref={canvasRef}
-                style={{ display: "block", width: gridW, height: gridH, cursor: "pointer" }}
-                onPointerMove={(e) => {
-                  if (e.pointerType === "touch") return
-                  setHover(cellFromEvent(e))
-                }}
-                onPointerLeave={() => setHover(null)}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const cell = cellFromEvent(e)
-                  if (!cell) return
-                  const deselecting =
-                    selectedCell !== null &&
-                    selectedCell.row === cell.row &&
-                    selectedCell.col === cell.col
-                  if (deselecting) {
-                    onSelect(null)
-                    setSelectedCell(null)
-                  } else {
-                    onSelect(geneRows[cell.row].geneId)
-                    setSelectedCell({ row: cell.row, col: cell.col })
-                  }
-                }}
-              />
-              {selectedRow !== null && selectedCol !== null && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    left: selectedCol * cellW,
-                    top: selectedRow * cellH + 0.5,
-                    width: cellW - 1,
-                    height: cellH - 1,
-                    pointerEvents: "none",
-                    boxShadow: `inset 0 0 0 2px ${theme.palette.secondary.main}`,
-                  }}
-                />
-              )}
-              {hover && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    left: hover.col * cellW,
-                    top: hover.row * cellH + 0.5,
-                    width: cellW - 1,
-                    height: cellH - 1,
-                    pointerEvents: "none",
-                    boxShadow: `inset 0 0 0 2px ${theme.palette.secondary.main}`,
-                  }}
-                />
-              )}
-            </Box>
-
-            {showLegend && (
-              <Box
-                sx={{
-                  flexShrink: 0,
-                  width: LEGEND_W,
-                  pl: 1.5,
-                  position: "sticky",
-                  top: headerH,
-                  height: Math.max(0, containerH - headerH),
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "stretch",
-                }}
-              >
-                <Box onClick={(e) => e.stopPropagation()}>{legendSlot}</Box>
-              </Box>
-            )}
-          </Box>
-
-          <Box sx={{ height: BOTTOM_PAD }} />
+        <Box sx={{ position: "relative", zIndex: 0, width: gridW, height: gridH, flexShrink: 0 }}>
+          <canvas
+            ref={canvasRef}
+            style={{ display: "block", width: gridW, height: gridH, cursor: "pointer" }}
+            onPointerMove={(e) => {
+              if (e.pointerType === "touch") return
+              setHover(hoverFromEvent(e))
+            }}
+            onPointerLeave={() => setHover(null)}
+            onClick={(e) => {
+              e.stopPropagation()
+              const hit = hitTest(e)
+              if (!hit) return
+              const deselecting =
+                selectedCell !== null &&
+                selectedCell.row === hit.row &&
+                selectedCell.col === hit.col
+              if (deselecting) {
+                onSelect(null)
+                setSelectedCell(null)
+              } else {
+                onSelect(geneRows[hit.row].geneId)
+                setSelectedCell(hit)
+              }
+            }}
+          />
+          {selectedRow !== null && selectedCol !== null && (
+            <CellOutline row={selectedRow} col={selectedCol} cellW={cellW} cellH={cellH} />
+          )}
+          {hover && <CellOutline row={hover.row} col={hover.col} cellW={cellW} cellH={cellH} />}
         </Box>
-
-        {hover && <HoverTip hover={hover} metricLabel={metricDef.label} monoFont={monoFont} />}
-      </Box>
+      </HeatmapShell>
     )
   },
 )

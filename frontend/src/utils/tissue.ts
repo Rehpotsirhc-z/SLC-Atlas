@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// All brain-scope tissue names share a "Brain - " prefix, which is redundant once
-// the view is already scoped to brain subregions — drop it for display.
+// All brain-scope tissue names share a "Brain - " prefix, which is redundant
+// once the view is already scoped to brain subregions
 export function displayTissue(tissue: string): string {
   return tissue.startsWith("Brain - ") ? tissue.slice(8) : tissue
 }

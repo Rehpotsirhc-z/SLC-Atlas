@@ -9,7 +9,6 @@ import { AttributionIcon } from "./icons"
 
 const SOURCE_URL = "https://github.com/ebi-gene-expression-group/anatomogram"
 const LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
-// The page the original in-SVG badge linked to; clicking the icon restores that.
 const LICENSE_PAGE_URL = "https://www.ebi.ac.uk/gxa/licence.html"
 
 export default function AnatomogramAttribution({ sx }: { sx?: SxProps<Theme> }) {
