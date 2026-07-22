@@ -132,6 +132,40 @@ export function bracketConnector(
   return d
 }
 
+// Arc-and-spoke connector for a radial layout, centred at (C, C)
+export function radialConnector(
+  C: number,
+  pr: number,
+  kids: { angle: number; r: number }[],
+): string {
+  const x = (r: number, a: number) => R(C + r * Math.cos(a))
+  const y = (r: number, a: number) => R(C + r * Math.sin(a))
+
+  if (pr < 0.01) {
+    const c = [...kids].sort((a, b) => a.angle - b.angle)
+    const last = c.length - 1
+    let d = `M${x(c[0].r, c[0].angle)} ${y(c[0].r, c[0].angle)}L${R(C)} ${R(C)}L${x(c[last].r, c[last].angle)} ${y(c[last].r, c[last].angle)}`
+    for (let i = 1; i < last; i++)
+      d += `M${R(C)} ${R(C)}L${x(c[i].r, c[i].angle)} ${y(c[i].r, c[i].angle)}`
+    return d
+  }
+
+  const k = [...kids].sort((a, b) => a.angle - b.angle)
+  const a0 = k[0].angle
+  const a1 = k[k.length - 1].angle
+  const largeArc = a1 - a0 > Math.PI ? 1 : 0
+  let d =
+    `M${x(k[0].r, a0)} ${y(k[0].r, a0)}L${x(pr, a0)} ${y(pr, a0)}` +
+    `A${R(pr)} ${R(pr)} 0 ${largeArc} 1 ${x(pr, a1)} ${y(pr, a1)}` +
+    `L${x(k[k.length - 1].r, a1)} ${y(k[k.length - 1].r, a1)}`
+
+  for (let i = 1; i < k.length - 1; i++) {
+    d += `M${x(pr, k[i].angle)} ${y(pr, k[i].angle)}L${x(k[i].r, k[i].angle)} ${y(k[i].r, k[i].angle)}`
+  }
+
+  return d
+}
+
 export function rectConnector(px: number, kids: { x: number; y: number }[]): string {
   return bracketConnector(
     depthAcrossX,

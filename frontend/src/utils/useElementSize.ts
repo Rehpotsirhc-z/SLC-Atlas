@@ -4,7 +4,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react"
 
-interface ElementSize {
+export interface ElementSize {
   w: number
   h: number
 }
