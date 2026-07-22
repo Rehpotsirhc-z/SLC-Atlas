@@ -5,12 +5,8 @@
 import type { ReactNode } from "react"
 import CloseIcon from "@mui/icons-material/Close"
 import { IconButton, Tooltip, useTheme } from "@mui/material"
-import { alpha, emphasize, type SxProps, type Theme } from "@mui/material/styles"
-
-export const floatSurfaceBg = (theme: Theme) => alpha(theme.palette.background.paper, 0.9)
-
-const floatSurfaceBgHover = (theme: Theme) =>
-  alpha(emphasize(theme.palette.background.paper, 0.06), 0.9)
+import type { SxProps, Theme } from "@mui/material/styles"
+import { floatSurfaceBg, floatSurfaceBgHover } from "@/theme"
 
 type Props = {
   open: boolean

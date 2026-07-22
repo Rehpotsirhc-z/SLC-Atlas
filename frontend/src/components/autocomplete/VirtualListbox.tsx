@@ -4,12 +4,11 @@
 
 import React, { forwardRef, useContext, useImperativeHandle, useMemo, useRef } from "react"
 import { FixedSizeList, type ListChildComponentProps } from "react-window"
-import { autocompleteClasses, Popper, styled } from "@mui/material"
-import { monoFontFamily, monoFontSize } from "@/theme"
 
 const LISTBOX_PADDING = 2
 const MAX_VISIBLE = 8
 const ITEM_SIZE = 50
+const SM_ITEM_SIZE = 36
 
 type StyledElement = React.ReactElement<{ style?: React.CSSProperties }>
 
@@ -69,48 +68,4 @@ function makeVirtualListbox(itemSize: number) {
 }
 
 export const VirtualListbox = makeVirtualListbox(ITEM_SIZE)
-export const VirtualListboxSm = makeVirtualListbox(36)
-
-export const acInputSx = {
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: "primary.main" },
-  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
-    borderColor: "primary.main",
-  },
-  "& .MuiOutlinedInput-input": {
-    color: "primary.main",
-    fontFamily: monoFontFamily,
-    fontSize: monoFontSize,
-  },
-  "& .MuiOutlinedInput-input::placeholder": { color: "primary.main", opacity: 0.6 },
-}
-
-export const acIndicatorSx = {
-  "& .MuiAutocomplete-clearIndicator": { color: "text.secondary" },
-  "& .MuiAutocomplete-popupIndicator": { color: "text.secondary" },
-}
-
-export const StyledPopper = styled(Popper)(({ theme }) => ({
-  [`& .${autocompleteClasses.paper}`]: {
-    backgroundColor: theme.palette.background.default,
-  },
-  [`& .${autocompleteClasses.listbox}`]: {
-    boxSizing: "border-box",
-    maxHeight: "none", // react-window controls height; MUI's 40vh cap breaks it
-    paddingBottom: 0,
-    "& ul": { padding: 0, margin: 0, listStyle: "none" },
-  },
-  [`& .${autocompleteClasses.option}`]: {
-    // renderOption sets inline padding; reset MUI's default to avoid double-padding
-    padding: 0,
-    minHeight: 0,
-    display: "flex",
-    alignItems: "center",
-    // borderTop (not borderBottom) so the last visible item has a clean bottom edge.
-    // :last-child doesn't work with react-window overscan; :first-child does because
-    // item 0 is always the first DOM child regardless of scroll position.
-    borderTop: `1px solid ${theme.palette.divider}`,
-    "&:first-child": { borderTop: "none" },
-    "&:hover": { backgroundColor: theme.palette.action.hover },
-    "&.Mui-focused": { backgroundColor: theme.palette.action.hover },
-  },
-}))
+export const VirtualListboxSm = makeVirtualListbox(SM_ITEM_SIZE)

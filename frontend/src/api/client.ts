@@ -4,12 +4,13 @@
 
 const BASE = "/api"
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${BASE}${path}`, init)
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-  return res.json() as Promise<T>
+  return res
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: async <T>(path: string): Promise<T> => (await request(path)).json() as Promise<T>,
+  getText: async (path: string): Promise<string> => (await request(path)).text(),
 }

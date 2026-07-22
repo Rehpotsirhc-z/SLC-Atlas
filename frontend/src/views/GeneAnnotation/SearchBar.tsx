@@ -8,7 +8,8 @@ import { Autocomplete, InputAdornment, TextField, Typography } from "@mui/materi
 import { debounce } from "@mui/material/utils"
 import type { Gene } from "@/types/gene"
 import { useUIStore } from "@/store/uiStore"
-import { acInputSx, StyledPopper, VirtualListbox } from "@/components/VirtualListbox"
+import { acInputSx, StyledPopper } from "@/components/autocomplete/styles"
+import { VirtualListbox } from "@/components/autocomplete/VirtualListbox"
 
 interface SearchBarProps {
   genes: Gene[]

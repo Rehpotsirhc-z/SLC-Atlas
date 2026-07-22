@@ -5,11 +5,10 @@
 import { useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useUIStore } from "@/store/uiStore"
+import { POPUP_PATHS } from "@/routes"
 import GeneInfoPanel from "@/views/Clustering/GeneInfoPanel"
 import GeneConservationPanel from "@/views/Conservation/GeneConservationPanel"
 import GeneExpressionPanel from "@/views/Expression/GeneExpressionPanel"
-
-const POPUP_ROUTES = new Set(["/clustering", "/conservation", "/expression"])
 
 export default function GeneInfoPopup() {
   const content = useUIStore((s) => s.popupContent)
@@ -27,7 +26,7 @@ export default function GeneInfoPopup() {
     if (!selectedGeneId) setContent(null)
   }, [selectedGeneId, setContent])
 
-  if (!content || !POPUP_ROUTES.has(pathname)) return null
+  if (!content || !POPUP_PATHS.has(pathname)) return null
 
   const onClose = () => setSelectedGeneId(null)
   const onOpenInGenes = () => navigate("/genes")
@@ -53,8 +52,6 @@ export default function GeneInfoPopup() {
         />
       )
     case "expression":
-      return (
-        <GeneExpressionPanel key={content.info.geneId} info={content.info} {...geometry} />
-      )
+      return <GeneExpressionPanel key={content.info.geneId} info={content.info} {...geometry} />
   }
 }

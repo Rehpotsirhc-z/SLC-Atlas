@@ -2,10 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { createTheme, type Theme, type ThemeOptions } from "@mui/material/styles"
+import { alpha, createTheme, emphasize, type Theme, type ThemeOptions } from "@mui/material/styles"
 import type {} from "@mui/x-tree-view/themeAugmentation"
 
 export type ThemeMode = "light" | "dark"
+
+export const floatSurfaceBg = (theme: Theme) => alpha(theme.palette.background.paper, 0.9)
+
+export const floatSurfaceBgHover = (theme: Theme) =>
+  alpha(emphasize(theme.palette.background.paper, 0.06), 0.9)
 
 declare module "@mui/material/styles" {
   interface Theme {

@@ -2,94 +2,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useState } from "react"
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
-import MenuIcon from "@mui/icons-material/Menu"
-import {
-  AppBar,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tab,
-  Tabs,
-  Toolbar,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material"
+import { Routes, Route, Navigate } from "react-router-dom"
+import { AppBar, Box, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material"
+import { AppNavMenu, AppNavTabs } from "./components/AppNav"
 import ThemeToggle from "./components/ThemeToggle"
 import GeneInfoPopup from "./components/GeneInfoPopup"
-import GeneAnnotation from "./views/GeneAnnotation"
-import Clustering from "./views/Clustering"
-import Conservation from "./views/Conservation"
-import GenomeBrowser from "./views/GenomeBrowser"
-import Expression from "./views/Expression"
-import Structure from "./views/Structure"
-import PetScan from "./views/PetScan"
-
-const navigation = [
-  { path: "/genes", label: "Genes" },
-  { path: "/clustering", label: "Clustering" },
-  { path: "/conservation", label: "Conservation" },
-  { path: "/browser", label: "Genome Browser" },
-  { path: "/expression", label: "Expression" },
-  { path: "/structure", label: "Structure" },
-  { path: "/pet", label: "PET-SCAN" },
-]
+import { routes } from "./routes"
 
 export default function App() {
-  const { pathname } = useLocation()
-  const navigate = useNavigate()
-  const tabValue = navigation.findIndex((n) => pathname.startsWith(n.path))
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar variant="dense">
-          {isMobile && (
-            <>
-              <IconButton
-                size="small"
-                onClick={(e) => setMenuAnchor(e.currentTarget)}
-                sx={{ mr: 1 }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
-                {navigation.map((n, i) => (
-                  <MenuItem
-                    key={n.path}
-                    selected={tabValue === i}
-                    onClick={() => {
-                      navigate(n.path)
-                      setMenuAnchor(null)
-                    }}
-                  >
-                    {n.label}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </>
-          )}
+          {isMobile && <AppNavMenu />}
           <Typography variant="subtitle1" fontWeight={700} sx={{ mr: 2, whiteSpace: "nowrap" }}>
             SLC Atlas
           </Typography>
-          {!isMobile && (
-            <Tabs
-              value={tabValue === -1 ? false : tabValue}
-              onChange={(_, i: number) => navigate(navigation[i].path)}
-              textColor="primary"
-              indicatorColor="primary"
-            >
-              {navigation.map((n) => (
-                <Tab key={n.path} label={n.label} />
-              ))}
-            </Tabs>
-          )}
+          {!isMobile && <AppNavTabs />}
           <Box sx={{ flexGrow: 1 }} />
           <ThemeToggle />
         </Toolbar>
@@ -97,13 +29,9 @@ export default function App() {
       <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
         <Routes>
           <Route path="/" element={<Navigate to="/genes" replace />} />
-          <Route path="/genes" element={<GeneAnnotation />} />
-          <Route path="/clustering" element={<Clustering />} />
-          <Route path="/conservation" element={<Conservation />} />
-          <Route path="/browser" element={<GenomeBrowser />} />
-          <Route path="/expression" element={<Expression />} />
-          <Route path="/structure" element={<Structure />} />
-          <Route path="/pet" element={<PetScan />} />
+          {routes.map((r) => (
+            <Route key={r.path} path={r.path} element={r.element} />
+          ))}
         </Routes>
       </Box>
       <GeneInfoPopup />

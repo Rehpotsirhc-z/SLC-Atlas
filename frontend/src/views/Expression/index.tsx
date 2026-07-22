@@ -42,13 +42,10 @@ import { useGenes } from "@/api/hooks/useGenes"
 import { triggerDownload } from "@/utils/download"
 import { useUIStore, RAIL_MIN_WIDTH } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
-import {
-  acIndicatorSx,
-  acInputSx,
-  StyledPopper,
-  VirtualListboxSm,
-} from "@/components/VirtualListbox"
-import FloatingToggleButton, { floatSurfaceBg } from "@/components/FloatingToggleButton"
+import { acIndicatorSx, acInputSx, StyledPopper } from "@/components/autocomplete/styles"
+import { VirtualListboxSm } from "@/components/autocomplete/VirtualListbox"
+import FloatingToggleButton from "@/components/FloatingToggleButton"
+import { floatSurfaceBg } from "@/theme"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
 import HeatmapColorLegend, { type LegendTick } from "@/components/HeatmapColorLegend"
 import { useTpmColorScale, lerpHex } from "@/utils/tpmColor"
