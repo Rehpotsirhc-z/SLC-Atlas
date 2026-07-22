@@ -36,6 +36,15 @@ export const METRIC_LABEL: Record<TreeMetric, string> = {
   family: "Family",
 }
 
+export const METHOD_LABEL: Record<ClusterMethod, string> = {
+  aa_sequence: "Amino-acid similarity",
+  dna_sequence: "DNA (CDS) similarity",
+  rna_coexpression_all: "RNA co-expression — all tissues",
+  rna_coexpression_brain: "RNA co-expression — brain",
+  ortholog_identity: "Ortholog identity similarity",
+  family_grouping: "Grouped by family",
+}
+
 export function resolveClusterMethod(metric: TreeMetric, tissue: TreeTissue): ClusterMethod {
   return metric === "rna" ? CLUSTER_METHOD[`rna:${tissue}`] : CLUSTER_METHOD[metric]
 }

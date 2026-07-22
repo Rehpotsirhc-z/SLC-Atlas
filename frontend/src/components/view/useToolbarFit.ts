@@ -22,13 +22,14 @@ export function useToolbarFit({ counterText, toggleCount }: Options) {
   const textButtonsRef = useRef<HTMLDivElement>(null)
   const iconButtonsRef = useRef<HTMLDivElement>(null)
   const toggleEls = useRef<(HTMLDivElement | null)[]>([])
+  const toggleSetters = useRef<((el: HTMLDivElement | null) => void)[]>([])
 
-  const registerToggle = useCallback(
-    (index: number) => (el: HTMLDivElement | null) => {
+  const registerToggle = useCallback((index: number) => {
+    toggleSetters.current[index] ??= (el) => {
       toggleEls.current[index] = el
-    },
-    [],
-  )
+    }
+    return toggleSetters.current[index]
+  }, [])
 
   useLayoutEffect(() => {
     const toolbar = toolbarRef.current
