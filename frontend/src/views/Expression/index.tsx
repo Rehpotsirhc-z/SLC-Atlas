@@ -79,7 +79,6 @@ export default function Expression() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [mobileRailOpen, setMobileRailOpen] = useState(false)
   const [tbState, setTbState] = useState<TbState>("full")
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
@@ -108,6 +107,7 @@ export default function Expression() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
+  const railWindowed = isMobile || railFloating
 
   const method = resolveClusterMethod(metric, tissue)
   const { data: rows, isLoading: el, error: ee } = useExpressionMatrix(tissue)
@@ -611,9 +611,9 @@ export default function Expression() {
 
                 {isMobile && (
                   <>
-                    <Tooltip title={mobileRailOpen ? "Hide anatomograms" : "Show anatomograms"}>
+                    <Tooltip title={railOpen ? "Hide anatomograms" : "Show anatomograms"}>
                       <IconButton
-                        onClick={() => setMobileRailOpen((v) => !v)}
+                        onClick={() => setRailOpen(!railOpen)}
                         sx={{
                           position: "absolute",
                           bottom: 12,
@@ -627,11 +627,11 @@ export default function Expression() {
                           bgcolor: floatBg,
                           border: 1,
                           borderColor: "divider",
-                          color: mobileRailOpen ? "text.secondary" : "primary.main",
+                          color: railOpen ? "text.secondary" : "primary.main",
                           "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
                         }}
                       >
-                        {mobileRailOpen ? (
+                        {railOpen ? (
                           <CloseIcon fontSize="small" />
                         ) : (
                           <AccessibilityNewIcon fontSize="small" />
@@ -692,7 +692,7 @@ export default function Expression() {
             )}
           </Box>
 
-          {!isMobile && !railFloating && (
+          {!isMobile && !(railFloating && railOpen) && (
             <Box sx={{ flexShrink: 0, display: "flex", position: "relative" }}>
               <Tooltip
                 title={railOpen ? "Hide anatomograms" : "Show anatomograms"}
@@ -777,7 +777,7 @@ export default function Expression() {
             </Box>
           )}
 
-          {railOpen && !isMobile && railFloating && (
+          {railOpen && railWindowed && (
             <AnatomogramWindow
               view={railView}
               presentTissues={presentTissues}
@@ -792,28 +792,10 @@ export default function Expression() {
               onPickTissue={pickTissue}
               onClose={() => {
                 setRailOpen(false)
-                setRailFloating(false)
+                if (!isMobile) setRailFloating(false)
               }}
               onPopIn={() => setRailFloating(false)}
-            />
-          )}
-
-          {isMobile && mobileRailOpen && (
-            <AnatomogramWindow
-              view={railView}
-              presentTissues={presentTissues}
-              selectedTissue={railTissue}
-              tpmByTissue={tpmByTissue}
-              domainMax={railDomainMax}
-              onPickSex={(sex) => {
-                setAnatomogramSex(sex)
-                setTissue("all")
-              }}
-              onPickBrain={() => setTissue("brain")}
-              onPickTissue={pickTissue}
-              onClose={() => setMobileRailOpen(false)}
-              onPopIn={() => setMobileRailOpen(false)}
-              hideDock
+              hideDock={isMobile}
             />
           )}
         </Box>
