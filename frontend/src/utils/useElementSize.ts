@@ -9,20 +9,27 @@ export interface ElementSize {
   h: number
 }
 
-export function useElementSize<T extends HTMLElement>(box: "client" | "offset" = "client") {
+// "content" reports the fractional content box; the other two round to integers
+export function useElementSize<T extends HTMLElement>(
+  box: "client" | "offset" | "content" = "client",
+) {
   const ref = useRef<T>(null)
   const [size, setSize] = useState<ElementSize>({ w: 0, h: 0 })
 
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    const update = () => {
-      const w = box === "offset" ? el.offsetWidth : el.clientWidth
-      const h = box === "offset" ? el.offsetHeight : el.clientHeight
-      setSize((s) => (s.w === w && s.h === h ? s : { w, h }))
+    const measure = (rect?: DOMRectReadOnly) => {
+      if (box === "content" && rect) return { w: rect.width, h: rect.height }
+      if (box === "offset") return { w: el.offsetWidth, h: el.offsetHeight }
+      return { w: el.clientWidth, h: el.clientHeight }
     }
-    update()
-    const ro = new ResizeObserver(update)
+    const apply = (rect?: DOMRectReadOnly) => {
+      const next = measure(rect)
+      setSize((s) => (s.w === next.w && s.h === next.h ? s : next))
+    }
+    apply(box === "content" ? el.getBoundingClientRect() : undefined)
+    const ro = new ResizeObserver(([entry]) => apply(entry.contentRect))
     ro.observe(el)
     return () => ro.disconnect()
   }, [box])

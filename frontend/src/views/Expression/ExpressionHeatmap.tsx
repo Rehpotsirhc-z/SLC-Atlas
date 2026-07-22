@@ -33,6 +33,7 @@ import { useHeatmapMetrics } from "@/components/heatmap/useHeatmapMetrics"
 import { useMatrixCanvas } from "@/components/heatmap/useMatrixCanvas"
 import { useRowFocus } from "@/components/heatmap/useRowFocus"
 import { figureExportHandlers } from "@/utils/exportFigure"
+import { formatTpm } from "@/utils/format"
 import { displayTissue, sortedTissues } from "@/utils/tissue"
 import { useTpmColorScale } from "@/utils/tpmColor"
 import type { ExpressionRow } from "@/types/expression"
@@ -60,10 +61,6 @@ interface ExpressionHeatmapProps {
   cornerSlot?: React.ReactNode
   onTissueClick?: (tissue: string) => void
   legendSlot?: React.ReactNode
-}
-
-function formatTpm(value: number): string {
-  return value < 10 ? value.toFixed(2) : value.toFixed(1)
 }
 
 interface HoverState {

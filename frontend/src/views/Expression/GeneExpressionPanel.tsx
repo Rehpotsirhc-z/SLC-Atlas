@@ -22,6 +22,7 @@ import MiniBar from "@/components/MiniBar"
 import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
+import { formatTpm } from "@/utils/format"
 import { displayTissue } from "@/utils/tissue"
 import { tpmIntensity } from "@/utils/tpmColor"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
@@ -54,10 +55,6 @@ function median(values: number[]): number | null {
   const sorted = [...values].sort((a, b) => a - b)
   const mid = Math.floor(sorted.length / 2)
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
-}
-
-function formatTpm(value: number): string {
-  return value < 10 ? value.toFixed(2) : value.toFixed(1)
 }
 
 interface GeneExpressionPanelProps {
