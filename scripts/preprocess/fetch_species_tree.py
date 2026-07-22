@@ -17,6 +17,9 @@ from pathlib import Path
 
 from Bio import Phylo
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.reporting import report_missing
 from species_tree_sources import DEFAULT, PROVIDERS
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,9 +35,8 @@ def read_species(path: Path) -> list[dict]:
 
 
 def write_species_table(species: list[dict], out_path: Path) -> None:
-    """Emit the normalized species list the build consumes: the curated
-    reference/species.tsv cross-source columns are dropped, leaving the generic
-    (species, species_label, taxon_id) contract."""
+    """Drop the curated cross-source columns, leaving the generic
+    (species, species_label, taxon_id) contract the build consumes."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(
@@ -67,17 +69,13 @@ def main() -> None:
     out_path.write_text(newick)
     write_species_table(species, DEFAULT_SPECIES_OUT_PATH)
 
-    # Checkpoint diagnostics
     tree = Phylo.read(io.StringIO(newick), "newick")
     leaves = tree.get_terminals()
-    requested = {s["ensembl_name"] for s in species}
-    got = {leaf.name for leaf in leaves}
     print(f"\n{len(leaves)} leaves written -> {out_path}", file=sys.stderr)
     for leaf in leaves[:5]:
         print(f"  {leaf.name}: branch_length={leaf.branch_length}", file=sys.stderr)
-    missing = requested - got
-    if missing:
-        print(f"WARNING: {len(missing)} species not in tree: {sorted(missing)}", file=sys.stderr)
+    got = {leaf.name for leaf in leaves}
+    report_missing("species not in tree", sorted({s["ensembl_name"] for s in species} - got))
 
 
 if __name__ == "__main__":

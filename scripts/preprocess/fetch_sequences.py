@@ -8,14 +8,16 @@ The same canonical transcript is used for both CDS and protein so the DNA and
 amino-acid trees stay comparable.
 """
 
-import json
 import sys
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 import polars as pl
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.http import post_json
+from lib.reporting import report_missing
 
 DATASET_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset"
 DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"
@@ -27,34 +29,13 @@ LOOKUP_BATCH = 1000  # /lookup/id POST limit
 SEQUENCE_BATCH = 50  # /sequence/id POST limit
 
 
-def _post(path: str, payload: dict, params: str = "") -> object:
-    url = f"{REST}{path}{params}"
-    body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
-    )
-    for attempt in range(5):
-        try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if e.code == 429:  # rate limited
-                wait = int(e.headers.get("Retry-After", "2"))
-                time.sleep(wait + 1)
-                continue
-            raise
-    raise RuntimeError(f"giving up on {url} after repeated 429s")
-
-
 def resolve_canonical(gene_ids: list[str]) -> dict[str, str]:
     """gene_id -> canonical transcript id (version stripped; the /sequence/id POST
     endpoint 404s on versioned IDs)."""
     mapping: dict[str, str] = {}
     for i in range(0, len(gene_ids), LOOKUP_BATCH):
         chunk = gene_ids[i : i + LOOKUP_BATCH]
-        result = _post("/lookup/id", {"ids": chunk})
+        result = post_json(f"{REST}/lookup/id", {"ids": chunk})
         for gid in chunk:
             info = result.get(gid)
             if not info or not info.get("canonical_transcript"):
@@ -70,7 +51,7 @@ def fetch_sequences(tx_to_gene: dict[str, str], seq_type: str) -> dict[str, str]
     tx_ids = list(tx_to_gene)
     for i in range(0, len(tx_ids), SEQUENCE_BATCH):
         chunk = tx_ids[i : i + SEQUENCE_BATCH]
-        records = _post("/sequence/id", {"ids": chunk}, params=f"?type={seq_type}")
+        records = post_json(f"{REST}/sequence/id?type={seq_type}", {"ids": chunk})
         for rec in records:
             tx = rec.get("query") or rec.get("id")
             gene_id = tx_to_gene.get(tx)
@@ -108,11 +89,7 @@ def main() -> None:
     print(f"CDS: {len(cds)} sequences; protein: {len(protein)} sequences", file=sys.stderr)
 
     for label, got in (("CDS", cds), ("protein", protein)):
-        missing = [g for g in canonical if g not in got]
-        if missing:
-            print(f"{len(missing)} gene(s) missing {label}:", file=sys.stderr)
-            for g in missing:
-                print(f"  {g}", file=sys.stderr)
+        report_missing(f"gene(s) missing {label}", [g for g in canonical if g not in got])
 
     write_fasta(cds_path, cds)
     write_fasta(protein_path, protein)

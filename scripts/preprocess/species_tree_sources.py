@@ -12,10 +12,13 @@ function in PROVIDERS.
 
 import io
 import sys
-import urllib.request
 from pathlib import Path
 
 from Bio import Phylo
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.http import fetch_text
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -25,16 +28,15 @@ _TREE_BASE = f"https://ftp.ensembl.org/pub/release-{ENSEMBL_RELEASE}/compara/spe
 ENSEMBL_TREE_URL = f"{_TREE_BASE}/vertebrates_species-tree_Ensembl.nh"
 NCBI_TREE_URL = f"{_TREE_BASE}/vertebrates_species-tree_NCBI_Taxonomy.nh"
 
-# Curated Newicks for the manual sources; committed under reference/ when used.
+# Curated Newicks for the manual sources; committed under reference/ when used
 REFERENCE_DIR = SCRIPT_DIR.parents[1] / "reference"
 TIMETREE_NWK = REFERENCE_DIR / "species_tree_timetree.nwk"
 UCSC_NWK = REFERENCE_DIR / "species_tree_ucsc.nwk"
 
 
-def _fetch(url: str) -> str:
+def _download(url: str) -> str:
     print(f"  downloading {url}", file=sys.stderr)
-    with urllib.request.urlopen(url, timeout=120) as resp:
-        return resp.read().decode("utf-8")
+    return fetch_text(url)
 
 
 def _match_ensembl(leaf_names: list[str], species: list[dict]) -> dict[str, str]:
@@ -73,7 +75,6 @@ def _match_exact(leaf_names: list[str], species: list[dict], key: str) -> dict[s
 
 
 def _finalize(tree, chosen: dict[str, str]) -> str:
-    """Prune the tree to the chosen leaves and relabel them to ensembl_name."""
     keep = set(chosen)
     for leaf in tree.get_terminals():
         if leaf.name not in keep:
@@ -86,7 +87,7 @@ def _finalize(tree, chosen: dict[str, str]) -> str:
 
 
 def _from_ensembl_hosted(url: str, species: list[dict]) -> str:
-    tree = Phylo.read(io.StringIO(_fetch(url)), "newick")
+    tree = Phylo.read(io.StringIO(_download(url)), "newick")
     chosen = _match_ensembl([leaf.name for leaf in tree.get_terminals()], species)
     return _finalize(tree, chosen)
 

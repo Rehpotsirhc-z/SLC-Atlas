@@ -2,45 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Convert dataset/genes.tsv and transcripts.tsv into the served genes.parquet and
-transcripts.parquet (typed conversion)."""
+"""Typed conversion of dataset/genes.tsv and transcripts.tsv into the served Parquet."""
 
 import sys
 from pathlib import Path
 
 import polars as pl
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.dataset_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
+
 DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_GENES_IN = DATA_DIR / "dataset" / "genes.tsv"
 DEFAULT_TRANSCRIPTS_IN = DATA_DIR / "dataset" / "transcripts.tsv"
 DEFAULT_GENES_OUT = DATA_DIR / "genes.parquet"
 DEFAULT_TRANSCRIPTS_OUT = DATA_DIR / "transcripts.parquet"
-
-GENE_SCHEMA = {
-    "id": pl.Utf8,
-    "symbol": pl.Utf8,
-    "name": pl.Utf8,
-    "chromosome": pl.Utf8,
-    "start": pl.Int64,
-    "end": pl.Int64,
-    "strand": pl.Utf8,
-    "length": pl.Int64,
-    "alias": pl.Utf8,
-    "category": pl.Utf8,
-    "family": pl.Utf8,
-    "family_name": pl.Utf8,
-    "function_brief": pl.Utf8,
-}
-
-TRANSCRIPT_SCHEMA = {
-    "id": pl.Utf8,
-    "gene_id": pl.Utf8,
-    "name": pl.Utf8,
-    "type": pl.Utf8,
-    "start": pl.Int64,
-    "end": pl.Int64,
-    "length": pl.Int64,
-}
 
 
 def convert(in_path: Path, out_path: Path, schema: dict) -> int:

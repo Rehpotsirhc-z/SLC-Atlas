@@ -99,10 +99,8 @@ def build_matrix(species: list[dict], orthologs: dict[tuple[str, str], dict]) ->
 
 
 def ladderize_reference_first(clade, reference: str) -> None:
-    """Ladderize (larger subtree first) so basal branches don't scatter across the
-    layout; among equal-size siblings, place the reference-containing subtree first so
-    the reference species lands at the layout's near (left) edge. This is the mirror of
-    the size-ascending ladder, reversing the whole left-to-right order."""
+    """Ladderize larger-subtree-first, breaking ties toward the reference species so it
+    lands at the layout's near (left) edge."""
     for child in clade.clades:
         ladderize_reference_first(child, reference)
     clade.clades.sort(

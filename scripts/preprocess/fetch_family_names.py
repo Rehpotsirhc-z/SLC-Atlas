@@ -9,12 +9,15 @@ The first bullet under each heading is taken as the family's display name (the
 existing file (delete to re-fetch). The parent group defaults to 752 (SLC).
 """
 
-import json
 import re
 import sys
 import time
-import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.http import get_json
+from lib.reporting import report_missing
 
 REFERENCE_DIR = Path(__file__).resolve().parents[2] / "reference"
 DEFAULT_OUT_PATH = REFERENCE_DIR / "family_names.md"
@@ -36,11 +39,7 @@ HEADER_LINES = [
 
 
 def fetch_group(group_id: int) -> dict:
-    req = urllib.request.Request(
-        GROUP_URL.format(id=group_id), headers={"Accept": "application/json"}
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.load(resp)
+    return get_json(GROUP_URL.format(id=group_id))
 
 
 def parse_aliases(raw: str | None) -> list[str]:
@@ -62,10 +61,7 @@ def fetch_all(parent_group_id: int) -> list[tuple[str, list[str]]]:
             missing.append(group_name)
         families.append((group_name, aliases))
 
-    if missing:
-        print(f"{len(missing)} family(ies) had no aliases:", file=sys.stderr)
-        for name in missing:
-            print(f"  {name}", file=sys.stderr)
+    report_missing("family(ies) had no aliases", missing)
     return families
 
 

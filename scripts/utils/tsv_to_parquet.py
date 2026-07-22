@@ -2,35 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Convert one or more TSV files to Parquet.
+"""Alias entry point; convert.py handles both directions."""
 
-Usage:
-    python scripts/utils/tsv_to_parquet.py file1.tsv [file2.tsv ...]
-
-Output is written alongside each input with the extension replaced by .parquet.
-"""
-
-import sys
-from pathlib import Path
-
-import polars as pl
-
-
-def convert(in_path: Path) -> None:
-    out_path = in_path.with_suffix(".parquet")
-    pl.read_csv(in_path, separator="\t", infer_schema_length=None).write_parquet(out_path)
-    print(f"Wrote {out_path}")
-
-
-def main() -> None:
-    args = sys.argv[1:]
-    if not args:
-        print(__doc__)
-        sys.exit(1)
-
-    for arg in args:
-        convert(Path(arg))
-
+from convert import main
 
 if __name__ == "__main__":
     main()

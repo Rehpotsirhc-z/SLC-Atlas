@@ -9,36 +9,35 @@ build_expression are skipped with --skip-clustering / --skip-conservation /
 --skip-expression.
 """
 
-import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.orchestration import run_script
+from lib.pipeline_args import parse_args, skipped_views
+
 SCRIPT_DIR = Path(__file__).resolve().parent
-ROOT = SCRIPT_DIR.parents[1]
-DATA_DIR = ROOT / "backend" / "data"
+DATA_DIR = SCRIPT_DIR.parents[1] / "backend" / "data"
 
-
-def run_step(step: str) -> None:
-    print(f"\n=== {step} ===", flush=True)
-    subprocess.run([sys.executable, str(SCRIPT_DIR / f"{step}.py")], check=True)
+STEP_FOR_VIEW = {
+    "clustering": "build_clustering",
+    "conservation": "build_conservation",
+    "expression": "build_expression",
+}
 
 
 def main() -> None:
-    skip_clustering = "--skip-clustering" in sys.argv[1:]
-    skip_conservation = "--skip-conservation" in sys.argv[1:]
-    skip_expression = "--skip-expression" in sys.argv[1:]
+    skipped = skipped_views(parse_args(__doc__))
 
-    run_step("build_gene_tables")
-    if not skip_clustering:
-        run_step("build_clustering")
-    if not skip_conservation:
-        run_step("build_conservation")
-    if not skip_expression:
-        run_step("build_expression")
+    run_script(SCRIPT_DIR / "build_gene_tables.py")
+    for view, step in STEP_FOR_VIEW.items():
+        if view not in skipped:
+            run_script(SCRIPT_DIR / f"{step}.py")
 
     print("\nBuild complete. App-served parquets:")
     for parquet in sorted(DATA_DIR.glob("*.parquet")):
-        print(f"  {parquet.relative_to(ROOT)}  ({parquet.stat().st_size / 1e6:.1f} MB)")
+        print(f"  {parquet.name}  ({parquet.stat().st_size / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":

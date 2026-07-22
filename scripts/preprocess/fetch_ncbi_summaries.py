@@ -5,11 +5,14 @@
 """Fetch short gene-summary blurbs from NCBI E-utilities (esummary) as a TSV."""
 
 import csv
-import json
 import sys
 import time
-import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.http import get_json
+from lib.reporting import report_missing
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
@@ -27,9 +30,7 @@ def read_ncbi_ids(path: str) -> list[str]:
 
 
 def fetch_batch(ids: list[str]) -> dict:
-    url = f"{ESUMMARY_URL}?db=gene&id={','.join(ids)}&retmode=json"
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        return json.load(resp)["result"]
+    return get_json(f"{ESUMMARY_URL}?db=gene&id={','.join(ids)}&retmode=json")["result"]
 
 
 def fetch_all(ids: list[str]) -> dict[str, str]:
@@ -42,11 +43,7 @@ def fetch_all(ids: list[str]) -> dict[str, str]:
         if i + BATCH_SIZE < len(ids):
             time.sleep(REQUEST_INTERVAL)
 
-    missing = [id_ for id_ in ids if id_ not in summaries]
-    if missing:
-        print(f"{len(missing)} NCBI Gene ID(s) had no match:", file=sys.stderr)
-        for id_ in missing:
-            print(f"  {id_}", file=sys.stderr)
+    report_missing("NCBI Gene ID(s) had no match", [i for i in ids if i not in summaries])
     return summaries
 
 

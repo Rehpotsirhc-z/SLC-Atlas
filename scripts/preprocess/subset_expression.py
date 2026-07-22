@@ -15,6 +15,10 @@ from pathlib import Path
 
 import polars as pl
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.reporting import report_missing
+
 DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 RAW_DIR = DATA_DIR / "raw"
 DATASET_DIR = DATA_DIR / "dataset"
@@ -41,11 +45,8 @@ def subset_tpm(genes_path: Path, gtex_path: Path) -> pl.DataFrame:
     )
     cols = ["gene_id"] + [c for c in df.columns if c != "gene_id"]
     df = df.select(cols)
-    found = df.height
-    print(f"{found}/{len(gene_ids)} genes found in GTEx", file=sys.stderr)
-    if found < len(gene_ids):
-        missing = sorted(set(gene_ids) - set(df["gene_id"].to_list()))
-        print(f"{len(missing)} not in GTEx (e.g. {missing[:5]})", file=sys.stderr)
+    print(f"{df.height}/{len(gene_ids)} genes found in GTEx", file=sys.stderr)
+    report_missing("gene(s) not in GTEx", sorted(set(gene_ids) - set(df["gene_id"].to_list())))
     return df
 
 

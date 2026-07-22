@@ -2,14 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Shared utilities used across the pipeline."""
+"""Family-key derivation for annotate_genes.py."""
 
 import re
 from os.path import commonprefix
-
-# Matches HGNC alias notation like SLC7A5(LAT1)
-ALIAS_RE = re.compile(r"^([A-Za-z0-9]+)\(([A-Za-z0-9]+)\)$")
-
 
 SLC_FAMILY_RE = re.compile(r"^Solute carrier family (\d+)\b")
 

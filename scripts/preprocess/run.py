@@ -4,21 +4,25 @@
 
 """Run the preprocessing phase: raw downloads -> the standard-format dataset.
 
-Steps run in order; bracketed groups run in parallel. Clustering inputs
-(sequences/expression) are skipped with --skip-clustering; conservation inputs
-(orthologs/species tree) with --skip-conservation.
+Stages run in order; a stage with more than one step runs in parallel. A step is
+skipped only when every view that consumes it is skipped (--skip-clustering /
+--skip-conservation / --skip-expression).
 """
 
-import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.orchestration import run_parallel, run_script
+from lib.pipeline_args import parse_args, skipped_views
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[1]
 RAW = ROOT / "backend" / "data" / "raw"
+DATASET = ROOT / "backend" / "data" / "dataset"
 NAMES_FILE = ROOT / "reference" / "family_names.md"
 
-# Execution stages in order; a stage with more than one step runs in parallel.
 STAGES = [
     ["annotate_genes"],
     ["fetch_ensembl_genes", "fetch_ncbi_summaries"],
@@ -26,12 +30,16 @@ STAGES = [
     ["subset_expression", "fetch_sequences"],
     ["fetch_orthologs", "fetch_species_tree"],
 ]
-CLUSTERING_STEPS = {"subset_expression", "fetch_sequences"}
-CONSERVATION_STEPS = {"fetch_orthologs", "fetch_species_tree"}
+
+CONSUMED_BY = {
+    "subset_expression": {"clustering", "expression"},
+    "fetch_sequences": {"clustering"},
+    "fetch_orthologs": {"conservation"},
+    "fetch_species_tree": {"conservation"},
+}
 
 
 def step_args(step: str, hgnc_file: str) -> list[str]:
-    """Only annotate_genes takes extra args, and only for a custom HGNC file."""
     if step == "annotate_genes" and hgnc_file:
         return [hgnc_file, str(NAMES_FILE), str(RAW / "annotation.tsv")]
     return []
@@ -40,58 +48,33 @@ def step_args(step: str, hgnc_file: str) -> list[str]:
 def run_stage(steps: list[str], hgnc_file: str) -> None:
     if len(steps) == 1:
         step = steps[0]
-        print(f"\n=== {step} ===", flush=True)
-        subprocess.run(
-            [sys.executable, str(SCRIPT_DIR / f"{step}.py"), *step_args(step, hgnc_file)],
-            check=True,
-        )
+        run_script(SCRIPT_DIR / f"{step}.py", step_args(step, hgnc_file))
         return
-
-    procs = []
-    for step in steps:
-        print(f"\n=== {step} (started) ===", flush=True)
-        procs.append((step, subprocess.Popen([sys.executable, str(SCRIPT_DIR / f"{step}.py")])))
-    failed = [step for step, proc in procs if proc.wait() != 0]
-    if failed:
-        raise SystemExit("Step(s) failed: " + ", ".join(failed))
+    run_parallel([SCRIPT_DIR / f"{step}.py" for step in steps])
 
 
 def main() -> None:
-    skip_clustering = False
-    skip_conservation = False
-    hgnc_file = ""
-    for arg in sys.argv[1:]:
-        if arg == "--skip-clustering":
-            skip_clustering = True
-        elif arg == "--skip-conservation":
-            skip_conservation = True
-        else:
-            hgnc_file = arg
+    args = parse_args(__doc__, hgnc_file=True)
 
-    # Step 01 is a human-in-the-loop checkpoint: on the first run we fetch the family
-    # names, write family_names.md, and stop so the user can choose each family's
-    # display name. Edits are preserved (the fetch never overwrites an existing file).
+    # Human-in-the-loop checkpoint: stop after writing family_names.md so the user can
+    # choose each family's display name (the fetch never overwrites an existing file)
     if not NAMES_FILE.exists():
-        print("\n=== fetch_family_names ===", flush=True)
-        subprocess.run([sys.executable, str(SCRIPT_DIR / "fetch_family_names.py")], check=True)
+        run_script(SCRIPT_DIR / "fetch_family_names.py")
         print("\n=== Action needed ===")
-        print(f"Wrote {NAMES_FILE}.")
+        print(f"Wrote {NAMES_FILE}")
         print("Edit it to choose each family's display name (the first bullet under")
         print("each heading wins), then re-run this script to continue preprocessing.")
         return
 
-    skip: set[str] = set()
-    if skip_clustering:
-        skip |= CLUSTERING_STEPS
-    if skip_conservation:
-        skip |= CONSERVATION_STEPS
+    skipped = skipped_views(args)
+    skip = {step for step, views in CONSUMED_BY.items() if views <= skipped}
 
     for stage in STAGES:
         sel = [s for s in stage if s not in skip]
         if sel:
-            run_stage(sel, hgnc_file)
+            run_stage(sel, args.hgnc_file)
 
-    print(f"\nPreprocessing complete. Standard-format dataset in {ROOT / 'backend' / 'data' / 'dataset'}")
+    print(f"\nPreprocessing complete. Standard-format dataset in {DATASET}")
 
 
 if __name__ == "__main__":

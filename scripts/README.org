@@ -19,7 +19,7 @@ The pipeline has two independent phases with a clean handoff between them:
 | =protein.fasta=        | FASTA keyed by gene id                                                                                             | clustering             |
 | =expression.parquet= | gene_id + one column per sample (Float32 TPM)                                                                      | clustering, expression |
 | =sample_tissue.tsv=    | sample_id, tissue, tissue_detail                                                                                   | clustering, expression |
-| =orthologs.tsv=        | gene_id, species, target_gene_id, target_protein_id, perc_id, perc_id_r1, perc_pos, orthology_type, ortholog_count | conservation           |
+| =orthologs.tsv=        | gene_id, species, target_gene_id, perc_id, perc_id_r1, perc_pos, orthology_type, ortholog_count                    | conservation           |
 | =species.tsv=          | species, species_label, taxon_id                                                                                   | conservation           |
 | =species_tree.nwk=     | Newick, leaves = species                                                                                           | conservation           |
 |----------------------+--------------------------------------------------------------------------------------------------------------------+------------------------|
@@ -57,7 +57,7 @@ On a fresh run the preprocess phase stops after writing =reference/family_names.
 - =annotate_genes.py= :: Joins the HGNC TSV with the chosen family names and derives the short family key (=gene_family_utils.derive_family_keys=) to output =raw/annotation.tsv=.
 - =fetch_ensembl_genes.py= :: Puts gene/transcript coordinates from Ensembl BioMart into =raw/ensembl_genes.tsv=.
 - =fetch_ncbi_summaries.py= :: Puts gene-summary blurbs from NCBI E-utilities in =raw/ncbi_gene_summaries.tsv=.
-- =assemble_genes.py= :: Joins annotation + Ensembl + NCBI into =dataset/genes.tsv= + =dataset/transcripts.tsv=, along with any other custom modifications such as removing pseudo genes.
+- =assemble_genes.py= :: Joins annotation + Ensembl + NCBI into =dataset/genes.tsv= + =dataset/transcripts.tsv=, dropping the symbols listed in =reference/pseudogene_exclusions.txt=.
 - =subset_expression.py= :: Subsets the raw GTEx TPM matrix to the dataset genes to make =dataset/expression.parquet= and normalized =dataset/sample_tissue.tsv=.
 - =fetch_sequences.py= :: Uses canonical CDS + protein sequences from Ensembl REST for =dataset/cds.fasta= and =dataset/protein.fasta=.
 - =fetch_orthologs.py= :: Fetches Ensembl Compara orthologs for the species in =reference/species.tsv= and =dataset/orthologs.tsv=.
@@ -65,13 +65,16 @@ On a fresh run the preprocess phase stops after writing =reference/family_names.
 
 ** Build steps (=scripts/build/=, general)
 - =build_gene_tables.py= :: Converts =dataset/genes.tsv= and =transcripts.tsv= to =genes.parquet= and =transcripts.parquet=.
-- =build_clustering.py= :: Runs MAFFT + UPGMA across five methods (amino-acid, DNA, all-tissue co-expression, brain co-expression, and ortholog identity) and outputs to =clustering.parquet=.
+- =build_clustering.py= :: Orchestrates six methods (amino-acid, DNA, all-tissue co-expression, brain co-expression, ortholog identity, and flat family grouping) into =clustering.parquet=.
+  - =clustering_metrics.py= :: MAFFT alignment and the pairwise distance metrics.
+  - =tree_table.py= :: UPGMA/family-grouping to flat node rows plus Newick; owns =CLUSTERING_SCHEMA=.
 - =build_conservation.py= :: Converts a gene × species matrix and species-tree node table to =conservation.parquet= and =species_tree.parquet=.
 - =build_expression.py= :: Melts the sample-level GTEx TPM matrix and aggregates mean TPM per gene × tissue (both the 31 coarse GTEx tissues and, within Brain, the ~13 fine-grained subregions) into =expression.parquet=.
 
 ** Curated inputs (=reference/=)
 - =family_names.md= :: Per-family display names written by =fetch_family_names.py=. Reorder items (the first entry is used).
 - =species.tsv= :: Conservation species set and cross-source name mappings (=ensembl_name=, =display_name=, =taxon_id=, =timetree_name=, =ucsc_name=). Edit and re-run the conservation steps to change which species appear.
+- =pseudogene_exclusions.txt= :: Approved symbols =assemble_genes.py= drops, one per line (blank lines and =#= comments ignored).
 - =species_tree_timetree.nwk= / =species_tree_ucsc.nwk= :: curated Newicks for the non-Ensembl tree sources (only when that source is used).
 
 ** Data layout
@@ -107,8 +110,19 @@ backend/data/
 reference/                 ← hand-curated inputs
 #+end_example
 
+** Shared code (=scripts/lib/=)
+Imported by both phases, so neither phase has to import the other:
+
+- =http.py= :: retrying HTTP helpers (=get_json=, =post_json=, =post_form=, =fetch_text=); every request retries on 429 honouring =Retry-After=
+- =dataset_schema.py= :: =GENE_SCHEMA= / =TRANSCRIPT_SCHEMA=, the dataset gene-table column contract
+- =reporting.py= :: =report_missing(label, items)= stderr diagnostics, capped at 20 listed items
+- =orchestration.py= :: =run_script= / =run_parallel=; a failing step always raises =SystemExit=
+- =pipeline_args.py= :: the =--skip-*= / =hgnc_file= argparse shared by =run_pipeline.py= and both phase runners
+
+Scripts reach it by putting =scripts/= on =sys.path= and importing =lib.<module>=.
+
 ** Utilities
 Non-pipeline helper scripts are in =scripts/utils/=:
 
-- =tsv_to_parquet.py= / =parquet_to_tsv.py= :: general-purpose converters
+- =convert.py= :: TSV <-> Parquet, dispatching on the input extension (=tsv_to_parquet.py= / =parquet_to_tsv.py= remain as aliases)
 - =reuse_header.sh= / =reuse_header_all.sh= :: add REUSE/SPDX license headers

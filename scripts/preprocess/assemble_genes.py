@@ -5,8 +5,8 @@
 """Join annotation + Ensembl coords + NCBI summaries into dataset/genes.tsv and
 dataset/transcripts.tsv (columns mirror the models in backend/app/models/gene.py).
 
-Drops this family's pseudogenes and promotes an SLC* alias to the primary symbol
-where the HGNC approved symbol isn't SLC*.
+Drops the symbols listed in reference/pseudogene_exclusions.txt and promotes an SLC*
+alias to the primary symbol where the HGNC approved symbol isn't SLC*.
 """
 
 import csv
@@ -15,56 +15,27 @@ from pathlib import Path
 
 import polars as pl
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.dataset_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
+from lib.reporting import report_missing
+
+ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = ROOT / "backend" / "data"
 DEFAULT_ANNOTATION_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_ENSEMBL_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 DEFAULT_NCBI_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
 DEFAULT_GENES_OUT_PATH = DATA_DIR / "dataset" / "genes.tsv"
 DEFAULT_TRANSCRIPTS_OUT_PATH = DATA_DIR / "dataset" / "transcripts.tsv"
-
-PSEUDOGENE_EXCLUSIONS = frozenset(
-    {
-        "SLC19A4P",
-        "SLC23A4P",
-        "SLC66A1LP",
-        "SLC68A2P",
-        "SLC6A10P",
-        "SLC6A21P",
-        "SLC7A15P",
-        "SLCO1B7",
-        "SLC22A20P",
-        "SLC35E2A",
-        "SLC71A3P",
-        "SLC26A10P",
-    }
-)
-
-GENE_SCHEMA = {
-    "id": pl.Utf8,
-    "symbol": pl.Utf8,
-    "name": pl.Utf8,
-    "chromosome": pl.Utf8,
-    "start": pl.Int64,
-    "end": pl.Int64,
-    "strand": pl.Utf8,
-    "length": pl.Int64,
-    "alias": pl.Utf8,
-    "category": pl.Utf8,
-    "family": pl.Utf8,
-    "family_name": pl.Utf8,
-    "function_brief": pl.Utf8,
-}
+EXCLUSIONS_PATH = ROOT / "reference" / "pseudogene_exclusions.txt"
 
 
-TRANSCRIPT_SCHEMA = {
-    "id": pl.Utf8,
-    "gene_id": pl.Utf8,
-    "name": pl.Utf8,
-    "type": pl.Utf8,
-    "start": pl.Int64,
-    "end": pl.Int64,
-    "length": pl.Int64,
-}
+def read_exclusions(path: Path) -> frozenset[str]:
+    """Approved symbols to drop, one per line; blank lines and #-comments ignored."""
+    if not path.exists():
+        return frozenset()
+    lines = (line.split("#", 1)[0].strip() for line in path.read_text().splitlines())
+    return frozenset(line for line in lines if line)
 
 
 def read_annotation_rows(path: str) -> list[dict]:
@@ -108,14 +79,17 @@ def read_ncbi_summaries(path: str) -> dict[str, str]:
 
 
 def build_tables(
-    rows: list[dict], ensembl_genes: dict, ncbi_summaries: dict[str, str]
+    rows: list[dict],
+    ensembl_genes: dict,
+    ncbi_summaries: dict[str, str],
+    exclusions: frozenset[str],
 ) -> tuple[list[dict], list[dict]]:
     genes = []
     transcripts = []
     skipped = []
 
     for row in rows:
-        if row["Approved symbol"] in PSEUDOGENE_EXCLUSIONS:
+        if row["Approved symbol"] in exclusions:
             continue
         ensembl_id = row["Ensembl gene ID"]
         egene = ensembl_genes.get(ensembl_id)
@@ -167,11 +141,7 @@ def build_tables(
                 }
             )
 
-    if skipped:
-        print(f"{len(skipped)} gene(s) skipped (no Ensembl lookup result):", file=sys.stderr)
-        for symbol in skipped:
-            print(f"  {symbol}", file=sys.stderr)
-
+    report_missing("gene(s) skipped (no Ensembl lookup result)", skipped)
     return genes, transcripts
 
 
@@ -187,7 +157,8 @@ def main() -> None:
     ensembl_genes = read_ensembl_genes(ensembl_path)
     ncbi_summaries = read_ncbi_summaries(ncbi_path)
 
-    genes, transcripts = build_tables(rows, ensembl_genes, ncbi_summaries)
+    exclusions = read_exclusions(EXCLUSIONS_PATH)
+    genes, transcripts = build_tables(rows, ensembl_genes, ncbi_summaries, exclusions)
 
     Path(genes_out_path).parent.mkdir(parents=True, exist_ok=True)
     pl.DataFrame(genes, schema=GENE_SCHEMA).write_csv(genes_out_path, separator="\t")

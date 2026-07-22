@@ -9,9 +9,12 @@ Caches the raw TSV response (one row per transcript, gene fields repeated).
 
 import csv
 import sys
-import urllib.parse
-import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.http import post_form
+from lib.reporting import report_missing
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
@@ -47,9 +50,7 @@ def read_ensembl_ids(path: str) -> list[str]:
 
 def fetch_biomart(ids: list[str]) -> str:
     query = QUERY_TEMPLATE.format(ids=",".join(ids))
-    body = urllib.parse.urlencode({"query": query}).encode("utf-8")
-    with urllib.request.urlopen(BIOMART_URL, data=body, timeout=60) as resp:
-        return resp.read().decode("utf-8")
+    return post_form(BIOMART_URL, {"query": query})
 
 
 def main() -> None:
@@ -62,11 +63,7 @@ def main() -> None:
 
     rows = [line for line in tsv.splitlines() if line]
     returned_genes = {line.split("\t")[0] for line in rows[1:]}
-    missing = [id_ for id_ in ids if id_ not in returned_genes]
-    if missing:
-        print(f"{len(missing)} Ensembl ID(s) had no match:", file=sys.stderr)
-        for id_ in missing:
-            print(f"  {id_}", file=sys.stderr)
+    report_missing("Ensembl ID(s) had no match", [i for i in ids if i not in returned_genes])
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(tsv)

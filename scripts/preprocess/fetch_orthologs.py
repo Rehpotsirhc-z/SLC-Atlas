@@ -12,14 +12,16 @@ to our ~20 species instead of ~200.
 """
 
 import csv
-import json
 import sys
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 import polars as pl
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.http import get_json
+from lib.reporting import report_missing
 
 ROOT = Path(__file__).resolve().parents[2]
 DATASET_DIR = ROOT / "backend" / "data" / "dataset"
@@ -33,7 +35,6 @@ FIELDS = [
     "gene_id",
     "species",
     "target_gene_id",
-    "target_protein_id",
     "perc_id",  # % of target identical to human
     "perc_id_r1",  # % of human identical to target
     "perc_pos",  # % of target positionally similar to human
@@ -47,22 +48,6 @@ def read_species(path: Path) -> list[str]:
         return [row["ensembl_name"] for row in csv.DictReader(f, delimiter="\t")]
 
 
-def _get(url: str) -> object | None:
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    for _ in range(5):
-        try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if e.code == 429:  # rate limited
-                time.sleep(int(e.headers.get("Retry-After", "2")) + 1)
-                continue
-            if e.code in (400, 404):  # gene absent from Compara
-                return None
-            raise
-    raise RuntimeError(f"giving up on {url} after repeated 429s")
-
-
 def fetch_gene(gene_id: str, species: list[str]) -> list[dict]:
     targets = "".join(f";target_species={s}" for s in species)
     url = (
@@ -70,7 +55,7 @@ def fetch_gene(gene_id: str, species: list[str]) -> list[dict]:
         f"?type=orthologues;format=full;aligned=0;sequence=none;compara=vertebrates"
         f";content-type=application/json{targets}"
     )
-    payload = _get(url)
+    payload = get_json(url, absent=(400, 404))  # gene absent from Compara
     if not payload or not payload.get("data"):
         return []
 
@@ -90,7 +75,6 @@ def fetch_gene(gene_id: str, species: list[str]) -> list[dict]:
                 "gene_id": gene_id,
                 "species": sp,
                 "target_gene_id": tgt.get("id"),
-                "target_protein_id": tgt.get("protein_id"),
                 "perc_id": tgt.get("perc_id"),
                 "perc_id_r1": best["source"].get("perc_id"),
                 "perc_pos": tgt.get("perc_pos"),
@@ -123,16 +107,13 @@ def main() -> None:
             print(f"  {i}/{len(gene_ids)} genes...", file=sys.stderr)
         time.sleep(0.2)  # stay under Ensembl's 15 req/s
 
-    # Diagnostics: ortholog coverage per species (flags species-name mismatches fast)
+    # Coverage per species flags species-name mismatches fast
     print("\northolog coverage per species:", file=sys.stderr)
     for sp in targets:
         n = sum(1 for r in all_rows if r["species"] == sp)
         flag = "  <-- ZERO, check ensembl_name" if n == 0 else ""
         print(f"  {sp:30s} {n:4d} genes{flag}", file=sys.stderr)
-    if missing:
-        print(f"\n{len(missing)} gene(s) with no orthologs in any species:", file=sys.stderr)
-        for g in missing:
-            print(f"  {g}", file=sys.stderr)
+    report_missing("gene(s) with no orthologs in any species", missing)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="") as f:

@@ -3,15 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Append two columns to an HGNC gene-list TSV:
-  Family            short family key from the HGNC group name (see derive_family_keys)
-  Functional family display name (first bullet under each heading in family_names.md)
+Family            short family key from the HGNC group name (see derive_family_keys)
+Functional family display name (first bullet under each heading in family_names.md)
 """
 
 import csv
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from gene_family_utils import derive_family_keys
+from lib.reporting import report_missing
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "backend" / "data"
@@ -31,7 +34,9 @@ def parse_family_names(path: str) -> dict[str, str]:
             line = raw_line.rstrip()
             if line.startswith("## "):
                 group_name = line[3:].strip()
-            elif line.startswith("- ") and group_name is not None and group_name not in name_by_group:
+            elif (
+                line.startswith("- ") and group_name is not None and group_name not in name_by_group
+            ):
                 name_by_group[group_name] = line[2:].strip()
     return name_by_group
 
@@ -66,10 +71,7 @@ def annotate(
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
         writer.writerows(out_rows)
 
-    if unmatched:
-        print(f"{len(unmatched)} gene(s) had no matching family name:", file=sys.stderr)
-        for entry in unmatched:
-            print(f"  {entry}", file=sys.stderr)
+    report_missing("gene(s) had no matching family name", unmatched)
 
 
 def main() -> None:
