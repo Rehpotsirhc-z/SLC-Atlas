@@ -8,6 +8,7 @@ import CloseIcon from "@mui/icons-material/Close"
 import ResizeHandles from "@/components/ResizeHandles"
 import { useUIStore } from "@/store/uiStore"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { useResizablePanel } from "@/utils/useResizablePanel"
 import { AnatomogramFigure, AnatomogramViewToggles, SVG_FOR, type RailView } from "./index"
 import { PopInIcon } from "./icons"
@@ -57,6 +58,7 @@ export default function AnatomogramWindow({
     DEFAULT_POS,
   )
   const { startResize } = useResizablePanel(currentPos, setPos, size, setSize, MIN_W, MIN_H)
+  const { zIndex, focusProps } = useFloatingWindow("anatomogram")
 
   // The stored size is shared with the desktop pop-out and persisted, so it can
   // exceed a smaller viewport (a narrower screen, or a phone). Clamp what we
@@ -74,13 +76,14 @@ export default function AnatomogramWindow({
     <Paper
       ref={panelRef}
       elevation={6}
+      {...focusProps}
       sx={{
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
         width,
         height,
-        zIndex: 6,
+        zIndex,
         border: 1,
         borderColor: "divider",
         display: "flex",

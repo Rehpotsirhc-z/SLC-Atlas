@@ -57,6 +57,8 @@ interface UIState {
   setPopupContent: (content: PopupContent | null) => void
   anatomogramSex: "female" | "male"
   setAnatomogramSex: (sex: "female" | "male") => void
+  windowStack: string[]
+  raiseWindow: (key: string) => void
 }
 
 export const RAIL_MIN_WIDTH = 220
@@ -99,6 +101,13 @@ export const useUIStore = create<UIState>()(
       setPopupContent: (content) => set({ popupContent: content }),
       anatomogramSex: "female",
       setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
+      windowStack: [],
+      raiseWindow: (key) =>
+        set((s) =>
+          s.windowStack[s.windowStack.length - 1] === key
+            ? s
+            : { windowStack: [...s.windowStack.filter((k) => k !== key), key] },
+        ),
     }),
     {
       name: "slc-atlas-ui",

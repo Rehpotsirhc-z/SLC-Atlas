@@ -25,6 +25,7 @@ import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { displayTissue } from "@/utils/tissue"
 import { tpmIntensity } from "@/utils/tpmColor"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ExpressionRow } from "@/types/expression"
@@ -106,6 +107,8 @@ export default function GeneExpressionPanel({
     MIN_H,
   )
 
+  const { zIndex, focusProps } = useFloatingWindow("gene-popup")
+
   const sortedRows = [...rows].sort((a, b) => b.tpm - a.tpm)
   const maxRow = sortedRows[0] ?? null
   const medianTpm = median(rows.map((r) => r.tpm))
@@ -137,13 +140,14 @@ export default function GeneExpressionPanel({
     <Paper
       ref={panelRef}
       elevation={6}
+      {...focusProps}
       sx={{
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
         width: currentSize.w,
         height: currentSize.h,
-        zIndex: 5,
+        zIndex,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,

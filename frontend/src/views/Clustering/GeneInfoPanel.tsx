@@ -13,6 +13,7 @@ import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ClusterNode } from "@/types/clustering"
 import type { Gene } from "@/types/gene"
@@ -82,6 +83,7 @@ export default function GeneInfoPanel({
     MIN_W,
     MIN_H,
   )
+  const { zIndex, focusProps } = useFloatingWindow("gene-popup")
 
   const rows: { label: string; value: React.ReactNode }[] = [
     {
@@ -104,13 +106,14 @@ export default function GeneInfoPanel({
     <Paper
       ref={panelRef}
       elevation={6}
+      {...focusProps}
       sx={{
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
         width: currentSize.w,
         height: currentSize.h,
-        zIndex: 3,
+        zIndex,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,

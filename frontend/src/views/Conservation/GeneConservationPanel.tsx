@@ -23,6 +23,7 @@ import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
+import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
 import type { ConservationCell } from "@/types/conservation"
@@ -101,6 +102,7 @@ export default function GeneConservationPanel({
     MIN_W,
     MIN_H,
   )
+  const { zIndex, focusProps } = useFloatingWindow("gene-popup")
 
   const metricDef = CELL_METRICS.find((m) => m.key === metric) ?? CELL_METRICS[0]
   const field = metricDef.field as keyof Pick<ConservationCell, "perc_id" | "perc_pos">
@@ -144,13 +146,14 @@ export default function GeneConservationPanel({
     <Paper
       ref={panelRef}
       elevation={6}
+      {...focusProps}
       sx={{
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
         width: currentSize.w,
         height: currentSize.h,
-        zIndex: 5,
+        zIndex,
         border: 1,
         borderColor: "divider",
         animation: `${glowFlash} 0.8s ease-out`,
