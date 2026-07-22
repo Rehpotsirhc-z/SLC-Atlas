@@ -13,7 +13,7 @@ import {
   ROW_H_MIN,
 } from "./constants"
 
-export interface HeatmapMetrics {
+interface HeatmapMetrics {
   legendReserve: number
   showLegend: boolean
   cellW: number

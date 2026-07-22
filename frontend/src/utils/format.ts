@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-export function formatRange(start: number, end: number): string {
+function formatRange(start: number, end: number): string {
   return `${start.toLocaleString()}–${end.toLocaleString()}`
 }
 

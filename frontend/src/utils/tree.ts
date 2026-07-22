@@ -40,7 +40,7 @@ export function buildTree<T extends TreeNodeInput>(data: T[]): Tree<T> | null {
   return root === null ? null : { nodes, root }
 }
 
-export function postOrder<T>(tree: Tree<T>): number[] {
+function postOrder<T>(tree: Tree<T>): number[] {
   const out: number[] = []
   const stack: [number, boolean][] = [[tree.root, false]]
   while (stack.length) {

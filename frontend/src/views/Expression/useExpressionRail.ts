@@ -53,10 +53,7 @@ export function useExpressionRail({ tissue, selectedRows, onFocusTissue }: Optio
   const [rowRef, { w: rowWidth }] = useElementSize<HTMLDivElement>("content")
   const [fillWidth, setFillWidth] = useState(Infinity)
 
-  const maxAutoWidth = Math.max(
-    RAIL_MIN_WIDTH,
-    rowWidth - MIN_MAIN_CONTENT_WIDTH - RAIL_EDGE_WIDTH,
-  )
+  const maxAutoWidth = Math.max(RAIL_MIN_WIDTH, rowWidth - MIN_MAIN_CONTENT_WIDTH - RAIL_EDGE_WIDTH)
   const effWidth = Math.min(Math.max(railWidth, RAIL_MIN_WIDTH), fillWidth, maxAutoWidth)
 
   const startResize = useCallback(

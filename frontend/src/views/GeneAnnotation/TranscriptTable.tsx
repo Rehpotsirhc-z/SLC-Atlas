@@ -186,7 +186,10 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
 
   function handleSort(key: TranscriptSortKey) {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"))
-    else { setSortKey(key); setSortDir("asc") }
+    else {
+      setSortKey(key)
+      setSortDir("asc")
+    }
   }
 
   const sorted = transcripts ? sortTranscripts(transcripts, sortKey, sortDir) : []
@@ -278,13 +281,30 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
               ))
             : sorted.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>{t.id}</TableCell>
-                  <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>{t.name}</TableCell>
-                  <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>{t.type}</TableCell>
-                  <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+                  <TableCell
+                    sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                  >
+                    {t.id}
+                  </TableCell>
+                  <TableCell
+                    sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                  >
+                    {t.name}
+                  </TableCell>
+                  <TableCell
+                    sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                  >
+                    {t.type}
+                  </TableCell>
+                  <TableCell
+                    sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                  >
                     {formatPosition(chromosome, t.start, t.end)}
                   </TableCell>
-                  <TableCell align="right" sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+                  <TableCell
+                    align="right"
+                    sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                  >
                     {t.length.toLocaleString()}
                   </TableCell>
                 </TableRow>
@@ -348,7 +368,10 @@ export default function TranscriptTable({ geneId, chromosome }: TranscriptTableP
                   <Typography variant="caption" color="text.secondary" sx={{ minWidth: 90 }}>
                     {label}
                   </Typography>
-                  <Typography variant="caption" sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
+                  >
                     {value}
                   </Typography>
                 </Box>

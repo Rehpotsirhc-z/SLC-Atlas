@@ -61,15 +61,13 @@ export default function FamilyTree({
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const { palette } = useTheme()
   const familyGroups = useMemo(() => buildFamilyGroups(genes), [genes])
-  const [expandedItems, setExpandedItems] = useState<string[]>(
-    familyFilter ? [familyFilter] : []
-  )
+  const [expandedItems, setExpandedItems] = useState<string[]>(familyFilter ? [familyFilter] : [])
   const [flashingFamily, setFlashingFamily] = useState<string | null>(null)
   const familyRefs = useRef(new Map<string, HTMLElement>())
 
   useEffect(() => {
     if (!familyFilter) return
-    setExpandedItems((prev) => prev.includes(familyFilter) ? prev : [...prev, familyFilter])
+    setExpandedItems((prev) => (prev.includes(familyFilter) ? prev : [...prev, familyFilter]))
     const el = familyRefs.current.get(familyFilter)
     if (!el) return
     const contentEl = el.closest<HTMLElement>(".MuiTreeItem-content") ?? el

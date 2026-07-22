@@ -492,7 +492,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
       svgRef.current?.releasePointerCapture(e.pointerId)
       if (pointers.current.size < 2) pinch.current = null
       if (pointers.current.size === 1) {
-        // One finger remains after a pinch — hand control back to panning.
+        // One finger remains after a pinch, so resume panning
         const [rem] = [...pointers.current.values()]
         drag.current = {
           active: true,
@@ -517,7 +517,6 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     }
   }
 
-  // Exporting
   const buildSvgString = useCallback((): string | null => {
     if (!treeGroupRef.current || !layoutData) return null
     const clone = treeGroupRef.current.cloneNode(true) as SVGGElement
@@ -537,7 +536,6 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     [buildSvgString, layoutData, reset, focusGene, focusFamily],
   )
 
-  // Static Tree (memoized)
   const staticTree = useMemo(() => {
     if (!layoutData) return null
     return (

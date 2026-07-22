@@ -11,7 +11,7 @@ export interface LegendTick {
 
 interface HeatmapColorLegendProps {
   title: string
-  colorAt: (t: number) => string // maps t in [0,1] to the cell color at that intensity
+  colorAt: (t: number) => string // t in [0,1]
   ticks: LegendTick[]
   absent?: { color: string; label: string }
   height?: number

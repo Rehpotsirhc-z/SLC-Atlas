@@ -33,7 +33,6 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
 
   const index = useMemo(() => buildIndex(genes), [genes])
 
-  // Debounced table filter
   const debouncedOnChange = useMemo(() => debounce(onChange, 150), [onChange])
 
   const options = useMemo(() => {

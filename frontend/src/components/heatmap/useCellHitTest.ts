@@ -5,7 +5,7 @@
 import { useCallback } from "react"
 import type { MouseEvent, RefObject } from "react"
 
-export interface CellHit {
+interface CellHit {
   row: number
   col: number
 }

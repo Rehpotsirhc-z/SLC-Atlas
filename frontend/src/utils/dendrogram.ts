@@ -17,18 +17,9 @@ export type DendroNodeInput = TreeNodeInput
 
 export type DendroOrientation = "left" | "top"
 
-export interface DendroPlacedLeaf {
-  id: number
-  index: number
-  cross: number // center coordinate along the leaf axis (px)
-}
-
 export interface DendroLayout {
   order: number[] // leaf node ids, in display order
-  leaves: DendroPlacedLeaf[]
-  pos: Map<number, { x: number; y: number }>
   edges: string // concatenated SVG path string
-  maxDepth: number
 }
 
 export function computeDendrogram(
@@ -62,11 +53,6 @@ export function computeDendrogram(
   }
 
   const left = orientation === "left"
-  const pos = new Map<number, { x: number; y: number }>()
-  for (const [id, g] of geom) {
-    pos.set(id, left ? { x: g.depth, y: g.along } : { x: g.along, y: g.depth })
-  }
-
   const point = left ? depthAcrossX : depthDownY
   let edges = ""
   for (const [id, n] of nodes) {
@@ -78,11 +64,5 @@ export function computeDendrogram(
     )
   }
 
-  return {
-    order: leaves,
-    leaves: leaves.map((id, index) => ({ id, index, cross: cross.get(id)! })),
-    pos,
-    edges,
-    maxDepth,
-  }
+  return { order: leaves, edges }
 }

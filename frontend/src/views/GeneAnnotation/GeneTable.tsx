@@ -67,7 +67,10 @@ export default function GeneTable({
                   direction={sortKey === key ? sortDirection : "asc"}
                   onClick={() => onSort(key)}
                 >
-                  <Box component="span" sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}>
+                  <Box
+                    component="span"
+                    sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}
+                  >
                     {label}
                   </Box>
                 </TableSortLabel>

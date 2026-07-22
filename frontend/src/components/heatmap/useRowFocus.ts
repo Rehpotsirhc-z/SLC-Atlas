@@ -69,5 +69,5 @@ export function useRowFocus({
     [geneRows, scrollToRow],
   )
 
-  return { scrollToRow, resetView, focusGene, focusFamily }
+  return { resetView, focusGene, focusFamily }
 }

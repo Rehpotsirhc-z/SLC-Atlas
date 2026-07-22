@@ -103,7 +103,7 @@ interface FigureProps {
   tpmByTissue: Map<string, number> | null
   domainMax: number
   onPick: (tissues: string[]) => void
-  // "width": fill container width (docked rail). "contain": fit inside a fixed box (floating window).
+  // "width" fills the container (docked rail), "contain" fits a fixed box (floating window)
   fit?: "width" | "contain"
 }
 
@@ -500,7 +500,6 @@ export default function AnatomogramRail({
 
     function recompute() {
       if (!root || !header) return
-      // Small padding
       const SAFETY_PX = 2
       const availableFigureH = Math.max(
         0,

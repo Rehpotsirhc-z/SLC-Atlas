@@ -7,7 +7,6 @@ import { Box } from "@mui/material"
 import type { SxProps, Theme } from "@mui/material/styles"
 import type { ResizeDirs } from "@/utils/useResizablePanel"
 
-// Edge and corner grips overlaid on a floating panel's border
 const HANDLES: { id: string; dirs: ResizeDirs; sx: SxProps<Theme> }[] = [
   {
     id: "n",
