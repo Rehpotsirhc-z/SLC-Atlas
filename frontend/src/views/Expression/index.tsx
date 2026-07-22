@@ -8,10 +8,8 @@ import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
 import AccessibilityNewIcon from "@mui/icons-material/AccessibilityNew"
-import CloseIcon from "@mui/icons-material/Close"
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
-import { alpha } from "@mui/material/styles"
 import {
   Alert,
   Autocomplete,
@@ -19,7 +17,6 @@ import {
   Button,
   CircularProgress,
   Divider,
-  IconButton,
   Menu,
   MenuItem,
   Paper,
@@ -51,6 +48,7 @@ import {
   StyledPopper,
   VirtualListboxSm,
 } from "@/components/VirtualListbox"
+import FloatingToggleButton, { floatSurfaceBg } from "@/components/FloatingToggleButton"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
 import HeatmapColorLegend, { type LegendTick } from "@/components/HeatmapColorLegend"
 import { useTpmColorScale, lerpHex } from "@/utils/tpmColor"
@@ -290,7 +288,7 @@ export default function Expression() {
     setExportAnchor(null)
   }
 
-  const floatBg = alpha(theme.palette.background.paper, 0.9)
+  const floatBg = floatSurfaceBg(theme)
 
   const { domainMax: tpmDomainMax } = useTpmColorScale(rows ?? [])
   const legendColorAt = useCallback(
@@ -611,33 +609,14 @@ export default function Expression() {
 
                 {isMobile && (
                   <>
-                    <Tooltip title={railOpen ? "Hide anatomograms" : "Show anatomograms"}>
-                      <IconButton
-                        onClick={() => setRailOpen(!railOpen)}
-                        sx={{
-                          position: "absolute",
-                          bottom: 12,
-                          right: 64,
-                          zIndex: 4,
-                          width: 44,
-                          height: 44,
-                          borderRadius: "50%",
-                          boxShadow: 4,
-                          backdropFilter: "blur(10px)",
-                          bgcolor: floatBg,
-                          border: 1,
-                          borderColor: "divider",
-                          color: railOpen ? "text.secondary" : "primary.main",
-                          "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
-                        }}
-                      >
-                        {railOpen ? (
-                          <CloseIcon fontSize="small" />
-                        ) : (
-                          <AccessibilityNewIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </Tooltip>
+                    <FloatingToggleButton
+                      open={railOpen}
+                      onToggle={() => setRailOpen(!railOpen)}
+                      icon={<AccessibilityNewIcon fontSize="small" />}
+                      title="Show anatomograms"
+                      openTitle="Hide anatomograms"
+                      sx={{ bottom: 12, right: 64, zIndex: 4 }}
+                    />
                     {searchOpen && (
                       <Paper
                         elevation={4}
@@ -661,31 +640,14 @@ export default function Expression() {
                         {searchPanel}
                       </Paper>
                     )}
-                    <IconButton
-                      onClick={() => setSearchOpen((v) => !v)}
-                      sx={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        zIndex: 4,
-                        width: 44,
-                        height: 44,
-                        borderRadius: "50%",
-                        boxShadow: 4,
-                        backdropFilter: "blur(10px)",
-                        bgcolor: floatBg,
-                        border: 1,
-                        borderColor: "divider",
-                        color: searchOpen ? "text.secondary" : "primary.main",
-                        "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
-                      }}
-                    >
-                      {searchOpen ? (
-                        <CloseIcon fontSize="small" />
-                      ) : (
-                        <SearchIcon fontSize="small" />
-                      )}
-                    </IconButton>
+                    <FloatingToggleButton
+                      open={searchOpen}
+                      onToggle={() => setSearchOpen((v) => !v)}
+                      icon={<SearchIcon fontSize="small" />}
+                      title="Find gene"
+                      openTitle="Close search"
+                      sx={{ bottom: 12, right: 12, zIndex: 4 }}
+                    />
                   </>
                 )}
               </>

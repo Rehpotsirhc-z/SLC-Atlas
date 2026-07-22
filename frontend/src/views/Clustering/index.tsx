@@ -8,7 +8,6 @@ import DownloadIcon from "@mui/icons-material/Download"
 import HubIcon from "@mui/icons-material/Hub"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
-import CloseIcon from "@mui/icons-material/Close"
 import { alpha } from "@mui/material/styles"
 import {
   Alert,
@@ -46,6 +45,7 @@ import {
   StyledPopper,
   VirtualListboxSm,
 } from "@/components/VirtualListbox"
+import FloatingToggleButton, { floatSurfaceBg } from "@/components/FloatingToggleButton"
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
 
 type TbState = "full" | "counterCompact" | "compact" | "wrapped"
@@ -204,7 +204,7 @@ export default function Clustering() {
     triggerDownload(new Blob([text], { type: "text/plain" }), `slc_${method}.nwk`)
   }
 
-  const floatBg = alpha(theme.palette.background.paper, 0.9)
+  const floatBg = floatSurfaceBg(theme)
   const selectedColor = theme.palette.secondary.main
 
   const showCounter = tbState === "full" || tbState === "counterCompact"
@@ -563,27 +563,14 @@ export default function Clustering() {
                       />
                     </Paper>
                   )}
-                  <IconButton
-                    onClick={() => setSearchOpen((v) => !v)}
-                    sx={{
-                      position: "absolute",
-                      bottom: 12,
-                      right: 12,
-                      zIndex: 2,
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      boxShadow: 4,
-                      backdropFilter: "blur(10px)",
-                      bgcolor: floatBg,
-                      border: 1,
-                      borderColor: "divider",
-                      color: searchOpen ? "text.secondary" : "primary.main",
-                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
-                    }}
-                  >
-                    {searchOpen ? <CloseIcon fontSize="small" /> : <SearchIcon fontSize="small" />}
-                  </IconButton>
+                  <FloatingToggleButton
+                    open={searchOpen}
+                    onToggle={() => setSearchOpen((v) => !v)}
+                    icon={<SearchIcon fontSize="small" />}
+                    title="Find gene"
+                    openTitle="Close search"
+                    sx={{ bottom: 12, right: 12, zIndex: 2 }}
+                  />
                 </>
               )}
 
@@ -633,7 +620,6 @@ export default function Clustering() {
                   </Tooltip>
                 ))}
               </Paper>
-
             </>
           )}
         </Box>

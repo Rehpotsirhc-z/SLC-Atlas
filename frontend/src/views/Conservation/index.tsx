@@ -7,8 +7,6 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import SearchIcon from "@mui/icons-material/Search"
-import CloseIcon from "@mui/icons-material/Close"
-import { alpha } from "@mui/material/styles"
 import {
   Alert,
   Autocomplete,
@@ -16,7 +14,6 @@ import {
   Button,
   CircularProgress,
   Divider,
-  IconButton,
   Menu,
   MenuItem,
   Paper,
@@ -47,6 +44,7 @@ import {
   StyledPopper,
   VirtualListboxSm,
 } from "@/components/VirtualListbox"
+import FloatingToggleButton, { floatSurfaceBg } from "@/components/FloatingToggleButton"
 import ConservationHeatmap, {
   CELL_METRICS,
   type CellMetricKey,
@@ -212,7 +210,7 @@ export default function Conservation() {
     setExportAnchor(null)
   }
 
-  const floatBg = alpha(theme.palette.background.paper, 0.9)
+  const floatBg = floatSurfaceBg(theme)
 
   const metricDef = CELL_METRICS.find((m) => m.key === cellMetric)!
   const legendColorAt = useCallback(
@@ -567,27 +565,14 @@ export default function Conservation() {
                       {searchPanel}
                     </Paper>
                   )}
-                  <IconButton
-                    onClick={() => setSearchOpen((v) => !v)}
-                    sx={{
-                      position: "absolute",
-                      bottom: 12,
-                      right: 12,
-                      zIndex: 4,
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      boxShadow: 4,
-                      backdropFilter: "blur(10px)",
-                      bgcolor: floatBg,
-                      border: 1,
-                      borderColor: "divider",
-                      color: searchOpen ? "text.secondary" : "primary.main",
-                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.06) },
-                    }}
-                  >
-                    {searchOpen ? <CloseIcon fontSize="small" /> : <SearchIcon fontSize="small" />}
-                  </IconButton>
+                  <FloatingToggleButton
+                    open={searchOpen}
+                    onToggle={() => setSearchOpen((v) => !v)}
+                    icon={<SearchIcon fontSize="small" />}
+                    title="Find gene"
+                    openTitle="Close search"
+                    sx={{ bottom: 12, right: 12, zIndex: 4 }}
+                  />
                 </>
               )}
             </>
