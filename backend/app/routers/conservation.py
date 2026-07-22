@@ -2,36 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
-from ..config import settings
+from ..data.source import DataSource
 from ..deps import get_source
-from ..data.parquet_source import ParquetSource
 from ..models.conservation import ConservationCell, SpeciesNode
+from ..responses import newick_response
 
 router = APIRouter()
 
 
 @router.get("/conservation", response_model=list[ConservationCell])
-def get_conservation(
-    gene_ids: list[str] | None = Query(None),
-    source: ParquetSource = Depends(get_source),
-):
-    return source.get_conservation(gene_ids=gene_ids).to_dicts()
+def get_conservation(source: DataSource = Depends(get_source)):
+    return source.get_conservation().to_dicts()
 
 
 @router.get("/conservation/species-tree", response_model=list[SpeciesNode])
-def get_species_tree(source: ParquetSource = Depends(get_source)):
+def get_species_tree(source: DataSource = Depends(get_source)):
     return source.get_species_tree().to_dicts()
 
 
 @router.get("/conservation/species-tree/newick", response_class=PlainTextResponse)
-def get_species_tree_newick(source: ParquetSource = Depends(get_source)):
-    newick = source.get_species_tree_newick()
-    return PlainTextResponse(
-        newick,
-        media_type="text/x-nh",
-        headers={
-            "Content-Disposition": f'attachment; filename="{settings.download_prefix}_species_tree.nwk"'
-        },
-    )
+def get_species_tree_newick(source: DataSource = Depends(get_source)):
+    return newick_response(source.get_species_tree_newick(), "species_tree")

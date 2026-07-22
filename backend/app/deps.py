@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from functools import lru_cache
-from .data.parquet_source import ParquetSource
 from .config import settings
+from .data.parquet_source import ParquetSource
+from .data.source import DataSource
 
 
 @lru_cache(maxsize=1)
-def get_source() -> ParquetSource:
+def get_source() -> DataSource:
     return ParquetSource(settings.data_dir)

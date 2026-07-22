@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pydantic import BaseModel
+from .tree import TreeNodeBase
 
 
 class ConservationCell(BaseModel):
@@ -19,10 +20,7 @@ class ConservationCell(BaseModel):
     target_gene_id: str | None = None
 
 
-class SpeciesNode(BaseModel):
-    node_id: int
-    parent_id: int | None = None
-    branch_length: float
+class SpeciesNode(TreeNodeBase):
     species: str | None = None
     species_label: str | None = None
     taxon_id: int | None = None
