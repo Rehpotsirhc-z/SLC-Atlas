@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useRef, useState } from "react"
+import { useRef } from "react"
 import { Box, IconButton, Paper, Tooltip } from "@mui/material"
 import CloseIcon from "@mui/icons-material/Close"
 import ResizeHandles from "@/components/ResizeHandles"
@@ -10,13 +10,17 @@ import { useUIStore } from "@/store/uiStore"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
 import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { useResizablePanel } from "@/utils/useResizablePanel"
-import { AnatomogramFigure, AnatomogramViewToggles, SVG_FOR, type RailView } from "./index"
-import { PopInIcon } from "./icons"
+import { useViewportSize } from "@/utils/useViewportSize"
 import AnatomogramAttribution from "./Attribution"
+import AnatomogramHeader from "./AnatomogramHeader"
+import FigureFrame from "./FigureFrame"
+import { PopInIcon } from "./icons"
+import type { RailView } from "./tissueMaps"
 
 const DEFAULT_POS: PanelPos = { x: 64, y: 96 }
 const MIN_W = 260
 const MIN_H = 280
+const VIEWPORT_INSET = 24
 
 interface AnatomogramWindowProps {
   view: RailView
@@ -29,7 +33,7 @@ interface AnatomogramWindowProps {
   onPickTissue: (tissues: string[]) => void
   onClose: () => void
   onPopIn: () => void
-  hideDock?: boolean
+  hideDock: boolean
 }
 
 export default function AnatomogramWindow({
@@ -43,7 +47,7 @@ export default function AnatomogramWindow({
   onPickTissue,
   onClose,
   onPopIn,
-  hideDock = false,
+  hideDock,
 }: AnatomogramWindowProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const size = useUIStore((s) => s.railFloatSize)
@@ -60,14 +64,12 @@ export default function AnatomogramWindow({
   const { startResize } = useResizablePanel(currentPos, setPos, size, setSize, MIN_W, MIN_H)
   const { zIndex, focusProps } = useFloatingWindow("anatomogram")
 
-  const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
-  useEffect(() => {
-    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })
-    window.addEventListener("resize", onResize)
-    return () => window.removeEventListener("resize", onResize)
-  }, [])
-  const width = Math.min(size.w, vp.w - 24)
-  const height = Math.min(size.h, vp.h - 24)
+  const vp = useViewportSize()
+  const dragProps = {
+    onMouseDown: handleDragStart,
+    onTouchStart: handleTouchStart,
+    onDoubleClick: hideDock ? undefined : onPopIn,
+  }
 
   return (
     <Paper
@@ -78,8 +80,8 @@ export default function AnatomogramWindow({
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
-        width,
-        height,
+        width: Math.min(size.w, vp.w - VIEWPORT_INSET),
+        height: Math.min(size.h, vp.h - VIEWPORT_INSET),
         zIndex,
         border: 1,
         borderColor: "divider",
@@ -89,9 +91,7 @@ export default function AnatomogramWindow({
       }}
     >
       <Box
-        onMouseDown={handleDragStart}
-        onTouchStart={handleTouchStart}
-        onDoubleClick={hideDock ? undefined : onPopIn}
+        {...dragProps}
         sx={{
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
@@ -106,73 +106,48 @@ export default function AnatomogramWindow({
         <Box sx={{ width: "52%", height: 3, borderRadius: 1.5, bgcolor: "divider" }} />
       </Box>
 
-      <Box
-        onMouseDown={handleDragStart}
-        onTouchStart={handleTouchStart}
-        onDoubleClick={hideDock ? undefined : onPopIn}
-        sx={{
-          cursor: "grab",
-          "&:active": { cursor: "grabbing" },
-          userSelect: "none",
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
-          gap: 0.5,
-          px: 1,
-          py: 1,
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Box />
-        <Box sx={{ justifySelf: "center" }} onDoubleClick={(e) => e.stopPropagation()}>
-          <AnatomogramViewToggles view={view} onPickSex={onPickSex} onPickBrain={onPickBrain} />
-        </Box>
-        <Box
-          sx={{ justifySelf: "end", display: "flex", gap: 0.25 }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-        >
-          {!hideDock && (
-            <Tooltip title="Dock to sidebar" arrow>
-              <IconButton size="small" onClick={onPopIn} sx={{ color: "text.secondary", p: "7px" }}>
-                <PopInIcon fontSize="small" />
+      <AnatomogramHeader
+        view={view}
+        onPickSex={onPickSex}
+        onPickBrain={onPickBrain}
+        dragProps={dragProps}
+        sx={{ cursor: "grab", "&:active": { cursor: "grabbing" }, userSelect: "none" }}
+        actions={
+          <Box
+            sx={{ justifySelf: "end", display: "flex", gap: 0.25 }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            {!hideDock && (
+              <Tooltip title="Dock to sidebar" arrow>
+                <IconButton
+                  size="small"
+                  onClick={onPopIn}
+                  sx={{ color: "text.secondary", p: "7px" }}
+                >
+                  <PopInIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Close" arrow>
+              <IconButton size="small" onClick={onClose} sx={{ color: "text.secondary", p: "7px" }}>
+                <CloseIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          )}
-          <Tooltip title="Close" arrow>
-            <IconButton size="small" onClick={onClose} sx={{ color: "text.secondary", p: "7px" }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
+          </Box>
+        }
+      />
 
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflow: "auto",
-          px: 1.5,
-          py: 1.5,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-        }}
-      >
-        <AnatomogramFigure
-          key={view}
-          svg={SVG_FOR[view]}
-          view={view}
-          presentTissues={presentTissues}
-          selectedTissue={selectedTissue}
-          tpmByTissue={tpmByTissue}
-          domainMax={domainMax}
-          onPick={onPickTissue}
-          fit="contain"
-        />
-      </Box>
+      <FigureFrame
+        view={view}
+        presentTissues={presentTissues}
+        selectedTissue={selectedTissue}
+        tpmByTissue={tpmByTissue}
+        domainMax={domainMax}
+        onPick={onPickTissue}
+        fit="contain"
+      />
 
       <AnatomogramAttribution />
 
