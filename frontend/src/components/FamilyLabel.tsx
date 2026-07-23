@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Box, Tooltip } from "@mui/material"
+import { tooltipSurfaceSx } from "@/theme"
 
 interface FamilyLabelProps {
   label: string
@@ -19,14 +20,8 @@ export default function FamilyLabel({ label, color, familyName, category }: Fami
       slotProps={{
         tooltip: {
           sx: {
-            bgcolor: "background.default",
+            ...tooltipSurfaceSx,
             color: "text.primary",
-            border: 1,
-            borderColor: "divider",
-            borderRadius: 1,
-            boxShadow: 3,
-            pt: 1,
-            pb: 0.625,
             px: 1.25,
             m: 0,
             maxWidth: 240,
@@ -56,7 +51,7 @@ export default function FamilyLabel({ label, color, familyName, category }: Fami
         }}
       >
         <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: color }} />
-        <Box component="span" sx={{ lineHeight: 1, transform: "translateY(2px)" }}>
+        <Box component="span" sx={{ lineHeight: 1, transform: "translateY(0.35px)" }}>
           {label}
         </Box>
       </Box>

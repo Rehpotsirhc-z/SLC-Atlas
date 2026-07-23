@@ -6,6 +6,7 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Box } from "@mui/material"
 import type { SxProps, Theme } from "@mui/material"
+import { tooltipSurfaceSx } from "@/theme"
 
 interface HoverTooltipProps {
   x: number // cursor position in viewport coordinates (clientX)
@@ -35,22 +36,19 @@ export default function HoverTooltip({ x, y, maxWidth = 260, children, sx }: Hov
   return createPortal(
     <Box
       ref={ref}
-      sx={{
-        position: "fixed",
-        left: pos ? pos.left : x + 14,
-        top: pos ? pos.top : y + 14,
-        pointerEvents: "none",
-        zIndex: (t) => t.zIndex.tooltip,
-        bgcolor: "background.default",
-        border: 1,
-        borderColor: "divider",
-        borderRadius: 1,
-        px: 1,
-        py: 0.5,
-        maxWidth,
-        boxShadow: 3,
-        ...sx,
-      }}
+      sx={[
+        {
+          position: "fixed",
+          left: pos ? pos.left : x + 14,
+          top: pos ? pos.top : y + 14,
+          pointerEvents: "none",
+          zIndex: (t) => t.zIndex.tooltip,
+          px: 1,
+          maxWidth,
+        },
+        tooltipSurfaceSx,
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
     >
       {children}
     </Box>,
