@@ -12,6 +12,7 @@ import {
   TableRow,
   TableSortLabel,
 } from "@mui/material"
+import { capBoxSx } from "@/theme"
 import type { Gene } from "@/types/gene"
 import GeneRow from "./GeneRow"
 import type { SortDirection, SortKey } from "./useGeneAnnotationState"
@@ -43,8 +44,6 @@ const headerCellSx = {
   color: "text.secondary",
 }
 
-const HEADER_TEXT_NUDGE = "translateY(2px)"
-
 export default function GeneTable({
   genes,
   sortKey,
@@ -67,23 +66,20 @@ export default function GeneTable({
                   direction={sortKey === key ? sortDirection : "asc"}
                   onClick={() => onSort(key)}
                 >
-                  <Box
-                    component="span"
-                    sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}
-                  >
+                  <Box component="span" sx={{ display: "inline-block", ...capBoxSx }}>
                     {label}
                   </Box>
                 </TableSortLabel>
               </TableCell>
             ))}
             <TableCell sx={headerCellSx}>
-              <Box component="span" sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}>
+              <Box component="span" sx={{ display: "inline-block", ...capBoxSx }}>
                 Alias
               </Box>
             </TableCell>
             <TableCell padding="checkbox" sx={headerCellSx} />
             <TableCell sx={headerCellSx}>
-              <Box component="span" sx={{ display: "inline-block", transform: HEADER_TEXT_NUDGE }}>
+              <Box component="span" sx={{ display: "inline-block", ...capBoxSx }}>
                 Links
               </Box>
             </TableCell>

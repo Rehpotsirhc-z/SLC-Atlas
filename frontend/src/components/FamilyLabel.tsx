@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Box, Tooltip } from "@mui/material"
-import { tooltipSurfaceSx } from "@/theme"
+import { capBoxSx, tooltipSurfaceSx } from "@/theme"
 
 interface FamilyLabelProps {
   label: string
@@ -51,7 +51,7 @@ export default function FamilyLabel({ label, color, familyName, category }: Fami
         }}
       >
         <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: color }} />
-        <Box component="span" sx={{ lineHeight: 1, transform: "translateY(0.35px)" }}>
+        <Box component="span" sx={capBoxSx}>
           {label}
         </Box>
       </Box>
