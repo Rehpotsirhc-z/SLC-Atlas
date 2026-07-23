@@ -2,45 +2,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import CloseIcon from "@mui/icons-material/Close"
-import OpenInNewIcon from "@mui/icons-material/OpenInNew"
-import TableRowsIcon from "@mui/icons-material/TableRows"
-import { keyframes } from "@mui/system"
-import {
-  Box,
-  Button,
-  Divider,
-  IconButton,
-  Paper,
-  Tooltip,
-  Typography,
-  useTheme,
-} from "@mui/material"
-import { useLayoutEffect, useRef } from "react"
+import { useRef } from "react"
+import { Box, Tooltip, Typography, useTheme } from "@mui/material"
 import FamilyLabel from "@/components/FamilyLabel"
 import MiniBar from "@/components/MiniBar"
-import ResizeHandles from "@/components/ResizeHandles"
 import { getFamilyColor } from "@/utils/familyColor"
-import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { formatTpm } from "@/utils/format"
 import { displayTissue } from "@/utils/tissue"
 import { tpmIntensity } from "@/utils/tpmColor"
-import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
-import { useFloatingWindow } from "@/utils/useFloatingWindow"
-import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
-import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
-
-const glowFlash = keyframes`
-  0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
-  100% { outline: 2px solid rgba(144, 202, 249, 0); }
-`
-
 import type { ExpressionGeneInfo } from "@/types/popup"
-
-const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
-const DEFAULT_SIZE: PanelSize = { w: 420, h: 520 }
-const MIN_W = 280
-const MIN_H = 320
+import type { PanelPos } from "@/utils/useDraggablePanel"
+import { usePopupAutoWidth } from "@/utils/usePopupAutoWidth"
+import type { PanelSize } from "@/utils/useResizablePanel"
+import BarListGrid, { type BarListRow } from "./BarListGrid"
+import FloatingGenePanel, { MIN_H, type StatRow } from "./FloatingGenePanel"
 
 function median(values: number[]): number | null {
   if (!values.length) return null
@@ -59,53 +34,28 @@ interface GeneExpressionPanelProps {
   onSizeChange: (size: PanelSize) => void
 }
 
-export default function GeneExpressionPanel({
-  info,
-  onClose,
-  onOpenInGenes,
-  pos,
-  onPosChange,
-  size,
-  onSizeChange,
-}: GeneExpressionPanelProps) {
+export default function GeneExpressionPanel({ info, ...geometry }: GeneExpressionPanelProps) {
   const { geneId, symbol, family, gene, rows } = info
   const { palette, custom } = useTheme()
   const familyColor = getFamilyColor(family ?? "?", palette.mode)
-  const panelRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
-  const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
-    panelRef,
-    pos,
-    onPosChange,
-    DEFAULT_POS,
-  )
-  const currentSize = {
-    w: Math.max(size?.w ?? DEFAULT_SIZE.w, MIN_W),
-    h: Math.max(size?.h ?? DEFAULT_SIZE.h, MIN_H),
-  }
-  useLayoutEffect(() => {
-    if (!size || size.w < MIN_W || size.h < MIN_H) onSizeChange(currentSize)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size])
-  const { startResize } = useResizablePanel(
-    currentPos,
-    onPosChange,
-    currentSize,
-    onSizeChange,
-    MIN_W,
-    MIN_H,
-  )
-
-  const { zIndex, focusProps } = useFloatingWindow("gene-popup")
 
   const sortedRows = [...rows].sort((a, b) => b.tpm - a.tpm)
   const maxRow = sortedRows[0] ?? null
   const medianTpm = median(rows.map((r) => r.tpm))
   const domainMax = Math.max(...rows.map((r) => Math.log2(r.tpm + 1)), 1)
-  const labelKey = sortedRows.map((r) => r.tissue).join("|")
-  usePopupAutoWidth(gridRef, labelKey, currentPos.x, currentSize.h, onSizeChange)
 
-  const statRows: { label: string; value: React.ReactNode }[] = [
+  const currentX = geometry.pos?.x ?? 29
+  const currentH = Math.max(geometry.size?.h ?? 520, MIN_H)
+  usePopupAutoWidth(
+    gridRef,
+    sortedRows.map((r) => r.tissue).join("|"),
+    currentX,
+    currentH,
+    geometry.onSizeChange,
+  )
+
+  const statRows: StatRow[] = [
     {
       label: "Family",
       value: (
@@ -125,196 +75,49 @@ export default function GeneExpressionPanel({
     { label: "Median TPM", value: medianTpm !== null ? formatTpm(medianTpm) : "—" },
   ]
 
+  const barRows: BarListRow[] = sortedRows.map((r) => ({
+    key: r.tissue,
+    label: (
+      <Typography
+        variant="caption"
+        sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+      >
+        {displayTissue(r.tissue)}
+      </Typography>
+    ),
+    bar: (
+      <Tooltip title={`${formatTpm(r.tpm)} TPM`} placement="top" arrow>
+        <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
+          <MiniBar fraction={tpmIntensity(r.tpm, domainMax)} />
+        </Box>
+      </Tooltip>
+    ),
+    value: (
+      <Typography
+        variant="caption"
+        sx={{
+          textAlign: "right",
+          fontFamily: custom.monoFontFamily,
+          fontSize: custom.monoFontSize,
+        }}
+      >
+        {formatTpm(r.tpm)}
+      </Typography>
+    ),
+  }))
+
   return (
-    <Paper
-      ref={panelRef}
-      elevation={6}
-      {...focusProps}
-      sx={{
-        position: "fixed",
-        top: currentPos.y,
-        left: currentPos.x,
-        width: currentSize.w,
-        height: currentSize.h,
-        zIndex,
-        border: 1,
-        borderColor: "divider",
-        animation: `${glowFlash} 0.8s ease-out`,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-      }}
+    <FloatingGenePanel
+      {...geometry}
+      symbol={symbol}
+      geneId={geneId}
+      geneName={gene?.name}
+      familyColor={familyColor}
+      statRows={statRows}
+      ucscGene={gene}
+      defaultWidth={420}
     >
-      {/* Drag handle */}
-      <Box
-        onMouseDown={handleDragStart}
-        onTouchStart={handleTouchStart}
-        sx={{
-          cursor: "grab",
-          "&:active": { cursor: "grabbing" },
-          px: 1.5,
-          py: 0.875,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          userSelect: "none",
-        }}
-      >
-        <Box
-          sx={{
-            width: "52%",
-            height: 3,
-            borderRadius: 1.5,
-            bgcolor: "divider",
-          }}
-        />
-      </Box>
-
-      <Box sx={{ px: 1.5, pt: 1.5, flexShrink: 0 }}>
-        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <Typography
-            variant="subtitle1"
-            fontWeight={700}
-            sx={{ color: familyColor, lineHeight: 1.2 }}
-          >
-            {symbol}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={onClose}
-            sx={{ mt: -0.5, mr: -0.5, color: "text.secondary" }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
-            display: "block",
-            fontFamily: custom.monoFontFamily,
-            fontSize: custom.monoFontSize,
-          }}
-        >
-          {geneId}
-        </Typography>
-        {gene?.name && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-            {gene.name}
-          </Typography>
-        )}
-
-        <Divider sx={{ my: 1 }} />
-
-        <Box
-          sx={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 1.5, rowGap: 0.75 }}
-        >
-          {statRows.map((r) => (
-            <Box key={r.label} sx={{ display: "contents" }}>
-              <Typography variant="caption" color="text.secondary">
-                {r.label}
-              </Typography>
-              <Typography variant="caption" sx={{ textAlign: "right" }}>
-                {r.value}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-
-        <Divider sx={{ mt: 1, mb: 0.75 }} />
-      </Box>
-
-      <Box
-        ref={gridRef}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          px: 1.5,
-          display: "grid",
-          gridTemplateColumns: "minmax(0, max-content) minmax(48px, 1fr) max-content",
-          alignItems: "center",
-          columnGap: 1,
-          rowGap: 0.75,
-          alignContent: "start",
-        }}
-      >
-        {sortedRows.map((r) => (
-          <Box key={r.tissue} sx={{ display: "contents" }}>
-            <Typography
-              variant="caption"
-              sx={{
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {displayTissue(r.tissue)}
-            </Typography>
-            <Tooltip title={`${formatTpm(r.tpm)} TPM`} placement="top" arrow>
-              <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
-                <MiniBar fraction={tpmIntensity(r.tpm, domainMax)} />
-              </Box>
-            </Tooltip>
-            <Typography
-              variant="caption"
-              sx={{
-                textAlign: "right",
-                fontFamily: custom.monoFontFamily,
-                fontSize: custom.monoFontSize,
-              }}
-            >
-              {formatTpm(r.tpm)}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-
-      <Box sx={{ px: 1.5, pb: 1.5, pt: 0.75, flexShrink: 0 }}>
-        <Divider sx={{ mb: 1.5 }} />
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<TableRowsIcon />}
-            onClick={onOpenInGenes}
-          >
-            Open in Genes view
-          </Button>
-          <Box sx={{ display: "flex", gap: 0.5 }}>
-            <Button
-              size="small"
-              variant="text"
-              startIcon={<OpenInNewIcon />}
-              component="a"
-              href={ensemblUrl(geneId)}
-              target="_blank"
-              rel="noopener"
-              sx={{ flex: 1 }}
-            >
-              Ensembl
-            </Button>
-            {gene && (
-              <Button
-                size="small"
-                variant="text"
-                startIcon={<OpenInNewIcon />}
-                component="a"
-                href={ucscUrl(gene)}
-                target="_blank"
-                rel="noopener"
-                sx={{ flex: 1 }}
-              >
-                UCSC
-              </Button>
-            )}
-          </Box>
-        </Box>
-      </Box>
-
-      <ResizeHandles onResize={startResize} />
-    </Paper>
+      <BarListGrid gridRef={gridRef} rows={barRows} />
+    </FloatingGenePanel>
   )
 }
