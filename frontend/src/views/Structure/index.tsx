@@ -20,6 +20,7 @@ import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { figureExportHandlers } from "@/utils/exportFigure"
+import { useElementSize } from "@/utils/useElementSize"
 import { CONTENT_PADDING_PX, MIN_CONTENT_WIDTH, PREFERRED_CONTENT_WIDTH, TRACK } from "./constants"
 import ExperimentalTable from "./ExperimentalTable"
 import IdentityCard from "./IdentityCard"
@@ -51,10 +52,11 @@ export default function Structure() {
     counterText,
   } = useStructureState()
 
-  const { outerRef, railWidth, expandRail, useDrawer, contentWidth, onDragStart } = useFamilyRail({
+  const { outerRef, railWidth, expandRail, useDrawer, onDragStart } = useFamilyRail({
     minContentWidth: MIN_CONTENT_WIDTH,
     enabled: !isLoading && !isMobile,
   })
+  const [scrollRef, scrollSize] = useElementSize<HTMLDivElement>()
 
   useEffect(() => {
     if (!isLoading && !isMobile) expandRail(PREFERRED_CONTENT_WIDTH)
@@ -69,7 +71,7 @@ export default function Structure() {
     { label: "Topology PNG", onClick: () => exportPng(`slc_topology_${symbol}.png`) },
   ]
 
-  const trackWidth = Math.max(contentWidth - CONTENT_PADDING_PX, TRACK.minWidth)
+  const trackWidth = Math.max(scrollSize.w - CONTENT_PADDING_PX, TRACK.minWidth)
 
   const header = (
     <ViewHeader
@@ -136,7 +138,7 @@ export default function Structure() {
               loading={isLoading}
               errorMessage="Failed to load structure data."
             >
-              <Box sx={{ height: "100%", overflowY: "auto", p: 2 }}>
+              <Box ref={scrollRef} sx={{ height: "100%", overflowY: "auto", p: 2 }}>
                 {selected ? (
                   <Stack spacing={3}>
                     <IdentityCard structure={selected} gene={selectedGene} />
