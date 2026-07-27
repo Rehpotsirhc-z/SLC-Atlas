@@ -7,6 +7,7 @@ import { useGeneById, useGenes } from "@/api/hooks/useGenes"
 import {
   useExperimentalStructures,
   useProteinFeatures,
+  useStructureDetail,
   useStructures,
 } from "@/api/hooks/useStructure"
 import { useUIStore } from "@/store/uiStore"
@@ -20,19 +21,24 @@ export function useStructureState() {
   const { data: structures, isLoading, error } = useStructures()
   const { data: allGenes } = useGenes()
   const geneById = useGeneById()
+  const { data: detail } = useStructureDetail(selectedGeneId)
   const { data: features } = useProteinFeatures(selectedGeneId)
   const { data: experimental } = useExperimentalStructures(selectedGeneId)
 
-  // the rail and search bar only offer genes the structure tables actually cover
+  // The rail and search bar only offer genes the structure tables actually cover
   const genes = useMemo(() => {
     if (!structures || !allGenes) return []
     const covered = new Set(structures.map((s) => s.gene_id))
     return allGenes.filter((g) => covered.has(g.id))
   }, [structures, allGenes])
 
+  // The list record renders at once, the detail swaps in when its confidence array lands
   const selected = useMemo(
-    () => structures?.find((s) => s.gene_id === selectedGeneId) ?? null,
-    [structures, selectedGeneId],
+    () =>
+      detail?.gene_id === selectedGeneId
+        ? detail
+        : (structures?.find((s) => s.gene_id === selectedGeneId) ?? null),
+    [detail, structures, selectedGeneId],
   )
 
   const withExperimental = useMemo(
@@ -44,6 +50,7 @@ export function useStructureState() {
     structures,
     genes,
     selected,
+    plddt: detail?.gene_id === selectedGeneId ? (detail?.plddt ?? null) : null,
     selectedGene: selectedGeneId ? (geneById.get(selectedGeneId) ?? null) : null,
     features,
     experimental,

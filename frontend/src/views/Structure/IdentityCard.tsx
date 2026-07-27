@@ -3,18 +3,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
-import { Box, Button, Chip, Link, Stack, Tooltip, Typography, useTheme } from "@mui/material"
+import { Alert, Box, Button, Link, Stack, Typography, useTheme } from "@mui/material"
 import FamilyLabel from "@/components/FamilyLabel"
 import { getFamilyColor } from "@/utils/familyColor"
 import { alphafoldUrl, ensemblUrl, pdbeUrl, ucscUrl, uniprotUrl } from "@/utils/links"
 import { RESOLUTION_DECIMALS } from "./constants"
-import PlddtBar from "./PlddtBar"
 import type { Gene } from "@/types/gene"
-import { SEQ_AGREEMENT_LABEL, type StructureRecord } from "@/types/structure"
+import type { StructureRecord } from "@/types/structure"
 
 interface Props {
   structure: StructureRecord
   gene: Gene | null
+}
+
+const METHOD_LABEL: Record<string, string> = {
+  "ELECTRON MICROSCOPY": "cryo-EM",
+  "X-RAY DIFFRACTION": "X-ray",
+  "SOLUTION NMR": "NMR",
+}
+
+const SEQ_AGREEMENT_DETAIL: Record<string, string> = {
+  isoform: "matches an Ensembl isoform rather than the canonical one used elsewhere in the atlas",
+  differs: "differs from the Ensembl sequence used elsewhere in the atlas",
+  unknown: "could not be compared with the Ensembl sequence used elsewhere in the atlas",
 }
 
 function ExternalLink({ label, href }: { label: string; href: string }) {
@@ -49,10 +60,14 @@ export default function IdentityCard({ structure, gene }: Props) {
   const family = gene?.family ?? null
   const accession = structure.uniprot_accession
 
-  const evidence =
-    structure.n_experimental > 0
-      ? `${structure.n_experimental} experimental ${structure.n_experimental === 1 ? "structure" : "structures"}`
-      : "Predicted model only"
+  const bestExperimental = [
+    structure.best_pdb_id?.toUpperCase(),
+    structure.best_resolution != null &&
+      `${structure.best_resolution.toFixed(RESOLUTION_DECIMALS)} Å`,
+    structure.best_method && METHOD_LABEL[structure.best_method],
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
     <Stack spacing={1.5}>
@@ -101,8 +116,22 @@ export default function IdentityCard({ structure, gene }: Props) {
           }
         />
         <Stat label="Length" value={`${structure.uniprot_length ?? "?"} aa`} />
-        <Stat label="TM helices" value={structure.n_transmembrane} />
-        <Stat label="Binding sites" value={structure.n_binding_sites} />
+        <Stat
+          label="TM helices"
+          value={
+            structure.n_intramembrane > 0
+              ? `${structure.n_transmembrane} · ${structure.n_intramembrane} intramembrane`
+              : structure.n_transmembrane
+          }
+        />
+        <Stat
+          label="Binding sites"
+          value={
+            structure.n_binding_sites > 0
+              ? `${structure.n_binding_sites} · ${structure.n_binding_residues} residues`
+              : "none annotated"
+          }
+        />
         <Stat
           label="Mean pLDDT"
           value={structure.mean_plddt != null ? structure.mean_plddt.toFixed(1) : "n/a"}
@@ -112,39 +141,22 @@ export default function IdentityCard({ structure, gene }: Props) {
           value={
             structure.best_pdb_id ? (
               <Link href={pdbeUrl(structure.best_pdb_id)} target="_blank" rel="noopener">
-                {structure.best_pdb_id.toUpperCase()}
-                {structure.best_resolution != null &&
-                  ` · ${structure.best_resolution.toFixed(RESOLUTION_DECIMALS)} Å`}
+                {bestExperimental}
               </Link>
             ) : (
-              "none"
+              "none solved"
             )
           }
         />
       </Box>
 
-      <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", gap: 0.75 }}>
-        <Chip
-          size="small"
-          label={evidence}
-          color={structure.n_experimental > 0 ? "primary" : "default"}
-        />
-        {structure.seq_agreement && (
-          <Tooltip title="Structure positions use UniProt canonical numbering">
-            <Chip
-              size="small"
-              variant="outlined"
-              label={SEQ_AGREEMENT_LABEL[structure.seq_agreement]}
-              color={structure.seq_agreement === "differs" ? "warning" : "default"}
-            />
-          </Tooltip>
-        )}
-        {structure.best_method && (
-          <Chip size="small" variant="outlined" label={structure.best_method.toLowerCase()} />
-        )}
-      </Stack>
-
-      <PlddtBar structure={structure} />
+      {structure.seq_agreement && structure.seq_agreement !== "exact" && (
+        <Alert severity="warning" variant="outlined">
+          <Typography variant="body2">
+            {`UniProt's sequence for this protein ${SEQ_AGREEMENT_DETAIL[structure.seq_agreement]}, so the residue numbers below will not line up with the Clustering view.`}
+          </Typography>
+        </Alert>
+      )}
 
       <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
         {accession && <ExternalLink label="AlphaFold DB" href={alphafoldUrl(accession)} />}

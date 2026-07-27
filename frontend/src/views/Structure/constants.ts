@@ -2,19 +2,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// Topology diagram geometry in SVG user units, lanes stacked top to bottom
 export const TRACK = {
-  height: 172,
-  padX: 30,
-  minWidth: 520,
-  outsideY: 30,
-  membraneTop: 46,
-  membraneHeight: 54,
-  insideY: 116,
-  ligandY: 132,
-  axisY: 156,
-  loopThickness: 3,
-  minLabelWidth: 13,
+  // Left column holding the lane names, wide enough for "Non-cytoplasmic"
+  gutter: 104,
+  // Beyond this a lane name is cut off by the left edge of the figure
+  maxLaneLabel: 16,
+  padX: 14,
+  padRight: 26,
+  minWidth: 560,
+  outsideLane: 56,
+  membraneHeight: 62,
+  insideLane: 56,
+  laneGap: 10,
+  confidenceLane: 20,
+  axisGap: 12,
+  axisLabels: 30,
+  // Pills are true to the residue axis, so a short protein is left unstretched rather than
+  // the glyph being capped, which would put a helix and its binding ticks at two scales
+  maxPxPerResidue: 4,
+  helixMinWidth: 12,
+  // Cap on the rounded cap so a wide helix reads as a rounded rectangle, not an ellipse
+  capRadius: 13,
+  // Below this a pill has no room for its number
+  minLabelWidth: 15,
   tickSpacing: 100,
+  minArc: 9,
+  // How far a loop bulges per residue, before clamping to its lane
+  arcPerResidue: 0.5,
+  // Where the chain meets a segment it leaves on the side it entered, as a fraction of the
+  // pill width, so the two loops attach either side of the midline rather than at one point
+  oneSidedJoin: 0.28,
+  // One row per binding site
+  siteRow: 13,
+  siteBarMinWidth: 4,
+  siteBarHeight: 8,
+  chainWidth: 2,
+  chainHitWidth: 14,
+  unresolvedDash: "5 4",
 } as const
 
 export const RESOLUTION_DECIMALS = 2
@@ -22,5 +47,6 @@ export const EXPERIMENTAL_PAGE_SIZE = 10
 export const SEARCH_WIDTH = 360
 
 export const MIN_CONTENT_WIDTH = TRACK.minWidth + 40
+// Width the detail pane wants before the rail is allowed to claim the leftover space
 export const PREFERRED_CONTENT_WIDTH = 900
 export const CONTENT_PADDING_PX = 32
