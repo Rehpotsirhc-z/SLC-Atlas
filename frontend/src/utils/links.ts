@@ -32,7 +32,7 @@ export function chebiUrl(chebiId: string): string {
   return `https://www.ebi.ac.uk/chebi/searchId.do?chebiId=${chebiId.replace(/^ChEBI:/, "")}`
 }
 
-/** The hosted Mol* viewer, until the in-app one lands */
+// The hosted Mol* viewer, until the in-app one lands
 export function molstarViewerUrl(accession: string): string {
   return `https://molstar.org/viewer/?afdb=${accession}&hide-controls=1`
 }

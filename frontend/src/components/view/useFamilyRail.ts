@@ -18,7 +18,7 @@ interface Options {
   enabled: boolean
 }
 
-// Shrink the rail to its minimum before folding it into a drawer, so the content pane keeps its usable width.
+// Shrink the rail to its minimum before folding it into a drawer
 export function useFamilyRail({ minContentWidth, enabled }: Options) {
   const outerRef = useRef<HTMLDivElement>(null)
   const [railWidth, setRailWidth] = useState(RAIL_DEFAULT_WIDTH)
