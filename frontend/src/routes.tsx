@@ -17,6 +17,8 @@ export interface AppRoute {
   element: ReactNode
   /** Whether the floating gene-info popup may show on this route */
   popup?: boolean
+  /** Capability this route needs; the nav hides it when the dataset lacks that data */
+  capability?: string
 }
 
 export const routes: AppRoute[] = [
@@ -25,7 +27,7 @@ export const routes: AppRoute[] = [
   { path: "/conservation", label: "Conservation", element: <Conservation />, popup: true },
   { path: "/browser", label: "Genome Browser", element: <GenomeBrowser /> },
   { path: "/expression", label: "Expression", element: <Expression />, popup: true },
-  { path: "/structure", label: "Structure", element: <Structure /> },
+  { path: "/structure", label: "Structure", element: <Structure />, capability: "structure" },
   { path: "/pet", label: "PET-SCAN", element: <PetScan /> },
 ]
 

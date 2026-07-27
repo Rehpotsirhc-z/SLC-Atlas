@@ -24,6 +24,7 @@ backend/data/*.h5
 backend/data/*.hdf5
 backend/data/raw/*
 backend/data/dataset/*
+backend/data/structure/*
 
 # Frontend build
 frontend/dist/

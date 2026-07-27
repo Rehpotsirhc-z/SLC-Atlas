@@ -29,13 +29,20 @@ STAGES = [
     ["assemble_genes"],
     ["subset_expression", "fetch_sequences"],
     ["fetch_orthologs", "fetch_species_tree"],
+    ["fetch_uniprot_map"],
+    ["fetch_protein_features", "fetch_structures"],
+    ["download_models"],
 ]
 
 CONSUMED_BY = {
     "subset_expression": {"clustering", "expression"},
-    "fetch_sequences": {"clustering"},
+    "fetch_sequences": {"clustering", "structure"},
     "fetch_orthologs": {"conservation"},
     "fetch_species_tree": {"conservation"},
+    "fetch_uniprot_map": {"structure"},
+    "fetch_protein_features": {"structure"},
+    "fetch_structures": {"structure"},
+    "download_models": {"structure"},
 }
 
 

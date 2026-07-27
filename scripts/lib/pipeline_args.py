@@ -9,16 +9,17 @@ The --skip-* flags name views, not steps: each phase maps them onto its own step
 
 import argparse
 
-VIEWS = ("clustering", "conservation", "expression")
+VIEWS = ("clustering", "conservation", "expression", "structure")
 
 VIEW_HELP = {
     "clustering": "skip the similarity trees (needs GTEx + sequences)",
     "conservation": "skip the ortholog matrix and species tree",
     "expression": "skip the gene x tissue expression matrix",
+    "structure": "skip the protein models, topology, and coordinate downloads",
 }
 
 
-def build_parser(description: str, *, phase_flags: bool = False, hgnc_file: bool = False):
+def build_parser(description: str | None, *, phase_flags: bool = False, hgnc_file: bool = False):
     # allow_abbrev would silently accept a truncated typo like --skip-clusterin
     parser = argparse.ArgumentParser(description=description, allow_abbrev=False)
     for view in VIEWS:
@@ -33,7 +34,7 @@ def build_parser(description: str, *, phase_flags: bool = False, hgnc_file: bool
     return parser
 
 
-def parse_args(description: str, **kwargs) -> argparse.Namespace:
+def parse_args(description: str | None, **kwargs) -> argparse.Namespace:
     return build_parser(description, **kwargs).parse_args()
 
 

@@ -2,20 +2,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import MenuIcon from "@mui/icons-material/Menu"
 import { IconButton, Menu, MenuItem, Tab, Tabs } from "@mui/material"
+import { useCapabilities } from "@/api/hooks/useCapabilities"
 import { routes } from "@/routes"
 
-function useActiveRoute() {
+function useVisibleRoutes() {
+  const { data } = useCapabilities()
+  return useMemo(
+    () => routes.filter((r) => !r.capability || data?.[r.capability] !== false),
+    [data],
+  )
+}
+
+function useActiveRoute(visible: typeof routes) {
   const { pathname } = useLocation()
-  return routes.findIndex((r) => pathname.startsWith(r.path))
+  return visible.findIndex((r) => pathname.startsWith(r.path))
 }
 
 export function AppNavMenu() {
   const navigate = useNavigate()
-  const activeIndex = useActiveRoute()
+  const visible = useVisibleRoutes()
+  const activeIndex = useActiveRoute(visible)
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   return (
@@ -24,7 +34,7 @@ export function AppNavMenu() {
         <MenuIcon />
       </IconButton>
       <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
-        {routes.map((r, i) => (
+        {visible.map((r, i) => (
           <MenuItem
             key={r.path}
             selected={activeIndex === i}
@@ -43,16 +53,17 @@ export function AppNavMenu() {
 
 export function AppNavTabs() {
   const navigate = useNavigate()
-  const activeIndex = useActiveRoute()
+  const visible = useVisibleRoutes()
+  const activeIndex = useActiveRoute(visible)
 
   return (
     <Tabs
       value={activeIndex === -1 ? false : activeIndex}
-      onChange={(_, i: number) => navigate(routes[i].path)}
+      onChange={(_, i: number) => navigate(visible[i].path)}
       textColor="primary"
       indicatorColor="primary"
     >
-      {routes.map((r) => (
+      {visible.map((r) => (
         <Tab key={r.path} label={r.label} />
       ))}
     </Tabs>

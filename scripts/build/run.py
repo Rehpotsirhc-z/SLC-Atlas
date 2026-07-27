@@ -24,7 +24,11 @@ STEP_FOR_VIEW = {
     "clustering": "build_clustering",
     "conservation": "build_conservation",
     "expression": "build_expression",
+    "structure": "build_structure",
 }
+
+# dataset/ and raw/ sit under DATA_DIR but are never served
+UNSERVED_DIRS = {"dataset", "raw"}
 
 
 def main() -> None:
@@ -36,8 +40,11 @@ def main() -> None:
             run_script(SCRIPT_DIR / f"{step}.py")
 
     print("\nBuild complete. App-served parquets:")
-    for parquet in sorted(DATA_DIR.glob("*.parquet")):
-        print(f"  {parquet.name}  ({parquet.stat().st_size / 1e6:.1f} MB)")
+    for parquet in sorted(DATA_DIR.rglob("*.parquet")):
+        relative = parquet.relative_to(DATA_DIR)
+        if UNSERVED_DIRS & set(relative.parts):
+            continue
+        print(f"  {relative}  ({parquet.stat().st_size / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":

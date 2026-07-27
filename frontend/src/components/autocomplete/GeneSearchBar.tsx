@@ -13,8 +13,10 @@ import { VirtualListbox } from "@/components/autocomplete/VirtualListbox"
 
 interface SearchBarProps {
   genes: Gene[]
-  value: string
-  onChange: (value: string) => void
+  /** Only needed by views that filter their own content by the query text */
+  value?: string
+  onChange?: (value: string) => void
+  width?: number | string
 }
 
 function buildIndex(genes: Gene[]) {
@@ -27,7 +29,12 @@ function buildIndex(genes: Gene[]) {
   }))
 }
 
-export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
+export default function GeneSearchBar({
+  genes,
+  value = "",
+  onChange = () => {},
+  width = 360,
+}: SearchBarProps) {
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const [inputValue, setInputValue] = useState(value)
 
@@ -92,7 +99,7 @@ export default function SearchBar({ genes, value, onChange }: SearchBarProps) {
     <Autocomplete<Gene, false, false, true>
       freeSolo
       size="small"
-      sx={{ width: 360, "& .MuiAutocomplete-clearIndicator": { color: "text.secondary" } }}
+      sx={{ width, "& .MuiAutocomplete-clearIndicator": { color: "text.secondary" } }}
       disableListWrap
       options={options}
       inputValue={inputValue}
