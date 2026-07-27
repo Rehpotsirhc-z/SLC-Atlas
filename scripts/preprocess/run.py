@@ -31,7 +31,7 @@ STAGES = [
     ["fetch_orthologs", "fetch_species_tree"],
     ["fetch_uniprot_map"],
     ["fetch_protein_features", "fetch_structures"],
-    ["download_models"],
+    ["download_models", "fetch_confidence"],
 ]
 
 CONSUMED_BY = {
@@ -43,6 +43,7 @@ CONSUMED_BY = {
     "fetch_protein_features": {"structure"},
     "fetch_structures": {"structure"},
     "download_models": {"structure"},
+    "fetch_confidence": {"structure"},
 }
 
 

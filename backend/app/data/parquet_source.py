@@ -83,7 +83,10 @@ class ParquetSource:
         return lf.collect()
 
     def get_structure(self, gene_id: str | None = None) -> pl.DataFrame | None:
-        return self._scan_by_gene(STRUCTURE_FILE, gene_id)
+        df = self._scan_by_gene(STRUCTURE_FILE, gene_id)
+        if df is not None and gene_id is None and "plddt" in df.columns:
+            return df.drop("plddt")
+        return df
 
     def get_protein_features(self, gene_id: str | None = None) -> pl.DataFrame | None:
         return self._scan_by_gene(FEATURES_FILE, gene_id)

@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "../client"
 
-/** Which optional views the served dataset was built with */
+// Which optional views the served dataset was built with
 export const useCapabilities = () =>
   useQuery({
     queryKey: ["capabilities"],

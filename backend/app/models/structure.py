@@ -2,7 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Literal
+
 from pydantic import BaseModel
+
+FeatureType = Literal[
+    "transmembrane",
+    "intramembrane",
+    "topological_domain",
+    "binding_site",
+    "active_site",
+    "glycosylation",
+    "disulfide_bond",
+    "signal_peptide",
+]
 
 
 class Structure(BaseModel):
@@ -29,23 +42,31 @@ class Structure(BaseModel):
     model_created: str | None = None
     alphafill_page_url: str | None = None
     n_transmembrane: int = 0
+    n_intramembrane: int = 0
     n_binding_sites: int = 0
+    n_binding_residues: int = 0
     n_experimental: int = 0
     best_pdb_id: str | None = None
     best_method: str | None = None
     best_resolution: float | None = None
 
 
+class StructureDetail(Structure):
+    """One gene, with the per-residue AlphaFold confidence the topology figure plots."""
+
+    plddt: list[int] | None = None
+
+
 class ProteinFeature(BaseModel):
     gene_id: str
     uniprot_accession: str | None = None
-    # transmembrane | topological_domain | binding_site | active_site
-    feature_type: str
+    feature_type: FeatureType
     start: int
     end: int
     description: str | None = None
     ligand_name: str | None = None
     ligand_chebi: str | None = None
+    ligand_label: int | None = None
 
 
 class ExperimentalStructure(BaseModel):

@@ -31,10 +31,13 @@ The structure steps take =genes.tsv= as their only input and generate the rest, 
 | File               | Columns / format                                                                                     |
 |--------------------+------------------------------------------------------------------------------------------------------|
 | =uniprot_map.tsv=    | gene_id, symbol, uniprot_accession, uniprot_id, uniprot_length, seq_agreement, id_route              |
-| =features.tsv=       | gene_id, uniprot_accession, feature_type, start, end, description, ligand_name, ligand_chebi         |
+| =features.tsv=       | gene_id, uniprot_accession, feature_type, start, end, description, ligand_name, ligand_chebi, ligand_label |
 | =structures.tsv=     | gene_id, uniprot_accession, afdb_entry_id, afdb_version, model_url, ..., alphafill_page_url          |
 | =experimental.tsv=   | gene_id, uniprot_accession, pdb_id, method, resolution, coverage, chains, ligand_ccd, ...            |
+| =confidence.parquet= | gene_id, uniprot_accession, plddt (one 0-100 score per residue)                                      |
 | =models/=            | one binary-CIF coordinate file per accession (~97 MB for 462 genes)                                  |
+
+=feature_type= is one of =transmembrane=, =intramembrane=, =topological_domain=, =binding_site=, =active_site=, =glycosylation=, =disulfide_bond=, =signal_peptide=. The last three are never drawn: each pins its residue to the non-cytoplasmic face, which is how the figure orients a protein UniProt gives no topological domains for. =build_structure.py= reports any other value and the figure ignores it.
 
 ** Prerequisites (raw downloads you provide)
 Place these in =backend/data/raw/= before running preprocess:
@@ -76,9 +79,10 @@ On a fresh run the preprocess phase stops after writing =reference/family_names.
 - =fetch_orthologs.py= :: Fetches Ensembl Compara orthologs for the species in =reference/species.tsv= and =dataset/orthologs.tsv=.
 - =fetch_species_tree.py= :: Fetch species dendrogram via a swappable source (=species_tree_sources.py=; default Ensembl Compara). Stores output in =dataset/species_tree.nwk= and =dataset/species.tsv=.
 - =fetch_uniprot_map.py= :: Maps =dataset/genes.tsv= gene IDs to UniProt accessions (HGNC route via =raw/annotation.tsv= when present, otherwise Ensembl), cross-checks against =protein.fasta=, and writes =dataset/structure/uniprot_map.tsv=. Hand fixes go in =reference/uniprot_overrides.tsv=.
-- =fetch_protein_features.py= :: Transmembrane, topological-domain, binding-site and active-site features from UniProt into =dataset/structure/features.tsv=, in UniProt canonical numbering.
+- =fetch_protein_features.py= :: Transmembrane, intramembrane, topological-domain, binding-site and active-site features from UniProt into =dataset/structure/features.tsv=, in UniProt canonical numbering, plus the glycosylation, disulfide and signal-peptide features that orient a protein with no topological domains.
 - =fetch_structures.py= :: 3D-Beacons plus the AlphaFold DB API into =dataset/structure/structures.tsv= and =experimental.tsv=. Model URLs are stored as the APIs report them, never rebuilt, because AlphaFold retires old version suffixes.
 - =download_models.py= :: Downloads each predicted model into =dataset/structure/models/=, skipping anything already on disk.
+- =fetch_confidence.py= :: Per-residue AlphaFold confidence (pLDDT) into =dataset/structure/confidence.parquet=, which the topology figure plots along the residue axis.
 
 ** Build steps (=scripts/build/=, general)
 - =build_gene_tables.py= :: Converts =dataset/genes.tsv= and =transcripts.tsv= to =genes.parquet= and =transcripts.parquet=.
@@ -87,7 +91,7 @@ On a fresh run the preprocess phase stops after writing =reference/family_names.
   - =tree_table.py= :: UPGMA/family-grouping to flat node rows plus Newick; owns =CLUSTERING_SCHEMA=.
 - =build_conservation.py= :: Converts a gene × species matrix and species-tree node table to =conservation.parquet= and =species_tree.parquet=.
 - =build_expression.py= :: Melts the sample-level GTEx TPM matrix and aggregates mean TPM per gene × tissue (both the 31 coarse GTEx tissues and, within Brain, the ~13 fine-grained subregions) into =expression.parquet=.
-- =build_structure.py= :: Joins =dataset/structure/= into =structure/{structure,features,experimental,sources}.parquet= and copies the coordinate files to =structure/models/=. Writes nothing when =dataset/structure/= is absent, and the API then reports the structure capability as unavailable.
+- =build_structure.py= :: Joins =dataset/structure/= into =structure/{structure,features,experimental,sources}.parquet= and copies the coordinate files to =structure/models/=. Collapses the per-segment rows 3D-Beacons returns to one row per PDB entry, and drops a pLDDT array whose length disagrees with =uniprot_length=, since the two cannot then be aligned. Writes nothing when =dataset/structure/= is absent, and the API then reports the structure capability as unavailable.
 
 ** Curated inputs (=reference/=)
 - =family_names.md= :: Per-family display names written by =fetch_family_names.py=. Reorder items (the first entry is used).

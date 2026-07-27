@@ -25,23 +25,33 @@ export interface StructureRecord {
   model_created: string | null
   alphafill_page_url: string | null
   n_transmembrane: number
+  n_intramembrane: number
   n_binding_sites: number
+  n_binding_residues: number
   n_experimental: number
   best_pdb_id: string | null
   best_method: string | null
   best_resolution: number | null
 }
 
-export type SeqAgreement = "exact" | "isoform" | "differs" | "unknown"
-
-export const SEQ_AGREEMENT_LABEL: Record<SeqAgreement, string> = {
-  exact: "Matches Ensembl canonical",
-  isoform: "Matches an Ensembl isoform",
-  differs: "Differs from Ensembl canonical",
-  unknown: "No Ensembl protein to compare",
+export interface StructureDetail extends StructureRecord {
+  // Per-residue confidence, index 0 = residue 1, carried only by the per-gene endpoint
+  plddt: number[] | null
 }
 
-export type FeatureType = "transmembrane" | "topological_domain" | "binding_site" | "active_site"
+export type SeqAgreement = "exact" | "isoform" | "differs" | "unknown"
+
+export type FeatureType =
+  | "transmembrane"
+  | "intramembrane"
+  | "topological_domain"
+  | "binding_site"
+  | "active_site"
+  // Not drawn: each one pins its residue to the non-cytoplasmic face, which is how the
+  // figure works out which way round the membrane sits
+  | "glycosylation"
+  | "disulfide_bond"
+  | "signal_peptide"
 
 export interface ProteinFeature {
   gene_id: string
@@ -52,6 +62,8 @@ export interface ProteinFeature {
   description: string | null
   ligand_name: string | null
   ligand_chebi: string | null
+  // Distinguishes separate sites of the same ligand, e.g. Na(+) site 1 vs site 2
+  ligand_label: number | null
 }
 
 export interface ExperimentalStructure {
@@ -78,10 +90,14 @@ export interface DataSourceRecord {
   url: string | null
 }
 
-/** The four AlphaFold pLDDT bands, ordered most to least confident */
+// AlphaFold's pLDDT bands, most to least confident, in its own wording
 export const PLDDT_BANDS = [
-  { key: "frac_plddt_very_high", label: "Very high (>90)", color: "#0053d6" },
-  { key: "frac_plddt_confident", label: "Confident (70-90)", color: "#65cbf3" },
-  { key: "frac_plddt_low", label: "Low (50-70)", color: "#ffdb13" },
-  { key: "frac_plddt_very_low", label: "Very low (<50)", color: "#ff7d45" },
-] as const satisfies readonly { key: keyof StructureRecord; label: string; color: string }[]
+  { min: 90, label: "very high confidence" },
+  { min: 70, label: "confident" },
+  { min: 50, label: "low confidence" },
+  { min: 0, label: "very low, treat as unreliable" },
+] as const
+
+export function plddtBand(score: number): string {
+  return (PLDDT_BANDS.find((band) => score >= band.min) ?? PLDDT_BANDS[3]).label
+}

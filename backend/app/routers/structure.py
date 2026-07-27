@@ -12,6 +12,7 @@ from ..models.structure import (
     ExperimentalStructure,
     ProteinFeature,
     Structure,
+    StructureDetail,
 )
 
 router = APIRouter()
@@ -47,7 +48,7 @@ def get_model(filename: str, source: DataSource = Depends(get_source)):
     )
 
 
-@router.get("/structure/{gene_id}", response_model=Structure)
+@router.get("/structure/{gene_id}", response_model=StructureDetail)
 def get_structure(gene_id: str, source: DataSource = Depends(get_source)):
     df = require(source.get_structure(gene_id))
     if df.is_empty():

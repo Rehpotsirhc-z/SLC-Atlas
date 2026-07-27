@@ -16,7 +16,7 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
-# binary-CIF coordinates compress about threefold
+# Binary-CIF coordinates compress about threefold
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.include_router(genes.router, prefix="/api")

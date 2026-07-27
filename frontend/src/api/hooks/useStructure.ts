@@ -8,6 +8,7 @@ import type {
   DataSourceRecord,
   ExperimentalStructure,
   ProteinFeature,
+  StructureDetail,
   StructureRecord,
 } from "@/types/structure"
 
@@ -15,6 +16,13 @@ export const useStructures = () =>
   useQuery({
     queryKey: ["structure"],
     queryFn: () => api.get<StructureRecord[]>("/structure"),
+  })
+
+export const useStructureDetail = (geneId: string | null) =>
+  useQuery({
+    queryKey: ["structure", geneId, "detail"],
+    queryFn: () => api.get<StructureDetail>(`/structure/${geneId}`),
+    enabled: geneId != null,
   })
 
 export const useProteinFeatures = (geneId: string | null) =>

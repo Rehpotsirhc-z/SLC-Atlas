@@ -7,6 +7,10 @@
 Positions are UniProt canonical residue numbering, which is what the structure models
 are indexed by; uniprot_map.tsv's seq_agreement column records where that differs from
 the Ensembl canonical protein the rest of the dataset uses.
+
+Glycosylation, disulfide and signal-peptide features come along because they pin a stretch
+of chain to the non-cytoplasmic face, which is the only evidence of which way round the
+membrane sits for the third of the family UniProt gives no topological domains.
 """
 
 import sys
@@ -29,9 +33,13 @@ ACCESSION_BATCH = 100  # /uniprotkb/accessions hard limit
 # UniProt's JSON feature labels -> our enum
 FEATURE_TYPES = {
     "Transmembrane": "transmembrane",
+    "Intramembrane": "intramembrane",
     "Topological domain": "topological_domain",
     "Binding site": "binding_site",
     "Active site": "active_site",
+    "Glycosylation": "glycosylation",
+    "Disulfide bond": "disulfide_bond",
+    "Signal": "signal_peptide",
 }
 
 FIELDS = [
@@ -43,6 +51,8 @@ FIELDS = [
     "description",
     "ligand_name",
     "ligand_chebi",
+    # Separates two sites of the same ligand, e.g. Na(+) label 1 vs label 2
+    "ligand_label",
 ]
 
 SCHEMA = {f: pl.Int64 if f in ("start", "end") else pl.Utf8 for f in FIELDS}
@@ -55,13 +65,23 @@ def fetch_features(accessions: list[str]) -> dict[str, list[dict]]:
         chunk = accessions[i : i + ACCESSION_BATCH]
         payload = get_json(
             f"{REST}/uniprotkb/accessions?accessions={','.join(chunk)}"
-            f"&format=json&fields=accession,ft_transmem,ft_topo_dom,ft_binding,ft_act_site"
+            f"&format=json&fields=accession,ft_transmem,ft_intramem,ft_topo_dom"
+            f",ft_binding,ft_act_site,ft_signal,ft_carbohyd,ft_disulfid"
         )
         for entry in payload.get("results", []):
             out[entry["primaryAccession"]] = entry.get("features", [])
-        print(f"  {min(i + ACCESSION_BATCH, len(accessions))}/{len(accessions)} accessions",
-              file=sys.stderr)
+        print(
+            f"  {min(i + ACCESSION_BATCH, len(accessions))}/{len(accessions)} accessions",
+            file=sys.stderr,
+        )
     return out
+
+
+def spans(feature_type: str, start: int, end: int) -> list[tuple[int, int]]:
+    """A disulfide's two positions are the bonded cysteines, not the ends of a range."""
+    if feature_type == "disulfide_bond":
+        return [(start, start), (end, end)]
+    return [(start, end)]
 
 
 def feature_rows(gene_id: str, accession: str, features: list[dict]) -> list[dict]:
@@ -70,17 +90,25 @@ def feature_rows(gene_id: str, accession: str, features: list[dict]) -> list[dic
         feature_type = FEATURE_TYPES.get(feature["type"])
         if feature_type is None:
             continue
+        location = feature["location"]
+        start, end = location["start"]["value"], location["end"]["value"]
+        if start is None or end is None:
+            continue
         ligand = feature.get("ligand") or {}
-        rows.append({
-            "gene_id": gene_id,
-            "uniprot_accession": accession,
-            "feature_type": feature_type,
-            "start": feature["location"]["start"]["value"],
-            "end": feature["location"]["end"]["value"],
-            "description": feature.get("description") or None,
-            "ligand_name": ligand.get("name"),
-            "ligand_chebi": ligand.get("id"),
-        })
+        for span_start, span_end in spans(feature_type, start, end):
+            rows.append(
+                {
+                    "gene_id": gene_id,
+                    "uniprot_accession": accession,
+                    "feature_type": feature_type,
+                    "start": span_start,
+                    "end": span_end,
+                    "description": feature.get("description") or None,
+                    "ligand_name": ligand.get("name"),
+                    "ligand_chebi": ligand.get("id"),
+                    "ligand_label": ligand.get("label"),
+                }
+            )
     return sorted(rows, key=lambda r: (r["start"], r["end"]))
 
 

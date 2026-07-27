@@ -47,6 +47,7 @@ STRUCTURE_FIELDS = [
     "frac_plddt_low",
     "frac_plddt_very_low",
     "model_created",
+    "confidence_url",
     "alphafill_url",
     "alphafill_page_url",
 ]
@@ -118,6 +119,7 @@ def structure_row(gene_id: str, accession: str, payload: dict) -> dict:
         "frac_plddt_low": afdb.get("fractionPlddtLow"),
         "frac_plddt_very_low": afdb.get("fractionPlddtVeryLow"),
         "model_created": afdb.get("modelCreatedDate") or beacon.get("created"),
+        "confidence_url": afdb.get("plddtDocUrl"),
         "alphafill_url": alphafill.get("model_url"),
         "alphafill_page_url": alphafill.get("model_page_url"),
     }
