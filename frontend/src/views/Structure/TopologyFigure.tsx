@@ -177,6 +177,7 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
                   fill={crosses ? helixFill : alpha(helixFill, 0.45)}
                   stroke={cylinder.unresolved ? chainStroke : crosses ? "none" : helixFill}
                   strokeDasharray={cylinder.unresolved ? TRACK.unresolvedDash : undefined}
+                  strokeWidth={cylinder.unresolved ? TRACK.chainWidth : undefined}
                 />
                 {cylinder.showLabel && (
                   <text
