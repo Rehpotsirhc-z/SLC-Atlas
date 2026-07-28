@@ -14,11 +14,12 @@ import {
   useTheme,
 } from "@mui/material"
 import { useCapability } from "@/api/hooks/useCapabilities"
-import InfoPopover from "@/components/InfoPopover"
+import InfoTooltip from "@/components/InfoTooltip"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
+import { capBoxSx } from "@/theme"
 import { figureExportHandlers } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
 import {
@@ -196,11 +197,11 @@ export default function Structure() {
                         sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0, overflowX: "auto" }}
                       >
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="overline" color="primary">
+                          <Typography variant="overline" color="primary" sx={capBoxSx}>
                             Membrane topology
                           </Typography>
-                          <InfoPopover label="How to read the topology diagram">
-                            <Typography variant="body2">
+                          <InfoTooltip label="How to read the topology diagram">
+                            <Typography variant="caption" component="p">
                               The line is the protein chain, drawn left to right from the N- to the
                               C-terminus along the residue axis. Solid cylinders are transmembrane
                               helices, numbered in order; half-height paler ones dip into the
@@ -210,19 +211,19 @@ export default function Structure() {
                               how it threads through; a dashed stretch is one whose face
                               UniProt&apos;s own annotation leaves unresolved.
                             </Typography>
-                            <Typography variant="body2">
+                            <Typography variant="caption" component="p">
                               Bars mark the residues that bind a ligand, one row per site, drawn to
                               the width of the annotation. The strip underneath is AlphaFold&apos;s
                               per-residue confidence (pLDDT), deeper colour meaning a more reliable
                               prediction; hover it for the score at any residue. It is absent when
                               the model is of a different sequence version than the annotation.
                             </Typography>
-                            <Typography variant="body2">
+                            <Typography variant="caption" component="p">
                               The ruler at the bottom is the amino-acid position along the protein,
                               counted from the N-terminus. It is the horizontal scale for everything
                               above it, which is what the faint vertical lines mark.
                             </Typography>
-                          </InfoPopover>
+                          </InfoTooltip>
                         </Stack>
                         {features?.length && selected.uniprot_length ? (
                           <TopologyFigure
@@ -242,24 +243,24 @@ export default function Structure() {
                         data-testid="model-column"
                         sx={{ flex: sideBySide ? "4 1 0" : "none", minWidth: 0 }}
                       >
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="overline" color="primary">
+                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
+                          <Typography variant="overline" color="primary" sx={capBoxSx}>
                             3D model
                           </Typography>
-                          <InfoPopover label="How to read the 3D model">
-                            <Typography variant="body2">
+                          <InfoTooltip label="How to read the 3D model">
+                            <Typography variant="caption" component="p">
                               The predicted model opens first, coloured by AlphaFold&apos;s
                               per-residue confidence: the same score the strip under the topology
                               figure shows. Every gene has one, and its residue numbering matches
                               the figure exactly.
                             </Typography>
-                            <Typography variant="body2">
+                            <Typography variant="caption" component="p">
                               Drag to rotate, scroll to zoom. Experimental structures, where they
                               exist, are listed below and open in this panel; they are measured
                               rather than predicted, but often cover only part of the chain and are
                               numbered in their own residues.
                             </Typography>
-                          </InfoPopover>
+                          </InfoTooltip>
                         </Stack>
                         <ModelViewerPanel
                           source={modelSource}
