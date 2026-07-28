@@ -12,7 +12,7 @@ import {
   type LigandTotal,
   type ResidueSpan,
 } from "./bindingSites"
-import { confidenceStops, type ConfidenceStop } from "./confidenceStops"
+import { confidenceBars, type ConfidenceBar } from "./confidenceBars"
 import { TRACK } from "./constants"
 import { laneLabel, membraneFaces, type Side } from "./membraneSides"
 import {
@@ -109,7 +109,7 @@ export interface TopologyLayout {
   arcs: ChainArc[]
   sites: PlacedSite[]
   ligands: LigandTotal[]
-  confidence: ConfidenceStop[]
+  confidence: ConfidenceBar[]
   ticks: AxisTick[]
   termini: { label: "N" | "C"; x: number; y: number }[]
   sideLabels: Record<Side, string>
@@ -181,8 +181,7 @@ export function layoutTopology(
 ): TopologyLayout {
   const plotLeft = TRACK.gutter + TRACK.padX
   const span = Math.max(length - 1, 1)
-  const available = Math.max(width - TRACK.padRight - plotLeft, 1)
-  const inner = Math.min(available, span * TRACK.maxPxPerResidue)
+  const inner = Math.max(width - TRACK.padRight - plotLeft, 1)
   const plotRight = plotLeft + inner
   const toX = (residue: number) => plotLeft + ((residue - 1) / span) * inner
   const perResidue = inner / span
@@ -218,7 +217,7 @@ export function layoutTopology(
   const sites = bindingSites(features)
   const bindsTop = insideBottom + (sites.length ? TRACK.laneGap : 0)
   const bindsHeight = sites.length * TRACK.siteRow
-  const confidence = confidenceStops(plddt, length)
+  const confidence = confidenceBars(plddt, length)
   const confidenceTop = bindsTop + bindsHeight + (confidence.length ? TRACK.laneGap : 0)
   const confidenceHeight = confidence.length ? TRACK.confidenceLane : 0
   const axisY = confidenceTop + confidenceHeight + TRACK.axisGap

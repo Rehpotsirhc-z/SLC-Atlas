@@ -89,15 +89,3 @@ export interface DataSourceRecord {
   license_spdx: string | null
   url: string | null
 }
-
-// AlphaFold's pLDDT bands, most to least confident, in its own wording
-export const PLDDT_BANDS = [
-  { min: 90, label: "very high confidence" },
-  { min: 70, label: "confident" },
-  { min: 50, label: "low confidence" },
-  { min: 0, label: "very low, treat as unreliable" },
-] as const
-
-export function plddtBand(score: number): string {
-  return (PLDDT_BANDS.find((band) => score >= band.min) ?? PLDDT_BANDS[3]).label
-}

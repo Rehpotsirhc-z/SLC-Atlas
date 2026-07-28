@@ -4,8 +4,9 @@
 
 import { doomColors, type ThemeMode } from "@/theme"
 
-// Blue clashes with the helix pills, magenta and violet with the confidence ramp below
-const LIGAND_HUES = ["orange", "green", "red", "yellow", "teal", "darkCyan"] as const
+// Blue clashes with the helix pills, and the confidence bands below take blue, cyan,
+// yellow and orange
+const LIGAND_HUES = ["magenta", "green", "violet", "red", "teal", "darkCyan"] as const
 
 // Assigned by list position rather than hashed, so no gene in the family repeats a colour
 export function ligandColorAt(index: number, mode: ThemeMode): string {

@@ -4,8 +4,8 @@
 
 import { Typography, useTheme } from "@mui/material"
 import HoverTooltip from "@/components/HoverTooltip"
-import { plddtBand } from "@/types/structure"
 import { clipSpans, formatSpans, siteName } from "./bindingSites"
+import { plddtBand } from "./confidenceColor"
 import type { Hover } from "./useTopologyHover"
 import type { TopologyLayout } from "./topologyLayout"
 

@@ -202,18 +202,20 @@ export default function Structure() {
                           </Typography>
                           <InfoTooltip label="How to read the topology diagram">
                             <Typography variant="caption" component="p">
-                              The curve threading the figure is the protein chain, N-terminus at
-                              left. The solid cylinders in the membrane band are transmembrane
-                              helices, numbered in order; the paler, half-height cylinders sit
-                              inside the membrane without crossing it. Between cylinders the chain
-                              loops onto whichever side of the membrane UniProt puts that stretch
-                              on, drawn dashed where UniProt leaves the side undetermined.
+                              The x axis is the residue number, so every mark sits at the residues
+                              it covers and a helix is as wide as it is long. The curve threading
+                              the figure is the protein chain, N-terminus at left. The solid
+                              cylinders in the membrane band are transmembrane helices, numbered in
+                              order; the paler, half-height cylinders sit inside the membrane
+                              without crossing it. Between cylinders the chain loops onto whichever
+                              side of the membrane UniProt puts that stretch on, drawn dashed where
+                              UniProt leaves the side undetermined.
                             </Typography>
                             <Typography variant="caption" component="p">
                               Each row under Binds is one binding site; the blocks in it are the
                               residues that touch the ligand named in the key below. The Confidence
-                              strip is AlphaFold&apos;s per-residue score, darker where the
-                              prediction is stronger; hover it for the score at a residue.
+                              strip is AlphaFold&apos;s per-residue score, banded in the same four
+                              colours as the 3D model; hover it for the score at a residue.
                             </Typography>
                           </InfoTooltip>
                         </Stack>
@@ -242,9 +244,9 @@ export default function Structure() {
                           <InfoTooltip label="How to read the 3D model">
                             <Typography variant="caption" component="p">
                               The predicted model opens first, coloured by AlphaFold&apos;s
-                              per-residue confidence: the same score the strip under the topology
-                              figure shows. Every gene has one, and its residue numbering matches
-                              the figure exactly.
+                              per-residue confidence: the same score, in the same colours, as the
+                              Confidence strip under the topology figure. Every gene has one, and
+                              its residue numbering matches the figure exactly.
                             </Typography>
                             <Typography variant="caption" component="p">
                               Drag to rotate, scroll to zoom. Experimental structures, where they

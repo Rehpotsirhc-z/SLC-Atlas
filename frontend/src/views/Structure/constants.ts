@@ -18,9 +18,6 @@ export const TRACK = {
   confidenceLane: 20,
   axisGap: 12,
   axisLabels: 30,
-  // Pills are true to the residue axis, so a short protein is left unstretched rather than
-  // the glyph being capped, which would put a helix and its binding ticks at two scales
-  maxPxPerResidue: 4,
   helixMinWidth: 12,
   // Cap on the rounded cap so a wide helix reads as a rounded rectangle, not an ellipse
   capRadius: 13,

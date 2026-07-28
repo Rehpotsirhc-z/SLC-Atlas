@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useId, type RefObject } from "react"
+import { type RefObject } from "react"
 import { alpha, Box, useTheme } from "@mui/material"
-import { useConfidenceColor } from "./confidenceColor"
+import { confidenceColor } from "./confidenceColor"
 import { TRACK } from "./constants"
 import { ligandColorAt } from "./ligandColor"
 import TopologyLegend from "./TopologyLegend"
@@ -20,10 +20,9 @@ interface Props {
 
 export default function TopologyFigure({ length, plddt, topology, svgRef }: Props) {
   const { palette, custom } = useTheme()
-  const confidenceColor = useConfidenceColor()
-  const confidenceGradientId = useId()
 
   const { layout, hover, track, clear, highlight, dimmed, select, clearFocus } = topology
+  const plotWidth = layout.plotRight - layout.plotLeft
 
   const helixFill = palette.primary.main
   const membraneFill = alpha(palette.text.primary, palette.mode === "dark" ? 0.09 : 0.06)
@@ -253,40 +252,40 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
           })}
 
           {layout.confidenceHeight > 0 && (
-            <>
-              <defs>
-                <linearGradient
-                  id={confidenceGradientId}
-                  gradientUnits="userSpaceOnUse"
-                  x1={layout.plotLeft}
-                  x2={layout.plotRight}
-                >
-                  {layout.confidence.map((stop) => (
-                    <stop
-                      key={stop.offset}
-                      offset={stop.offset}
-                      stopColor={confidenceColor(stop.score)}
-                    />
-                  ))}
-                </linearGradient>
-              </defs>
+            <g
+              onMouseMove={(e) => {
+                const residue = residueAt(e)
+                const score = residue && plddt ? plddt[residue - 1] : undefined
+                if (residue && score != null) {
+                  track(e, { kind: "confidence", residue, score })
+                }
+              }}
+              onMouseLeave={clear}
+            >
+              {layout.confidence.map((bar) => {
+                const x = layout.plotLeft + bar.from * plotWidth
+                const end = layout.plotLeft + bar.to * plotWidth
+                return (
+                  <rect
+                    key={bar.from}
+                    x={x}
+                    y={layout.confidenceTop}
+                    // Half a unit of overlap, or antialiasing draws a seam between the bars
+                    width={end - x + (bar.to < 1 ? 0.5 : 0)}
+                    height={layout.confidenceHeight}
+                    fill={confidenceColor(bar.score)}
+                  />
+                )
+              })}
               <rect
                 x={layout.plotLeft}
                 y={layout.confidenceTop}
-                width={layout.plotRight - layout.plotLeft}
+                width={plotWidth}
                 height={layout.confidenceHeight}
-                fill={`url(#${confidenceGradientId})`}
+                fill="none"
                 stroke={membraneEdge}
-                onMouseMove={(e) => {
-                  const residue = residueAt(e)
-                  const score = residue && plddt ? plddt[residue - 1] : undefined
-                  if (residue && score != null) {
-                    track(e, { kind: "confidence", residue, score })
-                  }
-                }}
-                onMouseLeave={clear}
               />
-            </>
+            </g>
           )}
 
           <line
