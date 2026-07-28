@@ -20,13 +20,13 @@ import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { figureExportHandlers } from "@/utils/exportFigure"
+import { useElementSize } from "@/utils/useElementSize"
 import {
   COLUMN_GAP,
   CONTENT_PADDING_PX,
   MIN_CONTENT_WIDTH,
   PREFERRED_CONTENT_WIDTH,
   SIDE_BY_SIDE_MIN_WIDTH,
-  TOPOLOGY_FRACTION,
   TRACK,
 } from "./constants"
 import ExperimentalTable from "./ExperimentalTable"
@@ -74,6 +74,8 @@ export default function Structure() {
     enabled: !isLoading && !isMobile,
   })
 
+  const [figureRef, figureBox] = useElementSize<HTMLDivElement>("content")
+
   useEffect(() => {
     if (!isLoading && !isMobile) expandRail(PREFERRED_CONTENT_WIDTH)
   }, [isLoading, isMobile, expandRail])
@@ -98,8 +100,8 @@ export default function Structure() {
 
   const paneWidth = contentWidth - CONTENT_PADDING_PX
   const sideBySide = !isMobile && paneWidth >= SIDE_BY_SIDE_MIN_WIDTH
-  const figureWidth = sideBySide ? (paneWidth - COLUMN_GAP) * TOPOLOGY_FRACTION : paneWidth
-  const trackWidth = Math.max(figureWidth, TRACK.minWidth)
+  // Floored so a fractional column width cannot leave the figure a sub-pixel too wide
+  const trackWidth = Math.max(Math.floor(figureBox.w), TRACK.minWidth)
 
   const topology = useTopologyState(
     features ?? [],
@@ -189,6 +191,7 @@ export default function Structure() {
                       }}
                     >
                       <Box
+                        ref={figureRef}
                         data-testid="topology-column"
                         sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0, overflowX: "auto" }}
                       >

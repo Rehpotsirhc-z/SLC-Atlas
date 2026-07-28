@@ -57,9 +57,6 @@ export const SEARCH_WIDTH = 360
 // drops below it instead of squeezing both
 export const SIDE_BY_SIDE_MIN_WIDTH = 980
 export const COLUMN_GAP = 16
-// Share of the row the topology figure takes when the two sit side by side, matching the
-// flex grow ratio they are laid out with
-export const TOPOLOGY_FRACTION = 0.6
 
 export const MIN_CONTENT_WIDTH = TRACK.minWidth + 40
 // Width the detail pane wants before the rail is allowed to claim the leftover space, which
