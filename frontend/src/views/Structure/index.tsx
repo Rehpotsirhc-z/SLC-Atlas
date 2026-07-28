@@ -33,7 +33,7 @@ import {
 import ExperimentalTable from "./ExperimentalTable"
 import IdentityCard from "./IdentityCard"
 import LinkedResidues from "./LinkedResidues"
-import ModelCaveats from "./ModelCaveats"
+import ModelLinks from "./ModelLinks"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
 import StructureSummary from "./StructureSummary"
@@ -202,26 +202,18 @@ export default function Structure() {
                           </Typography>
                           <InfoTooltip label="How to read the topology diagram">
                             <Typography variant="caption" component="p">
-                              The line is the protein chain, drawn left to right from the N- to the
-                              C-terminus along the residue axis. Solid cylinders are transmembrane
-                              helices, numbered in order; half-height paler ones dip into the
-                              membrane and leave on the side they entered. The band behind them is
-                              the membrane, named beneath the figure. The chain loops out above or
-                              below depending on which face that stretch sits on, so you can follow
-                              how it threads through; a dashed stretch is one whose face
-                              UniProt&apos;s own annotation leaves unresolved.
+                              The curve threading the figure is the protein chain, N-terminus at
+                              left. The solid cylinders in the membrane band are transmembrane
+                              helices, numbered in order; the paler, half-height cylinders sit
+                              inside the membrane without crossing it. Between cylinders the chain
+                              loops onto whichever side of the membrane UniProt puts that stretch
+                              on, drawn dashed where UniProt leaves the side undetermined.
                             </Typography>
                             <Typography variant="caption" component="p">
-                              Bars mark the residues that bind a ligand, one row per site, drawn to
-                              the width of the annotation. The strip underneath is AlphaFold&apos;s
-                              per-residue confidence (pLDDT), deeper colour meaning a more reliable
-                              prediction; hover it for the score at any residue. It is absent when
-                              the model is of a different sequence version than the annotation.
-                            </Typography>
-                            <Typography variant="caption" component="p">
-                              The ruler at the bottom is the amino-acid position along the protein,
-                              counted from the N-terminus. It is the horizontal scale for everything
-                              above it, which is what the faint vertical lines mark.
+                              Each row under Binds is one binding site; the blocks in it are the
+                              residues that touch the ligand named in the key below. The Confidence
+                              strip is AlphaFold&apos;s per-residue score, darker where the
+                              prediction is stronger; hover it for the score at a residue.
                             </Typography>
                           </InfoTooltip>
                         </Stack>
@@ -286,7 +278,7 @@ export default function Structure() {
                       </Box>
                     </Box>
 
-                    <ModelCaveats structure={selected} />
+                    <ModelLinks structure={selected} />
 
                     {experimental && experimental.length > 0 && (
                       <Box>

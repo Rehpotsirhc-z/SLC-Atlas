@@ -150,6 +150,16 @@ export const EMPTY_LAYOUT: TopologyLayout = {
 export const capRadius = (width: number, height: number) =>
   Math.min(width / 2, height / 2, TRACK.capRadius)
 
+function capJoin(cylinder: MembraneCylinder, side: Side, x: number): number {
+  const edge = side === "outside" ? cylinder.drawTop : cylinder.drawBottom
+  const centre = side === "outside" ? edge + cylinder.cap : edge - cylinder.cap
+  const flatFrom = cylinder.x + cylinder.cap
+  const flatTo = cylinder.x + cylinder.width - cylinder.cap
+  const dx = x < flatFrom ? flatFrom - x : x > flatTo ? x - flatTo : 0
+  const reach = Math.sqrt(Math.max(cylinder.cap ** 2 - dx ** 2, 0))
+  return side === "outside" ? centre - reach : centre + reach
+}
+
 const uniprotName = (description: string | null) => /Name=([^;]+)/.exec(description ?? "")?.[1]
 
 function axisTicks(length: number, toX: (residue: number) => number): AxisTick[] {
@@ -250,18 +260,13 @@ export function layoutTopology(
   // attach either side of its midline instead of meeting at a single point
   const joins = cylinders.map((c) => {
     const oneSided = c.entrySide === c.exitSide
-    const surface = (side: Side) =>
-      oneSided
-        ? side === "outside"
-          ? c.top
-          : c.bottom
-        : side === "outside"
-          ? c.top - c.cap
-          : c.bottom + c.cap
-    const at = (fraction: number) => c.x + c.width * fraction
+    const join = (side: Side, fraction: number) => {
+      const x = c.x + c.width * fraction
+      return { x, y: capJoin(c, side, x) }
+    }
     return {
-      entry: { x: at(oneSided ? TRACK.oneSidedJoin : 0.5), y: surface(c.entrySide) },
-      exit: { x: at(oneSided ? 1 - TRACK.oneSidedJoin : 0.5), y: surface(c.exitSide) },
+      entry: join(c.entrySide, oneSided ? TRACK.oneSidedJoin : 0.5),
+      exit: join(c.exitSide, oneSided ? 1 - TRACK.oneSidedJoin : 0.5),
     }
   })
 

@@ -182,6 +182,8 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
                 {cylinder.showLabel && (
                   <text
                     x={cylinder.x + cylinder.width / 2}
+                    // Centred on the stretch inside the membrane, not the pill whose cap
+                    // pokes past the edge
                     y={(cylinder.top + cylinder.bottom) / 2}
                     fontSize={11}
                     fontWeight={600}
