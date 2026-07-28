@@ -32,6 +32,8 @@ if ! command -v zellij >/dev/null 2>&1; then
         sudo tar -xz -C /usr/local/bin
 fi
 
+npx -y playwright install --with-deps chromium
+
 # ── System packages ──────────────────────────────────────────────────────────
 if ! dpkg -s neovim less nginx mafft build-essential pkg-config \
     libcurl4-openssl-dev >/dev/null 2>&1; then
