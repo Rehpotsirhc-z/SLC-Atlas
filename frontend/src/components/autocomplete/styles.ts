@@ -29,6 +29,9 @@ export const acIndicatorSx = {
 export const StyledPopper = styled(Popper)(({ theme }) => ({
   [`& .${autocompleteClasses.paper}`]: {
     backgroundColor: theme.palette.background.default,
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[4],
+    overflow: "hidden", // Clip the option rows so they stop at the rounded corners
   },
   [`& .${autocompleteClasses.listbox}`]: {
     boxSizing: "border-box",
