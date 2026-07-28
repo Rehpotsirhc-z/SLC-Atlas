@@ -15,14 +15,17 @@ import {
   Typography,
 } from "@mui/material"
 import { pdbeUrl } from "@/utils/links"
-import { EXPERIMENTAL_PAGE_SIZE, RESOLUTION_DECIMALS } from "./constants"
+import { EXPERIMENTAL_PAGE_SIZE } from "./constants"
+import { methodLabel, resolutionLabel } from "./experimentalEntry"
 import type { ExperimentalStructure } from "@/types/structure"
 
 interface Props {
   entries: ExperimentalStructure[]
+  selectedPdbId: string | null
+  onSelect: (pdbId: string) => void
 }
 
-export default function ExperimentalTable({ entries }: Props) {
+export default function ExperimentalTable({ entries, selectedPdbId, onSelect }: Props) {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(EXPERIMENTAL_PAGE_SIZE)
 
@@ -44,18 +47,27 @@ export default function ExperimentalTable({ entries }: Props) {
           </TableHead>
           <TableBody>
             {visible.map((entry) => (
-              <TableRow key={entry.pdb_id} hover>
+              <TableRow
+                key={entry.pdb_id}
+                hover
+                selected={entry.pdb_id === selectedPdbId}
+                onClick={() => onSelect(entry.pdb_id)}
+                sx={{ cursor: "pointer" }}
+                data-testid={`experimental-row-${entry.pdb_id}`}
+              >
                 <TableCell>
-                  <Link href={pdbeUrl(entry.pdb_id)} target="_blank" rel="noopener">
+                  {/* Stops the row's load-in-the-viewer click when the intent was PDBe */}
+                  <Link
+                    href={pdbeUrl(entry.pdb_id)}
+                    target="_blank"
+                    rel="noopener"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {entry.pdb_id.toUpperCase()}
                   </Link>
                 </TableCell>
-                <TableCell sx={{ textTransform: "lowercase" }}>{entry.method ?? "-"}</TableCell>
-                <TableCell align="right">
-                  {entry.resolution != null
-                    ? `${entry.resolution.toFixed(RESOLUTION_DECIMALS)} Å`
-                    : "-"}
-                </TableCell>
+                <TableCell>{methodLabel(entry.method) ?? "-"}</TableCell>
+                <TableCell align="right">{resolutionLabel(entry.resolution) ?? "-"}</TableCell>
                 <TableCell align="right">
                   {entry.coverage != null ? `${(entry.coverage * 100).toFixed(0)}%` : "-"}
                 </TableCell>

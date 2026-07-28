@@ -118,6 +118,35 @@ export interface TopologyLayout {
   unresolved: ResidueSpan[]
 }
 
+export const EMPTY_LAYOUT: TopologyLayout = {
+  width: 0,
+  height: 0,
+  length: 0,
+  plotLeft: 0,
+  plotRight: 0,
+  membraneTop: 0,
+  membraneBottom: 0,
+  axisY: 0,
+  axisLabelY: 0,
+  axisTitleY: 0,
+  bindsTop: 0,
+  bindsHeight: 0,
+  confidenceTop: 0,
+  confidenceHeight: 0,
+  lanes: [],
+  cylinders: [],
+  arcs: [],
+  sites: [],
+  ligands: [],
+  confidence: [],
+  ticks: [],
+  termini: [],
+  sideLabels: { inside: "", outside: "" },
+  membrane: "",
+  oriented: false,
+  unresolved: [],
+}
+
 export const capRadius = (width: number, height: number) =>
   Math.min(width / 2, height / 2, TRACK.capRadius)
 
@@ -190,7 +219,9 @@ export function layoutTopology(
     const crosses = segment.kind === "transmembrane"
     const { entry, exit, unresolved } = chain.segments[i]
     const box = boxFor(segment.start, segment.end, TRACK.helixMinWidth)
-    const label = crosses ? `${++helices}` : (uniprotName(segment.description) ?? `IM${++reentrant}`)
+    const label = crosses
+      ? `${++helices}`
+      : (uniprotName(segment.description) ?? `IM${++reentrant}`)
     const top = !crosses && entry === "inside" ? membraneMid : membraneTop
     const bottom = !crosses && entry === "outside" ? membraneMid : membraneBottom
     const cap = capRadius(box.width, bottom - top)
@@ -297,9 +328,7 @@ export function layoutTopology(
     { label: "N", ...(first.residues ? { x: toX(1), y: edgeY(first.side) } : joins[0].entry) },
     {
       label: "C",
-      ...(last.residues
-        ? { x: toX(length), y: edgeY(last.side) }
-        : joins[joins.length - 1].exit),
+      ...(last.residues ? { x: toX(length), y: edgeY(last.side) } : joins[joins.length - 1].exit),
     },
   ]
 
@@ -350,7 +379,9 @@ export function layoutTopology(
     oriented: chain.oriented,
     unresolved: mergeSpans([
       ...cylinders.filter((c) => c.unresolved).map((c) => ({ start: c.start, end: c.end })),
-      ...arcs.filter((a) => a.unresolved && a.residues).map((a) => ({ start: a.start, end: a.end })),
+      ...arcs
+        .filter((a) => a.unresolved && a.residues)
+        .map((a) => ({ start: a.start, end: a.end })),
     ]),
   }
 }

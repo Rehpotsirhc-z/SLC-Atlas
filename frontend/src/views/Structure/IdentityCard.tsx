@@ -7,19 +7,13 @@ import { Alert, Box, Button, Link, Stack, Typography, useTheme } from "@mui/mate
 import FamilyLabel from "@/components/FamilyLabel"
 import { getFamilyColor } from "@/utils/familyColor"
 import { alphafoldUrl, ensemblUrl, pdbeUrl, ucscUrl, uniprotUrl } from "@/utils/links"
-import { RESOLUTION_DECIMALS } from "./constants"
+import { methodLabel, resolutionLabel } from "./experimentalEntry"
 import type { Gene } from "@/types/gene"
 import type { StructureRecord } from "@/types/structure"
 
 interface Props {
   structure: StructureRecord
   gene: Gene | null
-}
-
-const METHOD_LABEL: Record<string, string> = {
-  "ELECTRON MICROSCOPY": "cryo-EM",
-  "X-RAY DIFFRACTION": "X-ray",
-  "SOLUTION NMR": "NMR",
 }
 
 const SEQ_AGREEMENT_DETAIL: Record<string, string> = {
@@ -62,9 +56,8 @@ export default function IdentityCard({ structure, gene }: Props) {
 
   const bestExperimental = [
     structure.best_pdb_id?.toUpperCase(),
-    structure.best_resolution != null &&
-      `${structure.best_resolution.toFixed(RESOLUTION_DECIMALS)} Å`,
-    structure.best_method && METHOD_LABEL[structure.best_method],
+    resolutionLabel(structure.best_resolution),
+    methodLabel(structure.best_method),
   ]
     .filter(Boolean)
     .join(" · ")

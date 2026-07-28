@@ -42,11 +42,27 @@ export const TRACK = {
   unresolvedDash: "5 4",
 } as const
 
+export const MODEL_BASE = "/api/structure/models"
+// Where coordinates come from when this deployment mirrored none of its own
+export const RCSB_MODEL_BASE = "https://models.rcsb.org"
+
+// Tall enough that a 12-helix transporter is legible beside the topology figure
+export const VIEWER_HEIGHT = 420
+
 export const RESOLUTION_DECIMALS = 2
 export const EXPERIMENTAL_PAGE_SIZE = 10
 export const SEARCH_WIDTH = 360
 
+// Narrower than this the topology figure would fall under TRACK.minWidth, so the 3D panel
+// drops below it instead of squeezing both
+export const SIDE_BY_SIDE_MIN_WIDTH = 980
+export const COLUMN_GAP = 16
+// Share of the row the topology figure takes when the two sit side by side, matching the
+// flex grow ratio they are laid out with
+export const TOPOLOGY_FRACTION = 0.6
+
 export const MIN_CONTENT_WIDTH = TRACK.minWidth + 40
-// Width the detail pane wants before the rail is allowed to claim the leftover space
-export const PREFERRED_CONTENT_WIDTH = 900
+// Width the detail pane wants before the rail is allowed to claim the leftover space, which
+// is both columns at once so a wide window opens side by side rather than stacked
+export const PREFERRED_CONTENT_WIDTH = 1100
 export const CONTENT_PADDING_PX = 32

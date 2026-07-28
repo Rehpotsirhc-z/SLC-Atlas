@@ -19,11 +19,11 @@ def run_script(path: Path, args: Sequence[str] = (), label: str | None = None) -
         raise SystemExit(f"Step(s) failed: {label or path.stem}")
 
 
-def run_parallel(paths: Sequence[Path]) -> None:
+def run_parallel(jobs: Sequence[tuple[Path, Sequence[str]]]) -> None:
     procs = []
-    for path in paths:
+    for path, args in jobs:
         print(f"\n=== {path.stem} (started) ===", flush=True)
-        procs.append((path.stem, subprocess.Popen([sys.executable, str(path)])))
+        procs.append((path.stem, subprocess.Popen([sys.executable, str(path), *args])))
     failed = [name for name, proc in procs if proc.wait() != 0]
     if failed:
         raise SystemExit("Step(s) failed: " + ", ".join(failed))

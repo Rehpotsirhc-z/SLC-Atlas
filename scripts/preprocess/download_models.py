@@ -7,9 +7,9 @@
 Files already on disk are left alone, so re-running the pipeline after an unrelated
 change costs nothing. Delete a file to refetch it, or the directory to refetch all.
 
-Experimental PDB coordinates are deliberately not mirrored: 1800+ entries of mostly
-cryo-EM complexes is a few hundred megabytes for a drill-down the viewer can stream
-from PDBe on demand.
+Experimental coordinates are mirrored separately by download_experimental_models.py,
+which is optional; every gene has a predicted model, so this step is what the viewer
+opens by default.
 """
 
 import sys

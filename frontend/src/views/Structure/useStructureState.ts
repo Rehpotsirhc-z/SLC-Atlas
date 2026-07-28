@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useGeneById, useGenes } from "@/api/hooks/useGenes"
 import {
   useExperimentalStructures,
@@ -11,9 +11,12 @@ import {
   useStructures,
 } from "@/api/hooks/useStructure"
 import { useUIStore } from "@/store/uiStore"
+import type { ModelSource } from "./molstar/types"
 
 export function useStructureState() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
+  // Keyed by gene so picking an entry for one gene cannot leak into the next
+  const [pdbChoice, setPdbChoice] = useState<{ geneId: string; pdbId: string } | null>(null)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -46,6 +49,23 @@ export function useStructureState() {
     [structures],
   )
 
+  const selectedPdbId = pdbChoice?.geneId === selectedGeneId ? pdbChoice.pdbId : null
+  const selectPdbId = useCallback(
+    (pdbId: string | null) =>
+      setPdbChoice(pdbId && selectedGeneId ? { geneId: selectedGeneId, pdbId } : null),
+    [selectedGeneId],
+  )
+
+  // The predicted model opens by default: it is the only one every gene has, and the only
+  // one numbered in the same residues as the topology figure
+  const modelSource = useMemo<ModelSource | null>(() => {
+    if (selectedPdbId) return { kind: "pdb", pdbId: selectedPdbId }
+    if (selected?.model_available && selected.model_file) {
+      return { kind: "afdb", file: selected.model_file }
+    }
+    return null
+  }, [selectedPdbId, selected])
+
   return {
     structures,
     genes,
@@ -60,6 +80,9 @@ export function useStructureState() {
     setFamilyFilter,
     selectedGeneId,
     setSelectedGeneId,
+    selectedPdbId,
+    selectPdbId,
+    modelSource,
     withExperimental,
     counterText: `${structures?.length ?? 0} genes · ${withExperimental} solved`,
   }

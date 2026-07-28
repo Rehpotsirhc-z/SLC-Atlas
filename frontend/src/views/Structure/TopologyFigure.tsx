@@ -2,35 +2,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useId, useMemo, type RefObject } from "react"
+import { useId, type RefObject } from "react"
 import { alpha, Box, useTheme } from "@mui/material"
-import type { ProteinFeature } from "@/types/structure"
 import { useConfidenceColor } from "./confidenceColor"
 import { TRACK } from "./constants"
 import { ligandColorAt } from "./ligandColor"
-import { layoutTopology } from "./topologyLayout"
 import TopologyLegend from "./TopologyLegend"
 import TopologyTooltip from "./TopologyTooltip"
-import { useTopologyHover } from "./useTopologyHover"
+import type { useTopologyState } from "./useTopologyState"
 
 interface Props {
-  features: ProteinFeature[]
   length: number
-  width: number
   plddt: number[] | null
+  topology: ReturnType<typeof useTopologyState>
   svgRef?: RefObject<SVGSVGElement | null>
 }
 
-export default function TopologyFigure({ features, length, width, plddt, svgRef }: Props) {
+export default function TopologyFigure({ length, plddt, topology, svgRef }: Props) {
   const { palette, custom } = useTheme()
   const confidenceColor = useConfidenceColor()
   const confidenceGradientId = useId()
 
-  const layout = useMemo(
-    () => layoutTopology(features, length, width, plddt),
-    [features, length, width, plddt],
-  )
-  const { hover, track, clear, highlight, dimmed } = useTopologyHover(layout)
+  const { layout, hover, track, clear, highlight, dimmed, select, clearFocus } = topology
 
   const helixFill = palette.primary.main
   const membraneFill = alpha(palette.text.primary, palette.mode === "dark" ? 0.09 : 0.06)
@@ -62,6 +55,7 @@ export default function TopologyFigure({ features, length, width, plddt, svgRef 
           role="img"
           aria-label={`Membrane topology: ${layout.cylinders.length} membrane segments across ${length} residues`}
           onMouseLeave={clear}
+          onClick={clearFocus}
         >
           {/* The bilayer */}
           <rect
@@ -115,7 +109,13 @@ export default function TopologyFigure({ features, length, width, plddt, svgRef 
               opacity={dimmed(highlight.arcs.has(arc.key))}
               onMouseMove={(e) => arc.residues && track(e, { kind: "arc", item: arc })}
               onMouseLeave={clear}
-              style={{ cursor: "default" }}
+              onClick={(e) => {
+                if (!arc.residues) return
+                // Otherwise the click reaches the canvas, which reads as a dismissal
+                e.stopPropagation()
+                select({ kind: "arc", item: arc })
+              }}
+              style={{ cursor: arc.residues ? "pointer" : "default" }}
             >
               <path
                 d={arc.path}
@@ -158,10 +158,15 @@ export default function TopologyFigure({ features, length, width, plddt, svgRef 
             return (
               <g
                 key={cylinder.key}
+                data-testid={`segment-${cylinder.key}`}
                 opacity={dimmed(highlight.segments.has(cylinder.key))}
                 onMouseMove={(e) => track(e, { kind: "segment", item: cylinder })}
                 onMouseLeave={clear}
-                style={{ cursor: "default" }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  select({ kind: "segment", item: cylinder })
+                }}
+                style={{ cursor: "pointer" }}
               >
                 <rect
                   x={cylinder.x}
@@ -203,10 +208,15 @@ export default function TopologyFigure({ features, length, width, plddt, svgRef 
             return (
               <g
                 key={site.key}
+                data-testid={`site-${site.key}`}
                 opacity={dimmed(highlight.sites.has(site.key))}
                 onMouseMove={(e) => track(e, { kind: "site", item: site })}
                 onMouseLeave={clear}
-                style={{ cursor: "default" }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  select({ kind: "site", item: site })
+                }}
+                style={{ cursor: "pointer" }}
               >
                 {/* Joined so residues hundreds apart still read as one site */}
                 <line

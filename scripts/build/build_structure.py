@@ -21,6 +21,7 @@ import polars as pl
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lib.reporting import report_missing
+from lib.structures import rank_experimental
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DATASET_DIR = DATA_DIR / "dataset" / "structure"
@@ -145,9 +146,9 @@ def experimental_entries(experimental: pl.DataFrame) -> pl.DataFrame:
 
 
 def experimental_summary(experimental: pl.DataFrame) -> pl.DataFrame:
-    """Per gene: how many entries, and the best-resolved one to open by default."""
+    """Per gene: how many entries, and which one the viewer offers first."""
     return (
-        experimental.sort("resolution", nulls_last=True)
+        rank_experimental(experimental)
         .group_by("gene_id")
         .agg(
             n_experimental=pl.len(),
@@ -257,6 +258,8 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     models_dir = OUT_DIR / "models"
     copied, total_models = copy_models(DATASET_DIR / "models", models_dir)
+    # Mirroring experimental coordinates is optional; the viewer streams whatever is absent
+    pdb_copied, total_pdb = copy_models(DATASET_DIR / "models" / "pdb", models_dir / "pdb")
 
     features = read_tsv("features.tsv", FEATURE_SCHEMA)
     report_missing(
@@ -276,6 +279,7 @@ def main() -> None:
     print(f"wrote {structure.height} genes ({n_models} with a model, "
           f"{n_experimental} with experimental structures) -> {OUT_DIR}", file=sys.stderr)
     print(f"{total_models} model files in {models_dir} ({copied} copied)", file=sys.stderr)
+    print(f"{total_pdb} experimental file(s) mirrored ({pdb_copied} copied)", file=sys.stderr)
 
 
 if __name__ == "__main__":

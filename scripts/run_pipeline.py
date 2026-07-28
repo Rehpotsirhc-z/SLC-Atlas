@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lib.orchestration import run_script
-from lib.pipeline_args import parse_args, skip_flags
+from lib.pipeline_args import parse_args, preprocess_flags, skip_flags
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 GENES_TSV = SCRIPT_DIR.parent / "backend" / "data" / "dataset" / "genes.tsv"
@@ -29,7 +29,9 @@ def main() -> None:
     flags = skip_flags(args)
 
     if not args.build_only:
-        preprocess_args = [*flags, args.hgnc_file] if args.hgnc_file else flags
+        preprocess_args = preprocess_flags(args)
+        if args.hgnc_file:
+            preprocess_args.append(args.hgnc_file)
         run_script(SCRIPT_DIR / "preprocess" / "run.py", preprocess_args, label="preprocess")
         if args.preprocess_only:
             return

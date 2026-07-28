@@ -90,5 +90,9 @@ export function membraneFaces(domains: ProteinFeature[]): MembraneFaces {
     MEMBRANE_NAMES.find(([a, b]) => present.has(a) && present.has(b))?.[2] ??
     (present.has("matrix") ? "Inner mitochondrial membrane" : "Membrane")
 
-  return { sideOf, labels: { inside: commonest("inside"), outside: commonest("outside") }, membrane }
+  return {
+    sideOf,
+    labels: { inside: commonest("inside"), outside: commonest("outside") },
+    membrane,
+  }
 }

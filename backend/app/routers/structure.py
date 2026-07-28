@@ -36,7 +36,8 @@ def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_data_sources()).to_dicts()
 
 
-@router.get("/structure/models/{filename}")
+# :path so mirrored experimental coordinates resolve under models/pdb/
+@router.get("/structure/models/{filename:path}")
 def get_model(filename: str, source: DataSource = Depends(get_source)):
     path = source.model_path(filename)
     if path is None:

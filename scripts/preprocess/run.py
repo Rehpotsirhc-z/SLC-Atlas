@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lib.orchestration import run_parallel, run_script
-from lib.pipeline_args import parse_args, skipped_views
+from lib.pipeline_args import parse_args, pdb_model_depth, skipped_views
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[1]
@@ -31,7 +31,7 @@ STAGES = [
     ["fetch_orthologs", "fetch_species_tree"],
     ["fetch_uniprot_map"],
     ["fetch_protein_features", "fetch_structures"],
-    ["download_models", "fetch_confidence"],
+    ["download_models", "download_experimental_models", "fetch_confidence"],
 ]
 
 CONSUMED_BY = {
@@ -43,22 +43,25 @@ CONSUMED_BY = {
     "fetch_protein_features": {"structure"},
     "fetch_structures": {"structure"},
     "download_models": {"structure"},
+    "download_experimental_models": {"structure"},
     "fetch_confidence": {"structure"},
 }
 
 
-def step_args(step: str, hgnc_file: str) -> list[str]:
+def step_args(step: str, hgnc_file: str, depth: str) -> list[str]:
     if step == "annotate_genes" and hgnc_file:
         return [hgnc_file, str(NAMES_FILE), str(RAW / "annotation.tsv")]
+    if step == "download_experimental_models":
+        return ["--pdb-models", depth]
     return []
 
 
-def run_stage(steps: list[str], hgnc_file: str) -> None:
+def run_stage(steps: list[str], hgnc_file: str, depth: str) -> None:
     if len(steps) == 1:
         step = steps[0]
-        run_script(SCRIPT_DIR / f"{step}.py", step_args(step, hgnc_file))
+        run_script(SCRIPT_DIR / f"{step}.py", step_args(step, hgnc_file, depth))
         return
-    run_parallel([SCRIPT_DIR / f"{step}.py" for step in steps])
+    run_parallel([(SCRIPT_DIR / f"{step}.py", step_args(step, hgnc_file, depth)) for step in steps])
 
 
 def main() -> None:
@@ -76,11 +79,12 @@ def main() -> None:
 
     skipped = skipped_views(args)
     skip = {step for step, views in CONSUMED_BY.items() if views <= skipped}
+    depth = pdb_model_depth(args)
 
     for stage in STAGES:
         sel = [s for s in stage if s not in skip]
         if sel:
-            run_stage(sel, args.hgnc_file)
+            run_stage(sel, args.hgnc_file, depth)
 
     print(f"\nPreprocessing complete. Standard-format dataset in {DATASET}")
 

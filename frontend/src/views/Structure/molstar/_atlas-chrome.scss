@@ -1,0 +1,57 @@
+// SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+//
+// SPDX-License-Identifier: Apache-2.0
+
+@mixin atlas-chrome($surface, $divider, $scrollbar-thumb, $scrollbar-thumb-hover, $panel-shadow) {
+    .msp-plugin .msp-layout-standard {
+        border: 1px solid $divider;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .msp-plugin .msp-control-row,
+    .msp-plugin .msp-control-group-header {
+        border-bottom: 1px solid $divider;
+    }
+
+    .msp-plugin .msp-control-row:last-child {
+        border-bottom: none;
+    }
+
+    .msp-plugin .msp-viewport-controls-panel,
+    .msp-plugin .msp-hover-box-body {
+        border: 1px solid $divider;
+        border-radius: 4px;
+        box-shadow: $panel-shadow;
+        overflow: hidden;
+    }
+
+    .msp-plugin .msp-viewport-controls-panel .msp-viewport-controls-panel-controls {
+        max-height: calc(var(--atlas-viewer-height, 420px) - 60px);
+        background-color: $surface;
+    }
+
+    .msp-plugin ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .msp-plugin ::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+    .msp-plugin ::-webkit-scrollbar-thumb {
+        background-color: $scrollbar-thumb;
+        border: none;
+        border-radius: 8px;
+    }
+
+    .msp-plugin ::-webkit-scrollbar-thumb:hover {
+        background-color: $scrollbar-thumb-hover;
+    }
+
+    .msp-plugin * {
+        scrollbar-width: thin;
+        scrollbar-color: $scrollbar-thumb transparent;
+    }
+}

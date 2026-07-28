@@ -1,0 +1,33 @@
+// SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+//
+// SPDX-License-Identifier: Apache-2.0
+
+@use "molstar/lib/mol-plugin-ui/skin/base/colors" with (
+    $default-background: $doom-light-bg,
+    $font-color: $doom-light-fg,
+    $hover-font-color: $doom-light-blue,
+    $entity-current-font-color: $doom-light-cyan,
+    $msp-btn-commit-on-font-color: $doom-light-green,
+    $entity-badge-font-color: $doom-light-fg,
+    $msp-btn-remove-background: $doom-light-red,
+    $msp-btn-remove-hover-font-color: $doom-light-bg,
+    $log-message: $doom-light-green,
+    $log-info: $doom-light-blue,
+    $log-warning: $doom-light-yellow,
+    $log-error: $doom-light-red,
+    $logo-background: rgba(255, 255, 255, 0.75),
+    $color-adjust-sign: 1
+);
+@use "sass:meta";
+@use "atlas-chrome";
+
+.molstar-doom-one-light {
+    @include meta.load-css("molstar/lib/mol-plugin-ui/skin/base/base");
+    @include atlas-chrome.atlas-chrome(
+        $surface: $doom-light-bg,
+        $divider: $doom-light-base3,
+        $scrollbar-thumb: $doom-light-base4,
+        $scrollbar-thumb-hover: $doom-light-base5,
+        $panel-shadow: 0 2px 12px rgba(0, 0, 0, 0.18)
+    );
+}
