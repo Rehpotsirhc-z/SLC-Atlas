@@ -17,7 +17,7 @@ export const TRACK = {
   laneGap: 10,
   confidenceLane: 20,
   axisGap: 12,
-  axisLabels: 30,
+  axisLabels: 22,
   helixMinWidth: 12,
   // Cap on the rounded cap so a wide helix reads as a rounded rectangle, not an ellipse
   capRadius: 13,

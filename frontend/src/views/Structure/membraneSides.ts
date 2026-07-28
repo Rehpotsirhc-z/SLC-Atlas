@@ -57,7 +57,8 @@ function compartmentOf(description: string | null): Compartment | null {
 export interface MembraneFaces {
   sideOf: (description: string | null) => Side | null
   labels: Record<Side, string>
-  membrane: string
+  // Null when the compartments this protein names do not identify one
+  membrane: string | null
 }
 
 /** Resolve the two faces from the compartments this protein's own annotation names. */
@@ -88,7 +89,7 @@ export function membraneFaces(domains: ProteinFeature[]): MembraneFaces {
 
   const membrane =
     MEMBRANE_NAMES.find(([a, b]) => present.has(a) && present.has(b))?.[2] ??
-    (present.has("matrix") ? "Inner mitochondrial membrane" : "Membrane")
+    (present.has("matrix") ? "Inner mitochondrial membrane" : null)
 
   return {
     sideOf,

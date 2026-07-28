@@ -317,11 +317,13 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
               </text>
             </g>
           ))}
+
           <text
-            x={(layout.plotLeft + layout.plotRight) / 2}
-            y={layout.axisTitleY}
+            x={TRACK.gutter - 8}
+            y={layout.axisY}
             fontSize={11}
-            textAnchor="middle"
+            textAnchor="end"
+            dominantBaseline="central"
             fill={labelColor}
           >
             Residue number

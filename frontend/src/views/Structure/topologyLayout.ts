@@ -99,7 +99,6 @@ export interface TopologyLayout {
   membraneBottom: number
   axisY: number
   axisLabelY: number
-  axisTitleY: number
   bindsTop: number
   bindsHeight: number
   confidenceTop: number
@@ -113,7 +112,7 @@ export interface TopologyLayout {
   ticks: AxisTick[]
   termini: { label: "N" | "C"; x: number; y: number }[]
   sideLabels: Record<Side, string>
-  membrane: string
+  membrane: string | null
   oriented: boolean
   unresolved: ResidueSpan[]
 }
@@ -128,7 +127,6 @@ export const EMPTY_LAYOUT: TopologyLayout = {
   membraneBottom: 0,
   axisY: 0,
   axisLabelY: 0,
-  axisTitleY: 0,
   bindsTop: 0,
   bindsHeight: 0,
   confidenceTop: 0,
@@ -142,7 +140,7 @@ export const EMPTY_LAYOUT: TopologyLayout = {
   ticks: [],
   termini: [],
   sideLabels: { inside: "", outside: "" },
-  membrane: "",
+  membrane: null,
   oriented: false,
   unresolved: [],
 }
@@ -365,7 +363,6 @@ export function layoutTopology(
     membraneBottom,
     axisY,
     axisLabelY: axisY + 14,
-    axisTitleY: axisY + 27,
     bindsTop,
     bindsHeight,
     confidenceTop,

@@ -208,14 +208,18 @@ export default function Structure() {
                               cylinders in the membrane band are transmembrane helices, numbered in
                               order; the paler, half-height cylinders sit inside the membrane
                               without crossing it. Between cylinders the chain loops onto whichever
-                              side of the membrane UniProt puts that stretch on, drawn dashed where
-                              UniProt leaves the side undetermined.
+                              side of the membrane UniProt puts that stretch on.
                             </Typography>
                             <Typography variant="caption" component="p">
                               Each row under Binds is one binding site; the blocks in it are the
                               residues that touch the ligand named in the key below. The Confidence
                               strip is AlphaFold&apos;s per-residue score, banded in the same four
                               colours as the 3D model; hover it for the score at a residue.
+                            </Typography>
+                            <Typography variant="caption" component="p">
+                              A dashed line is one where UniProt&apos;s own compartments cannot all
+                              be reached by alternating helices, so the helices in it may be
+                              flipped.
                             </Typography>
                           </InfoTooltip>
                         </Stack>
