@@ -19,10 +19,17 @@ export const TRACK = {
   axisGap: 12,
   axisLabels: 22,
   helixMinWidth: 12,
+  // Segments the annotation leaves so they don't touch
+  pillGap: 2,
   // Cap on the rounded cap so a wide helix reads as a rounded rectangle, not an ellipse
   capRadius: 13,
-  // Below this a pill has no room for its number
-  minLabelWidth: 15,
+  // A number shrinks with its pill down to minLabelSize, below which it is not worth drawing
+  labelSize: 11,
+  minLabelSize: 7,
+  // Width of a digit as a fraction of its font size, for the figure's sans
+  labelAspect: 0.58,
+  // The halo that lifts a number off its pill, as a fraction of the font size
+  labelHalo: 0.23,
   tickSpacing: 100,
   minArc: 9,
   // How far a loop bulges per residue, before clamping to its lane

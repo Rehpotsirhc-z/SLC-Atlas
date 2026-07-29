@@ -28,6 +28,12 @@ export interface Point {
   y: number
 }
 
+/** The x range a box may occupy, once its neighbours have taken their share of the gap. */
+interface Window {
+  from: number
+  to: number
+}
+
 export interface MembraneCylinder {
   key: string
   kind: SegmentKind
@@ -48,7 +54,8 @@ export interface MembraneCylinder {
   entrySide: Side
   exitSide: Side
   unresolved: boolean
-  showLabel: boolean
+  // Font size the label fits at, or null where the pill is too narrow for it to be read
+  labelSize: number | null
 }
 
 export interface ChainArc {
@@ -160,6 +167,13 @@ function capJoin(cylinder: MembraneCylinder, side: Side, x: number): number {
 
 const uniprotName = (description: string | null) => /Name=([^;]+)/.exec(description ?? "")?.[1]
 
+function labelSizeFor(label: string, width: number): number | null {
+  const room = width - TRACK.pillGap
+  const fits = room / (label.length * TRACK.labelAspect)
+  const size = Math.floor(Math.min(TRACK.labelSize, fits) * 2) / 2
+  return size >= TRACK.minLabelSize ? size : null
+}
+
 function axisTicks(length: number, toX: (residue: number) => number): AxisTick[] {
   const ticks: AxisTick[] = [{ residue: 1, x: toX(1) }]
   for (let r = TRACK.tickSpacing; r < length; r += TRACK.tickSpacing) {
@@ -184,9 +198,12 @@ export function layoutTopology(
   const toX = (residue: number) => plotLeft + ((residue - 1) / span) * inner
   const perResidue = inner / span
   // A feature covers its end residue too, so its box runs one residue past that residue's tick
-  const boxFor = (start: number, end: number, minimum: number) => {
-    const boxWidth = Math.max(toX(end) - toX(start) + perResidue, minimum)
-    return { x: (toX(start) + toX(end) + perResidue - boxWidth) / 2, width: boxWidth }
+  const boxFor = (start: number, end: number, minimum: number, limit?: Window) => {
+    const room = limit ? limit.to - limit.from : Number.POSITIVE_INFINITY
+    const boxWidth = Math.min(Math.max(toX(end) - toX(start) + perResidue, minimum), room)
+    const centred = (toX(start) + toX(end) + perResidue - boxWidth) / 2
+    if (!limit) return { x: centred, width: boxWidth }
+    return { x: Math.min(Math.max(centred, limit.from), limit.to - boxWidth), width: boxWidth }
   }
 
   const membraneTop = TRACK.outsideLane
@@ -220,12 +237,24 @@ export function layoutTopology(
   const confidenceHeight = confidence.length ? TRACK.confidenceLane : 0
   const axisY = confidenceTop + confidenceHeight + TRACK.axisGap
 
+  const edges = segments.map((segment, i) =>
+    i === 0
+      ? Number.NEGATIVE_INFINITY
+      : (toX(segments[i - 1].end) + perResidue + toX(segment.start)) / 2,
+  )
+  const pillWindow = (i: number): Window => {
+    const from = edges[i]
+    const to = i + 1 < edges.length ? edges[i + 1] : Number.POSITIVE_INFINITY
+    const give = Math.min(TRACK.pillGap, (to - from) / 2)
+    return { from: from + give / 2, to: to - give / 2 }
+  }
+
   let helices = 0
   let reentrant = 0
   const cylinders: MembraneCylinder[] = segments.map((segment, i) => {
     const crosses = segment.kind === "transmembrane"
     const { entry, exit, unresolved } = chain.segments[i]
-    const box = boxFor(segment.start, segment.end, TRACK.helixMinWidth)
+    const box = boxFor(segment.start, segment.end, TRACK.helixMinWidth, pillWindow(i))
     const label = crosses
       ? `${++helices}`
       : (uniprotName(segment.description) ?? `IM${++reentrant}`)
@@ -249,7 +278,7 @@ export function layoutTopology(
       entrySide: entry,
       exitSide: exit,
       unresolved,
-      showLabel: box.width >= TRACK.minLabelWidth,
+      labelSize: labelSizeFor(label, box.width),
     }
   })
 

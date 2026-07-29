@@ -181,17 +181,17 @@ const TopologyDiagram = memo(function TopologyDiagram({
                 strokeDasharray={cylinder.unresolved ? TRACK.unresolvedDash : undefined}
                 strokeWidth={cylinder.unresolved ? TRACK.chainWidth : undefined}
               />
-              {cylinder.showLabel && (
+              {cylinder.labelSize && (
                 <text
                   x={cylinder.x + cylinder.width / 2}
                   y={(cylinder.top + cylinder.bottom) / 2}
-                  fontSize={11}
+                  fontSize={cylinder.labelSize}
                   fontWeight={600}
                   textAnchor="middle"
                   dominantBaseline="central"
                   fill={crosses ? palette.getContrastText(helixFill) : palette.text.primary}
                   stroke={crosses ? helixFill : membraneFill}
-                  strokeWidth={2.5}
+                  strokeWidth={cylinder.labelSize * TRACK.labelHalo}
                   paintOrder="stroke"
                   style={{ pointerEvents: "none" }}
                 >
