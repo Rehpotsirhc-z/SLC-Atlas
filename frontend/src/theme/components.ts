@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ThemeOptions } from "@mui/material/styles"
+import { capBoxSx } from "./capBox"
 import { dividerFor, type DoomColors, type ThemeMode } from "./palette"
 import { monoFontFamily } from "./fonts"
 
@@ -114,6 +115,23 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
             color: c.magenta,
             "&:hover": { backgroundColor: `${c.magenta}30` },
           },
+        },
+      },
+    },
+    MuiListSubheader: {
+      styleOverrides: {
+        root: {
+          ...capBoxSx,
+          fontFamily: monoFontFamily,
+          fontSize: "0.68rem",
+          fontWeight: 700,
+          letterSpacing: "0.09em",
+          textTransform: "uppercase",
+          lineHeight: 1.4,
+          color: mode === "dark" ? c.base6 : c.base5,
+          backgroundColor: c.bgAlt,
+          padding: "10px 10px 10px",
+          borderBottom: `1px solid ${divider}`,
         },
       },
     },
