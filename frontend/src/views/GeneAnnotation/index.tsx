@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import AccountTreeIcon from "@mui/icons-material/AccountTree"
 import {
   Alert,
@@ -89,6 +89,8 @@ export default function GeneAnnotation() {
     enabled: !isLoading && !isMobile,
   })
 
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+
   useLayoutEffect(() => {
     if (isLoading) return
     const el = tableScrollRef.current
@@ -146,7 +148,7 @@ export default function GeneAnnotation() {
           railWidth={railWidth}
           useDrawer={isMobile || useDrawer}
           drawerOpen={drawerOpen}
-          onDrawerClose={() => setDrawerOpen(false)}
+          onDrawerClose={closeDrawer}
           onDragStart={onDragStart}
         />
         <Paper

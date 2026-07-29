@@ -2,16 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { keyframes } from "@emotion/react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
-import { Box, Paper, Typography, useTheme } from "@mui/material"
+import { Paper, Typography, useTheme } from "@mui/material"
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView"
-import { TreeItem } from "@mui/x-tree-view/TreeItem"
 import type { Gene } from "@/types/gene"
 import { useUIStore } from "@/store/uiStore"
 import { getFamilyColor } from "@/utils/familyColor"
+import FamilyTreeItem from "./FamilyTreeItem"
 
 interface FamilyTreeProps {
   genes: Gene[]
@@ -27,11 +26,6 @@ interface FamilyGroup {
   members: Gene[]
 }
 
-const familyFlash = keyframes`
-  0%   { background-color: rgba(81, 175, 239, 0.45); }
-  100% { background-color: transparent; }
-`
-
 function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   const map = new Map<string, Gene[]>()
   for (const gene of genes) {
@@ -42,7 +36,7 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
   return [...map.entries()]
     .map(([family, members]) => ({
       family,
-      label: `${family}${members[0].category ? ` \u00B7 ${members[0].category}` : ""} (${members.length})`,
+      label: `${family}${members[0].category ? ` · ${members[0].category}` : ""} (${members.length})`,
       members: [...members].sort((a, b) =>
         a.symbol.localeCompare(b.symbol, undefined, { numeric: true }),
       ),
@@ -64,6 +58,16 @@ export default function FamilyTree({
   const [expandedItems, setExpandedItems] = useState<string[]>(familyFilter ? [familyFilter] : [])
   const [flashingFamily, setFlashingFamily] = useState<string | null>(null)
   const familyRefs = useRef(new Map<string, HTMLElement>())
+
+  const selectedFamily = useMemo(
+    () => genes.find((g) => g.id === selectedGeneId)?.family ?? null,
+    [genes, selectedGeneId],
+  )
+
+  const registerRef = useCallback((family: string, el: HTMLElement | null) => {
+    if (el) familyRefs.current.set(family, el)
+    else familyRefs.current.delete(family)
+  }, [])
 
   useEffect(() => {
     if (!familyFilter) return
@@ -101,80 +105,23 @@ export default function FamilyTree({
         onExpandedItemsChange={(_, items) => setExpandedItems(items)}
         slots={{ expandIcon: ChevronRightIcon, collapseIcon: ExpandMoreIcon }}
       >
-        {familyGroups.map(({ family, label, members }) => {
-          const isActive = familyFilter === family
-          const isExpanded = expandedItems.includes(family)
-          const isFlashing = flashingFamily === family
-          const color = getFamilyColor(family, palette.mode)
-          return (
-            <TreeItem
-              key={family}
-              itemId={family}
-              label={
-                <Box
-                  ref={(el: HTMLElement | null) => {
-                    if (el) familyRefs.current.set(family, el)
-                    else familyRefs.current.delete(family)
-                  }}
-                  sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25 }}
-                >
-                  <Box
-                    sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }}
-                  />
-                  <Typography variant="body2" noWrap>
-                    {label}
-                  </Typography>
-                </Box>
-              }
-              onClick={() => {
-                if (isActive) onSelectFamily(null)
-                else if (!isExpanded) onSelectFamily(family)
-              }}
-              sx={{
-                "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused":
-                  {
-                    borderLeft: `3px solid ${isExpanded ? color : "transparent"}`,
-                    bgcolor: isExpanded ? `${color}22` : undefined,
-                  },
-                ...(isFlashing && {
-                  "& > .MuiTreeItem-content": {
-                    animation: `${familyFlash} 1.4s ease-out`,
-                  },
-                }),
-              }}
-            >
-              {members.map((gene) => {
-                const isGeneSelected = gene.id === selectedGeneId
-                return (
-                  <TreeItem
-                    key={gene.id}
-                    itemId={gene.id}
-                    label={
-                      <Typography variant="body2" noWrap fontWeight={isGeneSelected ? 700 : 400}>
-                        {gene.symbol}
-                      </Typography>
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedGeneId(gene.id)
-                      if (!isActive) onSelectFamily(family)
-                      onClose?.()
-                    }}
-                    sx={{
-                      "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover":
-                        {
-                          bgcolor: isGeneSelected ? `${color}50` : `${color}18`,
-                        },
-                      "& > .MuiTreeItem-content:hover": {
-                        bgcolor: isGeneSelected ? `${color}60` : `${color}30`,
-                      },
-                    }}
-                  />
-                )
-              })}
-            </TreeItem>
-          )
-        })}
+        {familyGroups.map(({ family, label, members }) => (
+          <FamilyTreeItem
+            key={family}
+            family={family}
+            label={label}
+            members={members}
+            color={getFamilyColor(family, palette.mode)}
+            isActive={familyFilter === family}
+            isExpanded={expandedItems.includes(family)}
+            isFlashing={flashingFamily === family}
+            selectedGeneId={selectedFamily === family ? selectedGeneId : null}
+            onSelectFamily={onSelectFamily}
+            onSelectGene={setSelectedGeneId}
+            onClose={onClose}
+            registerRef={registerRef}
+          />
+        ))}
       </SimpleTreeView>
     </Paper>
   )
