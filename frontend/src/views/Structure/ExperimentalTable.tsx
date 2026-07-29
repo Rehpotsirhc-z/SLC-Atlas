@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Link,
   Table,
@@ -12,12 +12,28 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TableSortLabel,
   Typography,
 } from "@mui/material"
 import { pdbeUrl } from "@/utils/links"
 import { EXPERIMENTAL_PAGE_SIZE } from "./constants"
 import { methodLabel, resolutionLabel } from "./experimentalEntry"
+import { sortExperimental, type ExperimentalSortKey } from "./experimentalSort"
 import type { ExperimentalStructure } from "@/types/structure"
+import type { SortDir } from "@/types/table"
+
+const COLUMNS: {
+  key: ExperimentalSortKey
+  label: string
+  align: "left" | "right"
+}[] = [
+  { key: "pdb_id", label: "PDB", align: "left" },
+  { key: "method", label: "Method", align: "left" },
+  { key: "resolution", label: "Resolution", align: "right" },
+  { key: "coverage", label: "Coverage", align: "right" },
+  { key: "residues", label: "Residues", align: "left" },
+  { key: "ligands", label: "Ligands", align: "left" },
+]
 
 interface Props {
   entries: ExperimentalStructure[]
@@ -28,8 +44,24 @@ interface Props {
 export default function ExperimentalTable({ entries, selectedPdbId, onSelect }: Props) {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(EXPERIMENTAL_PAGE_SIZE)
+  const [sortKey, setSortKey] = useState<ExperimentalSortKey>("pdb_id")
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
 
-  const visible = entries.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  function handleSort(key: ExperimentalSortKey) {
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+    else {
+      setSortKey(key)
+      setSortDir("asc")
+    }
+    setPage(0)
+  }
+
+  const sorted = useMemo(
+    () => sortExperimental(entries, sortKey, sortDir),
+    [entries, sortKey, sortDir],
+  )
+
+  const visible = sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   return (
     <>
@@ -37,12 +69,21 @@ export default function ExperimentalTable({ entries, selectedPdbId, onSelect }: 
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>PDB</TableCell>
-              <TableCell>Method</TableCell>
-              <TableCell align="right">Resolution</TableCell>
-              <TableCell align="right">Coverage</TableCell>
-              <TableCell>Residues</TableCell>
-              <TableCell>Ligands</TableCell>
+              {COLUMNS.map(({ key, label, align }) => (
+                <TableCell
+                  key={key}
+                  align={align}
+                  sortDirection={sortKey === key ? sortDir : false}
+                >
+                  <TableSortLabel
+                    active={sortKey === key}
+                    direction={sortKey === key ? sortDir : "asc"}
+                    onClick={() => handleSort(key)}
+                  >
+                    {label}
+                  </TableSortLabel>
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>

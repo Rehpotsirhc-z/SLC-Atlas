@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Transcript } from "@/types/gene"
+import type { SortDir } from "@/types/table"
 
 export type TranscriptSortKey = "id" | "name" | "type" | "start" | "length"
-export type SortDir = "asc" | "desc"
 
 export function sortTranscripts(transcripts: Transcript[], key: TranscriptSortKey, dir: SortDir) {
   const sign = dir === "asc" ? 1 : -1

@@ -21,9 +21,9 @@ import {
   buildTranscriptStats,
   buildTypeCounts,
   sortTranscripts,
-  type SortDir,
   type TranscriptSortKey,
 } from "./transcriptStats"
+import type { SortDir } from "@/types/table"
 
 const SKELETON_ROWS = 3
 
