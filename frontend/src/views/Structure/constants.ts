@@ -39,6 +39,9 @@ export const TRACK = {
   unresolvedDash: "5 4",
 } as const
 
+// How far the topology figure fades everything unrelated to the element under the pointer
+export const DIM_OPACITY = 0.3
+
 export const MODEL_BASE = "/api/structure/models"
 // Where coordinates come from when this deployment mirrored none of its own
 export const RCSB_MODEL_BASE = "https://models.rcsb.org"

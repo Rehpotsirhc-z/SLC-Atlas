@@ -14,33 +14,24 @@ import {
   useTheme,
 } from "@mui/material"
 import { useCapability } from "@/api/hooks/useCapabilities"
-import InfoTooltip from "@/components/InfoTooltip"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
-import { capBoxSx } from "@/theme"
 import { figureExportHandlers } from "@/utils/exportFigure"
-import { useElementSize } from "@/utils/useElementSize"
 import {
-  COLUMN_GAP,
   CONTENT_PADDING_PX,
   MIN_CONTENT_WIDTH,
   PREFERRED_CONTENT_WIDTH,
   SIDE_BY_SIDE_MIN_WIDTH,
-  TRACK,
 } from "./constants"
 import ExperimentalTable from "./ExperimentalTable"
 import IdentityCard from "./IdentityCard"
-import LinkedResidues from "./LinkedResidues"
 import ModelLinks from "./ModelLinks"
-import ModelSwitcher from "./ModelSwitcher"
-import ModelViewerPanel from "./ModelViewerPanel"
 import StructureSummary from "./StructureSummary"
 import StructureToolbar from "./StructureToolbar"
-import TopologyFigure from "./TopologyFigure"
+import LinkedPanes from "./LinkedPanes"
 import { useStructureState } from "./useStructureState"
-import { useTopologyState } from "./useTopologyState"
 import type { ModelExporter } from "./molstar/types"
 
 export default function Structure() {
@@ -75,13 +66,12 @@ export default function Structure() {
     enabled: !isLoading && !isMobile,
   })
 
-  const [figureRef, figureBox] = useElementSize<HTMLDivElement>("content")
-
   useEffect(() => {
     if (!isLoading && !isMobile) expandRail(PREFERRED_CONTENT_WIDTH)
   }, [isLoading, isMobile, expandRail])
 
-  // Stored as a value, so setState needs the updater form to not call it
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+
   const handleExporterChange = useCallback(
     (exporter: ModelExporter | null) => setExportModelPng(() => exporter),
     [],
@@ -101,16 +91,6 @@ export default function Structure() {
 
   const paneWidth = contentWidth - CONTENT_PADDING_PX
   const sideBySide = !isMobile && paneWidth >= SIDE_BY_SIDE_MIN_WIDTH
-  // Floored so a fractional column width cannot leave the figure a sub-pixel too wide
-  const trackWidth = Math.max(Math.floor(figureBox.w), TRACK.minWidth)
-
-  const topology = useTopologyState(
-    features ?? [],
-    selected?.uniprot_length ?? 0,
-    trackWidth,
-    plddt,
-    selected?.uniprot_accession ?? null,
-  )
 
   const header = (
     <ViewHeader
@@ -143,7 +123,7 @@ export default function Structure() {
           railWidth={railWidth}
           useDrawer={isMobile || useDrawer}
           drawerOpen={drawerOpen}
-          onDrawerClose={() => setDrawerOpen(false)}
+          onDrawerClose={closeDrawer}
           onDragStart={onDragStart}
         />
 
@@ -182,102 +162,19 @@ export default function Structure() {
                   <Stack spacing={3}>
                     <IdentityCard structure={selected} gene={selectedGene} />
 
-                    <Box
-                      data-testid="figure-row"
-                      data-side-by-side={sideBySide}
-                      sx={{
-                        display: "flex",
-                        flexDirection: sideBySide ? "row" : "column",
-                        gap: `${COLUMN_GAP}px`,
-                        alignItems: "stretch",
-                      }}
-                    >
-                      <Box
-                        ref={figureRef}
-                        data-testid="topology-column"
-                        sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0, overflowX: "auto" }}
-                      >
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="overline" color="primary" sx={capBoxSx}>
-                            Membrane topology
-                          </Typography>
-                          <InfoTooltip label="How to read the topology diagram">
-                            <Typography variant="caption" component="p">
-                              The x axis is the residue number, so every mark sits at the residues
-                              it covers and a helix is as wide as it is long. The curve threading
-                              the figure is the protein chain, N-terminus at left. The solid
-                              cylinders in the membrane band are transmembrane helices, numbered in
-                              order; the paler, half-height cylinders sit inside the membrane
-                              without crossing it. Between cylinders the chain loops onto whichever
-                              side of the membrane UniProt puts that stretch on.
-                            </Typography>
-                            <Typography variant="caption" component="p">
-                              Each row under Binds is one binding site; the blocks in it are the
-                              residues that touch the ligand named in the key below. The Confidence
-                              strip is AlphaFold&apos;s per-residue score, banded in the same four
-                              colours as the 3D model; hover it for the score at a residue.
-                            </Typography>
-                            <Typography variant="caption" component="p">
-                              A dashed line is one where UniProt&apos;s own compartments cannot all
-                              be reached by alternating helices, so the helices in it may be
-                              flipped.
-                            </Typography>
-                          </InfoTooltip>
-                        </Stack>
-                        {features?.length && selected.uniprot_length ? (
-                          <TopologyFigure
-                            svgRef={svgRef}
-                            length={selected.uniprot_length}
-                            plddt={plddt}
-                            topology={topology}
-                          />
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            UniProt has no topology annotation for this protein.
-                          </Typography>
-                        )}
-                      </Box>
-
-                      <Box
-                        data-testid="model-column"
-                        sx={{ flex: sideBySide ? "4 1 0" : "none", minWidth: 0 }}
-                      >
-                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
-                          <Typography variant="overline" color="primary" sx={capBoxSx}>
-                            3D model
-                          </Typography>
-                          <InfoTooltip label="How to read the 3D model">
-                            <Typography variant="caption" component="p">
-                              The predicted model, coloured by AlphaFold&apos;s per-residue
-                              confidence. Hovering on either view lights the same residues in the
-                              other, and clicking a helix, loop or site in the figure brings its
-                              residues into view here.
-                            </Typography>
-                          </InfoTooltip>
-                        </Stack>
-                        <ModelViewerPanel
-                          source={modelSource}
-                          deferLoad={isMobile}
-                          highlightSpans={topology.highlightSpans}
-                          cameraSpans={topology.cameraSpans}
-                          onResidueHover={topology.hoverResidue}
-                          onExporterChange={handleExporterChange}
-                        />
-                        <Stack spacing={1} sx={{ mt: 1 }}>
-                          {experimental && experimental.length > 0 && (
-                            <ModelSwitcher
-                              entries={experimental}
-                              selectedPdbId={selectedPdbId}
-                              onSelect={selectPdbId}
-                            />
-                          )}
-                          <LinkedResidues
-                            highlightSpans={topology.highlightSpans}
-                            linkable={modelSource?.kind === "afdb"}
-                          />
-                        </Stack>
-                      </Box>
-                    </Box>
+                    <LinkedPanes
+                      structure={selected}
+                      features={features}
+                      plddt={plddt}
+                      modelSource={modelSource}
+                      experimental={experimental}
+                      selectedPdbId={selectedPdbId}
+                      onSelectPdbId={selectPdbId}
+                      sideBySide={sideBySide}
+                      isMobile={isMobile}
+                      svgRef={svgRef}
+                      onExporterChange={handleExporterChange}
+                    />
 
                     <ModelLinks structure={selected} />
 

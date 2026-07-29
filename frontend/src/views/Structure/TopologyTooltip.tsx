@@ -6,18 +6,19 @@ import { Typography, useTheme } from "@mui/material"
 import HoverTooltip from "@/components/HoverTooltip"
 import { clipSpans, formatSpans, siteName } from "./bindingSites"
 import { plddtBand } from "./confidenceColor"
-import type { Hover } from "./useTopologyHover"
 import type { TopologyLayout } from "./topologyLayout"
+import type { TopologyTarget } from "./topologyTargets"
 
 interface Props {
-  hover: Hover
+  hover: TopologyTarget
+  point: { x: number; y: number }
   layout: TopologyLayout
 }
 
 const UNRESOLVED =
   "sides unresolved: the annotation here cannot be satisfied by alternating helices"
 
-export default function TopologyTooltip({ hover, layout }: Props) {
+export default function TopologyTooltip({ hover, point, layout }: Props) {
   const { custom } = useTheme()
 
   const Title = ({ children }: { children: string }) => (
@@ -44,7 +45,7 @@ export default function TopologyTooltip({ hover, layout }: Props) {
   const face = (side: "inside" | "outside") => layout.sideLabels[side].toLowerCase()
 
   return (
-    <HoverTooltip x={hover.x} y={hover.y}>
+    <HoverTooltip x={point.x} y={point.y}>
       {hover.kind === "segment" && (
         <>
           <Title>{hover.item.name}</Title>

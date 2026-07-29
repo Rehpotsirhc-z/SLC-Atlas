@@ -64,7 +64,10 @@ export function relatedTo(layout: TopologyLayout, target: TopologyTarget | null)
   return { segments, arcs, sites, size: segments.size + arcs.size + sites.size }
 }
 
+const NO_SPANS: ResidueSpan[] = []
+
 export function spansForSets(layout: TopologyLayout, sets: TargetSets): ResidueSpan[] {
+  if (sets.size === 0) return NO_SPANS
   const spans: ResidueSpan[] = []
   for (const c of layout.cylinders) if (sets.segments.has(c.key)) spans.push(c)
   for (const a of layout.arcs) if (sets.arcs.has(a.key)) spans.push(a)

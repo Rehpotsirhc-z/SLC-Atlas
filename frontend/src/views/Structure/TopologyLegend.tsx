@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { Fragment, type ReactNode } from "react"
+import { Fragment, memo, type ReactNode } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import SwatchLegend, { type Swatch } from "@/components/SwatchLegend"
 import { formatSpans } from "./bindingSites"
@@ -21,7 +21,7 @@ interface Row {
   content: ReactNode
 }
 
-export default function TopologyLegend({ layout }: Props) {
+const TopologyLegend = memo(function TopologyLegend({ layout }: Props) {
   const { palette, custom } = useTheme()
 
   const valueSx = {
@@ -130,4 +130,6 @@ export default function TopologyLegend({ layout }: Props) {
       </Box>
     </Box>
   )
-}
+})
+
+export default TopologyLegend
