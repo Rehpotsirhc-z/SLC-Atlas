@@ -11,16 +11,6 @@ import {
   type TreeTissue,
 } from "@/api/hooks/useClustering"
 
-const selectSx = {
-  fontSize: "0.8rem",
-  "& .MuiSelect-select": {
-    display: "flex",
-    alignItems: "center",
-    minHeight: "unset",
-    py: "7px",
-  },
-}
-
 interface Props {
   metric: TreeMetric
   onMetricChange: (metric: TreeMetric) => void
@@ -45,7 +35,6 @@ export default function GeneOrderControl({
           startAdornment={
             <AccountTreeIcon sx={{ fontSize: 18, color: "text.secondary", mr: 0.75 }} />
           }
-          sx={selectSx}
         >
           {METRIC_ORDER.map((m) => (
             <MenuItem key={m} value={m}>
@@ -60,7 +49,6 @@ export default function GeneOrderControl({
           fullWidth
           value={tissue}
           onChange={(e) => onTissueChange(e.target.value as TreeTissue)}
-          sx={selectSx}
         >
           <MenuItem value="all">All tissues</MenuItem>
           <MenuItem value="brain">Brain</MenuItem>

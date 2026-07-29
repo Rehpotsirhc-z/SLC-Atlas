@@ -64,7 +64,30 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
     },
     MuiSelect: {
       styleOverrides: {
-        select: { fontFamily: monoFontFamily },
+        root: {
+          fontSize: "0.8rem",
+          "&.MuiInputBase-adornedStart": { paddingLeft: "9px" },
+          "& .MuiOutlinedInput-notchedOutline": { borderColor: divider },
+          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: c.base5 },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: divider,
+            borderWidth: 1,
+          },
+          "&&:has([aria-expanded='true']) .MuiOutlinedInput-notchedOutline, &&:has(:focus-visible) .MuiOutlinedInput-notchedOutline":
+            {
+              borderColor: c.magenta,
+              borderWidth: 1,
+            },
+        },
+        select: {
+          fontFamily: monoFontFamily,
+          display: "flex",
+          alignItems: "center",
+          minHeight: "unset",
+          paddingTop: "7px",
+          paddingBottom: "7px",
+        },
+        icon: { color: mode === "dark" ? c.base6 : c.base5 },
       },
     },
     MuiMenuItem: {

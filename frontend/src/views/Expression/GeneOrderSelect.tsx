@@ -23,15 +23,6 @@ export default function GeneOrderSelect({ metric, onChange }: Props) {
           startAdornment={
             <AccountTreeIcon sx={{ fontSize: 18, color: "text.secondary", mr: 0.75 }} />
           }
-          sx={{
-            fontSize: "0.8rem",
-            "& .MuiSelect-select": {
-              display: "flex",
-              alignItems: "center",
-              minHeight: "unset",
-              py: "7px",
-            },
-          }}
         >
           {METRIC_ORDER.map((m) => (
             <MenuItem key={m} value={m}>
