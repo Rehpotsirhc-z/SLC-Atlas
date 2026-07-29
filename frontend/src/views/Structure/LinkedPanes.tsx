@@ -71,7 +71,7 @@ export default function LinkedPanes({
         data-testid="topology-column"
         sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0, overflowX: "auto" }}
       >
-        <Stack direction="row" spacing={0.5} alignItems="center">
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="overline" color="primary" sx={capBoxSx}>
             Membrane topology
           </Typography>
