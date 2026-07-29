@@ -7,19 +7,11 @@ import { MAQualityAssessment } from "molstar/lib/extensions/model-archive/qualit
 import { createPluginUI } from "molstar/lib/mol-plugin-ui"
 import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
 import { DefaultPluginUISpec, type PluginUISpec } from "molstar/lib/mol-plugin-ui/spec"
-import { PluginConfig } from "molstar/lib/mol-plugin/config"
 import { PluginSpec } from "molstar/lib/mol-plugin/spec"
+import { EMBEDDED_VIEWPORT } from "./layout"
 
 import "./doom-one.scss"
 import "./doom-one-light.scss"
-
-const VIEWPORT_CONFIG: PluginUISpec["config"] = [
-  [PluginConfig.Viewport.ShowAnimation, false],
-  [PluginConfig.Viewport.ShowTrajectoryControls, false],
-  [PluginConfig.Viewport.ShowIllumination, false],
-  [PluginConfig.Viewport.ShowXR, "never"],
-  [PluginConfig.Viewport.ShowControls, false],
-]
 
 const roots = new WeakMap<HTMLElement, Root>()
 
@@ -50,9 +42,8 @@ export async function createViewer(container: HTMLDivElement): Promise<PluginUIC
     components: {
       ...base.components,
       remoteState: "none",
-      controls: { top: "none", bottom: "none" },
     },
-    config: [...(base.config ?? []), ...(VIEWPORT_CONFIG ?? [])],
+    config: [...(base.config ?? []), ...EMBEDDED_VIEWPORT],
   }
 
   return createPluginUI({ target: container, render: renderInOwnedRoot, spec })

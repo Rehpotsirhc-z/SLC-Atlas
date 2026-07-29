@@ -8,10 +8,11 @@ import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
 import { VIEWER_HEIGHT } from "./constants"
 import { downloadModelPng } from "./molstar/export"
 import { applyHighlight, focusCamera } from "./molstar/highlight"
+import { watchLayoutMode } from "./molstar/layout"
 import { loadModel } from "./molstar/load"
 import { createViewer, disposeViewer } from "./molstar/plugin"
 import { subscribeHover } from "./molstar/residues"
-import { syncBackground } from "./molstar/theme"
+import { syncBackground, syncMarkers } from "./molstar/theme"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
 
 interface Props {
@@ -62,6 +63,8 @@ export default function MolstarViewer({
     }
   }, [])
 
+  useEffect(() => (plugin ? watchLayoutMode(plugin) : undefined), [plugin])
+
   useEffect(() => {
     if (!plugin) return
     let cancelled = false
@@ -77,6 +80,10 @@ export default function MolstarViewer({
   useEffect(() => {
     if (plugin) syncBackground(plugin, background)
   }, [plugin, background])
+
+  useEffect(() => {
+    if (plugin) syncMarkers(plugin, palette.secondary.main, palette.success.main)
+  }, [plugin, palette])
 
   useEffect(() => {
     onExporterChange(plugin ? (filename) => downloadModelPng(plugin, filename) : null)

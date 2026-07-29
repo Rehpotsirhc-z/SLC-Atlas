@@ -16,10 +16,22 @@
         overflow: hidden;
     }
 
+    // Mol* leaves its expanded root at z-index auto, so the page would paint over it
+    .msp-plugin .msp-layout-expanded {
+        z-index: 1600;
+        --atlas-viewer-height: 100vh;
+    }
+
     .msp-plugin .msp-btn:focus-visible,
     .msp-plugin .msp-form-control:focus-visible {
         outline: 2px solid $focus-ring !important;
         outline-offset: -2px !important;
+    }
+
+    // Invert highlighted text color
+    .msp-plugin .msp-sequence-wrapper .msp-sequence-residue-highlighted,
+    .msp-plugin .msp-sequence-wrapper .msp-sequence-residue-selected {
+        color: $surface;
     }
 
     .msp-plugin .msp-control-row,
