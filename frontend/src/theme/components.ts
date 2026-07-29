@@ -125,6 +125,11 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
     },
     MuiCssBaseline: {
       styleOverrides: {
+        "a:not(.MuiButtonBase-root):focus-visible": {
+          outline: `2px solid ${c.blue}`,
+          outlineOffset: 2,
+          borderRadius: 2,
+        },
         "*": {
           scrollbarWidth: "thin",
           scrollbarColor: `${c.base4} transparent`,

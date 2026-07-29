@@ -2,11 +2,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-@mixin atlas-chrome($surface, $divider, $scrollbar-thumb, $scrollbar-thumb-hover, $panel-shadow) {
+@mixin atlas-chrome(
+    $surface,
+    $divider,
+    $scrollbar-thumb,
+    $scrollbar-thumb-hover,
+    $panel-shadow,
+    $focus-ring
+) {
     .msp-plugin .msp-layout-standard {
         border: 1px solid $divider;
         border-radius: 4px;
         overflow: hidden;
+    }
+
+    .msp-plugin .msp-btn:focus-visible,
+    .msp-plugin .msp-form-control:focus-visible {
+        outline: 2px solid $focus-ring !important;
+        outline-offset: -2px !important;
     }
 
     .msp-plugin .msp-control-row,
