@@ -41,6 +41,7 @@ const TopologyDiagram = memo(function TopologyDiagram({
   const membraneEdge = alpha(palette.text.primary, palette.mode === "dark" ? 0.22 : 0.16)
   const gridStroke = alpha(palette.text.primary, palette.mode === "dark" ? 0.09 : 0.07)
   const chainStroke = palette.text.secondary
+  const chainLitStroke = palette.secondary.main
   const axisColor = palette.text.disabled
   const labelColor = palette.text.secondary
 
@@ -109,34 +110,37 @@ const TopologyDiagram = memo(function TopologyDiagram({
           </text>
         ))}
 
-        {layout.arcs.map((arc) => (
-          <g
-            key={arc.key}
-            opacity={dimmed(highlight.arcs.has(arc.key))}
-            onMouseMove={(e) => arc.residues && onHover(e, { kind: "arc", item: arc })}
-            onMouseLeave={onLeave}
-            onClick={() => arc.residues && onSelect({ kind: "arc", item: arc })}
-            style={{ cursor: arc.residues ? "pointer" : "default" }}
-          >
-            <path
-              d={arc.path}
-              fill="none"
-              stroke={chainStroke}
-              strokeWidth={TRACK.chainWidth}
-              strokeLinecap="round"
-              strokeDasharray={arc.unresolved ? TRACK.unresolvedDash : undefined}
-            />
-
-            {arc.residues > 0 && (
+        {layout.arcs.map((arc) => {
+          const lit = highlight.arcs.has(arc.key)
+          return (
+            <g
+              key={arc.key}
+              opacity={dimmed(lit)}
+              onMouseMove={(e) => arc.residues && onHover(e, { kind: "arc", item: arc })}
+              onMouseLeave={onLeave}
+              onClick={() => arc.residues && onSelect({ kind: "arc", item: arc })}
+              style={{ cursor: arc.residues ? "pointer" : "default" }}
+            >
               <path
                 d={arc.path}
                 fill="none"
-                stroke="transparent"
-                strokeWidth={TRACK.chainHitWidth}
+                stroke={lit ? chainLitStroke : chainStroke}
+                strokeWidth={lit ? TRACK.chainLitWidth : TRACK.chainWidth}
+                strokeLinecap="round"
+                strokeDasharray={arc.unresolved ? TRACK.unresolvedDash : undefined}
               />
-            )}
-          </g>
-        ))}
+
+              {arc.residues > 0 && (
+                <path
+                  d={arc.path}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={TRACK.chainHitWidth}
+                />
+              )}
+            </g>
+          )
+        })}
 
         {layout.termini.map((terminus) => (
           <text

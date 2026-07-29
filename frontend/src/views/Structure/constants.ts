@@ -35,6 +35,7 @@ export const TRACK = {
   siteBarMinWidth: 4,
   siteBarHeight: 8,
   chainWidth: 2,
+  chainLitWidth: 3,
   chainHitWidth: 14,
   unresolvedDash: "5 4",
 } as const
