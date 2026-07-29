@@ -8,21 +8,17 @@ import type { ResidueSpan } from "./molstar/types"
 
 interface Props {
   highlightSpans: ResidueSpan[]
-  focusedSpans: ResidueSpan[] | null
   linkable: boolean
 }
 
-const HINT = "Hover the topology figure to light up the same residues here, click to zoom to them"
+const HINT = "Hover either view to light up the same residues in the other, click to zoom to them"
 
-export default function LinkedResidues({ highlightSpans, focusedSpans, linkable }: Props) {
-  const spans = focusedSpans ?? highlightSpans
-  const verb = focusedSpans ? "Focused" : "Highlighting"
-
+export default function LinkedResidues({ highlightSpans, linkable }: Props) {
   const text = !linkable
     ? "This entry has its own residue numbering, so the topology figure does not index it"
-    : spans.length === 0
+    : highlightSpans.length === 0
       ? HINT
-      : `${verb} residue ${formatSpans(spans)}`
+      : `Highlighting residue ${formatSpans(highlightSpans)}`
 
   return (
     <Typography variant="caption" color="text.secondary" data-testid="linked-residues">

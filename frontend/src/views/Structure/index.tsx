@@ -109,6 +109,7 @@ export default function Structure() {
     selected?.uniprot_length ?? 0,
     trackWidth,
     plddt,
+    selected?.uniprot_accession ?? null,
   )
 
   const header = (
@@ -247,16 +248,10 @@ export default function Structure() {
                           </Typography>
                           <InfoTooltip label="How to read the 3D model">
                             <Typography variant="caption" component="p">
-                              The predicted model opens first, coloured by AlphaFold&apos;s
-                              per-residue confidence: the same score, in the same colours, as the
-                              Confidence strip under the topology figure. Every gene has one, and
-                              its residue numbering matches the figure exactly.
-                            </Typography>
-                            <Typography variant="caption" component="p">
-                              Drag to rotate, scroll to zoom. Experimental structures, where they
-                              exist, are listed below and open in this panel; they are measured
-                              rather than predicted, but often cover only part of the chain and are
-                              numbered in their own residues.
+                              The predicted model, coloured by AlphaFold&apos;s per-residue
+                              confidence. Hovering on either view lights the same residues in the
+                              other, and clicking a helix, loop or site in the figure brings its
+                              residues into view here.
                             </Typography>
                           </InfoTooltip>
                         </Stack>
@@ -264,7 +259,8 @@ export default function Structure() {
                           source={modelSource}
                           deferLoad={isMobile}
                           highlightSpans={topology.highlightSpans}
-                          focusedSpans={topology.focusSpans}
+                          cameraSpans={topology.cameraSpans}
+                          onResidueHover={topology.hoverResidue}
                           onExporterChange={handleExporterChange}
                         />
                         <Stack spacing={1} sx={{ mt: 1 }}>
@@ -277,7 +273,6 @@ export default function Structure() {
                           )}
                           <LinkedResidues
                             highlightSpans={topology.highlightSpans}
-                            focusedSpans={topology.focusSpans}
                             linkable={modelSource?.kind === "afdb"}
                           />
                         </Stack>

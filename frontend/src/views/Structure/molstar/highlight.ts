@@ -44,13 +44,7 @@ export function applyHighlight(plugin: PluginContext, spans: ResidueSpan[]): voi
 
 const FOCUS_CONTEXT_RADIUS = 12
 
-export function focusSpans(plugin: PluginContext, spans: ResidueSpan[]): void {
+export function focusCamera(plugin: PluginContext, spans: ResidueSpan[]): void {
   const loci = lociForSpans(plugin, spans)
-  if (!loci) return
-  plugin.managers.structure.selection.fromLoci("set", loci)
-  plugin.managers.camera.focusLoci(loci, { extraRadius: FOCUS_CONTEXT_RADIUS })
-}
-
-export function clearFocus(plugin: PluginContext): void {
-  plugin.managers.structure.selection.clear()
+  if (loci) plugin.managers.camera.focusLoci(loci, { extraRadius: FOCUS_CONTEXT_RADIUS })
 }

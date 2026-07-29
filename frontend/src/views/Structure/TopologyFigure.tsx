@@ -21,7 +21,7 @@ interface Props {
 export default function TopologyFigure({ length, plddt, topology, svgRef }: Props) {
   const { palette, custom } = useTheme()
 
-  const { layout, hover, track, clear, highlight, dimmed, select, clearFocus } = topology
+  const { layout, hover, track, clear, highlight, dimmed, select } = topology
   const plotWidth = layout.plotRight - layout.plotLeft
 
   const helixFill = palette.primary.main
@@ -54,7 +54,6 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
           role="img"
           aria-label={`Membrane topology: ${layout.cylinders.length} membrane segments across ${length} residues`}
           onMouseLeave={clear}
-          onClick={clearFocus}
         >
           {/* The bilayer */}
           <rect
@@ -108,12 +107,7 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
               opacity={dimmed(highlight.arcs.has(arc.key))}
               onMouseMove={(e) => arc.residues && track(e, { kind: "arc", item: arc })}
               onMouseLeave={clear}
-              onClick={(e) => {
-                if (!arc.residues) return
-                // Otherwise the click reaches the canvas, which reads as a dismissal
-                e.stopPropagation()
-                select({ kind: "arc", item: arc })
-              }}
+              onClick={() => arc.residues && select({ kind: "arc", item: arc })}
               style={{ cursor: arc.residues ? "pointer" : "default" }}
             >
               <path
@@ -161,10 +155,7 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
                 opacity={dimmed(highlight.segments.has(cylinder.key))}
                 onMouseMove={(e) => track(e, { kind: "segment", item: cylinder })}
                 onMouseLeave={clear}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  select({ kind: "segment", item: cylinder })
-                }}
+                onClick={() => select({ kind: "segment", item: cylinder })}
                 style={{ cursor: "pointer" }}
               >
                 <rect
@@ -214,10 +205,7 @@ export default function TopologyFigure({ length, plddt, topology, svgRef }: Prop
                 opacity={dimmed(highlight.sites.has(site.key))}
                 onMouseMove={(e) => track(e, { kind: "site", item: site })}
                 onMouseLeave={clear}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  select({ kind: "site", item: site })
-                }}
+                onClick={() => select({ kind: "site", item: site })}
                 style={{ cursor: "pointer" }}
               >
                 {/* Joined so residues hundreds apart still read as one site */}

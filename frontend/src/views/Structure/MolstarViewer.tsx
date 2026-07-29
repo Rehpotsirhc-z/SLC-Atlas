@@ -7,9 +7,10 @@ import { Box, CircularProgress, Typography, useTheme } from "@mui/material"
 import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
 import { VIEWER_HEIGHT } from "./constants"
 import { downloadModelPng } from "./molstar/export"
-import { applyHighlight, clearFocus, focusSpans } from "./molstar/highlight"
+import { applyHighlight, focusCamera } from "./molstar/highlight"
 import { loadModel } from "./molstar/load"
 import { createViewer, disposeViewer } from "./molstar/plugin"
+import { subscribeHover } from "./molstar/residues"
 import { syncBackground } from "./molstar/theme"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
 
@@ -17,7 +18,8 @@ interface Props {
   source: ModelSource
   background: string
   highlightSpans: ResidueSpan[]
-  focusedSpans: ResidueSpan[] | null
+  cameraSpans: ResidueSpan[] | null
+  onResidueHover?: (residue: number | null) => void
   onExporterChange: (exporter: ModelExporter | null) => void
 }
 
@@ -25,7 +27,8 @@ export default function MolstarViewer({
   source,
   background,
   highlightSpans,
-  focusedSpans,
+  cameraSpans,
+  onResidueHover,
   onExporterChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -86,10 +89,14 @@ export default function MolstarViewer({
   }, [plugin, error, highlightSpans])
 
   useEffect(() => {
-    if (!plugin || error) return
-    if (focusedSpans) focusSpans(plugin, focusedSpans)
-    else clearFocus(plugin)
-  }, [plugin, error, focusedSpans])
+    if (!plugin || error || !cameraSpans) return
+    focusCamera(plugin, cameraSpans)
+  }, [plugin, error, cameraSpans])
+
+  useEffect(() => {
+    if (!plugin || !onResidueHover) return
+    return subscribeHover(plugin, onResidueHover)
+  }, [plugin, onResidueHover])
 
   useEffect(() => {
     const container = containerRef.current

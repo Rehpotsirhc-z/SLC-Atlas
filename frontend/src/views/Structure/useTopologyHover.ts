@@ -2,73 +2,66 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useMemo, useState, type MouseEvent } from "react"
-import { mergeSpans, spansOverlap } from "./bindingSites"
-import type { ChainArc, MembraneCylinder, PlacedSite, TopologyLayout } from "./topologyLayout"
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react"
+import { mergeSpans } from "./bindingSites"
+import {
+  relatedTo,
+  spansForSets,
+  spansOf,
+  targetAtResidue,
+  targetKey,
+  type TopologyTarget,
+} from "./topologyTargets"
+import type { TopologyLayout } from "./topologyLayout"
 import type { ResidueSpan } from "./molstar/types"
 
-export type HoverTarget =
-  | { kind: "segment"; item: MembraneCylinder }
-  | { kind: "arc"; item: ChainArc }
-  | { kind: "site"; item: PlacedSite }
-  | { kind: "confidence"; residue: number; score: number }
-
-export type Hover = HoverTarget & { x: number; y: number }
+export type Hover = TopologyTarget & { x: number; y: number }
 
 const DIM = 0.3
 
-function spansOf(target: HoverTarget): ResidueSpan[] {
-  if (target.kind === "site") return target.item.spans
-  if (target.kind === "confidence") return [{ start: target.residue, end: target.residue }]
-  return [{ start: target.item.start, end: target.item.end }]
-}
-
-export function useTopologyHover(layout: TopologyLayout) {
+export function useTopologyHover(layout: TopologyLayout, protein: string | null) {
   const [hover, setHover] = useState<Hover | null>(null)
-  const [focused, setFocused] = useState<HoverTarget | null>(null)
+  const [viewerHover, setViewerHover] = useState<TopologyTarget | null>(null)
+  const [cameraSpans, setCameraSpans] = useState<ResidueSpan[] | null>(null)
 
-  const track = (event: MouseEvent, target: HoverTarget) =>
+  // Residue numbers mean something else in the next protein, so nothing carries over
+  useEffect(() => {
+    setHover(null)
+    setViewerHover(null)
+    setCameraSpans(null)
+  }, [protein])
+
+  const track = (event: MouseEvent, target: TopologyTarget) =>
     setHover({ ...target, x: event.clientX, y: event.clientY })
   const clear = () => setHover(null)
-  const select = useCallback((target: HoverTarget) => setFocused(target), [])
-  const clearFocus = useCallback(() => setFocused(null), [])
 
-  const highlight = useMemo(() => {
-    const segments = new Set<string>()
-    const arcs = new Set<string>()
-    const sites = new Set<string>()
+  // A click on the figure only brings its residues into view; nothing about it persists
+  const select = useCallback(
+    (target: TopologyTarget) => setCameraSpans(mergeSpans(spansOf(target))),
+    [],
+  )
 
-    if (hover?.kind === "site") {
-      sites.add(hover.item.key)
-      const { spans } = hover.item
-      for (const c of layout.cylinders) {
-        if (spansOverlap(spans, c.start, c.end)) segments.add(c.key)
-      }
-      for (const arc of layout.arcs) {
-        if (arc.residues && spansOverlap(spans, arc.start, arc.end)) arcs.add(arc.key)
-      }
-    } else if (hover?.kind === "segment" || hover?.kind === "arc") {
-      const { start, end } = hover.item
-      if (hover.kind === "segment") segments.add(hover.item.key)
-      else arcs.add(hover.item.key)
-      for (const site of layout.sites) {
-        if (spansOverlap(site.spans, start, end)) sites.add(site.key)
-      }
-    }
-    return { segments, arcs, sites, active: segments.size + arcs.size + sites.size > 0 }
-  }, [hover, layout])
+  // The viewer reports every mouse move, so a pointer travelling along one helix must not
+  // re-push the same highlight into it
+  const hoverResidue = useCallback(
+    (residue: number | null) => {
+      const next = residue === null ? null : targetAtResidue(layout, residue)
+      setViewerHover((current) => (targetKey(current) === targetKey(next) ? current : next))
+    },
+    [layout],
+  )
 
-  const dimmed = (lit: boolean) => (highlight.active && !lit ? DIM : 1)
+  const pointed = hover ?? viewerHover
+  const highlight = useMemo(() => relatedTo(layout, pointed), [layout, pointed])
 
-  const highlightSpans = useMemo(() => {
-    const spans: ResidueSpan[] = []
-    for (const c of layout.cylinders) if (highlight.segments.has(c.key)) spans.push(c)
-    for (const a of layout.arcs) if (highlight.arcs.has(a.key)) spans.push(a)
-    for (const s of layout.sites) if (highlight.sites.has(s.key)) spans.push(...s.spans)
-    return mergeSpans(spans)
-  }, [highlight, layout])
+  const dimmed = (lit: boolean) => (highlight.size > 0 && !lit ? DIM : 1)
 
-  const focusSpans = useMemo(() => (focused ? mergeSpans(spansOf(focused)) : null), [focused])
+  // Only the figure's own pointer reaches into the viewer: while the cursor is on the canvas
+  // Mol* is marking what it picked, and this keeps its identity so nothing overwrites that
+  const highlightSpans = useMemo(
+    () => spansForSets(layout, relatedTo(layout, hover)),
+    [layout, hover],
+  )
 
   return {
     hover,
@@ -76,10 +69,9 @@ export function useTopologyHover(layout: TopologyLayout) {
     clear,
     highlight,
     dimmed,
-    focused,
     select,
-    clearFocus,
+    hoverResidue,
     highlightSpans,
-    focusSpans,
+    cameraSpans,
   }
 }

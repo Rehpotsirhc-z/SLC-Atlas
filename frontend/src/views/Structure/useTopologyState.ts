@@ -12,11 +12,12 @@ export function useTopologyState(
   length: number,
   width: number,
   plddt: number[] | null,
+  protein: string | null,
 ) {
   const layout = useMemo(
     () =>
       features.length && length ? layoutTopology(features, length, width, plddt) : EMPTY_LAYOUT,
     [features, length, width, plddt],
   )
-  return { layout, ...useTopologyHover(layout) }
+  return { layout, ...useTopologyHover(layout, protein) }
 }

@@ -14,7 +14,8 @@ interface Props {
   source: ModelSource | null
   deferLoad: boolean
   highlightSpans: ResidueSpan[]
-  focusedSpans: ResidueSpan[] | null
+  cameraSpans: ResidueSpan[] | null
+  onResidueHover: (residue: number | null) => void
   onExporterChange: (exporter: ModelExporter | null) => void
 }
 
@@ -37,7 +38,8 @@ export default function ModelViewerPanel({
   source,
   deferLoad,
   highlightSpans,
-  focusedSpans,
+  cameraSpans,
+  onResidueHover,
   onExporterChange,
 }: Props) {
   // Mol* is about a megabyte gzipped, so on a phone it waits to be asked for
@@ -72,6 +74,9 @@ export default function ModelViewerPanel({
     )
   }
 
+  // An experimental entry counts in its own residues, so nothing crosses to the figure
+  const linked = source.kind === "afdb"
+
   return (
     <Box sx={{ width: "100%" }}>
       <Suspense
@@ -84,8 +89,9 @@ export default function ModelViewerPanel({
         <MolstarViewer
           source={source}
           background={palette.background.default}
-          highlightSpans={source.kind === "afdb" ? highlightSpans : NO_SPANS}
-          focusedSpans={source.kind === "afdb" ? focusedSpans : null}
+          highlightSpans={linked ? highlightSpans : NO_SPANS}
+          cameraSpans={linked ? cameraSpans : null}
+          onResidueHover={linked ? onResidueHover : undefined}
           onExporterChange={onExporterChange}
         />
       </Suspense>
