@@ -2,10 +2,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-export async function fetchCoordinates(urls: string[]): Promise<ArrayBuffer> {
-  for (const url of urls) {
-    const res = await fetch(url)
-    if (res.ok) return await res.arrayBuffer()
+export type CoordinateSource = string | (() => Promise<string | null>)
+
+export async function fetchCoordinates(sources: CoordinateSource[]): Promise<ArrayBuffer> {
+  const tried: string[] = []
+  for (const source of sources) {
+    try {
+      const url = typeof source === "string" ? source : await source()
+      if (!url) continue
+      tried.push(url)
+      const res = await fetch(url)
+      if (res.ok) return await res.arrayBuffer()
+    } catch {
+      // a cross-origin or offline failure rejects rather than returning a response
+    }
   }
-  throw new Error(`No coordinates at ${urls.join(" or ")}`)
+  throw new Error(`No coordinates at ${tried.join(" or ")}`)
 }

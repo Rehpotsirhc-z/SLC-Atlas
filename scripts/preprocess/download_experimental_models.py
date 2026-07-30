@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Mirror experimental coordinates for the PDB entries named in experimental.tsv.
+"""Mirror every PDB entry named in experimental.tsv, under --download-experimental.
 
 Files already on disk are left alone, so re-running the pipeline after an unrelated
 change costs nothing. Delete a file to refetch it, or the directory to refetch all.
 
 Coordinates come from RCSB rather than the model_url in experimental.tsv: RCSB serves
 binary CIF, about half the size of PDBe's plain CIF, and its URLs carry no release
-version to rot. The viewer falls back to the same host at runtime, so mirroring is a
+version to rot. The viewer streams from the same host at runtime, so mirroring is a
 deployment choice and never a correctness one.
 """
 
@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lib.http import fetch_bytes
 from lib.reporting import report_missing
-from lib.structures import PDB_MODEL_DEPTHS, best_per_gene
 
 STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset" / "structure"
 DEFAULT_EXPERIMENTAL_PATH = STRUCTURE_DIR / "experimental.tsv"
@@ -38,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("experimental", nargs="?", type=Path, default=DEFAULT_EXPERIMENTAL_PATH)
     parser.add_argument("models_dir", nargs="?", type=Path, default=DEFAULT_MODELS_DIR)
-    parser.add_argument("--pdb-models", choices=PDB_MODEL_DEPTHS, default="best")
+    parser.add_argument("--download-experimental", action="store_true")
     return parser.parse_args()
 
 
@@ -52,16 +51,10 @@ def download(job: tuple[str, Path]) -> str | None:
     return None
 
 
-def wanted_ids(experimental: pl.DataFrame, depth: str) -> list[str]:
-    """One entry can be the best for two genes at once, so dedupe after picking."""
-    selected = experimental if depth == "all" else best_per_gene(experimental)
-    return selected["pdb_id"].unique().sort().to_list()
-
-
 def main() -> None:
     args = parse_args()
-    if args.pdb_models == "none":
-        print("mirroring no experimental coordinates", file=sys.stderr)
+    if not args.download_experimental:
+        print("streaming experimental coordinates; mirroring none", file=sys.stderr)
         return
     if not args.experimental.exists():
         print(f"no {args.experimental}; nothing to mirror", file=sys.stderr)
@@ -70,12 +63,13 @@ def main() -> None:
     experimental = pl.read_csv(
         args.experimental,
         separator="\t",
-        columns=["gene_id", "pdb_id", "resolution"],
-        schema_overrides={"resolution": pl.Float64},
+        columns=["pdb_id"],
+        schema_overrides={"pdb_id": pl.Utf8},
     ).drop_nulls("pdb_id")
     args.models_dir.mkdir(parents=True, exist_ok=True)
 
-    pdb_ids = wanted_ids(experimental, args.pdb_models)
+    # 3D-Beacons reports an entry once per gene it covers
+    pdb_ids = experimental["pdb_id"].unique().sort().to_list()
     jobs = []
     for pdb_id in pdb_ids:
         path = args.models_dir / f"{pdb_id}.bcif"

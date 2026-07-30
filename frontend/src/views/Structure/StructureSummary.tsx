@@ -24,7 +24,7 @@ function Metric({ value, label }: { value: string | number; label: string }) {
 
 export default function StructureSummary({ structures }: Props) {
   const solved = structures.filter((s) => s.n_experimental > 0).length
-  const modelled = structures.filter((s) => s.model_available).length
+  const modelled = structures.filter((s) => s.afdb_entry_id).length
   const confident = structures.filter((s) => (s.mean_plddt ?? 0) >= 70).length
   const helices = structures.reduce((sum, s) => sum + s.n_transmembrane, 0)
 

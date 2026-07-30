@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export type ModelSource =
-  | { kind: "afdb"; file: string; label: string }
+  | { kind: "afdb"; file: string | null; accession: string; entryId: string; label: string }
   | { kind: "pdb"; pdbId: string; label: string }
 
 export interface ResidueSpan {

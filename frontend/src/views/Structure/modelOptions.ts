@@ -22,11 +22,17 @@ export function buildModelOptions(
 ): ModelOption[] {
   const options: ModelOption[] = []
 
-  if (structure?.model_available && structure.model_file) {
+  if (structure?.uniprot_accession && structure.afdb_entry_id) {
     options.push({
       id: PREDICTED_ID,
       label: PREDICTED_LABEL,
-      source: { kind: "afdb", file: structure.model_file, label: PREDICTED_LABEL },
+      source: {
+        kind: "afdb",
+        file: structure.model_available ? structure.model_file : null,
+        accession: structure.uniprot_accession,
+        entryId: structure.afdb_entry_id,
+        label: PREDICTED_LABEL,
+      },
     })
   }
 

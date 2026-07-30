@@ -2,16 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Download the predicted-model coordinates named in structures.tsv.
+"""Mirror the predicted-model coordinates named in structures.tsv, under --download-predicted.
 
 Files already on disk are left alone, so re-running the pipeline after an unrelated
 change costs nothing. Delete a file to refetch it, or the directory to refetch all.
 
-Experimental coordinates are mirrored separately by download_experimental_models.py,
-which is optional; every gene has a predicted model, so this step is what the viewer
-opens by default.
+Without the flag nothing is mirrored and the viewer streams from AlphaFold DB, resolving
+the current URL as it loads because the one stored here pins a release version.
 """
 
+import argparse
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -30,6 +30,14 @@ DEFAULT_MODELS_DIR = STRUCTURE_DIR / "models"
 WORKERS = 6
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("structures", nargs="?", type=Path, default=DEFAULT_STRUCTURES_PATH)
+    parser.add_argument("models_dir", nargs="?", type=Path, default=DEFAULT_MODELS_DIR)
+    parser.add_argument("--download-predicted", action="store_true")
+    return parser.parse_args()
+
+
 def model_filename(accession: str, model_format: str | None) -> str:
     return f"{accession}.{'bcif' if model_format == 'BCIF' else 'cif'}"
 
@@ -45,16 +53,17 @@ def download(job: tuple[str, Path]) -> str | None:
 
 
 def main() -> None:
-    args = sys.argv[1:]
-    structures_path = Path(args[0]) if len(args) > 0 else DEFAULT_STRUCTURES_PATH
-    models_dir = Path(args[1]) if len(args) > 1 else DEFAULT_MODELS_DIR
+    args = parse_args()
+    if not args.download_predicted:
+        print("streaming predicted models; mirroring none", file=sys.stderr)
+        return
 
-    structures = pl.read_csv(structures_path, separator="\t").drop_nulls("model_url")
-    models_dir.mkdir(parents=True, exist_ok=True)
+    structures = pl.read_csv(args.structures, separator="\t").drop_nulls("model_url")
+    args.models_dir.mkdir(parents=True, exist_ok=True)
 
     jobs = []
     for row in structures.unique(subset="uniprot_accession").iter_rows(named=True):
-        path = models_dir / model_filename(row["uniprot_accession"], row["model_format"])
+        path = args.models_dir / model_filename(row["uniprot_accession"], row["model_format"])
         if not path.exists():
             jobs.append((row["model_url"], path))
 
@@ -66,9 +75,9 @@ def main() -> None:
             failed = [stem for stem in pool.map(download, jobs) if stem]
         report_missing("model(s) failed to download", failed)
 
-    total = sum(p.stat().st_size for p in models_dir.glob("*.*cif"))
-    print(f"{len(list(models_dir.glob('*.*cif')))} models, {total / 1e6:.1f} MB in {models_dir}",
-          file=sys.stderr)
+    mirrored = list(args.models_dir.glob("*.*cif"))
+    total = sum(p.stat().st_size for p in mirrored)
+    print(f"{len(mirrored)} models, {total / 1e6:.1f} MB in {args.models_dir}", file=sys.stderr)
 
 
 if __name__ == "__main__":

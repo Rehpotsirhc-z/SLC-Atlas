@@ -5,11 +5,10 @@
 """Command line shared by run_pipeline.py and both phase runners.
 
 The --skip-* flags name views, not steps: each phase maps them onto its own steps.
+The --download-* flags name a kind of coordinate file and reach the preprocess phase only.
 """
 
 import argparse
-
-from lib.structures import PDB_MODEL_DEPTHS
 
 VIEWS = ("clustering", "conservation", "expression", "structure")
 
@@ -20,21 +19,21 @@ VIEW_HELP = {
     "structure": "skip the protein models, topology, and coordinate downloads",
 }
 
+DOWNLOADS = ("predicted", "experimental")
+
+DOWNLOAD_HELP = {
+    "predicted": "mirror the AlphaFold models instead of streaming them from AlphaFold DB",
+    "experimental": "mirror every PDB entry instead of streaming them from RCSB",
+}
+
 
 def build_parser(description: str | None, *, phase_flags: bool = False, hgnc_file: bool = False):
     # allow_abbrev would silently accept a truncated typo like --skip-clusterin
     parser = argparse.ArgumentParser(description=description, allow_abbrev=False)
     for view in VIEWS:
         parser.add_argument(f"--skip-{view}", action="store_true", help=VIEW_HELP[view])
-    parser.add_argument(
-        "--pdb-models",
-        choices=PDB_MODEL_DEPTHS,
-        default="best",
-        help="experimental coordinates to mirror: none, the best entry per gene, or all",
-    )
-    parser.add_argument(
-        "--skip-pdb-models", action="store_true", help="same as --pdb-models none"
-    )
+    for kind in DOWNLOADS:
+        parser.add_argument(f"--download-{kind}", action="store_true", help=DOWNLOAD_HELP[kind])
     if phase_flags:
         parser.add_argument("--preprocess-only", action="store_true", help="run preprocess only")
         parser.add_argument("--build-only", action="store_true", help="run build only")
@@ -53,14 +52,14 @@ def skipped_views(args: argparse.Namespace) -> set[str]:
     return {view for view in VIEWS if getattr(args, f"skip_{view}")}
 
 
-def pdb_model_depth(args: argparse.Namespace) -> str:
-    return "none" if args.skip_pdb_models else args.pdb_models
-
-
 def skip_flags(args: argparse.Namespace) -> list[str]:
     return [f"--skip-{view}" for view in sorted(skipped_views(args))]
 
 
+def download_flags(args: argparse.Namespace) -> list[str]:
+    return [f"--download-{kind}" for kind in DOWNLOADS if getattr(args, f"download_{kind}")]
+
+
 def preprocess_flags(args: argparse.Namespace) -> list[str]:
-    """The build phase copies whatever was mirrored, so --pdb-models reaches preprocess only."""
-    return [*skip_flags(args), "--pdb-models", pdb_model_depth(args)]
+    """The build phase copies whatever was mirrored, so --download-* reaches preprocess only."""
+    return [*skip_flags(args), *download_flags(args)]

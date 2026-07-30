@@ -11,7 +11,6 @@ Sources with different licences stay in separate files so a redistributor can dr
 without re-encumbering the rest.
 """
 
-import shutil
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -19,6 +18,8 @@ from pathlib import Path
 import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from model_files import copy_models, stale_models
 
 from lib.reporting import report_missing
 from lib.structures import rank_experimental
@@ -236,20 +237,6 @@ def build_sources(structures: pl.DataFrame) -> pl.DataFrame:
     return pl.DataFrame(rows, schema=SOURCES_SCHEMA)
 
 
-def copy_models(source_dir: Path, target_dir: Path) -> tuple[int, int]:
-    if not source_dir.exists():
-        return 0, 0
-    target_dir.mkdir(parents=True, exist_ok=True)
-    copied = 0
-    for model in source_dir.glob("*.*cif"):
-        target = target_dir / model.name
-        if target.exists() and target.stat().st_size == model.stat().st_size:
-            continue
-        shutil.copy2(model, target)
-        copied += 1
-    return copied, len(list(target_dir.glob("*.*cif")))
-
-
 def main() -> None:
     if not DATASET_DIR.exists():
         print(f"no {DATASET_DIR}; skipping the structure view", file=sys.stderr)
@@ -258,8 +245,17 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     models_dir = OUT_DIR / "models"
     copied, total_models = copy_models(DATASET_DIR / "models", models_dir)
-    # Mirroring experimental coordinates is optional; the viewer streams whatever is absent
     pdb_copied, total_pdb = copy_models(DATASET_DIR / "models" / "pdb", models_dir / "pdb")
+    for kind, flag, source, target in (
+        ("model", "--download-predicted", DATASET_DIR / "models", models_dir),
+        ("experimental", "--download-experimental", DATASET_DIR / "models" / "pdb",
+         models_dir / "pdb"),
+    ):
+        report_missing(
+            f"{kind} file(s) in {target} this dataset no longer carries; a run without "
+            f"{flag} leaves them, and they stay served until you delete them",
+            stale_models(source, target),
+        )
 
     features = read_tsv("features.tsv", FEATURE_SCHEMA)
     report_missing(
@@ -274,7 +270,7 @@ def main() -> None:
     experimental.write_parquet(OUT_DIR / "experimental.parquet")
     build_sources(structure).write_parquet(OUT_DIR / "sources.parquet")
 
-    n_models = int(structure["model_available"].sum())
+    n_models = int(structure["afdb_entry_id"].is_not_null().sum())
     n_experimental = int((structure["n_experimental"] > 0).sum())
     print(f"wrote {structure.height} genes ({n_models} with a model, "
           f"{n_experimental} with experimental structures) -> {OUT_DIR}", file=sys.stderr)
