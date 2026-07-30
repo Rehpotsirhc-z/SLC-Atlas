@@ -5,6 +5,9 @@
 """Fetch gene + transcript coordinates from Ensembl BioMart in one bulk query.
 
 Caches the raw TSV response (one row per transcript, gene fields repeated).
+
+The regional mirrors serve the same data, so a host in maintenance falls through to the
+next rather than failing the run.
 """
 
 import csv
@@ -20,7 +23,11 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
 DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 
-BIOMART_URL = "https://www.ensembl.org/biomart/martservice"
+BIOMART_MIRRORS = (
+    "https://www.ensembl.org/biomart/martservice",
+    "https://asia.ensembl.org/biomart/martservice",
+    "https://useast.ensembl.org/biomart/martservice",
+)
 
 QUERY_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
@@ -42,7 +49,7 @@ QUERY_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 </Query>"""
 
 
-def read_ensembl_ids(path: str) -> list[str]:
+def read_ensembl_ids(path: str | Path) -> list[str]:
     with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter="\t")
         return [row["Ensembl gene ID"] for row in reader if row["Ensembl gene ID"].strip()]
@@ -50,7 +57,21 @@ def read_ensembl_ids(path: str) -> list[str]:
 
 def fetch_biomart(ids: list[str]) -> str:
     query = QUERY_TEMPLATE.format(ids=",".join(ids))
-    return post_form(BIOMART_URL, {"query": query})
+    failures = []
+    for url in BIOMART_MIRRORS:
+        try:
+            tsv = post_form(url, {"query": query})
+        except Exception as exc:
+            failures.append(f"{url}: {exc}")
+            continue
+        # A mirror in maintenance answers 200 with an HTML status page
+        if tsv.lstrip().startswith("<") or "Query ERROR" in tsv[:2000]:
+            failures.append(f"{url}: not a BioMart result")
+            continue
+        if url != BIOMART_MIRRORS[0]:
+            print(f"BioMart served by {url}", file=sys.stderr)
+        return tsv
+    raise RuntimeError("no BioMart mirror answered:\n  " + "\n  ".join(failures))
 
 
 def main() -> None:
