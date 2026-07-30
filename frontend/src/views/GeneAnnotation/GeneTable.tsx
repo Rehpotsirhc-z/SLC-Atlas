@@ -12,6 +12,7 @@ import {
   TableRow,
   TableSortLabel,
 } from "@mui/material"
+import type { Theme } from "@mui/material/styles"
 import { capBoxSx } from "@/theme"
 import type { Gene } from "@/types/gene"
 import GeneRow from "./GeneRow"
@@ -44,6 +45,32 @@ const headerCellSx = {
   color: "text.secondary",
 }
 
+const bodySx = (theme: Theme) => ({
+  "& td.mono": {
+    fontFamily: theme.custom.monoFontFamily,
+    fontSize: theme.custom.monoFontSize,
+  },
+  "& td.gene-links": {
+    whiteSpace: "nowrap",
+  },
+  "& .gene-external-link": {
+    display: "inline-flex",
+    alignItems: "center",
+    verticalAlign: "middle",
+    gap: "6px",
+    padding: "4px 5px",
+    borderRadius: 1,
+    color: "primary.main",
+    fontSize: "0.8125rem",
+    fontWeight: 500,
+    lineHeight: 1.75,
+    textDecoration: "none",
+    "&:hover": { bgcolor: "action.hover" },
+    "& svg": { width: 18, height: 18, fill: "currentColor" },
+  },
+  "& .gene-external-link + .gene-external-link": { marginLeft: "2px" },
+})
+
 export default function GeneTable({
   genes,
   sortKey,
@@ -55,7 +82,7 @@ export default function GeneTable({
 }: GeneTableProps) {
   return (
     <TableContainer sx={{ overflowX: "visible" }}>
-      <Table size="small" stickyHeader>
+      <Table size="small" stickyHeader sx={bodySx}>
         <TableHead>
           <TableRow>
             <TableCell padding="checkbox" sx={headerCellSx} />

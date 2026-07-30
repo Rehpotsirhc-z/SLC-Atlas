@@ -60,14 +60,20 @@ export function useGeneAnnotationState() {
   }, [])
 
   const deferredSearchText = useDeferredValue(searchText)
+  const deferredFamilyFilter = useDeferredValue(familyFilter)
   const visibleGenes = useMemo(
-    () => sortGenes(filterGenes(genes, deferredSearchText, familyFilter), sortKey, sortDirection),
-    [genes, deferredSearchText, familyFilter, sortKey, sortDirection],
+    () =>
+      sortGenes(
+        filterGenes(genes, deferredSearchText, deferredFamilyFilter),
+        sortKey,
+        sortDirection,
+      ),
+    [genes, deferredSearchText, deferredFamilyFilter, sortKey, sortDirection],
   )
 
   useEffect(() => {
     setPage(0)
-  }, [deferredSearchText, familyFilter])
+  }, [deferredSearchText, deferredFamilyFilter])
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {

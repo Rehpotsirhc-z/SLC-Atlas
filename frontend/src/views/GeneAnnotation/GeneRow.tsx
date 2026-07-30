@@ -7,10 +7,7 @@ import { memo, useEffect, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
-import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import {
-  Box,
-  Button,
   Chip,
   Collapse,
   IconButton,
@@ -26,6 +23,7 @@ import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
 import { formatPosition } from "@/utils/format"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
+import ExternalLink from "./ExternalLink"
 import TranscriptTable from "./TranscriptTable"
 
 interface GeneRowProps {
@@ -44,7 +42,6 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
   const [expanded, setExpanded] = useState(false)
   const [flashing, setFlashing] = useState(false)
   const theme = useTheme()
-  const { custom } = theme
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
 
   const chipSx = {
@@ -95,10 +92,10 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             )}
           </IconButton>
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+        <TableCell className="mono">
           <Chip size="small" label={gene.id} onClick={handleSelectClick} sx={chipSx} />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+        <TableCell className="mono">
           <Chip
             size="small"
             label={gene.symbol}
@@ -109,16 +106,11 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             }}
           />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
-          {gene.name}
-        </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+        <TableCell className="mono">{gene.name}</TableCell>
+        <TableCell className="mono">
           {formatPosition(gene.chromosome, gene.start, gene.end)} ({gene.strand})
         </TableCell>
-        <TableCell
-          align="right"
-          sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}
-        >
+        <TableCell className="mono" align="right">
           {gene.length.toLocaleString()}
         </TableCell>
         <TableCell
@@ -137,7 +129,7 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             onClick={onFamilyClick ? () => {} : undefined}
           />
         </TableCell>
-        <TableCell sx={{ fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }}>
+        <TableCell className="mono">
           {gene.alias ?? (
             <Typography component="span" color="text.disabled" fontFamily="inherit">
               —
@@ -154,33 +146,9 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
             </Tooltip>
           )}
         </TableCell>
-        <TableCell onClick={(e) => e.stopPropagation()}>
-          <Box sx={{ display: "flex", gap: 0.25 }}>
-            <Button
-              size="small"
-              variant="text"
-              startIcon={<OpenInNewIcon />}
-              component="a"
-              href={ensemblUrl(gene.id)}
-              target="_blank"
-              rel="noopener"
-              sx={{ textTransform: "none", minWidth: 0 }}
-            >
-              Ensembl
-            </Button>
-            <Button
-              size="small"
-              variant="text"
-              startIcon={<OpenInNewIcon />}
-              component="a"
-              href={ucscUrl(gene)}
-              target="_blank"
-              rel="noopener"
-              sx={{ textTransform: "none", minWidth: 0 }}
-            >
-              UCSC
-            </Button>
-          </Box>
+        <TableCell className="gene-links" onClick={(e) => e.stopPropagation()}>
+          <ExternalLink href={ensemblUrl(gene.id)}>Ensembl</ExternalLink>
+          <ExternalLink href={ucscUrl(gene)}>UCSC</ExternalLink>
         </TableCell>
       </TableRow>
       <TableRow>
