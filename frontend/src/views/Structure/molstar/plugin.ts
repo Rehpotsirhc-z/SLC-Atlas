@@ -9,6 +9,7 @@ import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
 import { DefaultPluginUISpec, type PluginUISpec } from "molstar/lib/mol-plugin-ui/spec"
 import { PluginSpec } from "molstar/lib/mol-plugin/spec"
 import { EMBEDDED_VIEWPORT } from "./layout"
+import { ModelAction } from "./modelAction"
 
 import "./doom-one.scss"
 import "./doom-one-light.scss"
@@ -36,6 +37,8 @@ export async function createViewer(container: HTMLDivElement): Promise<PluginUIC
   const base = DefaultPluginUISpec()
   const spec: PluginUISpec = {
     ...base,
+    // First, because Mol* always expands the leading action in its Home panel
+    actions: [PluginSpec.Action(ModelAction), ...(base.actions ?? [])],
     behaviors: [...base.behaviors, PluginSpec.Behavior(MAQualityAssessment)],
     layout: { initial: { isExpanded: false, showControls: false } },
     canvas3d: { camera: { helper: { axes: { name: "off", params: {} } } } },

@@ -11,6 +11,7 @@ import {
   useStructures,
 } from "@/api/hooks/useStructure"
 import { useUIStore } from "@/store/uiStore"
+import { buildModelOptions, PREDICTED_ID } from "./modelOptions"
 import type { ModelSource } from "./molstar/types"
 
 export function useStructureState() {
@@ -56,15 +57,17 @@ export function useStructureState() {
     [selectedGeneId],
   )
 
+  const modelOptions = useMemo(
+    () => buildModelOptions(selected, experimental),
+    [selected, experimental],
+  )
+
   // The predicted model opens by default: it is the only one every gene has, and the only
   // one numbered in the same residues as the topology figure
   const modelSource = useMemo<ModelSource | null>(() => {
-    if (selectedPdbId) return { kind: "pdb", pdbId: selectedPdbId }
-    if (selected?.model_available && selected.model_file) {
-      return { kind: "afdb", file: selected.model_file }
-    }
-    return null
-  }, [selectedPdbId, selected])
+    const chosen = modelOptions.find((option) => option.id === (selectedPdbId ?? PREDICTED_ID))
+    return chosen?.source ?? null
+  }, [modelOptions, selectedPdbId])
 
   return {
     structures,
@@ -82,6 +85,7 @@ export function useStructureState() {
     setSelectedGeneId,
     selectedPdbId,
     selectPdbId,
+    modelOptions,
     modelSource,
     withExperimental,
     counterText: `${structures?.length ?? 0} genes · ${withExperimental} solved`,

@@ -26,9 +26,11 @@ export async function loadModel(plugin: PluginContext, source: ModelSource): Pro
   await plugin.clear()
 
   const bytes = await fetchCoordinates(candidateUrls(source))
-  const data = await plugin.builders.data.rawData({ data: bytes })
+  const data = await plugin.builders.data.rawData({ data: bytes, label: source.label })
   const trajectory = await plugin.builders.structure.parseTrajectory(data, "mmcif")
   const model = await plugin.builders.structure.createModel(trajectory)
+  // Mol* names a structure by its model's label, which the file sets to its own entry id
+  if (model.data) (model.data as { label: string }).label = source.label
   const structure = await plugin.builders.structure.createStructure(model)
 
   if (source.kind === "afdb") {

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { type RefObject } from "react"
+import { useCallback, type RefObject } from "react"
 import { Box, Stack, Typography } from "@mui/material"
 import InfoTooltip from "@/components/InfoTooltip"
 import { capBoxSx } from "@/theme"
@@ -11,9 +11,11 @@ import { COLUMN_GAP, TRACK } from "./constants"
 import LinkedResidues from "./LinkedResidues"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
+import { PREDICTED_ID } from "./modelOptions"
 import TopologyFigure from "./TopologyFigure"
 import { useTopologyState } from "./useTopologyState"
-import type { ExperimentalStructure, ProteinFeature, StructureRecord } from "@/types/structure"
+import type { ProteinFeature, StructureRecord } from "@/types/structure"
+import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource } from "./molstar/types"
 
 interface Props {
@@ -21,7 +23,7 @@ interface Props {
   features: ProteinFeature[] | undefined
   plddt: number[] | null
   modelSource: ModelSource | null
-  experimental: ExperimentalStructure[] | undefined
+  modelOptions: ModelOption[]
   selectedPdbId: string | null
   onSelectPdbId: (pdbId: string | null) => void
   sideBySide: boolean
@@ -35,7 +37,7 @@ export default function LinkedPanes({
   features,
   plddt,
   modelSource,
-  experimental,
+  modelOptions,
   selectedPdbId,
   onSelectPdbId,
   sideBySide,
@@ -43,6 +45,10 @@ export default function LinkedPanes({
   svgRef,
   onExporterChange,
 }: Props) {
+  const selectModel = useCallback(
+    (id: string) => onSelectPdbId(id === PREDICTED_ID ? null : id),
+    [onSelectPdbId],
+  )
   const [figureRef, figureBox] = useElementSize<HTMLDivElement>("content")
   // Floored so a fractional column width cannot leave the figure a sub-pixel too wide
   const trackWidth = Math.max(Math.floor(figureBox.w), TRACK.minWidth)
@@ -128,13 +134,16 @@ export default function LinkedPanes({
           deferLoad={isMobile}
           highlightSpans={topology.highlightSpans}
           cameraSpans={topology.cameraSpans}
+          modelOptions={modelOptions}
+          selectedModelId={selectedPdbId ?? PREDICTED_ID}
+          onSelectModel={selectModel}
           onResidueHover={topology.hoverResidue}
           onExporterChange={onExporterChange}
         />
         <Stack spacing={1} sx={{ mt: 1 }}>
-          {experimental && experimental.length > 0 && (
+          {modelOptions.length > 1 && (
             <ModelSwitcher
-              entries={experimental}
+              options={modelOptions}
               selectedPdbId={selectedPdbId}
               onSelect={onSelectPdbId}
             />

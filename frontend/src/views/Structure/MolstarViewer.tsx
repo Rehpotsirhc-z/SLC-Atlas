@@ -10,9 +10,11 @@ import { downloadModelPng } from "./molstar/export"
 import { applyHighlight, focusCamera } from "./molstar/highlight"
 import { watchLayoutMode } from "./molstar/layout"
 import { loadModel } from "./molstar/load"
+import { setModelChoice } from "./molstar/modelAction"
 import { createViewer, disposeViewer } from "./molstar/plugin"
 import { subscribeHover } from "./molstar/residues"
 import { syncBackground, syncMarkers } from "./molstar/theme"
+import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
 
 interface Props {
@@ -20,6 +22,9 @@ interface Props {
   background: string
   highlightSpans: ResidueSpan[]
   cameraSpans: ResidueSpan[] | null
+  modelOptions: ModelOption[]
+  selectedModelId: string
+  onSelectModel: (id: string) => void
   onResidueHover?: (residue: number | null) => void
   onExporterChange: (exporter: ModelExporter | null) => void
 }
@@ -29,6 +34,9 @@ export default function MolstarViewer({
   background,
   highlightSpans,
   cameraSpans,
+  modelOptions,
+  selectedModelId,
+  onSelectModel,
   onResidueHover,
   onExporterChange,
 }: Props) {
@@ -64,6 +72,16 @@ export default function MolstarViewer({
   }, [])
 
   useEffect(() => (plugin ? watchLayoutMode(plugin) : undefined), [plugin])
+
+  useEffect(() => {
+    if (plugin) {
+      setModelChoice(plugin, {
+        options: modelOptions,
+        selectedId: selectedModelId,
+        onSelect: onSelectModel,
+      })
+    }
+  }, [plugin, modelOptions, selectedModelId, onSelectModel])
 
   useEffect(() => {
     if (!plugin) return

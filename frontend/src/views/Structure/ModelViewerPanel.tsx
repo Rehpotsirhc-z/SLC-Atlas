@@ -6,6 +6,7 @@ import { lazy, Suspense, useState } from "react"
 import ViewInArIcon from "@mui/icons-material/ViewInAr"
 import { Box, Button, CircularProgress, Stack, Typography, useTheme } from "@mui/material"
 import { VIEWER_HEIGHT } from "./constants"
+import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
 
 const MolstarViewer = lazy(() => import("./MolstarViewer"))
@@ -15,6 +16,9 @@ interface Props {
   deferLoad: boolean
   highlightSpans: ResidueSpan[]
   cameraSpans: ResidueSpan[] | null
+  modelOptions: ModelOption[]
+  selectedModelId: string
+  onSelectModel: (id: string) => void
   onResidueHover: (residue: number | null) => void
   onExporterChange: (exporter: ModelExporter | null) => void
 }
@@ -39,6 +43,9 @@ export default function ModelViewerPanel({
   deferLoad,
   highlightSpans,
   cameraSpans,
+  modelOptions,
+  selectedModelId,
+  onSelectModel,
   onResidueHover,
   onExporterChange,
 }: Props) {
@@ -91,6 +98,9 @@ export default function ModelViewerPanel({
           background={palette.background.default}
           highlightSpans={linked ? highlightSpans : NO_SPANS}
           cameraSpans={linked ? cameraSpans : null}
+          modelOptions={modelOptions}
+          selectedModelId={selectedModelId}
+          onSelectModel={onSelectModel}
           onResidueHover={linked ? onResidueHover : undefined}
           onExporterChange={onExporterChange}
         />

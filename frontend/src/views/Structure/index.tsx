@@ -56,6 +56,7 @@ export default function Structure() {
     setFamilyFilter,
     setSelectedGeneId,
     modelSource,
+    modelOptions,
     selectedPdbId,
     selectPdbId,
     counterText,
@@ -167,7 +168,7 @@ export default function Structure() {
                       features={features}
                       plddt={plddt}
                       modelSource={modelSource}
-                      experimental={experimental}
+                      modelOptions={modelOptions}
                       selectedPdbId={selectedPdbId}
                       onSelectPdbId={selectPdbId}
                       sideBySide={sideBySide}

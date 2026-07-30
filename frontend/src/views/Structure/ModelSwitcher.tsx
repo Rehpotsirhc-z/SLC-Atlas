@@ -4,35 +4,40 @@
 
 import ViewInArIcon from "@mui/icons-material/ViewInAr"
 import { ListSubheader, MenuItem, Select, Tooltip } from "@mui/material"
-import { entryLabel } from "./experimentalEntry"
-import type { ExperimentalStructure } from "@/types/structure"
+import { PREDICTED_ID, type ModelOption } from "./modelOptions"
 
 interface Props {
-  entries: ExperimentalStructure[]
+  options: ModelOption[]
   selectedPdbId: string | null
   onSelect: (pdbId: string | null) => void
 }
 
-// An empty value would read to MUI as nothing selected and render a blank field
-const PREDICTED = "predicted"
+export default function ModelSwitcher({ options, selectedPdbId, onSelect }: Props) {
+  const predicted = options.filter((option) => option.id === PREDICTED_ID)
+  const experimental = options.filter((option) => option.id !== PREDICTED_ID)
 
-export default function ModelSwitcher({ entries, selectedPdbId, onSelect }: Props) {
   return (
     <Tooltip title="Model shown in the viewer" placement="top" arrow>
       <Select
         size="small"
         fullWidth
-        value={selectedPdbId ?? PREDICTED}
-        onChange={(e) => onSelect(e.target.value === PREDICTED ? null : e.target.value)}
+        value={selectedPdbId ?? PREDICTED_ID}
+        onChange={(e) => onSelect(e.target.value === PREDICTED_ID ? null : e.target.value)}
         startAdornment={<ViewInArIcon sx={{ fontSize: 18, color: "text.secondary", mr: 0.75 }} />}
         inputProps={{ "data-testid": "model-switcher" }}
       >
-        <ListSubheader>Predicted</ListSubheader>
-        <MenuItem value={PREDICTED}>Predicted model (AlphaFold)</MenuItem>
-        <ListSubheader>Experimental ({entries.length})</ListSubheader>
-        {entries.map((entry) => (
-          <MenuItem key={entry.pdb_id} value={entry.pdb_id}>
-            {entryLabel(entry)}
+        {predicted.length > 0 && <ListSubheader>Predicted</ListSubheader>}
+        {predicted.map((option) => (
+          <MenuItem key={option.id} value={option.id}>
+            {option.label}
+          </MenuItem>
+        ))}
+        {experimental.length > 0 && (
+          <ListSubheader>Experimental ({experimental.length})</ListSubheader>
+        )}
+        {experimental.map((option) => (
+          <MenuItem key={option.id} value={option.id}>
+            {option.label}
           </MenuItem>
         ))}
       </Select>
