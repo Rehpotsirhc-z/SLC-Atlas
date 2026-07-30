@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 import { Box, CircularProgress, Typography, useTheme } from "@mui/material"
 import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
 import { VIEWER_HEIGHT } from "./constants"
+import { watchEscapeKey } from "./molstar/escapeKey"
 import { downloadModelPng } from "./molstar/export"
 import { applyHighlight, focusCamera } from "./molstar/highlight"
 import { watchLayoutMode } from "./molstar/layout"
@@ -72,6 +73,12 @@ export default function MolstarViewer({
   }, [])
 
   useEffect(() => (plugin ? watchLayoutMode(plugin) : undefined), [plugin])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!plugin || !container) return
+    return watchEscapeKey(plugin, container)
+  }, [plugin])
 
   useEffect(() => {
     if (plugin) {
