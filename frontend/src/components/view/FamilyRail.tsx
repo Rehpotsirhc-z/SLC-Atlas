@@ -6,6 +6,7 @@ import { Drawer } from "@mui/material"
 import FamilyTree from "@/components/familyTree/FamilyTree"
 import type { Gene } from "@/types/gene"
 import FamilyRailSplitter from "./FamilyRailSplitter"
+import { useDrawerWarmup } from "./useDrawerWarmup"
 import { RAIL_DRAWER_WIDTH } from "./useFamilyRail"
 
 interface Props {
@@ -29,9 +30,20 @@ export default function FamilyRail({
   onDrawerClose,
   onDragStart,
 }: Props) {
+  const treeMounted = useDrawerWarmup({
+    active: useDrawer,
+    open: drawerOpen,
+    ready: genes.length > 0,
+  })
+
   if (useDrawer) {
     return (
-      <Drawer anchor="left" open={drawerOpen} onClose={onDrawerClose}>
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={onDrawerClose}
+        ModalProps={{ keepMounted: treeMounted }}
+      >
         <FamilyTree
           genes={genes}
           familyFilter={familyFilter}

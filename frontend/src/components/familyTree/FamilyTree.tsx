@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { Paper, Typography, useTheme } from "@mui/material"
@@ -44,7 +44,7 @@ function buildFamilyGroups(genes: Gene[]): FamilyGroup[] {
     .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
 }
 
-export default function FamilyTree({
+const FamilyTree = memo(function FamilyTree({
   genes,
   familyFilter,
   onSelectFamily,
@@ -125,4 +125,6 @@ export default function FamilyTree({
       </SimpleTreeView>
     </Paper>
   )
-}
+})
+
+export default FamilyTree
