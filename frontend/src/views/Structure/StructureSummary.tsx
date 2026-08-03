@@ -42,8 +42,7 @@ export default function StructureSummary({ structures }: Props) {
       </Box>
 
       <Typography variant="caption" color="text.secondary">
-        Every gene has a predicted model; roughly a third have been solved experimentally. A gene
-        with no experimental structure is a gap in the literature, not a gap in this atlas.
+        Every gene has a predicted model; roughly a third have been solved experimentally.
       </Typography>
     </Stack>
   )

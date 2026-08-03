@@ -5,8 +5,10 @@
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import { Alert, Box, Button, Link, Stack, Typography, useTheme } from "@mui/material"
 import FamilyLabel from "@/components/FamilyLabel"
+import { capBoxSx } from "@/theme"
 import { getFamilyColor } from "@/utils/familyColor"
 import { alphafoldUrl, ensemblUrl, pdbeUrl, ucscUrl, uniprotUrl } from "@/utils/links"
+import { IDENTITY_GRID_COLUMNS, IDENTITY_SECONDARY_EM, LINK_ROW_INK_INSET } from "./constants"
 import { methodLabel, resolutionLabel } from "./experimentalEntry"
 import type { Gene } from "@/types/gene"
 import type { StructureRecord } from "@/types/structure"
@@ -22,7 +24,12 @@ const SEQ_AGREEMENT_DETAIL: Record<string, string> = {
   unknown: "could not be compared with the Ensembl sequence used elsewhere in the atlas",
 }
 
-function ExternalLink({ label, href }: { label: string; href: string }) {
+interface LinkOut {
+  label: string
+  href: string
+}
+
+function ExternalLink({ label, href }: LinkOut) {
   return (
     <Button
       size="small"
@@ -32,8 +39,11 @@ function ExternalLink({ label, href }: { label: string; href: string }) {
       href={href}
       target="_blank"
       rel="noopener"
+      sx={{ p: 0.75, minWidth: 0, lineHeight: 1, "& .MuiButton-startIcon": { ml: 0 } }}
     >
-      {label}
+      <Box component="span" sx={capBoxSx}>
+        {label}
+      </Box>
     </Button>
   )
 }
@@ -50,7 +60,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function IdentityCard({ structure, gene }: Props) {
-  const { palette } = useTheme()
+  const { palette, custom } = useTheme()
   const family = gene?.family ?? null
   const accession = structure.uniprot_accession
 
@@ -62,24 +72,48 @@ export default function IdentityCard({ structure, gene }: Props) {
     .filter(Boolean)
     .join(" · ")
 
+  const links: LinkOut[] = [
+    ...(accession ? [{ label: "AlphaFold DB", href: alphafoldUrl(accession) }] : []),
+    { label: "Ensembl", href: ensemblUrl(structure.gene_id) },
+    ...(gene ? [{ label: "UCSC", href: ucscUrl(gene) }] : []),
+    ...(structure.alphafill_page_url
+      ? [{ label: "AlphaFill ligands", href: structure.alphafill_page_url }]
+      : []),
+  ]
+
   return (
     <Stack spacing={1.5}>
-      <Stack direction="row" spacing={1} alignItems="baseline" sx={{ flexWrap: "wrap" }}>
-        <Typography variant="h6" fontWeight={700}>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="flex-end"
+        sx={{ flexWrap: "wrap", fontFamily: custom.monoFontFamily }}
+      >
+        <Typography
+          component="span"
+          fontWeight={700}
+          sx={{ ...capBoxSx, fontFamily: "inherit", fontSize: "inherit" }}
+        >
           {structure.symbol ?? structure.gene_id}
         </Typography>
         {structure.uniprot_id && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            component="span"
+            color="text.secondary"
+            sx={{ ...capBoxSx, fontFamily: "inherit", fontSize: IDENTITY_SECONDARY_EM }}
+          >
             {structure.uniprot_id}
           </Typography>
         )}
         {family && (
-          <FamilyLabel
-            label={family}
-            color={getFamilyColor(family, palette.mode)}
-            familyName={gene?.family_name}
-            category={gene?.category}
-          />
+          <Box sx={{ fontSize: IDENTITY_SECONDARY_EM, color: "text.secondary" }}>
+            <FamilyLabel
+              label={family}
+              color={getFamilyColor(family, palette.mode)}
+              familyName={gene?.family_name}
+              category={gene?.category}
+            />
+          </Box>
         )}
       </Stack>
 
@@ -93,7 +127,8 @@ export default function IdentityCard({ structure, gene }: Props) {
         sx={{
           display: "grid",
           gap: 1.5,
-          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+          gridTemplateColumns: IDENTITY_GRID_COLUMNS,
+          justifyContent: "start",
         }}
       >
         <Stat
@@ -151,10 +186,15 @@ export default function IdentityCard({ structure, gene }: Props) {
         </Alert>
       )}
 
-      <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
-        {accession && <ExternalLink label="AlphaFold DB" href={alphafoldUrl(accession)} />}
-        <ExternalLink label="Ensembl" href={ensemblUrl(structure.gene_id)} />
-        {gene && <ExternalLink label="UCSC" href={ucscUrl(gene)} />}
+      <Stack
+        direction="row"
+        spacing={1}
+        useFlexGap
+        sx={{ flexWrap: "wrap", position: "relative", left: `${-LINK_ROW_INK_INSET}px` }}
+      >
+        {links.map((link) => (
+          <ExternalLink key={link.label} {...link} />
+        ))}
       </Stack>
     </Stack>
   )

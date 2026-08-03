@@ -5,7 +5,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Box, CircularProgress, Typography, useTheme } from "@mui/material"
 import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
-import { VIEWER_HEIGHT } from "./constants"
 import { watchEscapeKey } from "./molstar/escapeKey"
 import { downloadModelPng } from "./molstar/export"
 import { applyHighlight, focusCamera } from "./molstar/highlight"
@@ -139,12 +138,12 @@ export default function MolstarViewer({
   }, [plugin])
 
   return (
-    <Box sx={{ position: "relative", height: VIEWER_HEIGHT, width: "100%" }}>
+    <Box sx={{ position: "relative", flex: 1, minHeight: 0, width: "100%" }}>
       <Box
         ref={containerRef}
         data-testid="molstar-canvas"
         className={palette.mode === "dark" ? "molstar-doom-one" : "molstar-doom-one-light"}
-        sx={{ position: "absolute", inset: 0, "--atlas-viewer-height": `${VIEWER_HEIGHT}px` }}
+        sx={{ position: "absolute", inset: 0, "--atlas-viewer-height": "100%" }}
       />
       {(!plugin || error) && (
         <Box

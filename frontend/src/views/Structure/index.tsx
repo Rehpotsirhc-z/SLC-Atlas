@@ -27,7 +27,6 @@ import {
 } from "./constants"
 import ExperimentalTable from "./ExperimentalTable"
 import IdentityCard from "./IdentityCard"
-import ModelLinks from "./ModelLinks"
 import StructureSummary from "./StructureSummary"
 import StructureToolbar from "./StructureToolbar"
 import LinkedPanes from "./LinkedPanes"
@@ -161,9 +160,8 @@ export default function Structure() {
               <Box sx={{ height: "100%", overflowY: "auto", p: 2 }}>
                 {selected ? (
                   <Stack spacing={3}>
-                    <IdentityCard structure={selected} gene={selectedGene} />
-
                     <LinkedPanes
+                      identity={<IdentityCard structure={selected} gene={selectedGene} />}
                       structure={selected}
                       features={features}
                       plddt={plddt}
@@ -176,8 +174,6 @@ export default function Structure() {
                       svgRef={svgRef}
                       onExporterChange={handleExporterChange}
                     />
-
-                    <ModelLinks structure={selected} />
 
                     {experimental && experimental.length > 0 && (
                       <Box>

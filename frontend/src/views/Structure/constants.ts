@@ -54,20 +54,27 @@ export const MODEL_BASE = "/api/structure/models"
 // Where coordinates come from when this deployment mirrored none of its own
 export const RCSB_MODEL_BASE = "https://models.rcsb.org"
 
-// Tall enough that a 12-helix transporter is legible beside the topology figure
-export const VIEWER_HEIGHT = 420
+// Tall enough that a 12-helix transporter is legible beside the topology figure; the viewer
+// grows past it to whatever height the figure column takes
+export const VIEWER_MIN_HEIGHT = 420
+
+// Accession and family sit at this fraction of the gene name beside them
+export const IDENTITY_SECONDARY_EM = "0.75em"
+
+// max-content rather than 1fr, so a stat row that fits packs left instead of stretching
+export const IDENTITY_GRID_COLUMNS = "repeat(auto-fit, minmax(120px, max-content))"
+
+// The link row is pulled out by its button padding plus the launch glyph's own inset, so the
+// icon starts on the stat text above it rather than the button box doing so
+export const LINK_ROW_INK_INSET = 7
 
 export const RESOLUTION_DECIMALS = 2
 export const EXPERIMENTAL_PAGE_SIZE = 10
 export const SEARCH_WIDTH = 360
 
-// Narrower than this the topology figure would fall under TRACK.minWidth, so the 3D panel
-// drops below it instead of squeezing both
 export const SIDE_BY_SIDE_MIN_WIDTH = 980
 export const COLUMN_GAP = 16
 
 export const MIN_CONTENT_WIDTH = TRACK.minWidth + 40
-// Width the detail pane wants before the rail is allowed to claim the leftover space, which
-// is both columns at once so a wide window opens side by side rather than stacked
 export const PREFERRED_CONTENT_WIDTH = 1100
 export const CONTENT_PADDING_PX = 32

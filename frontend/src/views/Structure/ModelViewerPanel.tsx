@@ -5,7 +5,7 @@
 import { lazy, Suspense, useState } from "react"
 import ViewInArIcon from "@mui/icons-material/ViewInAr"
 import { Box, Button, CircularProgress, Stack, Typography, useTheme } from "@mui/material"
-import { VIEWER_HEIGHT } from "./constants"
+import { VIEWER_MIN_HEIGHT } from "./constants"
 import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
 
@@ -31,7 +31,7 @@ function Placeholder({ children }: { children: React.ReactNode }) {
       alignItems="center"
       justifyContent="center"
       spacing={1.5}
-      sx={{ height: VIEWER_HEIGHT, width: "100%" }}
+      sx={{ flex: 1, minHeight: VIEWER_MIN_HEIGHT, width: "100%" }}
     >
       {children}
     </Stack>
@@ -85,7 +85,7 @@ export default function ModelViewerPanel({
   const linked = source.kind === "afdb"
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ flex: 1, minHeight: 0, width: "100%", display: "flex", flexDirection: "column" }}>
       <Suspense
         fallback={
           <Placeholder>

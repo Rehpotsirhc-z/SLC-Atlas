@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, type RefObject } from "react"
+import { useCallback, type ReactNode, type RefObject } from "react"
 import { Box, Stack, Typography } from "@mui/material"
 import InfoTooltip from "@/components/InfoTooltip"
 import { capBoxSx } from "@/theme"
 import { useElementSize } from "@/utils/useElementSize"
-import { COLUMN_GAP, TRACK } from "./constants"
+import { COLUMN_GAP, TRACK, VIEWER_MIN_HEIGHT } from "./constants"
 import LinkedResidues from "./LinkedResidues"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
@@ -19,6 +19,7 @@ import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource } from "./molstar/types"
 
 interface Props {
+  identity: ReactNode
   structure: StructureRecord
   features: ProteinFeature[] | undefined
   plddt: number[] | null
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export default function LinkedPanes({
+  identity,
   structure,
   features,
   plddt,
@@ -75,9 +77,10 @@ export default function LinkedPanes({
       <Box
         ref={figureRef}
         data-testid="topology-column"
-        sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0, overflowX: "auto" }}
+        sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0 }}
       >
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
+        {identity}
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 3, mb: 1 }}>
           <Typography variant="overline" color="primary" sx={capBoxSx}>
             Membrane topology
           </Typography>
@@ -103,12 +106,14 @@ export default function LinkedPanes({
           </InfoTooltip>
         </Stack>
         {features?.length && structure.uniprot_length ? (
-          <TopologyFigure
-            svgRef={svgRef}
-            length={structure.uniprot_length}
-            plddt={plddt}
-            topology={topology}
-          />
+          <Box sx={{ overflowX: "auto" }}>
+            <TopologyFigure
+              svgRef={svgRef}
+              length={structure.uniprot_length}
+              plddt={plddt}
+              topology={topology}
+            />
+          </Box>
         ) : (
           <Typography variant="body2" color="text.secondary">
             UniProt has no topology annotation for this protein.
@@ -116,7 +121,15 @@ export default function LinkedPanes({
         )}
       </Box>
 
-      <Box data-testid="model-column" sx={{ flex: sideBySide ? "4 1 0" : "none", minWidth: 0 }}>
+      <Box
+        data-testid="model-column"
+        sx={{
+          flex: sideBySide ? "4 1 0" : "none",
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="overline" color="primary" sx={capBoxSx}>
             3D model
@@ -129,17 +142,21 @@ export default function LinkedPanes({
             </Typography>
           </InfoTooltip>
         </Stack>
-        <ModelViewerPanel
-          source={modelSource}
-          deferLoad={isMobile}
-          highlightSpans={topology.highlightSpans}
-          cameraSpans={topology.cameraSpans}
-          modelOptions={modelOptions}
-          selectedModelId={selectedPdbId ?? PREDICTED_ID}
-          onSelectModel={selectModel}
-          onResidueHover={topology.hoverResidue}
-          onExporterChange={onExporterChange}
-        />
+        <Box
+          sx={{ flex: 1, minHeight: VIEWER_MIN_HEIGHT, display: "flex", flexDirection: "column" }}
+        >
+          <ModelViewerPanel
+            source={modelSource}
+            deferLoad={isMobile}
+            highlightSpans={topology.highlightSpans}
+            cameraSpans={topology.cameraSpans}
+            modelOptions={modelOptions}
+            selectedModelId={selectedPdbId ?? PREDICTED_ID}
+            onSelectModel={selectModel}
+            onResidueHover={topology.hoverResidue}
+            onExporterChange={onExporterChange}
+          />
+        </Box>
         <Stack spacing={1} sx={{ mt: 1 }}>
           {modelOptions.length > 1 && (
             <ModelSwitcher

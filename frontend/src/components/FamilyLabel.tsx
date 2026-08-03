@@ -5,6 +5,8 @@
 import { Box, Tooltip } from "@mui/material"
 import { capBoxSx, tooltipSurfaceSx } from "@/theme"
 
+const CAP_HEIGHT_EM = "0.7em"
+
 interface FamilyLabelProps {
   label: string
   color: string
@@ -44,13 +46,22 @@ export default function FamilyLabel({ label, color, familyName, category }: Fami
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-end",
           justifyContent: "flex-end",
           gap: 0.75,
           cursor: category ? "help" : "default",
         }}
       >
-        <Box sx={{ width: 10, height: 10, borderRadius: "2px", bgcolor: color }} />
+        <Box
+          sx={{
+            width: CAP_HEIGHT_EM,
+            height: CAP_HEIGHT_EM,
+            flexShrink: 0,
+            transform: "translateY(0.5px)",
+            borderRadius: "2px",
+            bgcolor: color,
+          }}
+        />
         <Box component="span" sx={capBoxSx}>
           {label}
         </Box>
