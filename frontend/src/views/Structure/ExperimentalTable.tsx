@@ -114,7 +114,7 @@ export default function ExperimentalTable({ entries, selectedPdbId, onSelect }: 
                 </TableCell>
                 <TableCell>
                   {entry.uniprot_start != null && entry.uniprot_end != null
-                    ? `${entry.uniprot_start}-${entry.uniprot_end}`
+                    ? `${entry.uniprot_start}–${entry.uniprot_end}`
                     : "—"}
                 </TableCell>
                 <TableCell>

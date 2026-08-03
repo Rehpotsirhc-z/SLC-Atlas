@@ -6,8 +6,8 @@
 // which are what Mol* paints the 3D model with
 export const PLDDT_BANDS = [
   { min: 90, color: "#0053d6", short: "very high", range: ">90", label: "very high confidence" },
-  { min: 70, color: "#65cbf3", short: "confident", range: "70-90", label: "confident" },
-  { min: 50, color: "#ffdb13", short: "low", range: "50-70", label: "low confidence" },
+  { min: 70, color: "#65cbf3", short: "confident", range: "70–90", label: "confident" },
+  { min: 50, color: "#ffdb13", short: "low", range: "50–70", label: "low confidence" },
   {
     min: 0,
     color: "#ff7d45",

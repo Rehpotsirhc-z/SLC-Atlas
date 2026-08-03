@@ -40,7 +40,7 @@ export const siteName = (site: BindingSite) =>
 export const spanLength = (span: ResidueSpan) => span.end - span.start + 1
 
 export const formatSpans = (spans: ResidueSpan[]) =>
-  spans.map((s) => (s.start === s.end ? `${s.start}` : `${s.start}-${s.end}`)).join(", ")
+  spans.map((s) => (s.start === s.end ? `${s.start}` : `${s.start}–${s.end}`)).join(", ")
 
 export const clipSpans = (spans: ResidueSpan[], from: number, to: number): ResidueSpan[] =>
   spans

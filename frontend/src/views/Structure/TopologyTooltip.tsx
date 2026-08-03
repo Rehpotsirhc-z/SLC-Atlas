@@ -50,7 +50,7 @@ export default function TopologyTooltip({ hover, point, layout }: Props) {
         <>
           <Title>{hover.item.name}</Title>
           <Line>
-            {`residues ${hover.item.start}-${hover.item.end} · ${
+            {`residues ${hover.item.start}–${hover.item.end} · ${
               hover.item.entrySide === hover.item.exitSide
                 ? `enters and leaves on the ${face(hover.item.entrySide)} face`
                 : `enters from the ${face(hover.item.entrySide)} face`
@@ -72,7 +72,7 @@ export default function TopologyTooltip({ hover, point, layout }: Props) {
               : (hover.item.description ?? "Loop")}
           </Title>
           <Line>
-            {`residues ${hover.item.start}-${hover.item.end} · ${(
+            {`residues ${hover.item.start}–${hover.item.end} · ${(
               hover.item.description ?? layout.sideLabels[hover.item.side]
             ).toLowerCase()}${hover.item.description ? "" : " face"}`}
           </Line>
