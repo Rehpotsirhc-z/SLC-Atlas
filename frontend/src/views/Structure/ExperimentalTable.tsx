@@ -17,7 +17,7 @@ import {
 } from "@mui/material"
 import { pdbeUrl } from "@/utils/links"
 import { EXPERIMENTAL_PAGE_SIZE } from "./constants"
-import { methodLabel, resolutionLabel } from "./experimentalEntry"
+import { ligandLabel, methodLabel, resolutionLabel } from "./experimentalEntry"
 import { sortExperimental, type ExperimentalSortKey } from "./experimentalSort"
 import type { ExperimentalStructure } from "@/types/structure"
 import type { SortDir } from "@/types/table"
@@ -107,19 +107,19 @@ export default function ExperimentalTable({ entries, selectedPdbId, onSelect }: 
                     {entry.pdb_id.toUpperCase()}
                   </Link>
                 </TableCell>
-                <TableCell>{methodLabel(entry.method) ?? "-"}</TableCell>
-                <TableCell align="right">{resolutionLabel(entry.resolution) ?? "-"}</TableCell>
+                <TableCell>{methodLabel(entry.method) ?? "—"}</TableCell>
+                <TableCell align="right">{resolutionLabel(entry.resolution) ?? "—"}</TableCell>
                 <TableCell align="right">
-                  {entry.coverage != null ? `${(entry.coverage * 100).toFixed(0)}%` : "-"}
+                  {entry.coverage != null ? `${(entry.coverage * 100).toFixed(0)}%` : "—"}
                 </TableCell>
                 <TableCell>
                   {entry.uniprot_start != null && entry.uniprot_end != null
                     ? `${entry.uniprot_start}-${entry.uniprot_end}`
-                    : "-"}
+                    : "—"}
                 </TableCell>
                 <TableCell>
                   <Typography variant="caption" sx={{ wordBreak: "break-word" }}>
-                    {entry.ligand_ccd ?? "-"}
+                    {ligandLabel(entry.ligand_ccd) ?? "—"}
                   </Typography>
                 </TableCell>
               </TableRow>

@@ -20,6 +20,11 @@ export function resolutionLabel(resolution: number | null): string | null {
   return resolution != null ? `${resolution.toFixed(RESOLUTION_DECIMALS)} Å` : null
 }
 
+export function ligandLabel(ligandCcd: string | null): string | null {
+  if (!ligandCcd) return null
+  return ligandCcd.split(",").join(", ")
+}
+
 export function entryLabel(entry: ExperimentalStructure): string {
   const parts = [
     entry.pdb_id.toUpperCase(),
