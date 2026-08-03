@@ -8,8 +8,15 @@ import FamilyLabel from "@/components/FamilyLabel"
 import { capBoxSx } from "@/theme"
 import { getFamilyColor } from "@/utils/familyColor"
 import { alphafoldUrl, ensemblUrl, pdbeUrl, ucscUrl, uniprotUrl } from "@/utils/links"
-import { IDENTITY_GRID_COLUMNS, IDENTITY_SECONDARY_EM, LINK_ROW_INK_INSET } from "./constants"
+import {
+  IDENTITY_GRID_COLUMNS,
+  IDENTITY_SECONDARY_EM,
+  LINK_ROW_GAP,
+  LINK_ROW_INK_INSET,
+  LINK_ROW_WRAPPED_COLUMNS,
+} from "./constants"
 import { methodLabel, resolutionLabel } from "./experimentalEntry"
+import { useRowFits } from "./useRowFits"
 import type { Gene } from "@/types/gene"
 import type { StructureRecord } from "@/types/structure"
 
@@ -39,7 +46,13 @@ function ExternalLink({ label, href }: LinkOut) {
       href={href}
       target="_blank"
       rel="noopener"
-      sx={{ p: 0.75, minWidth: 0, lineHeight: 1, "& .MuiButton-startIcon": { ml: 0 } }}
+      sx={{
+        p: 0.75,
+        minWidth: 0,
+        lineHeight: 1,
+        justifyContent: "flex-start",
+        "& .MuiButton-startIcon": { ml: 0 },
+      }}
     >
       <Box component="span" sx={capBoxSx}>
         {label}
@@ -80,6 +93,8 @@ export default function IdentityCard({ structure, gene }: Props) {
       ? [{ label: "AlphaFill ligands", href: structure.alphafill_page_url }]
       : []),
   ]
+
+  const [linkRowRef, linkRowFits] = useRowFits(links.length, LINK_ROW_GAP)
 
   return (
     <Stack spacing={1.5}>
@@ -186,16 +201,21 @@ export default function IdentityCard({ structure, gene }: Props) {
         </Alert>
       )}
 
-      <Stack
-        direction="row"
-        spacing={1}
-        useFlexGap
-        sx={{ flexWrap: "wrap", position: "relative", left: `${-LINK_ROW_INK_INSET}px` }}
+      <Box
+        ref={linkRowRef}
+        sx={{
+          position: "relative",
+          left: `${-LINK_ROW_INK_INSET}px`,
+          gap: `${LINK_ROW_GAP}px`,
+          ...(linkRowFits
+            ? { display: "flex", flexWrap: "wrap" }
+            : { display: "grid", gridTemplateColumns: LINK_ROW_WRAPPED_COLUMNS }),
+        }}
       >
         {links.map((link) => (
           <ExternalLink key={link.label} {...link} />
         ))}
-      </Stack>
+      </Box>
     </Stack>
   )
 }

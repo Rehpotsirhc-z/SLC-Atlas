@@ -67,6 +67,8 @@ export const IDENTITY_GRID_COLUMNS = "repeat(auto-fit, minmax(120px, max-content
 // The link row is pulled out by its button padding plus the launch glyph's own inset, so the
 // icon starts on the stat text above it rather than the button box doing so
 export const LINK_ROW_INK_INSET = 7
+export const LINK_ROW_GAP = 12
+export const LINK_ROW_WRAPPED_COLUMNS = "repeat(2, 1fr)"
 
 export const RESOLUTION_DECIMALS = 2
 export const EXPERIMENTAL_PAGE_SIZE = 10
