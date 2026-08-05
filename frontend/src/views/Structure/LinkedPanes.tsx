@@ -12,8 +12,8 @@ import LinkedResidues from "./LinkedResidues"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
 import { PREDICTED_ID } from "./modelOptions"
-import SnakeFigure from "./SnakeFigure"
-import TopologyFigure from "./TopologyFigure"
+import RegionsFigure from "./RegionsFigure"
+import ResiduesFigure from "./ResiduesFigure"
 import TopologyGuide from "./TopologyGuide"
 import TopologyModeToggle from "./TopologyModeToggle"
 import { useTopologyState, type TopologyMode } from "./useTopologyState"
@@ -59,7 +59,7 @@ export default function LinkedPanes({
   const [figureRef, figureBox] = useElementSize<HTMLDivElement>("content")
   // Floored so a fractional column width cannot leave the figure a sub-pixel too wide
   const trackWidth = Math.max(Math.floor(figureBox.w), TRACK.minWidth)
-  const [mode, setMode] = useState<TopologyMode>("linear")
+  const [mode, setMode] = useState<TopologyMode>("regions")
 
   const topology = useTopologyState({
     features: features ?? [],
@@ -99,19 +99,19 @@ export default function LinkedPanes({
         </Stack>
         {features?.length && structure.uniprot_length ? (
           <Box sx={{ overflowX: "auto" }}>
-            {mode === "linear" ? (
-              <TopologyFigure
+            {mode === "regions" ? (
+              <RegionsFigure
                 svgRef={svgRef}
                 model={topology.model}
-                layout={topology.layout}
+                layout={topology.regions}
                 plddt={plddt}
                 topology={topology}
               />
             ) : (
-              <SnakeFigure
+              <ResiduesFigure
                 svgRef={svgRef}
                 model={topology.model}
-                layout={topology.snake}
+                layout={topology.residues}
                 topology={topology}
               />
             )}

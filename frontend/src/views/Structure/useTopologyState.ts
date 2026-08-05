@@ -4,12 +4,12 @@
 
 import { useMemo } from "react"
 import { buildChainModel, EMPTY_MODEL } from "./chainModel"
-import { EMPTY_SNAKE, layoutSnake } from "./snakeLayout"
-import { EMPTY_LAYOUT, layoutTopology } from "./topologyLayout"
+import { EMPTY_REGIONS, layoutRegions } from "./regionsLayout"
+import { EMPTY_RESIDUES, layoutResidues } from "./residuesLayout"
 import { useTopologyHover } from "./useTopologyHover"
 import type { ProteinFeature } from "@/types/structure"
 
-export type TopologyMode = "linear" | "snake"
+export type TopologyMode = "regions" | "residues"
 
 interface Options {
   features: ProteinFeature[]
@@ -35,16 +35,17 @@ export function useTopologyState({
     [features, length],
   )
 
-  const layout = useMemo(
-    () => (mode === "linear" && model.length ? layoutTopology(model, width, plddt) : EMPTY_LAYOUT),
+  const regions = useMemo(
+    () => (mode === "regions" && model.length ? layoutRegions(model, width, plddt) : EMPTY_REGIONS),
     [mode, model, width, plddt],
   )
 
-  const snake = useMemo(
-    () => (mode === "snake" && model.length ? layoutSnake(model, plddt, sequence) : EMPTY_SNAKE),
+  const residues = useMemo(
+    () =>
+      mode === "residues" && model.length ? layoutResidues(model, plddt, sequence) : EMPTY_RESIDUES,
     [mode, model, plddt, sequence],
   )
 
-  // Only the snake plot has a mark small enough for a viewer pick to land on one residue
-  return { model, layout, snake, ...useTopologyHover(model, protein, mode === "snake") }
+  // Only the residues plot has a mark small enough for a viewer pick to land on one residue
+  return { model, regions, residues, ...useTopologyHover(model, protein, mode === "residues") }
 }

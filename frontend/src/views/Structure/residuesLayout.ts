@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import { segmentEnds, segmentPoints, segmentReach } from "./beadCoils"
+import { EMPTY_GRID, indexBeads, type BeadGrid } from "./beadHitTest"
+import { chainPath, loopGuide, sizeLoop, spread } from "./beadLoops"
 import type { ChainModel, GapModel, SegmentModel } from "./chainModel"
-import { SNAKE, SNAKE_BAND, TRACK } from "./constants"
+import { RESIDUES, RESIDUES_BAND, TRACK } from "./constants"
 import { laneLabel, type LaneLabel, type Side } from "./membraneSides"
-import { segmentEnds, segmentPoints, segmentReach } from "./snakeCoils"
-import { EMPTY_GRID, indexBeads, type BeadGrid } from "./snakeHitTest"
-import { chainPath, loopGuide, sizeLoop, spread } from "./snakeLoops"
-import type { Point } from "./topologyLayout"
+import type { Point } from "./regionsLayout"
 
 export interface Bead {
   residue: number
@@ -19,7 +19,7 @@ export interface Bead {
   ligandIndex: number | null
 }
 
-export interface SnakeElement {
+export interface BeadElement {
   key: string
   start: number
   end: number
@@ -31,7 +31,7 @@ export interface SnakeElement {
   chain: string
 }
 
-export interface SnakeLayout {
+export interface ResiduesLayout {
   width: number
   height: number
   length: number
@@ -41,13 +41,13 @@ export interface SnakeLayout {
   membraneBottom: number
   labelY: number
   lanes: LaneLabel[]
-  elements: SnakeElement[]
+  elements: BeadElement[]
   termini: { label: "N" | "C"; x: number; y: number }[]
   hits: BeadGrid
   hasConfidence: boolean
 }
 
-export const EMPTY_SNAKE: SnakeLayout = {
+export const EMPTY_RESIDUES: ResiduesLayout = {
   width: 0,
   height: 0,
   length: 0,
@@ -64,9 +64,9 @@ export const EMPTY_SNAKE: SnakeLayout = {
 }
 
 export function beadAt(
-  layout: SnakeLayout,
+  layout: ResiduesLayout,
   residue: number | null,
-): { bead: Bead; element: SnakeElement } | null {
+): { bead: Bead; element: BeadElement } | null {
   if (residue === null) return null
   for (const element of layout.elements) {
     if (residue < element.start || residue > element.end) continue
@@ -77,8 +77,9 @@ export function beadAt(
 }
 
 function placeLabel(label: string, centre: number, reach: number, before: number, after: number) {
-  const inset = reach + SNAKE.bead + SNAKE.segmentLabelGap
-  const needed = label.length * SNAKE.segmentLabelSize * TRACK.labelAspect + SNAKE.segmentLabelGap
+  const inset = reach + RESIDUES.bead + RESIDUES.segmentLabelGap
+  const needed =
+    label.length * RESIDUES.segmentLabelSize * TRACK.labelAspect + RESIDUES.segmentLabelGap
   if (after >= needed) return { label, labelX: centre + inset, labelAnchor: "start" as const }
   if (before >= needed) return { label, labelX: centre - inset, labelAnchor: "end" as const }
   return { label: null, labelX: centre, labelAnchor: "start" as const }
@@ -95,13 +96,13 @@ function ligandIndexByResidue(model: ChainModel): Map<number, number> {
   return byResidue
 }
 
-export function layoutSnake(
+export function layoutResidues(
   model: ChainModel,
   plddt: number[] | null,
   sequence: string | null,
-): SnakeLayout {
+): ResiduesLayout {
   const { length, segments, gaps } = model
-  if (!segments.length) return EMPTY_SNAKE
+  if (!segments.length) return EMPTY_RESIDUES
 
   const aligned = sequence?.length === length ? sequence : null
   const confidence = plddt?.length === length ? plddt : null
@@ -112,17 +113,17 @@ export function layoutSnake(
 
   const deepest = (side: Side) => {
     const depths = sizes.filter((_, i) => gaps[i].side === side).map((size) => size.depth)
-    return Math.max(SNAKE.minBow, ...depths) + SNAKE.bead + SNAKE.padY
+    return Math.max(RESIDUES.minBow, ...depths) + RESIDUES.bead + RESIDUES.padY
   }
 
   const outsideLane = deepest("outside")
   const insideLane = deepest("inside")
   const membraneTop = outsideLane
-  const membraneBottom = membraneTop + SNAKE_BAND
+  const membraneBottom = membraneTop + RESIDUES_BAND
   const edgeY = (side: Side) => (side === "outside" ? membraneTop : membraneBottom)
 
   const ends = segments.map(segmentEnds)
-  const plotLeft = SNAKE.gutter + SNAKE.padX
+  const plotLeft = RESIDUES.gutter + RESIDUES.padX
   const centres: number[] = []
   let x = plotLeft + sizes[0].foot + ends[0].entry
   for (let i = 0; i < segments.length; i++) {
@@ -181,7 +182,7 @@ export function layoutSnake(
     if (i < segments.length) ordered.push({ item: segments[i], beads: coils[i], index: i })
   })
 
-  const elements: SnakeElement[] = ordered.map((entry, i) => {
+  const elements: BeadElement[] = ordered.map((entry, i) => {
     const next = ordered.slice(i + 1).find((e) => e.beads.length)?.beads[0]
     const through = next ? [...entry.beads, next] : entry.beads
     const column = entry.index
@@ -210,7 +211,7 @@ export function layoutSnake(
   const last = lastBeads?.[lastBeads.length - 1]
 
   return {
-    width: plotRight + SNAKE.padX,
+    width: plotRight + RESIDUES.padX,
     height: membraneBottom + insideLane,
     length,
     plotLeft,

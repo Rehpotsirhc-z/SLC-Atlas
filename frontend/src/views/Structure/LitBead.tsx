@@ -3,33 +3,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo } from "react"
-import { SNAKE, TRACK } from "./constants"
-import { beadFill, beadLetterInk, type SnakeInk } from "./snakeInk"
-import type { Bead } from "./snakeLayout"
+import { RESIDUES, TRACK } from "./constants"
+import { beadFill, beadLetterInk, type BeadInk } from "./beadInk"
+import type { Bead } from "./residuesLayout"
 
 interface Props {
   bead: Bead
   unresolved: boolean
-  ink: SnakeInk
+  ink: BeadInk
 }
 
-const SnakeBead = memo(function SnakeBead({ bead, unresolved, ink }: Props) {
+const LitBead = memo(function LitBead({ bead, unresolved, ink }: Props) {
   return (
     <g>
       <circle
         cx={bead.x}
         cy={bead.y}
-        r={SNAKE.bead}
+        r={RESIDUES.bead}
         fill={beadFill(bead, ink)}
         stroke={ink.lit}
-        strokeWidth={SNAKE.litRing}
+        strokeWidth={RESIDUES.litRing}
         strokeDasharray={unresolved ? TRACK.unresolvedDash : undefined}
       />
       {bead.letter && (
         <text
           x={bead.x}
           y={bead.y}
-          fontSize={SNAKE.letterSize}
+          fontSize={RESIDUES.letterSize}
           fontWeight={600}
           textAnchor="middle"
           dominantBaseline="central"
@@ -42,4 +42,4 @@ const SnakeBead = memo(function SnakeBead({ bead, unresolved, ink }: Props) {
   )
 })
 
-export default SnakeBead
+export default LitBead

@@ -3,28 +3,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useState, type RefObject } from "react"
-import { Box } from "@mui/material"
-import TopologyDiagram from "./TopologyDiagram"
+import { Box, Typography } from "@mui/material"
+import ResiduesDiagram from "./ResiduesDiagram"
 import TopologyLegend from "./TopologyLegend"
 import TopologyTooltip from "./TopologyTooltip"
+import { useBeadReveal } from "./useBeadReveal"
 import type { ChainModel } from "./chainModel"
-import type { TopologyLayout } from "./topologyLayout"
+import type { ResiduesLayout } from "./residuesLayout"
 import type { TopologyTarget } from "./topologyTargets"
 import type { useTopologyState } from "./useTopologyState"
 
 interface Props {
   model: ChainModel
-  layout: TopologyLayout
-  plddt: number[] | null
+  layout: ResiduesLayout
   topology: ReturnType<typeof useTopologyState>
   svgRef?: RefObject<SVGSVGElement | null>
 }
 
-export default function TopologyFigure({ model, layout, plddt, topology, svgRef }: Props) {
-  const { hover, track, clear, highlight, select } = topology
-  // Where the cursor is concerns the tooltip alone, so it stops here rather than reaching
-  // the diagram beside it or the viewer the hovered target is shared with
+export default function ResiduesFigure({ model, layout, topology, svgRef }: Props) {
+  const { hover, viewerHover, track, clear, highlight, select } = topology
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
+
+  const scrollRef = useBeadReveal(
+    layout,
+    hover === null && viewerHover?.kind === "residue" ? viewerHover.residue : null,
+  )
 
   const onHover = useCallback(
     (event: React.MouseEvent, target: TopologyTarget) => {
@@ -39,24 +42,27 @@ export default function TopologyFigure({ model, layout, plddt, topology, svgRef 
     clear()
   }, [clear])
 
+  if (!layout.elements.length) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        UniProt places no part of this protein in the membrane, so there is no chain to thread.
+      </Typography>
+    )
+  }
+
   return (
     <Box>
-      <TopologyDiagram
+      <ResiduesDiagram
         layout={layout}
-        length={model.length}
-        plddt={plddt}
         highlight={highlight}
         onHover={onHover}
         onLeave={onLeave}
         onSelect={select}
         svgRef={svgRef}
+        scrollRef={scrollRef}
       />
 
-      <TopologyLegend
-        model={model}
-        hasConfidence={layout.confidence.length > 0}
-        unresolvedAs="line"
-      />
+      <TopologyLegend model={model} hasConfidence={layout.hasConfidence} unresolvedAs="ring" />
 
       {hover && point && <TopologyTooltip hover={hover} point={point} model={model} />}
     </Box>

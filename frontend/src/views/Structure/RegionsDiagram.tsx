@@ -7,11 +7,11 @@ import { alpha, Box, useTheme } from "@mui/material"
 import { confidenceColor } from "./confidenceColor"
 import { DIM_OPACITY, TRACK } from "./constants"
 import { ligandColorAt } from "./ligandColor"
-import type { TopologyLayout } from "./topologyLayout"
+import type { RegionsLayout } from "./regionsLayout"
 import type { TargetSets, TopologyTarget } from "./topologyTargets"
 
 interface Props {
-  layout: TopologyLayout
+  layout: RegionsLayout
   length: number
   plddt: number[] | null
   highlight: TargetSets
@@ -21,7 +21,7 @@ interface Props {
   svgRef?: RefObject<SVGSVGElement | null>
 }
 
-const TopologyDiagram = memo(function TopologyDiagram({
+const RegionsDiagram = memo(function RegionsDiagram({
   layout,
   length,
   plddt,
@@ -326,4 +326,4 @@ const TopologyDiagram = memo(function TopologyDiagram({
   )
 })
 
-export default TopologyDiagram
+export default RegionsDiagram

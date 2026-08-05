@@ -12,14 +12,14 @@ export type TopologyTarget =
   | { kind: "arc"; item: GapModel }
   | { kind: "site"; item: SiteModel }
   | { kind: "confidence"; residue: number; score: number }
-  // One bead: what the snake plot knows about a residue on its own
+  // One bead: what the residues plot knows about a residue on its own
   | { kind: "residue"; residue: number; letter: string | null; score: number | null }
 
 export interface TargetSets {
   segments: Set<string>
   arcs: Set<string>
   sites: Set<string>
-  // The one bead the pointer is on, which only the snake plot can draw
+  // The one bead the pointer is on, which only the residues plot can draw
   residue: number | null
   size: number
 }

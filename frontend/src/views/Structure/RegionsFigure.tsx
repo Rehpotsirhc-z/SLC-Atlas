@@ -3,31 +3,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useState, type RefObject } from "react"
-import { Box, Typography } from "@mui/material"
-import SnakeDiagram from "./SnakeDiagram"
+import { Box } from "@mui/material"
+import RegionsDiagram from "./RegionsDiagram"
 import TopologyLegend from "./TopologyLegend"
 import TopologyTooltip from "./TopologyTooltip"
-import { useSnakeReveal } from "./useSnakeReveal"
 import type { ChainModel } from "./chainModel"
-import type { SnakeLayout } from "./snakeLayout"
+import type { RegionsLayout } from "./regionsLayout"
 import type { TopologyTarget } from "./topologyTargets"
 import type { useTopologyState } from "./useTopologyState"
 
 interface Props {
   model: ChainModel
-  layout: SnakeLayout
+  layout: RegionsLayout
+  plddt: number[] | null
   topology: ReturnType<typeof useTopologyState>
   svgRef?: RefObject<SVGSVGElement | null>
 }
 
-export default function SnakeFigure({ model, layout, topology, svgRef }: Props) {
-  const { hover, viewerHover, track, clear, highlight, select } = topology
+export default function RegionsFigure({ model, layout, plddt, topology, svgRef }: Props) {
+  const { hover, track, clear, highlight, select } = topology
+  // Where the cursor is concerns the tooltip alone, so it stops here rather than reaching
+  // the diagram beside it or the viewer the hovered target is shared with
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
-
-  const scrollRef = useSnakeReveal(
-    layout,
-    hover === null && viewerHover?.kind === "residue" ? viewerHover.residue : null,
-  )
 
   const onHover = useCallback(
     (event: React.MouseEvent, target: TopologyTarget) => {
@@ -42,27 +39,24 @@ export default function SnakeFigure({ model, layout, topology, svgRef }: Props) 
     clear()
   }, [clear])
 
-  if (!layout.elements.length) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        UniProt places no part of this protein in the membrane, so there is no chain to snake.
-      </Typography>
-    )
-  }
-
   return (
     <Box>
-      <SnakeDiagram
+      <RegionsDiagram
         layout={layout}
+        length={model.length}
+        plddt={plddt}
         highlight={highlight}
         onHover={onHover}
         onLeave={onLeave}
         onSelect={select}
         svgRef={svgRef}
-        scrollRef={scrollRef}
       />
 
-      <TopologyLegend model={model} hasConfidence={layout.hasConfidence} unresolvedAs="ring" />
+      <TopologyLegend
+        model={model}
+        hasConfidence={layout.confidence.length > 0}
+        unresolvedAs="line"
+      />
 
       {hover && point && <TopologyTooltip hover={hover} point={point} model={model} />}
     </Box>

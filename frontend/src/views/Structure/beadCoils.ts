@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { SegmentModel } from "./chainModel"
-import { SNAKE, SNAKE_BAND } from "./constants"
-import type { Point } from "./topologyLayout"
+import { RESIDUES, RESIDUES_BAND } from "./constants"
+import type { Point } from "./regionsLayout"
 
 function shareOut(count: number, lines: number): number[] {
   const base = Math.floor(count / lines)
@@ -12,10 +12,10 @@ function shareOut(count: number, lines: number): number[] {
   return Array.from({ length: lines }, (_, i) => base + (i < extra ? 1 : 0))
 }
 
-const halfWidth = (widest: number) => ((widest - 1) / 2) * SNAKE.spacing
+const halfWidth = (widest: number) => ((widest - 1) / 2) * RESIDUES.spacing
 
-const crossingRows = (count: number) => Math.max(1, Math.min(SNAKE.coilRows, count))
-const reentrantDepth = Math.floor(SNAKE_BAND / 2 / SNAKE.spacing) + 1
+const crossingRows = (count: number) => Math.max(1, Math.min(RESIDUES.coilRows, count))
+const reentrantDepth = Math.floor(RESIDUES_BAND / 2 / RESIDUES.spacing) + 1
 
 function reentrantColumns(count: number): number {
   const columns = Math.ceil(count / reentrantDepth)
@@ -26,10 +26,10 @@ function crossingPoints(count: number, centre: number, entry: number, down: bool
   const rows = shareOut(count, crossingRows(count))
   const points: Point[] = []
   rows.forEach((held, row) => {
-    const y = entry + (down ? 1 : -1) * row * SNAKE.spacing
+    const y = entry + (down ? 1 : -1) * row * RESIDUES.spacing
     for (let i = 0; i < held; i++) {
       const at = row % 2 === 0 ? i : held - 1 - i
-      points.push({ x: centre + (at - (held - 1) / 2) * SNAKE.spacing, y })
+      points.push({ x: centre + (at - (held - 1) / 2) * RESIDUES.spacing, y })
     }
   })
   return points
@@ -39,10 +39,10 @@ function reentrantPoints(count: number, centre: number, entry: number, down: boo
   const columns = shareOut(count, reentrantColumns(count))
   const points: Point[] = []
   columns.forEach((held, column) => {
-    const x = centre + (column - (columns.length - 1) / 2) * SNAKE.spacing
+    const x = centre + (column - (columns.length - 1) / 2) * RESIDUES.spacing
     for (let i = 0; i < held; i++) {
       const step = column % 2 === 0 ? i : held - 1 - i
-      points.push({ x, y: entry + (down ? 1 : -1) * step * SNAKE.spacing })
+      points.push({ x, y: entry + (down ? 1 : -1) * step * RESIDUES.spacing })
     }
   })
   return points

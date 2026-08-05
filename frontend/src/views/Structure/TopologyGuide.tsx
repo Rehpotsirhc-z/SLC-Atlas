@@ -15,7 +15,7 @@ const Para = ({ children }: { children: React.ReactNode }) => (
 export default function TopologyGuide({ mode }: { mode: TopologyMode }) {
   return (
     <InfoTooltip label="How to read the topology diagram">
-      {mode === "linear" ? (
+      {mode === "regions" ? (
         <>
           <Para>
             The x axis is the residue number, so every mark sits at the residues it covers and a
@@ -51,7 +51,7 @@ export default function TopologyGuide({ mode }: { mode: TopologyMode }) {
         </>
       )}
       <Para>
-        {mode === "linear"
+        {mode === "regions"
           ? "A dashed line is one where UniProt's own compartments cannot all be reached by alternating helices, so the helices in it may be flipped."
           : "A bead with a broken outline is one whose stretch UniProt's own compartments cannot reach by alternating helices, so the helices in it may be flipped, and one drawn turning back into the face it came from is a helix that stretch leaves on the side it entered."}
       </Para>

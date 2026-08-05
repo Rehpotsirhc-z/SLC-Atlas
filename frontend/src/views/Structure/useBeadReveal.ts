@@ -4,15 +4,18 @@
 
 import { useEffect, useMemo, useRef } from "react"
 import { useMediaQuery } from "@mui/material"
-import { SNAKE, SNAKE_REVEAL } from "./constants"
-import { beadAt, type SnakeLayout } from "./snakeLayout"
+import { RESIDUES, RESIDUES_REVEAL } from "./constants"
+import { beadAt, type ResiduesLayout } from "./residuesLayout"
 
 const ease = (t: number) => 1 - (1 - t) ** 3
 
 const runFor = (distance: number) =>
-  Math.min(Math.max(distance / SNAKE_REVEAL.pxPerMs, SNAKE_REVEAL.minMs), SNAKE_REVEAL.maxMs)
+  Math.min(
+    Math.max(distance / RESIDUES_REVEAL.pxPerMs, RESIDUES_REVEAL.minMs),
+    RESIDUES_REVEAL.maxMs,
+  )
 
-export function useSnakeReveal(layout: SnakeLayout, residue: number | null) {
+export function useBeadReveal(layout: ResiduesLayout, residue: number | null) {
   const boxRef = useRef<HTMLDivElement | null>(null)
   const frame = useRef<number | null>(null)
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
@@ -27,7 +30,7 @@ export function useSnakeReveal(layout: SnakeLayout, residue: number | null) {
 
     const scale = layout.width ? box.scrollWidth / layout.width : 1
     const x = at * scale
-    const clearance = (SNAKE.bead + SNAKE_REVEAL.edgePad) * scale
+    const clearance = (RESIDUES.bead + RESIDUES_REVEAL.edgePad) * scale
     const view = box.clientWidth
     if (x - clearance >= box.scrollLeft && x + clearance <= box.scrollLeft + view) return
 

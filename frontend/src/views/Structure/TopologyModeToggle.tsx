@@ -7,13 +7,13 @@ import type { TopologyMode } from "./useTopologyState"
 
 const MODES: { value: TopologyMode; label: string; hint: string }[] = [
   {
-    value: "linear",
-    label: "Linear",
-    hint: "Every mark on a residue axis, so a helix is as wide as it is long",
+    value: "regions",
+    label: "Regions",
+    hint: "One mark per helix or loop, on a residue axis, so a helix is as wide as it is long",
   },
   {
-    value: "snake",
-    label: "Snake",
+    value: "residues",
+    label: "Residues",
     hint: "One bead per residue, threaded through the membrane",
   },
 ]

@@ -47,7 +47,7 @@ export const TRACK = {
   unresolvedDash: "5 4",
 } as const
 
-export const SNAKE = {
+export const RESIDUES = {
   gutter: TRACK.gutter,
   padX: 16,
   padY: 14,
@@ -85,7 +85,7 @@ export const SNAKE = {
   litRing: 2.5,
 } as const
 
-export const SNAKE_REVEAL = {
+export const RESIDUES_REVEAL = {
   // Clearance the bead keeps from either edge, one flush against an edge being easy to miss
   edgePad: 24,
   pxPerMs: 4,
@@ -94,10 +94,10 @@ export const SNAKE_REVEAL = {
 } as const
 
 // The band is exactly as tall as a full-length coil, so its rows need no stretching to span
-export const SNAKE_BAND = SNAKE.spacing * (SNAKE.coilRows - 1)
+export const RESIDUES_BAND = RESIDUES.spacing * (RESIDUES.coilRows - 1)
 
 // How far from the membrane the outermost row of the deepest loop can sit
-export const SNAKE_MAX_DEPTH = SNAKE.minRise + (SNAKE.maxRows - 1) * SNAKE.rowStep
+export const RESIDUES_MAX_DEPTH = RESIDUES.minRise + (RESIDUES.maxRows - 1) * RESIDUES.rowStep
 
 // How far the topology figure fades everything unrelated to the element under the pointer
 export const DIM_OPACITY = 0.3

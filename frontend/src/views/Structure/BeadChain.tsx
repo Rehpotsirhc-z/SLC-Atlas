@@ -3,25 +3,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo } from "react"
-import { SNAKE, TRACK } from "./constants"
-import { beadFill, beadLetterInk, type SnakeInk } from "./snakeInk"
-import type { Bead, SnakeElement } from "./snakeLayout"
+import { RESIDUES, TRACK } from "./constants"
+import { beadFill, beadLetterInk, type BeadInk } from "./beadInk"
+import type { Bead, BeadElement } from "./residuesLayout"
 
 interface Props {
-  element: SnakeElement
+  element: BeadElement
   labelY: number
-  ink: SnakeInk
+  ink: BeadInk
 }
 
-const SnakeChain = memo(function SnakeChain({ element, labelY, ink }: Props) {
+const BeadChain = memo(function BeadChain({ element, labelY, ink }: Props) {
   const dash = element.unresolved ? TRACK.unresolvedDash : undefined
   const ringFor = (bead: Bead) => {
     if (bead.ligandIndex !== null) {
-      return { stroke: ink.ligand(bead.ligandIndex), width: SNAKE.siteRing, dash }
+      return { stroke: ink.ligand(bead.ligandIndex), width: RESIDUES.siteRing, dash }
     }
     return element.unresolved
-      ? { stroke: ink.chain, width: SNAKE.chainWidth, dash }
-      : { stroke: ink.edge, width: SNAKE.beadStroke, dash }
+      ? { stroke: ink.chain, width: RESIDUES.chainWidth, dash }
+      : { stroke: ink.edge, width: RESIDUES.beadStroke, dash }
   }
 
   return (
@@ -30,7 +30,7 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink }: Props) {
         d={element.chain}
         fill="none"
         stroke={ink.chain}
-        strokeWidth={SNAKE.chainWidth}
+        strokeWidth={RESIDUES.chainWidth}
         strokeLinecap="round"
       />
 
@@ -38,7 +38,7 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink }: Props) {
         <text
           x={element.labelX}
           y={labelY}
-          fontSize={SNAKE.segmentLabelSize}
+          fontSize={RESIDUES.segmentLabelSize}
           fontWeight={600}
           textAnchor={element.labelAnchor}
           dominantBaseline="central"
@@ -55,7 +55,7 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink }: Props) {
             key={bead.residue}
             cx={bead.x}
             cy={bead.y}
-            r={SNAKE.bead}
+            r={RESIDUES.bead}
             fill={beadFill(bead, ink)}
             stroke={ring.stroke}
             strokeWidth={ring.width}
@@ -71,7 +71,7 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink }: Props) {
               key={bead.residue}
               x={bead.x}
               y={bead.y}
-              fontSize={SNAKE.letterSize}
+              fontSize={RESIDUES.letterSize}
               fontWeight={600}
               textAnchor="middle"
               dominantBaseline="central"
@@ -85,4 +85,4 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink }: Props) {
   )
 })
 
-export default SnakeChain
+export default BeadChain

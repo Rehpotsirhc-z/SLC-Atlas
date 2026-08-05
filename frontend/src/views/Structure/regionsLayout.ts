@@ -56,7 +56,7 @@ export interface AxisTick {
   x: number
 }
 
-export interface TopologyLayout {
+export interface RegionsLayout {
   width: number
   height: number
   length: number
@@ -79,7 +79,7 @@ export interface TopologyLayout {
   termini: { label: "N" | "C"; x: number; y: number }[]
 }
 
-export const EMPTY_LAYOUT: TopologyLayout = {
+export const EMPTY_REGIONS: RegionsLayout = {
   width: 0,
   height: 0,
   length: 0,
@@ -133,11 +133,11 @@ function axisTicks(length: number, toX: (residue: number) => number): AxisTick[]
   return ticks
 }
 
-export function layoutTopology(
+export function layoutRegions(
   model: ChainModel,
   width: number,
   plddt: number[] | null,
-): TopologyLayout {
+): RegionsLayout {
   const { length, segments, gaps, sites } = model
   const plotLeft = TRACK.gutter + TRACK.padX
   const span = Math.max(length - 1, 1)
@@ -251,7 +251,7 @@ export function layoutTopology(
 
   const first = arcs[0]
   const last = arcs[arcs.length - 1]
-  const termini: TopologyLayout["termini"] = [
+  const termini: RegionsLayout["termini"] = [
     { label: "N", ...(first.residues ? { x: toX(1), y: edgeY(first.side) } : joins[0].entry) },
     {
       label: "C",

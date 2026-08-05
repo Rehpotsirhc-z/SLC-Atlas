@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { confidenceColor } from "./confidenceColor"
-import type { Bead } from "./snakeLayout"
+import type { Bead } from "./residuesLayout"
 
-export interface SnakeInk {
+export interface BeadInk {
   chain: string
   edge: string
   neutralFill: string
@@ -16,8 +16,8 @@ export interface SnakeInk {
   ligand: (index: number) => string
 }
 
-export const beadFill = (bead: Bead, ink: SnakeInk) =>
+export const beadFill = (bead: Bead, ink: BeadInk) =>
   bead.score === null ? ink.neutralFill : confidenceColor(bead.score)
 
-export const beadLetterInk = (bead: Bead, ink: SnakeInk) =>
+export const beadLetterInk = (bead: Bead, ink: BeadInk) =>
   bead.score === null ? ink.neutralInk : ink.letterInk[confidenceColor(bead.score)]
