@@ -19,14 +19,14 @@ function closeFloatingPanel(root: HTMLElement): boolean {
 export function watchEscapeKey(plugin: PluginContext, root: HTMLElement): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== "Escape") return
-    if (!plugin.layout.state.isExpanded) return
 
     const active = document.activeElement
-    if (active instanceof HTMLElement && active.closest(EDITABLE)) {
+    if (active instanceof HTMLElement && root.contains(active) && active.closest(EDITABLE)) {
       active.blur()
       return
     }
     if (closeFloatingPanel(root)) return
+    if (!plugin.layout.state.isExpanded) return
     // The browser owns Escape while it is showing the screen, so collapsing waits for the next one
     if (document.fullscreenElement) return
 
@@ -35,6 +35,8 @@ export function watchEscapeKey(plugin: PluginContext, root: HTMLElement): () => 
     })
   }
 
-  window.addEventListener("keydown", onKeyDown)
-  return () => window.removeEventListener("keydown", onKeyDown)
+  // Mol*'s own inputs blur themselves on Escape as the event bubbles, so a listener
+  // waiting for it would find the field already left and close the panel in the same press
+  window.addEventListener("keydown", onKeyDown, true)
+  return () => window.removeEventListener("keydown", onKeyDown, true)
 }
