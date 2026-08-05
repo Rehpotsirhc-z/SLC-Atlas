@@ -88,6 +88,9 @@ export const RESIDUES = {
 export const RESIDUES_REVEAL = {
   // Clearance the bead keeps from either edge, one flush against an edge being easy to miss
   edgePad: 24,
+  // How long a viewer pick holds before the plot follows it, so a pointer on its way out of the
+  // viewer cannot drag the plot across the protein behind it
+  settleMs: 200,
   pxPerMs: 4,
   minMs: 120,
   maxMs: 320,

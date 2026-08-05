@@ -8,6 +8,7 @@ import ResiduesDiagram from "./ResiduesDiagram"
 import TopologyLegend from "./TopologyLegend"
 import TopologyTooltip from "./TopologyTooltip"
 import { useBeadReveal } from "./useBeadReveal"
+import { useSettledResidue } from "./useSettledResidue"
 import type { ChainModel } from "./chainModel"
 import type { ResiduesLayout } from "./residuesLayout"
 import type { TopologyTarget } from "./topologyTargets"
@@ -24,10 +25,10 @@ export default function ResiduesFigure({ model, layout, topology, svgRef }: Prop
   const { hover, viewerHover, track, clear, highlight, select } = topology
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
 
-  const scrollRef = useBeadReveal(
-    layout,
+  const revealed = useSettledResidue(
     hover === null && viewerHover?.kind === "residue" ? viewerHover.residue : null,
   )
+  const scrollRef = useBeadReveal(layout, revealed)
 
   const onHover = useCallback(
     (event: React.MouseEvent, target: TopologyTarget) => {
