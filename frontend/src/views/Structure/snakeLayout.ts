@@ -6,6 +6,7 @@ import type { ChainModel, GapModel, SegmentModel } from "./chainModel"
 import { SNAKE, SNAKE_BAND, TRACK } from "./constants"
 import { laneLabel, type LaneLabel, type Side } from "./membraneSides"
 import { segmentEnds, segmentPoints, segmentReach } from "./snakeCoils"
+import { EMPTY_GRID, indexBeads, type BeadGrid } from "./snakeHitTest"
 import { chainPath, loopGuide, sizeLoop, spread } from "./snakeLoops"
 import type { Point } from "./topologyLayout"
 
@@ -42,7 +43,7 @@ export interface SnakeLayout {
   lanes: LaneLabel[]
   elements: SnakeElement[]
   termini: { label: "N" | "C"; x: number; y: number }[]
-  beadAt: Map<number, Bead>
+  hits: BeadGrid
   hasConfidence: boolean
 }
 
@@ -58,7 +59,7 @@ export const EMPTY_SNAKE: SnakeLayout = {
   lanes: [],
   elements: [],
   termini: [],
-  beadAt: new Map<number, Bead>(),
+  hits: EMPTY_GRID,
   hasConfidence: false,
 }
 
@@ -190,11 +191,6 @@ export function layoutSnake(
     }
   })
 
-  const beadAt = new Map<number, Bead>()
-  for (const element of elements) {
-    for (const bead of element.beads) beadAt.set(bead.residue, bead)
-  }
-
   const withBeads = elements.filter((e) => e.beads.length)
   const first = withBeads[0]?.beads[0]
   const lastBeads = withBeads[withBeads.length - 1]?.beads
@@ -223,7 +219,7 @@ export function layoutSnake(
       ...(first ? [{ label: "N" as const, x: first.x, y: first.y }] : []),
       ...(last ? [{ label: "C" as const, x: last.x, y: last.y }] : []),
     ],
-    beadAt,
+    hits: indexBeads(elements.flatMap((element) => element.beads)),
     hasConfidence: confidence !== null,
   }
 }

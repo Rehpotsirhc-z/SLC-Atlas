@@ -70,7 +70,6 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink, lit, dim, po
         return (
           <circle
             key={bead.residue}
-            data-residue={bead.residue}
             cx={bead.x}
             cy={bead.y}
             r={SNAKE.bead}
@@ -78,7 +77,6 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink, lit, dim, po
             stroke={ring.stroke}
             strokeWidth={ring.width}
             strokeDasharray={ring.dash}
-            style={{ cursor: "pointer" }}
           />
         )
       })}
@@ -97,7 +95,6 @@ const SnakeChain = memo(function SnakeChain({ element, labelY, ink, lit, dim, po
               fill={
                 bead.score === null ? ink.neutralInk : ink.letterInk[confidenceColor(bead.score)]
               }
-              style={{ pointerEvents: "none" }}
             >
               {bead.letter}
             </text>

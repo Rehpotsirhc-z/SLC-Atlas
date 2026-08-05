@@ -7,6 +7,7 @@ import { alpha, Box, useTheme } from "@mui/material"
 import { PLDDT_BANDS } from "./confidenceColor"
 import { SNAKE } from "./constants"
 import { ligandColorAt } from "./ligandColor"
+import { beadNear } from "./snakeHitTest"
 import SnakeChain, { type SnakeInk } from "./SnakeChain"
 import type { SnakeLayout } from "./snakeLayout"
 import type { TargetSets, TopologyTarget } from "./topologyTargets"
@@ -20,9 +21,12 @@ interface Props {
   svgRef?: RefObject<SVGSVGElement | null>
 }
 
-const beadResidue = (event: React.MouseEvent): number => {
-  const value = Number((event.target as SVGElement).dataset?.residue)
-  return value > 0 ? value : 0
+const pointIn = (event: React.MouseEvent<SVGSVGElement>, layout: SnakeLayout) => {
+  const box = event.currentTarget.getBoundingClientRect()
+  return {
+    x: ((event.clientX - box.left) / box.width) * layout.width,
+    y: ((event.clientY - box.top) / box.height) * layout.height,
+  }
 }
 
 const SnakeDiagram = memo(function SnakeDiagram({
@@ -56,8 +60,9 @@ const SnakeDiagram = memo(function SnakeDiagram({
   const membraneEdge = alpha(palette.text.primary, palette.mode === "dark" ? 0.22 : 0.16)
 
   const targetAt = useCallback(
-    (event: React.MouseEvent): TopologyTarget | null => {
-      const bead = layout.beadAt.get(beadResidue(event))
+    (event: React.MouseEvent<SVGSVGElement>): TopologyTarget | null => {
+      const { x, y } = pointIn(event, layout)
+      const bead = beadNear(layout.hits, x, y)
       return bead
         ? { kind: "residue", residue: bead.residue, letter: bead.letter, score: bead.score }
         : null
@@ -66,7 +71,7 @@ const SnakeDiagram = memo(function SnakeDiagram({
   )
 
   const onMove = useCallback(
-    (event: React.MouseEvent) => {
+    (event: React.MouseEvent<SVGSVGElement>) => {
       const target = targetAt(event)
       if (target) onHover(event, target)
       else onLeave()
@@ -75,7 +80,7 @@ const SnakeDiagram = memo(function SnakeDiagram({
   )
 
   const onClick = useCallback(
-    (event: React.MouseEvent) => {
+    (event: React.MouseEvent<SVGSVGElement>) => {
       const target = targetAt(event)
       if (target) onSelect(target)
     },
@@ -85,7 +90,13 @@ const SnakeDiagram = memo(function SnakeDiagram({
   const anyLit = highlight.size > 0
 
   return (
-    <Box sx={{ overflowX: "auto", overflowY: "hidden" }}>
+    <Box
+      sx={{
+        overflowX: "auto",
+        overflowY: "hidden",
+        cursor: highlight.residue === null ? "default" : "pointer",
+      }}
+    >
       <svg
         ref={svgRef}
         xmlns="http://www.w3.org/2000/svg"

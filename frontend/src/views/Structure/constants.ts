@@ -53,6 +53,8 @@ export const SNAKE = {
   padY: 14,
   bead: 7,
   spacing: 18,
+  // How far off a bead the pointer still counts as on it
+  hitRadius: 18,
   minSeparation: 15,
   coilRows: 7,
   // Below this a coil gives up spanning the band rather than narrowing to a ladder
