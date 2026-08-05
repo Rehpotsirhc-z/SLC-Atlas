@@ -8,12 +8,12 @@ import { Box, Button, CircularProgress, Stack, Typography, useTheme } from "@mui
 import { VIEWER_MIN_HEIGHT } from "./constants"
 import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
+import { useSlowConnection } from "./useSlowConnection"
 
 const MolstarViewer = lazy(() => import("./MolstarViewer"))
 
 interface Props {
   source: ModelSource | null
-  deferLoad: boolean
   highlightSpans: ResidueSpan[]
   cameraSpans: ResidueSpan[] | null
   modelOptions: ModelOption[]
@@ -40,7 +40,6 @@ function Placeholder({ children }: { children: React.ReactNode }) {
 
 export default function ModelViewerPanel({
   source,
-  deferLoad,
   highlightSpans,
   cameraSpans,
   modelOptions,
@@ -49,8 +48,9 @@ export default function ModelViewerPanel({
   onResidueHover,
   onExporterChange,
 }: Props) {
-  // Mol* is about a megabyte gzipped, so on a phone it waits to be asked for
-  const [activated, setActivated] = useState(!deferLoad)
+  // Mol* is about a megabyte gzipped, so it waits to be asked for on a slow or metered connection
+  const slowConnection = useSlowConnection()
+  const [activated, setActivated] = useState(() => !slowConnection)
   const { palette } = useTheme()
 
   if (!source) {

@@ -178,7 +178,6 @@ export default function Structure() {
                       selectedPdbId={selectedPdbId}
                       onSelectPdbId={selectPdbId}
                       sideBySide={sideBySide}
-                      isMobile={isMobile}
                       svgRef={svgRef}
                       onExporterChange={handleExporterChange}
                     />

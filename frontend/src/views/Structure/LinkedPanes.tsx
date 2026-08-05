@@ -32,7 +32,6 @@ interface Props {
   selectedPdbId: string | null
   onSelectPdbId: (pdbId: string | null) => void
   sideBySide: boolean
-  isMobile: boolean
   svgRef: RefObject<SVGSVGElement | null>
   onExporterChange: (exporter: ModelExporter | null) => void
 }
@@ -48,7 +47,6 @@ export default function LinkedPanes({
   selectedPdbId,
   onSelectPdbId,
   sideBySide,
-  isMobile,
   svgRef,
   onExporterChange,
 }: Props) {
@@ -149,7 +147,6 @@ export default function LinkedPanes({
         >
           <ModelViewerPanel
             source={modelSource}
-            deferLoad={isMobile}
             highlightSpans={topology.highlightSpans}
             cameraSpans={topology.cameraSpans}
             modelOptions={modelOptions}
