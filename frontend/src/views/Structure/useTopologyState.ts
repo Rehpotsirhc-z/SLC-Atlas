@@ -45,5 +45,6 @@ export function useTopologyState({
     [mode, model, plddt, sequence],
   )
 
-  return { model, layout, snake, ...useTopologyHover(model, protein) }
+  // Only the snake plot has a mark small enough for a viewer pick to land on one residue
+  return { model, layout, snake, ...useTopologyHover(model, protein, mode === "snake") }
 }

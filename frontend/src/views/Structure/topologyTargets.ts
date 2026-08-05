@@ -24,6 +24,13 @@ export interface TargetSets {
   size: number
 }
 
+export const residueTarget = (residue: number): TopologyTarget => ({
+  kind: "residue",
+  residue,
+  letter: null,
+  score: null,
+})
+
 export const targetKey = (target: TopologyTarget | null): string | null =>
   !target
     ? null
@@ -31,7 +38,6 @@ export const targetKey = (target: TopologyTarget | null): string | null =>
       ? `${target.kind}:${target.residue}`
       : `${target.kind}:${target.item.key}`
 
-/** The residues the target itself covers, before anything is drawn in around it. */
 export function spansOf(target: TopologyTarget): ResidueSpan[] {
   if (target.kind === "site") return target.item.spans
   if (target.kind === "confidence" || target.kind === "residue") {
@@ -40,12 +46,6 @@ export function spansOf(target: TopologyTarget): ResidueSpan[] {
   return [{ start: target.item.start, end: target.item.end }]
 }
 
-/**
- * Everything that belongs with the target: a site pulls in the chain it touches, a piece of
- * chain pulls in the sites that touch it, a single residue pulls in the piece of chain it
- * falls in. Hover and selection both go through here, so the two cannot come to disagree
- * about what a click means.
- */
 export function relatedTo(model: ChainModel, target: TopologyTarget | null): TargetSets {
   const segments = new Set<string>()
   const arcs = new Set<string>()
@@ -72,20 +72,17 @@ export function relatedTo(model: ChainModel, target: TopologyTarget | null): Tar
     else arcs.add(target.item.key)
     pullSites(start, end)
   } else if (target?.kind === "residue") {
-    const element = elementAtResidue(model, target.residue)
-    if (element) {
-      if (isSegmentModel(element)) segments.add(element.key)
-      else arcs.add(element.key)
-    }
     pullSites(target.residue, target.residue)
   }
+
+  const residue = target?.kind === "residue" ? target.residue : null
 
   return {
     segments,
     arcs,
     sites,
-    residue: target?.kind === "residue" ? target.residue : null,
-    size: segments.size + arcs.size + sites.size,
+    residue,
+    size: segments.size + arcs.size + sites.size + (residue === null ? 0 : 1),
   }
 }
 
@@ -100,21 +97,12 @@ export function spansForSets(model: ChainModel, sets: TargetSets): ResidueSpan[]
   return mergeSpans(spans)
 }
 
-/**
- * What a target sends to the 3D viewer. A bead means one residue and nothing around it,
- * which is the whole point of pointing at one; everything else lights what it belongs with.
- */
 export function highlightFor(model: ChainModel, target: TopologyTarget | null): ResidueSpan[] {
   if (!target) return NO_SPANS
   if (target.kind === "residue") return spansOf(target)
   return spansForSets(model, relatedTo(model, target))
 }
 
-/**
- * Which piece of chain a residue belongs to, as a target. Sites are left out on purpose:
- * every residue falls in exactly one segment or gap, and relatedTo lights the sites from
- * there.
- */
 export function targetAtResidue(model: ChainModel, residue: number): TopologyTarget | null {
   const element = elementAtResidue(model, residue)
   if (!element) return null

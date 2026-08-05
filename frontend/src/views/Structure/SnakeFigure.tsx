@@ -7,6 +7,7 @@ import { Box, Typography } from "@mui/material"
 import SnakeDiagram from "./SnakeDiagram"
 import TopologyLegend from "./TopologyLegend"
 import TopologyTooltip from "./TopologyTooltip"
+import { useSnakeReveal } from "./useSnakeReveal"
 import type { ChainModel } from "./chainModel"
 import type { SnakeLayout } from "./snakeLayout"
 import type { TopologyTarget } from "./topologyTargets"
@@ -20,8 +21,13 @@ interface Props {
 }
 
 export default function SnakeFigure({ model, layout, topology, svgRef }: Props) {
-  const { hover, track, clear, highlight, select } = topology
+  const { hover, viewerHover, track, clear, highlight, select } = topology
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
+
+  const scrollRef = useSnakeReveal(
+    layout,
+    hover === null && viewerHover?.kind === "residue" ? viewerHover.residue : null,
+  )
 
   const onHover = useCallback(
     (event: React.MouseEvent, target: TopologyTarget) => {
@@ -53,6 +59,7 @@ export default function SnakeFigure({ model, layout, topology, svgRef }: Props) 
         onLeave={onLeave}
         onSelect={select}
         svgRef={svgRef}
+        scrollRef={scrollRef}
       />
 
       <TopologyLegend model={model} hasConfidence={layout.hasConfidence} unresolvedAs="ring" />

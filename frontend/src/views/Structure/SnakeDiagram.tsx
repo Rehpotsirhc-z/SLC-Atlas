@@ -5,11 +5,13 @@
 import { memo, useCallback, useMemo, type RefObject } from "react"
 import { alpha, Box, useTheme } from "@mui/material"
 import { PLDDT_BANDS } from "./confidenceColor"
-import { SNAKE } from "./constants"
+import { DIM_OPACITY, SNAKE } from "./constants"
 import { ligandColorAt } from "./ligandColor"
+import SnakeBead from "./SnakeBead"
+import SnakeChain from "./SnakeChain"
 import { beadNear } from "./snakeHitTest"
-import SnakeChain, { type SnakeInk } from "./SnakeChain"
-import type { SnakeLayout } from "./snakeLayout"
+import type { SnakeInk } from "./snakeInk"
+import { beadAt, type SnakeLayout } from "./snakeLayout"
 import type { TargetSets, TopologyTarget } from "./topologyTargets"
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
   onLeave: () => void
   onSelect: (target: TopologyTarget) => void
   svgRef?: RefObject<SVGSVGElement | null>
+  scrollRef?: RefObject<HTMLDivElement | null>
 }
 
 const pointIn = (event: React.MouseEvent<SVGSVGElement>, layout: SnakeLayout) => {
@@ -36,13 +39,13 @@ const SnakeDiagram = memo(function SnakeDiagram({
   onLeave,
   onSelect,
   svgRef,
+  scrollRef,
 }: Props) {
   const { palette } = useTheme()
 
   const ink: SnakeInk = useMemo(
     () => ({
       chain: palette.text.secondary,
-      chainLit: palette.secondary.main,
       edge: palette.background.default,
       neutralFill: alpha(palette.text.primary, palette.mode === "dark" ? 0.3 : 0.18),
       neutralInk: palette.text.primary,
@@ -87,10 +90,11 @@ const SnakeDiagram = memo(function SnakeDiagram({
     [targetAt, onSelect],
   )
 
-  const anyLit = highlight.size > 0
+  const pointed = useMemo(() => beadAt(layout, highlight.residue), [layout, highlight.residue])
 
   return (
     <Box
+      ref={scrollRef}
       sx={{
         overflowX: "auto",
         overflowY: "hidden",
@@ -134,23 +138,15 @@ const SnakeDiagram = memo(function SnakeDiagram({
           </text>
         ))}
 
-        {layout.elements.map((element) => (
-          <SnakeChain
-            key={element.key}
-            element={element}
-            labelY={layout.labelY}
-            ink={ink}
-            lit={highlight.segments.has(element.key) || highlight.arcs.has(element.key)}
-            dim={anyLit}
-            pointed={
-              highlight.residue !== null &&
-              highlight.residue >= element.start &&
-              highlight.residue <= element.end
-                ? highlight.residue
-                : null
-            }
-          />
-        ))}
+        <g opacity={pointed ? DIM_OPACITY : 1}>
+          {layout.elements.map((element) => (
+            <SnakeChain key={element.key} element={element} labelY={layout.labelY} ink={ink} />
+          ))}
+        </g>
+
+        {pointed && (
+          <SnakeBead bead={pointed.bead} unresolved={pointed.element.unresolved} ink={ink} />
+        )}
 
         {layout.termini.map((terminus) => (
           <text

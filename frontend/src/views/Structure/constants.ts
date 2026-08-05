@@ -85,6 +85,14 @@ export const SNAKE = {
   litRing: 2.5,
 } as const
 
+export const SNAKE_REVEAL = {
+  // Clearance the bead keeps from either edge, one flush against an edge being easy to miss
+  edgePad: 24,
+  pxPerMs: 4,
+  minMs: 120,
+  maxMs: 320,
+} as const
+
 // The band is exactly as tall as a full-length coil, so its rows need no stretching to span
 export const SNAKE_BAND = SNAKE.spacing * (SNAKE.coilRows - 1)
 

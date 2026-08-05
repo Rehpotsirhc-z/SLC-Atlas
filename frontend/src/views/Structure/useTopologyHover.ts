@@ -7,6 +7,7 @@ import { mergeSpans } from "./bindingSites"
 import {
   highlightFor,
   relatedTo,
+  residueTarget,
   spansOf,
   targetAtResidue,
   targetKey,
@@ -18,7 +19,7 @@ import type { ResidueSpan } from "./molstar/types"
 const replaceWhenDifferent = (next: TopologyTarget | null) => (current: TopologyTarget | null) =>
   targetKey(current) === targetKey(next) ? current : next
 
-export function useTopologyHover(model: ChainModel, protein: string | null) {
+export function useTopologyHover(model: ChainModel, protein: string | null, perResidue: boolean) {
   const [hover, setHover] = useState<TopologyTarget | null>(null)
   const [viewerHover, setViewerHover] = useState<TopologyTarget | null>(null)
   const [cameraSpans, setCameraSpans] = useState<ResidueSpan[] | null>(null)
@@ -27,7 +28,7 @@ export function useTopologyHover(model: ChainModel, protein: string | null) {
     setHover(null)
     setViewerHover(null)
     setCameraSpans(null)
-  }, [protein])
+  }, [protein, perResidue])
 
   const track = useCallback((target: TopologyTarget) => setHover(replaceWhenDifferent(target)), [])
   const clear = useCallback(() => setHover(null), [])
@@ -40,9 +41,15 @@ export function useTopologyHover(model: ChainModel, protein: string | null) {
   const hoverResidue = useCallback(
     (residue: number | null) =>
       setViewerHover(
-        replaceWhenDifferent(residue === null ? null : targetAtResidue(model, residue)),
+        replaceWhenDifferent(
+          residue === null
+            ? null
+            : perResidue
+              ? residueTarget(residue)
+              : targetAtResidue(model, residue),
+        ),
       ),
-    [model],
+    [model, perResidue],
   )
 
   const pointed = hover ?? viewerHover
@@ -50,5 +57,15 @@ export function useTopologyHover(model: ChainModel, protein: string | null) {
 
   const highlightSpans = useMemo(() => highlightFor(model, hover), [model, hover])
 
-  return { hover, track, clear, highlight, select, hoverResidue, highlightSpans, cameraSpans }
+  return {
+    hover,
+    viewerHover,
+    track,
+    clear,
+    highlight,
+    select,
+    hoverResidue,
+    highlightSpans,
+    cameraSpans,
+  }
 }

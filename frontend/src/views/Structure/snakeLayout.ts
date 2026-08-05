@@ -63,6 +63,19 @@ export const EMPTY_SNAKE: SnakeLayout = {
   hasConfidence: false,
 }
 
+export function beadAt(
+  layout: SnakeLayout,
+  residue: number | null,
+): { bead: Bead; element: SnakeElement } | null {
+  if (residue === null) return null
+  for (const element of layout.elements) {
+    if (residue < element.start || residue > element.end) continue
+    const bead = element.beads.find((candidate) => candidate.residue === residue)
+    if (bead) return { bead, element }
+  }
+  return null
+}
+
 function placeLabel(label: string, centre: number, reach: number, before: number, after: number) {
   const inset = reach + SNAKE.bead + SNAKE.segmentLabelGap
   const needed = label.length * SNAKE.segmentLabelSize * TRACK.labelAspect + SNAKE.segmentLabelGap
