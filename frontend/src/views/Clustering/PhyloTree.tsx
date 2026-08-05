@@ -4,6 +4,7 @@
 
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
+import { svgSansFontFamily } from "@/theme/fonts"
 import { figureExportHandlers } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
 import type { ClusterNode } from "@/types/clustering"
@@ -87,7 +88,11 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     clone.removeAttribute("transform")
     const { width: w, height: h } = layoutData
     const bg = theme.palette.background.paper
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="${bg}"/>${clone.outerHTML}</svg>`
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"` +
+      ` font-family="${svgSansFontFamily}"><rect width="${w}" height="${h}" fill="${bg}"/>` +
+      `${clone.outerHTML}</svg>`
+    )
   }
   const buildSvgRef = useRef(buildSvgString)
   buildSvgRef.current = buildSvgString

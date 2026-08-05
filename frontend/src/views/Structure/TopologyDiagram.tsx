@@ -31,7 +31,7 @@ const TopologyDiagram = memo(function TopologyDiagram({
   onSelect,
   svgRef,
 }: Props) {
-  const { palette, custom } = useTheme()
+  const { palette, custom, typography } = useTheme()
 
   const plotWidth = layout.plotRight - layout.plotLeft
   const dimmed = (lit: boolean) => (highlight.size > 0 && !lit ? DIM_OPACITY : 1)
@@ -65,6 +65,7 @@ const TopologyDiagram = memo(function TopologyDiagram({
         viewBox={`0 0 ${layout.width} ${layout.height}`}
         role="img"
         aria-label={`Membrane topology: ${layout.cylinders.length} membrane segments across ${length} residues`}
+        fontFamily={typography.fontFamily}
         onMouseLeave={onLeave}
       >
         <rect

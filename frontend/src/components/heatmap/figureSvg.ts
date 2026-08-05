@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { PaletteMode } from "@mui/material"
+import { svgSansFontFamily } from "@/theme/fonts"
 import { getFamilyColor } from "@/utils/familyColor"
 import { GENE_LABEL_GAP, GENE_TREE_W, LEFT_W } from "./constants"
 import { cellRect } from "./geometry"
@@ -82,7 +83,7 @@ export function figureSvgDocument(opts: {
 }): string {
   const { width: w, height: h, margin, contentTop, background, body } = opts
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="${svgSansFontFamily}">` +
     `<rect width="${w}" height="${h}" fill="${background}"/>` +
     `<g transform="translate(${margin} ${margin - contentTop})">` +
     body +

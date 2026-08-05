@@ -18,7 +18,7 @@ import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
-import { figureExportHandlers } from "@/utils/exportFigure"
+import { figureExportHandlers, withBackground } from "@/utils/exportFigure"
 import {
   CONTENT_PADDING_PX,
   MIN_CONTENT_WIDTH,
@@ -34,7 +34,8 @@ import { useStructureState } from "./useStructureState"
 import type { ModelExporter } from "./molstar/types"
 
 export default function Structure() {
-  const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const [drawerOpen, setDrawerOpen] = useState(false)
   // Present only while the viewer is mounted, which is what gates the export menu entry
   const [exportModelPng, setExportModelPng] = useState<ModelExporter | null>(null)
@@ -80,7 +81,12 @@ export default function Structure() {
 
   const symbol = selected?.symbol ?? selected?.gene_id ?? "structure"
   const { exportSvg, exportPng } = figureExportHandlers(() =>
-    svgRef.current ? new XMLSerializer().serializeToString(svgRef.current) : null,
+    svgRef.current
+      ? withBackground(
+          new XMLSerializer().serializeToString(svgRef.current),
+          theme.palette.background.paper,
+        )
+      : null,
   )
   const exportItems = [
     { label: "Topology SVG", onClick: () => exportSvg(`slc_topology_${symbol}.svg`) },

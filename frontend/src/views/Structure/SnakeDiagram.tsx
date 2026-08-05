@@ -41,7 +41,7 @@ const SnakeDiagram = memo(function SnakeDiagram({
   svgRef,
   scrollRef,
 }: Props) {
-  const { palette } = useTheme()
+  const { palette, typography } = useTheme()
 
   const ink: SnakeInk = useMemo(
     () => ({
@@ -109,6 +109,7 @@ const SnakeDiagram = memo(function SnakeDiagram({
         viewBox={`0 0 ${layout.width} ${layout.height}`}
         role="img"
         aria-label={`Snake plot: ${layout.length} residues across ${layout.elements.length} stretches of chain`}
+        fontFamily={typography.fontFamily}
         onMouseMove={onMove}
         onMouseLeave={onLeave}
         onClick={onClick}
