@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { segmentEnds, segmentPoints, segmentReach } from "./beadCoils"
+import { segmentEnds, segmentPoints } from "./beadCoils"
 import { EMPTY_GRID, indexBeads, type BeadGrid } from "./beadHitTest"
 import { chainPath, loopGuide, sizeLoop, spread } from "./beadLoops"
 import type { ChainModel, GapModel, SegmentModel } from "./chainModel"
@@ -76,12 +76,32 @@ export function beadAt(
   return null
 }
 
-function placeLabel(label: string, centre: number, reach: number, before: number, after: number) {
-  const inset = reach + RESIDUES.bead + RESIDUES.segmentLabelGap
+function labelReach(beads: Bead[], centre: number, labelY: number) {
+  const off = (bead: Bead) => Math.abs(bead.y - labelY)
+  const nearest = Math.min(...beads.map(off))
+  const row = beads.filter((bead) => off(bead) < nearest + RESIDUES.spacing / 2)
+  return {
+    left: centre - Math.min(...row.map((bead) => bead.x)),
+    right: Math.max(...row.map((bead) => bead.x)) - centre,
+  }
+}
+
+function placeLabel(
+  label: string,
+  centre: number,
+  reach: { left: number; right: number },
+  before: number,
+  after: number,
+) {
+  const inset = (side: number) => side + RESIDUES.bead + RESIDUES.segmentLabelGap
   const needed =
     label.length * RESIDUES.segmentLabelSize * TRACK.labelAspect + RESIDUES.segmentLabelGap
-  if (after >= needed) return { label, labelX: centre + inset, labelAnchor: "start" as const }
-  if (before >= needed) return { label, labelX: centre - inset, labelAnchor: "end" as const }
+  if (after >= needed) {
+    return { label, labelX: centre + inset(reach.right), labelAnchor: "start" as const }
+  }
+  if (before >= needed) {
+    return { label, labelX: centre - inset(reach.left), labelAnchor: "end" as const }
+  }
   return { label: null, labelX: centre, labelAnchor: "start" as const }
 }
 
@@ -109,7 +129,6 @@ export function layoutResidues(
   const ligands = ligandIndexByResidue(model)
 
   const sizes = gaps.map((gap) => sizeLoop(gap.residues, gap.terminus !== null))
-  const reaches = segments.map(segmentReach)
 
   const deepest = (side: Side) => {
     const depths = sizes.filter((_, i) => gaps[i].side === side).map((size) => size.depth)
@@ -120,6 +139,7 @@ export function layoutResidues(
   const insideLane = deepest("inside")
   const membraneTop = outsideLane
   const membraneBottom = membraneTop + RESIDUES_BAND
+  const labelY = (membraneTop + membraneBottom) / 2
   const edgeY = (side: Side) => (side === "outside" ? membraneTop : membraneBottom)
 
   const ends = segments.map(segmentEnds)
@@ -147,6 +167,8 @@ export function layoutResidues(
       beadFor(segment.start + k, point),
     ),
   )
+
+  const reaches = coils.map((beads, i) => labelReach(beads, centres[i], labelY))
 
   const exitOf = (i: number, side: Side): Point => ({
     x: centres[i] + ends[i].exit,
@@ -176,6 +198,17 @@ export function layoutResidues(
 
   const NO_LABEL = { label: null, labelX: 0, labelAnchor: "start" as const }
 
+  const runBetween = (from: number, to: number) =>
+    to - from - 2 * RESIDUES.bead - RESIDUES.segmentLabelGap
+  const roomBefore = (i: number) =>
+    i === 0
+      ? sizes[i].foot
+      : runBetween(centres[i - 1] + reaches[i - 1].right, centres[i] - reaches[i].left)
+  const roomAfter = (i: number) =>
+    i + 1 < segments.length
+      ? runBetween(centres[i] + reaches[i].right, centres[i + 1] - reaches[i + 1].left)
+      : sizes[i + 1].foot
+
   const ordered: { item: GapModel | SegmentModel; beads: Bead[]; index: number | null }[] = []
   gaps.forEach((gap, i) => {
     ordered.push({ item: gap, beads: loops[i], index: null })
@@ -197,8 +230,8 @@ export function layoutResidues(
             (entry.item as SegmentModel).label,
             centres[column],
             reaches[column],
-            sizes[column].foot,
-            sizes[column + 1].foot,
+            roomBefore(column),
+            roomAfter(column),
           )),
       beads: entry.beads,
       chain: chainPath(through),
@@ -218,10 +251,10 @@ export function layoutResidues(
     plotRight,
     membraneTop,
     membraneBottom,
-    labelY: (membraneTop + membraneBottom) / 2,
+    labelY,
     lanes: [
       { key: "outside", label: laneLabel(model.sideLabels.outside), y: outsideLane / 2 },
-      { key: "membrane", label: "Membrane", y: (membraneTop + membraneBottom) / 2 },
+      { key: "membrane", label: "Membrane", y: labelY },
       {
         key: "inside",
         label: laneLabel(model.sideLabels.inside),

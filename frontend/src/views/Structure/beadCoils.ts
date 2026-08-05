@@ -64,12 +64,6 @@ export function segmentPoints(
     : crossingPoints(count, centre, entry, down)
 }
 
-export function segmentReach(segment: SegmentModel): number {
-  const count = segment.end - segment.start + 1
-  if (returnsToItsFace(segment)) return halfWidth(reentrantColumns(count))
-  return halfWidth(Math.max(...shareOut(count, crossingRows(count))))
-}
-
 export function segmentEnds(segment: SegmentModel): { entry: number; exit: number } {
   const count = segment.end - segment.start + 1
   if (returnsToItsFace(segment)) {
