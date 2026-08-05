@@ -74,6 +74,7 @@ export function useStructureState() {
     genes,
     selected,
     plddt: detail?.gene_id === selectedGeneId ? (detail?.plddt ?? null) : null,
+    sequence: detail?.gene_id === selectedGeneId ? (detail?.sequence ?? null) : null,
     selectedGene: selectedGeneId ? (geneById.get(selectedGeneId) ?? null) : null,
     features,
     experimental,

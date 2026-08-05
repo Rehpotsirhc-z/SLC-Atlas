@@ -52,9 +52,11 @@ class Structure(BaseModel):
 
 
 class StructureDetail(Structure):
-    """One gene, with the per-residue AlphaFold confidence the topology figure plots."""
+    """One gene, with the per-residue columns the topology figure draws: AlphaFold's
+    confidence, and the canonical sequence the snake plot letters its beads with."""
 
     plddt: list[int] | None = None
+    sequence: str | None = None
 
 
 class ProteinFeature(BaseModel):

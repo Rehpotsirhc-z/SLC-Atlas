@@ -35,8 +35,8 @@ export interface StructureRecord {
 }
 
 export interface StructureDetail extends StructureRecord {
-  // Per-residue confidence, index 0 = residue 1, carried only by the per-gene endpoint
   plddt: number[] | null
+  sequence: string | null
 }
 
 export type SeqAgreement = "exact" | "isoform" | "differs" | "unknown"

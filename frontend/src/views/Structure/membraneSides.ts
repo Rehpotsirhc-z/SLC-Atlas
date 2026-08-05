@@ -12,6 +12,12 @@ export type Side = "outside" | "inside"
 
 export const opposite = (side: Side): Side => (side === "inside" ? "outside" : "inside")
 
+export interface LaneLabel {
+  key: string
+  label: string
+  y: number
+}
+
 type Compartment = "cytosol" | "matrix" | "intermembrane" | "extracellular" | "lumen"
 
 // UniProt's topological-domain vocabulary. An unlisted description resolves to no

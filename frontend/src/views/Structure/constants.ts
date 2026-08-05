@@ -47,6 +47,48 @@ export const TRACK = {
   unresolvedDash: "5 4",
 } as const
 
+export const SNAKE = {
+  gutter: TRACK.gutter,
+  padX: 16,
+  padY: 14,
+  bead: 7,
+  spacing: 18,
+  minSeparation: 15,
+  coilRows: 7,
+  // Below this a coil gives up spanning the band rather than narrowing to a ladder
+  minCoilPerRow: 3,
+  // How shallow a loop of one or two residues is allowed to bulge; floor it any higher and
+  // the few beads it has poke out of the membrane instead of arcing over it
+  minBow: 8,
+  risePerResidue: 1.5,
+  // A wrapped loop clears the membrane by this much before stacking its rows
+  minRise: 26,
+  // A loop too long for one run wraps into rows stacked away from the membrane; the caps
+  // trade width against height, and these keep a whole family inside about 610 by 3900
+  rowStep: 24,
+  maxRows: 9,
+  minRun: 36,
+  maxRun: 230,
+  // How far an internal loop's return leg runs clear of its own rows before dropping
+  jog: 36,
+  // Sagitta of a loop's runs, which is what keeps the chain outside from reading as a grid
+  bow: 5,
+  curveSamples: 8,
+  letterSize: 8,
+  segmentLabelSize: 11,
+  segmentLabelGap: 7,
+  chainWidth: 1.5,
+  beadStroke: 1,
+  siteRing: 2.5,
+  litRing: 2.5,
+} as const
+
+// The band is exactly as tall as a full-length coil, so its rows need no stretching to span
+export const SNAKE_BAND = SNAKE.spacing * (SNAKE.coilRows - 1)
+
+// How far from the membrane the outermost row of the deepest loop can sit
+export const SNAKE_MAX_DEPTH = SNAKE.minRise + (SNAKE.maxRows - 1) * SNAKE.rowStep
+
 // How far the topology figure fades everything unrelated to the element under the pointer
 export const DIM_OPACITY = 0.3
 

@@ -9,10 +9,13 @@ import { formatSpans } from "./bindingSites"
 import { PLDDT_BANDS } from "./confidenceColor"
 import { TRACK } from "./constants"
 import { ligandColorAt } from "./ligandColor"
-import type { TopologyLayout } from "./topologyLayout"
+import type { ChainModel } from "./chainModel"
 
 interface Props {
-  layout: TopologyLayout
+  model: ChainModel
+  hasConfidence: boolean
+  // How the figure marks a stretch whose sides the annotation cannot settle
+  unresolvedAs: "line" | "ring"
 }
 
 interface Row {
@@ -21,7 +24,7 @@ interface Row {
   content: ReactNode
 }
 
-const TopologyLegend = memo(function TopologyLegend({ layout }: Props) {
+const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unresolvedAs }: Props) {
   const { palette, custom } = useTheme()
 
   const valueSx = {
@@ -31,7 +34,7 @@ const TopologyLegend = memo(function TopologyLegend({ layout }: Props) {
     color: "text.primary",
   }
 
-  const ligands: Swatch[] = layout.ligands.map((ligand, i) => ({
+  const ligands: Swatch[] = model.ligands.map((ligand, i) => ({
     key: ligand.name,
     color: ligandColorAt(i, palette.mode),
     label: ligand.name,
@@ -52,21 +55,21 @@ const TopologyLegend = memo(function TopologyLegend({ layout }: Props) {
   if (ligands.length) {
     rows.push({ key: "binds", label: "Binds", content: <SwatchLegend swatches={ligands} /> })
   }
-  if (layout.confidence.length) {
+  if (hasConfidence) {
     rows.push({
       key: "confidence",
       label: "Confidence",
       content: <SwatchLegend swatches={bands} />,
     })
   }
-  if (layout.membrane) {
+  if (model.membrane) {
     rows.push({
       key: "membrane",
       label: "Membrane",
-      content: <Typography sx={valueSx}>{layout.membrane}</Typography>,
+      content: <Typography sx={valueSx}>{model.membrane}</Typography>,
     })
   }
-  if (!layout.oriented) {
+  if (!model.oriented) {
     rows.push({
       key: "sides",
       label: "Sides",
@@ -77,24 +80,36 @@ const TopologyLegend = memo(function TopologyLegend({ layout }: Props) {
       ),
     })
   }
-  if (layout.unresolved.length) {
+  if (model.unresolved.length) {
     rows.push({
       key: "unresolved",
       label: "Unresolved",
       content: (
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <Box component="svg" width={22} height={8} sx={{ flexShrink: 0 }}>
-            <line
-              x1={1}
-              y1={4}
-              x2={21}
-              y2={4}
-              stroke={palette.text.secondary}
-              strokeWidth={TRACK.chainWidth}
-              strokeDasharray={TRACK.unresolvedDash}
-            />
+          <Box component="svg" width={22} height={16} sx={{ flexShrink: 0 }}>
+            {unresolvedAs === "ring" ? (
+              <circle
+                cx={11}
+                cy={8}
+                r={6}
+                fill="none"
+                stroke={palette.text.secondary}
+                strokeWidth={TRACK.chainWidth}
+                strokeDasharray={TRACK.unresolvedDash}
+              />
+            ) : (
+              <line
+                x1={1}
+                y1={8}
+                x2={21}
+                y2={8}
+                stroke={palette.text.secondary}
+                strokeWidth={TRACK.chainWidth}
+                strokeDasharray={TRACK.unresolvedDash}
+              />
+            )}
           </Box>
-          <Typography sx={valueSx}>{`residues ${formatSpans(layout.unresolved)}`}</Typography>
+          <Typography sx={valueSx}>{`residues ${formatSpans(model.unresolved)}`}</Typography>
         </Box>
       ),
     })

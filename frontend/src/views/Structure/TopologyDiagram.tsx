@@ -203,10 +203,7 @@ const TopologyDiagram = memo(function TopologyDiagram({
         })}
 
         {layout.sites.map((site) => {
-          const colour = ligandColorAt(
-            layout.ligands.findIndex((l) => l.name === site.ligand),
-            palette.mode,
-          )
+          const colour = ligandColorAt(site.ligandIndex, palette.mode)
           return (
             <g
               key={site.key}

@@ -31,7 +31,7 @@ STAGES = [
     ["subset_expression", "fetch_sequences"],
     ["fetch_orthologs", "fetch_species_tree"],
     ["fetch_uniprot_map"],
-    ["fetch_protein_features", "fetch_structures"],
+    ["fetch_protein_features", "fetch_structures", "fetch_uniprot_sequences"],
     ["download_models", "download_experimental_models", "fetch_confidence"],
 ]
 
@@ -43,6 +43,7 @@ CONSUMED_BY = {
     "fetch_uniprot_map": {"structure"},
     "fetch_protein_features": {"structure"},
     "fetch_structures": {"structure"},
+    "fetch_uniprot_sequences": {"structure"},
     "download_models": {"structure"},
     "download_experimental_models": {"structure"},
     "fetch_confidence": {"structure"},

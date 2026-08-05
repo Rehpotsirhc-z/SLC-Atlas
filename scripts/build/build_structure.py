@@ -98,6 +98,13 @@ def read_confidence() -> pl.DataFrame:
     return pl.read_parquet(path).select("gene_id", "plddt")
 
 
+def read_sequences() -> pl.DataFrame:
+    path = DATASET_DIR / "sequences.tsv"
+    if not path.exists():
+        return pl.DataFrame(schema={"gene_id": pl.Utf8, "sequence": pl.Utf8})
+    return pl.read_csv(path, separator="\t").select("gene_id", "sequence")
+
+
 def feature_counts(features: pl.DataFrame) -> pl.DataFrame:
     """A site is one pocket, coordinated by several residues that are often far apart in
     sequence, so counting annotation rows would report residues rather than sites."""
@@ -171,6 +178,7 @@ def build_structure(
         .join(feature_counts(features), on="gene_id", how="left")
         .join(experimental_summary(experimental), on="gene_id", how="left")
         .join(read_confidence(), on="gene_id", how="left")
+        .join(read_sequences(), on="gene_id", how="left")
         .with_columns(
             pl.col(
                 "n_transmembrane",
@@ -187,34 +195,44 @@ def build_structure(
         .rename({"model_url": "model_source_url"})
     )
     present = {p.name for p in models_dir.glob("*.*cif")}
-    return drop_misaligned_confidence(
+    return drop_misaligned(
         df.with_columns(pl.col("model_file").is_in(present).alias("model_available"))
     )
 
 
-def drop_misaligned_confidence(df: pl.DataFrame) -> pl.DataFrame:
+# Per-residue columns, paired with how long each one is
+PER_RESIDUE = [
+    ("plddt", pl.col("plddt").list.len()),
+    ("sequence", pl.col("sequence").str.len_chars()),
+]
+
+
+def drop_misaligned(df: pl.DataFrame) -> pl.DataFrame:
     """AlphaFold indexes pLDDT by its own model sequence, which for a stale entry is not the
-    UniProt canonical the features are numbered against. There is no way to align the two, so
-    the figure gets no confidence lane rather than a stretched one."""
-    misaligned = pl.col("plddt").list.len() != pl.col("uniprot_length")
-    report_missing(
-        "gene(s) whose pLDDT length disagrees with uniprot_length; confidence dropped",
-        df.filter(pl.col("plddt").is_not_null() & misaligned)
-        .select(
-            pl.format(
-                "{} {}: {} scores for {} residues",
-                "symbol",
-                "uniprot_accession",
-                pl.col("plddt").list.len(),
-                "uniprot_length",
+    UniProt canonical the features are numbered against, and a sequence fetched after the
+    accession map moved is not the one the features count in either. Neither can be aligned
+    after the fact, so the figure gets nothing rather than something stretched."""
+    for column, measured in PER_RESIDUE:
+        misaligned = measured != pl.col("uniprot_length")
+        report_missing(
+            f"gene(s) whose {column} length disagrees with uniprot_length; {column} dropped",
+            df.filter(pl.col(column).is_not_null() & misaligned)
+            .select(
+                pl.format(
+                    "{} {}: {} vs {} residues",
+                    "symbol",
+                    "uniprot_accession",
+                    measured,
+                    "uniprot_length",
+                )
             )
+            .to_series()
+            .to_list(),
         )
-        .to_series()
-        .to_list(),
-    )
-    return df.with_columns(
-        plddt=pl.when(misaligned).then(None).otherwise(pl.col("plddt")),
-    )
+        df = df.with_columns(
+            pl.when(misaligned).then(None).otherwise(pl.col(column)).alias(column)
+        )
+    return df
 
 
 def build_sources(structures: pl.DataFrame) -> pl.DataFrame:

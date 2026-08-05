@@ -2,26 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ProteinFeature } from "@/types/structure"
-import {
-  bindingSites,
-  ligandTotals,
-  mergeSpans,
-  spansOverlap,
-  type BindingSite,
-  type LigandTotal,
-  type ResidueSpan,
-} from "./bindingSites"
+import type { ResidueSpan } from "./bindingSites"
+import type { ChainModel, GapModel, SegmentModel, SiteModel } from "./chainModel"
 import { confidenceBars, type ConfidenceBar } from "./confidenceBars"
 import { TRACK } from "./constants"
-import { laneLabel, membraneFaces, type Side } from "./membraneSides"
-import {
-  isOrientingEvidence,
-  isSegment,
-  resolveChainSides,
-  type MembraneSegment,
-  type SegmentKind,
-} from "./segmentSides"
+import { laneLabel, type LaneLabel, type Side } from "./membraneSides"
 
 export interface Point {
   x: number
@@ -34,14 +19,7 @@ interface Window {
   to: number
 }
 
-export interface MembraneCylinder {
-  key: string
-  kind: SegmentKind
-  label: string
-  name: string
-  start: number
-  end: number
-  description: string | null
+export interface MembraneCylinder extends SegmentModel {
   x: number
   width: number
   top: number
@@ -51,23 +29,12 @@ export interface MembraneCylinder {
   drawTop: number
   drawBottom: number
   cap: number
-  entrySide: Side
-  exitSide: Side
-  unresolved: boolean
   // Font size the label fits at, or null where the pill is too narrow for it to be read
   labelSize: number | null
 }
 
-export interface ChainArc {
-  key: string
-  side: Side
-  start: number
-  end: number
-  residues: number
+export interface ChainArc extends GapModel {
   path: string
-  description: string | null
-  unresolved: boolean
-  terminus: "N" | "C" | null
 }
 
 export interface SiteBar {
@@ -76,24 +43,17 @@ export interface SiteBar {
   width: number
 }
 
-export interface PlacedSite extends BindingSite {
+export interface PlacedSite extends SiteModel {
   bars: SiteBar[]
   connectorFrom: number
   connectorTo: number
   y: number
-  // The structural elements the residues fall in, e.g. ["TM1", "TM8"]
-  elements: string[]
+  ligandIndex: number
 }
 
 export interface AxisTick {
   residue: number
   x: number
-}
-
-export interface LaneLabel {
-  key: string
-  label: string
-  y: number
 }
 
 export interface TopologyLayout {
@@ -114,14 +74,9 @@ export interface TopologyLayout {
   cylinders: MembraneCylinder[]
   arcs: ChainArc[]
   sites: PlacedSite[]
-  ligands: LigandTotal[]
   confidence: ConfidenceBar[]
   ticks: AxisTick[]
   termini: { label: "N" | "C"; x: number; y: number }[]
-  sideLabels: Record<Side, string>
-  membrane: string | null
-  oriented: boolean
-  unresolved: ResidueSpan[]
 }
 
 export const EMPTY_LAYOUT: TopologyLayout = {
@@ -142,14 +97,9 @@ export const EMPTY_LAYOUT: TopologyLayout = {
   cylinders: [],
   arcs: [],
   sites: [],
-  ligands: [],
   confidence: [],
   ticks: [],
   termini: [],
-  sideLabels: { inside: "", outside: "" },
-  membrane: null,
-  oriented: false,
-  unresolved: [],
 }
 
 export const capRadius = (width: number, height: number) =>
@@ -164,8 +114,6 @@ function capJoin(cylinder: MembraneCylinder, side: Side, x: number): number {
   const reach = Math.sqrt(Math.max(cylinder.cap ** 2 - dx ** 2, 0))
   return side === "outside" ? centre - reach : centre + reach
 }
-
-const uniprotName = (description: string | null) => /Name=([^;]+)/.exec(description ?? "")?.[1]
 
 function labelSizeFor(label: string, width: number): number | null {
   const room = width - TRACK.pillGap
@@ -186,11 +134,11 @@ function axisTicks(length: number, toX: (residue: number) => number): AxisTick[]
 }
 
 export function layoutTopology(
-  features: ProteinFeature[],
-  length: number,
+  model: ChainModel,
   width: number,
   plddt: number[] | null,
 ): TopologyLayout {
+  const { length, segments, gaps, sites } = model
   const plotLeft = TRACK.gutter + TRACK.padX
   const span = Math.max(length - 1, 1)
   const inner = Math.max(width - TRACK.padRight - plotLeft, 1)
@@ -212,24 +160,6 @@ export function layoutTopology(
   const insideBottom = membraneBottom + TRACK.insideLane
   const edgeY = (side: Side) => (side === "outside" ? membraneTop : membraneBottom)
 
-  const domains = features
-    .filter((f) => f.feature_type === "topological_domain")
-    .sort((a, b) => a.start - b.start)
-  const evidence = features.filter(isOrientingEvidence)
-  const faces = membraneFaces(domains)
-
-  const segments: MembraneSegment[] = features
-    .filter(isSegment)
-    .sort((a, b) => a.start - b.start)
-    .map((f) => ({
-      start: f.start,
-      end: f.end,
-      kind: f.feature_type,
-      description: f.description,
-    }))
-  const chain = resolveChainSides(segments, domains, evidence, faces.sideOf, length)
-
-  const sites = bindingSites(features)
   const bindsTop = insideBottom + (sites.length ? TRACK.laneGap : 0)
   const bindsHeight = sites.length * TRACK.siteRow
   const confidence = confidenceBars(plddt, length)
@@ -249,36 +179,21 @@ export function layoutTopology(
     return { from: from + give / 2, to: to - give / 2 }
   }
 
-  let helices = 0
-  let reentrant = 0
   const cylinders: MembraneCylinder[] = segments.map((segment, i) => {
     const crosses = segment.kind === "transmembrane"
-    const { entry, exit, unresolved } = chain.segments[i]
     const box = boxFor(segment.start, segment.end, TRACK.helixMinWidth, pillWindow(i))
-    const label = crosses
-      ? `${++helices}`
-      : (uniprotName(segment.description) ?? `IM${++reentrant}`)
-    const top = !crosses && entry === "inside" ? membraneMid : membraneTop
-    const bottom = !crosses && entry === "outside" ? membraneMid : membraneBottom
+    const top = !crosses && segment.entrySide === "inside" ? membraneMid : membraneTop
+    const bottom = !crosses && segment.entrySide === "outside" ? membraneMid : membraneBottom
     const cap = capRadius(box.width, bottom - top)
     return {
-      key: `${segment.kind}-${segment.start}`,
-      kind: segment.kind,
-      label,
-      name: crosses ? `Transmembrane helix ${label}` : `Intramembrane segment ${label}`,
-      start: segment.start,
-      end: segment.end,
-      description: segment.description,
+      ...segment,
       ...box,
       top,
       bottom,
       drawTop: top === membraneTop ? top - cap : top,
       drawBottom: bottom === membraneBottom ? bottom + cap : bottom,
       cap,
-      entrySide: entry,
-      exitSide: exit,
-      unresolved,
-      labelSize: labelSizeFor(label, box.width),
+      labelSize: labelSizeFor(segment.label, box.width),
     }
   })
 
@@ -297,12 +212,11 @@ export function layoutTopology(
   })
 
   const laneHeight = (side: Side) => (side === "outside" ? TRACK.outsideLane : TRACK.insideLane)
-  const arcs: ChainArc[] = chain.gaps.map((gap, i) => {
+  const arcs: ChainArc[] = gaps.map((gap, i) => {
     const from = i === 0 ? { x: toX(1), y: edgeY(gap.side) } : joins[i - 1].exit
     const to = i === segments.length ? { x: toX(length), y: edgeY(gap.side) } : joins[i].entry
-    const residues = Math.max(gap.end - gap.start + 1, 0)
     const reach = Math.min(
-      TRACK.minArc + residues * TRACK.arcPerResidue,
+      TRACK.minArc + gap.residues * TRACK.arcPerResidue,
       laneHeight(gap.side) - TRACK.laneGap - TRACK.capRadius,
     )
     // Measure the bulge from whichever cap sticks out furthest, so the curve clears both
@@ -312,33 +226,15 @@ export function layoutTopology(
       y: baseY + (gap.side === "outside" ? -1 : 1) * 2 * reach,
     }
     return {
-      key: `gap-${gap.start}`,
-      side: gap.side,
-      start: gap.start,
-      end: gap.end,
-      residues,
-      path: residues
+      ...gap,
+      path: gap.residues
         ? `M${from.x} ${from.y} Q${control.x} ${control.y} ${to.x} ${to.y}`
         : `M${from.x} ${from.y} L${to.x} ${to.y}`,
-      description: gap.domain?.description ?? null,
-      unresolved: gap.unresolved,
-      terminus: i === 0 ? "N" : i === segments.length ? "C" : null,
     }
   })
 
-  const elementsFor = (spans: ResidueSpan[]) => {
-    const labels = cylinders
-      .filter((c) => spansOverlap(spans, c.start, c.end))
-      .map((c) => (c.kind === "transmembrane" ? `TM${c.label}` : c.label))
-    for (const arc of arcs) {
-      if (!arc.residues || !spansOverlap(spans, arc.start, arc.end)) continue
-      labels.push(arc.terminus ? `the ${arc.terminus}-terminus` : (arc.description ?? "a loop"))
-    }
-    return [...new Set(labels)]
-  }
-
   const placed: PlacedSite[] = sites.map((site, row) => {
-    const bars = site.spans.map((s) => ({
+    const bars = site.spans.map((s: ResidueSpan) => ({
       key: `${s.start}-${s.end}`,
       ...boxFor(s.start, s.end, TRACK.siteBarMinWidth),
     }))
@@ -349,7 +245,7 @@ export function layoutTopology(
       connectorFrom: centre(bars[0]),
       connectorTo: centre(bars[bars.length - 1]),
       y: bindsTop + row * TRACK.siteRow + TRACK.siteRow / 2,
-      elements: elementsFor(site.spans),
+      ligandIndex: model.ligands.findIndex((l) => l.name === site.ligand),
     }
   })
 
@@ -366,13 +262,13 @@ export function layoutTopology(
   const lanes: LaneLabel[] = [
     {
       key: "outside",
-      label: laneLabel(faces.labels.outside),
+      label: laneLabel(model.sideLabels.outside),
       y: membraneTop - TRACK.outsideLane / 2,
     },
     { key: "membrane", label: "Membrane", y: membraneMid },
     {
       key: "inside",
-      label: laneLabel(faces.labels.inside),
+      label: laneLabel(model.sideLabels.inside),
       y: membraneBottom + TRACK.insideLane / 2,
     },
   ]
@@ -400,18 +296,8 @@ export function layoutTopology(
     cylinders,
     arcs,
     sites: placed,
-    ligands: ligandTotals(sites),
     confidence,
     ticks: axisTicks(length, toX),
     termini,
-    sideLabels: faces.labels,
-    membrane: faces.membrane,
-    oriented: chain.oriented,
-    unresolved: mergeSpans([
-      ...cylinders.filter((c) => c.unresolved).map((c) => ({ start: c.start, end: c.end })),
-      ...arcs
-        .filter((a) => a.unresolved && a.residues)
-        .map((a) => ({ start: a.start, end: a.end })),
-    ]),
   }
 }

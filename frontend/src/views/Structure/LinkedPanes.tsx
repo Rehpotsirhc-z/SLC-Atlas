@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, type ReactNode, type RefObject } from "react"
+import { useCallback, useState, type ReactNode, type RefObject } from "react"
 import { Box, Stack, Typography } from "@mui/material"
 import InfoTooltip from "@/components/InfoTooltip"
 import { capBoxSx } from "@/theme"
@@ -12,8 +12,11 @@ import LinkedResidues from "./LinkedResidues"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
 import { PREDICTED_ID } from "./modelOptions"
+import SnakeFigure from "./SnakeFigure"
 import TopologyFigure from "./TopologyFigure"
-import { useTopologyState } from "./useTopologyState"
+import TopologyGuide from "./TopologyGuide"
+import TopologyModeToggle from "./TopologyModeToggle"
+import { useTopologyState, type TopologyMode } from "./useTopologyState"
 import type { ProteinFeature, StructureRecord } from "@/types/structure"
 import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource } from "./molstar/types"
@@ -23,6 +26,7 @@ interface Props {
   structure: StructureRecord
   features: ProteinFeature[] | undefined
   plddt: number[] | null
+  sequence: string | null
   modelSource: ModelSource | null
   modelOptions: ModelOption[]
   selectedPdbId: string | null
@@ -38,6 +42,7 @@ export default function LinkedPanes({
   structure,
   features,
   plddt,
+  sequence,
   modelSource,
   modelOptions,
   selectedPdbId,
@@ -54,14 +59,17 @@ export default function LinkedPanes({
   const [figureRef, figureBox] = useElementSize<HTMLDivElement>("content")
   // Floored so a fractional column width cannot leave the figure a sub-pixel too wide
   const trackWidth = Math.max(Math.floor(figureBox.w), TRACK.minWidth)
+  const [mode, setMode] = useState<TopologyMode>("linear")
 
-  const topology = useTopologyState(
-    features ?? [],
-    structure.uniprot_length ?? 0,
-    trackWidth,
+  const topology = useTopologyState({
+    features: features ?? [],
+    length: structure.uniprot_length ?? 0,
+    width: trackWidth,
     plddt,
-    structure.uniprot_accession ?? null,
-  )
+    sequence,
+    protein: structure.uniprot_accession ?? null,
+    mode,
+  })
 
   return (
     <Box
@@ -80,39 +88,33 @@ export default function LinkedPanes({
         sx={{ flex: sideBySide ? "6 1 0" : "none", minWidth: 0 }}
       >
         {identity}
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 3, mb: 1 }}>
-          <Typography variant="overline" color="primary" sx={capBoxSx}>
-            Membrane topology
-          </Typography>
-          <InfoTooltip label="How to read the topology diagram">
-            <Typography variant="caption" component="p">
-              The x axis is the residue number, so every mark sits at the residues it covers and a
-              helix is as wide as it is long. The curve threading the figure is the protein chain,
-              N-terminus at left. The solid cylinders in the membrane band are transmembrane
-              helices, numbered in order; the paler, half-height cylinders sit inside the membrane
-              without crossing it. Between cylinders the chain loops onto whichever side of the
-              membrane UniProt puts that stretch on.
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 3, mb: 1 }}>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Typography variant="overline" color="primary" sx={capBoxSx}>
+              Membrane topology
             </Typography>
-            <Typography variant="caption" component="p">
-              Each row under Binds is one binding site; the blocks in it are the residues that touch
-              the ligand named in the key below. The Confidence strip is AlphaFold&apos;s
-              per-residue score, banded in the same four colours as the 3D model; hover it for the
-              score at a residue.
-            </Typography>
-            <Typography variant="caption" component="p">
-              A dashed line is one where UniProt&apos;s own compartments cannot all be reached by
-              alternating helices, so the helices in it may be flipped.
-            </Typography>
-          </InfoTooltip>
+            <TopologyGuide mode={mode} />
+          </Stack>
+          <TopologyModeToggle mode={mode} onChange={setMode} />
         </Stack>
         {features?.length && structure.uniprot_length ? (
           <Box sx={{ overflowX: "auto" }}>
-            <TopologyFigure
-              svgRef={svgRef}
-              length={structure.uniprot_length}
-              plddt={plddt}
-              topology={topology}
-            />
+            {mode === "linear" ? (
+              <TopologyFigure
+                svgRef={svgRef}
+                model={topology.model}
+                layout={topology.layout}
+                plddt={plddt}
+                topology={topology}
+              />
+            ) : (
+              <SnakeFigure
+                svgRef={svgRef}
+                model={topology.model}
+                layout={topology.snake}
+                topology={topology}
+              />
+            )}
           </Box>
         ) : (
           <Typography variant="body2" color="text.secondary">

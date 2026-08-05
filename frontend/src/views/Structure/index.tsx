@@ -46,6 +46,7 @@ export default function Structure() {
     genes,
     selected,
     plddt,
+    sequence,
     selectedGene,
     features,
     experimental,
@@ -165,6 +166,7 @@ export default function Structure() {
                       structure={selected}
                       features={features}
                       plddt={plddt}
+                      sequence={sequence}
                       modelSource={modelSource}
                       modelOptions={modelOptions}
                       selectedPdbId={selectedPdbId}

@@ -12,6 +12,9 @@ FEATURES_FILE = "structure/features.parquet"
 EXPERIMENTAL_FILE = "structure/experimental.parquet"
 SOURCES_FILE = "structure/sources.parquet"
 
+# Megabytes across a family, and only ever read one gene at a time
+PER_RESIDUE_COLUMNS = ("plddt", "sequence")
+
 
 class ParquetSource:
     def __init__(self, data_dir: Path) -> None:
@@ -84,8 +87,8 @@ class ParquetSource:
 
     def get_structure(self, gene_id: str | None = None) -> pl.DataFrame | None:
         df = self._scan_by_gene(STRUCTURE_FILE, gene_id)
-        if df is not None and gene_id is None and "plddt" in df.columns:
-            return df.drop("plddt")
+        if df is not None and gene_id is None:
+            return df.drop(c for c in PER_RESIDUE_COLUMNS if c in df.columns)
         return df
 
     def get_protein_features(self, gene_id: str | None = None) -> pl.DataFrame | None:
