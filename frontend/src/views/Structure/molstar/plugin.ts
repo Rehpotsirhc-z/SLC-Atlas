@@ -7,6 +7,7 @@ import { MAQualityAssessment } from "molstar/lib/extensions/model-archive/qualit
 import { createPluginUI } from "molstar/lib/mol-plugin-ui"
 import { PluginUIContext } from "molstar/lib/mol-plugin-ui/context"
 import { DefaultPluginUISpec, type PluginUISpec } from "molstar/lib/mol-plugin-ui/spec"
+import { PluginConfig } from "molstar/lib/mol-plugin/config"
 import { PluginSpec } from "molstar/lib/mol-plugin/spec"
 import { EMBEDDED_VIEWPORT } from "./layout"
 import { ModelAction } from "./modelAction"
@@ -46,7 +47,12 @@ export async function createViewer(container: HTMLDivElement): Promise<PluginUIC
       ...base.components,
       remoteState: "none",
     },
-    config: [...(base.config ?? []), ...EMBEDDED_VIEWPORT],
+    // Render at full resolution everywhere
+    config: [
+      ...(base.config ?? []),
+      ...EMBEDDED_VIEWPORT,
+      [PluginConfig.General.ResolutionMode, "native"],
+    ],
   }
 
   return createPluginUI({ target: container, render: renderInOwnedRoot, spec })
