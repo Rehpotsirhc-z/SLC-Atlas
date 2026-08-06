@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+volumes:
+  atlas-site:
+
+services:
+  atlas:
+    build: .
+    restart: unless-stopped
+    container_name: atlas
+
+    ports:
+      - "8080:80"
+
+    volumes:
+      - ./data:/data:ro
+      # The site is rebuilt from the dataset on every start, so keep it out of the
+      # container's own filesystem
+      - atlas-site:/srv/www
+
+    environment:
+      ATLAS_APP_NAME: SLC Gene Family Brain Transcript Atlas
+      ATLAS_APP_SHORT_NAME: SLC Atlas
+      ATLAS_APP_DESCRIPTION: SLC superfamily gene and transcript annotation browser
+      ATLAS_FAMILY_LABEL: SLC
+      ATLAS_DOWNLOAD_PREFIX: slc

@@ -4,27 +4,41 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-# Runs on every container start (postStartCommand). Serves the built frontend
-# (frontend/dist) on :80 and proxies /api/ to the backend on :8000. Idempotent:
-# stops any running nginx before (re)starting. Run `npm --prefix frontend run build`
-# to populate dist; nginx starts regardless and 404s until then.
+# Runs on every container start (postStartCommand). Renders the site with `atlas export`
+# and serves it on :80 through deploy/nginx.conf, the same config the Docker image uses.#
+#
+# Vite on :3000 with HMR and `fastapi dev` are for development purposes.
 
 set -e
 
-# Playwright MCP's Chrome profile survives container restarts (~/.cache isn't
-# wiped), but the Chrome process that held it doesn't. A container restart
-# always kills Chrome uncleanly, leaving its Singleton* lock files behind and
-# making the next MCP launch fail with "Browser is already in use". Since no
-# Chrome process can legitimately be running this early in a container start,
-# it's always safe to clear these here.
 find /home/ubuntu/.cache/ms-playwright-mcp -maxdepth 2 -name 'Singleton*' -delete 2>/dev/null || true
 
-NGINX_CONF=/workspace/.devcontainer/nginx.conf
+NGINX_CONF=/workspace/deploy/nginx.conf
+SITE=/srv/www
+ATLAS=/workspace/.venv/bin/atlas
+
+sudo mkdir -p "$SITE"
+sudo chown "$(id -u):$(id -g)" "$SITE"
+sudo ln -sfn /workspace/data /data
+
+if [ ! -x "$ATLAS" ]; then
+    echo "[post-start] no atlas command yet, run .devcontainer/post-create.sh"
+elif [ ! -d /workspace/web/dist ]; then
+    echo "[post-start] frontend not built, run: npm --prefix web run build"
+elif ! "$ATLAS" export "$SITE"; then
+    echo "[post-start] WARNING: export failed, :80 will serve whatever was there before"
+fi
 
 if sudo nginx -t -c "$NGINX_CONF" >/dev/null 2>&1; then
-    sudo nginx -s stop 2>/dev/null || true
+    # -s stop, not quit: quit drains open keepalive connections and can block for minutes.
+    # -c matters here too, since nginx reads the pid path out of the config it is given
+    sudo nginx -s stop -c "$NGINX_CONF" 2>/dev/null || sudo pkill -x nginx 2>/dev/null || true
+    for _ in $(seq 40); do
+        ss -ltn 2>/dev/null | grep -qE ':80\s' || break
+        sleep 0.25
+    done
     sudo nginx -c "$NGINX_CONF"
-    echo "[post-start] nginx started on :80"
+    echo "[post-start] nginx started on :80 from $NGINX_CONF"
 else
     echo "[post-start] WARNING: nginx config test failed — skipping start"
     sudo nginx -t -c "$NGINX_CONF" || true
