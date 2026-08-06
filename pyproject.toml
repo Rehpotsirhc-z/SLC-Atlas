@@ -2,6 +2,39 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "slc-atlas"
+version = "0.1.0"
+description = "A framework that turns any gene family into a self-hosted web atlas of cross-linked annotation, expression, conservation, clustering, and 3D structure views"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi[standard]>=0.115",
+  "uvicorn[standard]>=0.32",
+  "polars>=1.0",
+  "pyarrow>=17",
+  "pydantic>=2.8",
+  "pydantic-settings>=2.5",
+]
+
+[project.optional-dependencies]
+# only the preprocess phase needs these, and no deployment runs it
+pipeline = ["biopython>=1.83", "scipy>=1.13", "gget>=0.28"]
+dev = ["black>=24.0", "reuse[charset-normalizer]>=5.0", "parquet-tools>=0.2.16"]
+
+[project.scripts]
+atlas = "slc_atlas.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slc_atlas"]
+
+# Run `npm --prefix web run build` before building a wheel
+[tool.hatch.build.targets.wheel.force-include]
+"web/dist" = "slc_atlas/web"
+
 [tool.black]
 line-length = 100
 target-version = ["py312"]

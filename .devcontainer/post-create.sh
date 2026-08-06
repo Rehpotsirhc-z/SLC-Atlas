@@ -7,7 +7,7 @@
 set -e
 
 # ── Named-volume ownership ───────────────────────────────────────────────────
-sudo chown "$(id -u):$(id -g)" /workspace/.venv /workspace/frontend/node_modules
+sudo chown "$(id -u):$(id -g)" /workspace/.venv /workspace/web/node_modules
 
 # ── Emacs eglot language servers ─────────────────────────────────────────────
 # Installed as npm globals, then symlinked onto /usr/local/bin so they sit on
@@ -44,7 +44,7 @@ if ! dpkg -s neovim less nginx mafft build-essential pkg-config \
     sudo rm -rf /var/lib/apt/lists/*
 fi
 
-REQ=/workspace/backend/requirements.txt
+REQ=/workspace/pyproject.toml
 STAMP=/workspace/.venv/.requirements.sha256
 need_pip=0
 if ! /workspace/.venv/bin/python -c 'import ensurepip' 2>/dev/null; then
@@ -54,8 +54,8 @@ if ! /workspace/.venv/bin/python -c 'import ensurepip' 2>/dev/null; then
 fi
 if [ "$need_pip" = 1 ] || ! sha256sum -c "$STAMP" >/dev/null 2>&1; then
     /workspace/.venv/bin/pip install --upgrade pip wheel
-    /workspace/.venv/bin/pip install -r "$REQ"
+    /workspace/.venv/bin/pip install -e '/workspace[pipeline,dev]'
     sha256sum "$REQ" >"$STAMP"
 fi
 
-npm --prefix /workspace/frontend install
+npm --prefix /workspace/web install
