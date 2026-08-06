@@ -10,3 +10,153 @@ A scientific web atlas for exploring the SLC (Solute Carrier) gene family with a
 - Expression :: RNA and protein abundance heatmaps (gene × tissue, gene × cell type)
 - Structure :: AlphaFold protein structures and predicted drug binding sites
 - PET-SCAN :: PET imaging data
+
+* Configuration
+Point the atlas at your own gene family by setting these options. Every one is an environmental variable and also a ~--flag~ in the ~atlas~ command.
+
+| Variable                | Flag                | What it sets                                        |
+|-------------------------+---------------------+-----------------------------------------------------|
+| ~ATLAS_DATA_DIR~        | ~--data-dir~        | The dataset to serve                                |
+| ~ATLAS_APP_NAME~        | ~--app-name~        | Browser tab, link previews, web app manifest        |
+| ~ATLAS_APP_SHORT_NAME~  | ~--app-short-name~  | App bar, where the full name does not fit           |
+| ~ATLAS_APP_DESCRIPTION~ | ~--app-description~ | Subtitle on the Genes view, and the page's summary  |
+| ~ATLAS_FAMILY_LABEL~    | ~--family-label~    | What one gene is called, used in view subtitles     |
+| ~ATLAS_DOWNLOAD_PREFIX~ | ~--download-prefix~ | Prefix on every downloaded figure, table, and tree  |
+| ~ATLAS_HOST~            | ~--host~            | Address the local server listens on                 |
+| ~ATLAS_PORT~            | ~--port~            | Port the local server listens on                    |
+| ~ATLAS_CORS_ORIGINS~    | ~--cors-origins~    | Origins allowed to call the API, if not same-origin |
+
+Flags are prioritized over environment variables, which are prioritized over ~.env~ files.
+
+* Deployment
+| Option       | Use it when                                            |
+|--------------+--------------------------------------------------------|
+| Docker       | You are putting the atlas online for other people      |
+| Local server | You want it running on your own machine in one command |
+| Static files | You already run a webserver, or want a fixed snapshot  |
+
+** Docker
+#+begin_src bash
+git clone <this repo> && cd slc-atlas
+docker compose up --build
+#+end_src
+
+Then open http://localhost:8080.
+
+Edit ~docker-compose.yml~ to configure the atlas:
+
+#+begin_src yaml
+volumes:
+  atlas-site:
+
+services:
+  atlas:
+    build: .
+    restart: unless-stopped
+    container_name: atlas
+
+    ports:
+      - "8080:80"                 # Change 8080 to the port you want to be exposed on the host
+
+    volumes:
+      - ./data:/data:ro           # Change ./data to the location of your dataset
+      - atlas-site:/srv/www
+
+    environment:
+      ATLAS_APP_NAME: SLC Gene Family Brain Transcript Atlas
+      ATLAS_APP_SHORT_NAME: SLC Atlas
+      ATLAS_APP_DESCRIPTION: SLC superfamily gene and transcript annotation browser
+      ATLAS_FAMILY_LABEL: SLC
+      ATLAS_DOWNLOAD_PREFIX: slc
+#+end_src
+
+To rename it later, change the variables and run ~docker compose up -d~. For HTTPS, put a reverse proxy in front of the container using nginx, CloudFlare Tunnel, or alternative option.
+
+** Local server
+#+begin_src bash
+pip install slc-atlas
+atlas serve --data-dir ./my-data
+#+end_src
+
+Then open http://127.0.0.1:8000. Add ~--host 0.0.0.0~ to reach it from another machine.
+
+Edits to the dataset appear when you refresh the page, which makes this the easiest way
+to work on one.
+
+** Static files
+#+begin_src bash
+pip install slc-atlas
+atlas export ./site --data-dir ./my-data
+rsync -a site/ user@host:/var/www/atlas/
+#+end_src
+
+Writes the entire atlas as ordinary files. No backend is required when someone visits it,
+so you can host it on nginx, Apache, Caddy, S3, or GitHub Pages. Re-run the export after
+changing the dataset.
+
+Everything in your dataset goes into the folder, so it works on its own once copied.
+That includes 3D structures if you mirrored them when building the dataset, which takes
+the output from about 13 MB to about 800 MB. If you did not mirror them, the viewer
+downloads them from AlphaFold and RCSB instead.
+
+Your webserver needs to do two things:
+
+1. Serve ~index.html~ for any address that has no file, so that reloading a page like
+   ~/structure~ works.
+2. Answer byte-range requests, so that genome tracks and 3D structures can be read a
+   piece at a time instead of downloaded whole. Most servers already support this.
+
+*** nginx
+Drop this in ~/etc/nginx/conf.d/atlas.conf~ and change the two marked lines.
+
+#+begin_src nginx
+server {
+    listen      80;
+    server_name atlas.example.org;      # CHANGE to your domain
+    root        /var/www/atlas;         # CHANGE to where you copied site/
+
+    # Directory listings would expose the dataset layout
+    autoindex off;
+
+    gzip            on;
+    gzip_min_length 1024;
+    gzip_types      application/json text/plain text/css application/javascript image/svg+xml;
+
+    # Send files straight from disk to the network
+    sendfile   on;
+    tcp_nopush on;
+
+    # Filenames contain a content hash, so a cached copy is never the wrong one
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Coordinate files never change once written
+    location /api/structure/models/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Missing API files must 404 rather than return the page below, which would hand the
+    # app HTML where it expects JSON
+    location /api/ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    # Carries the deployment's name, which changes without the file changing
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    # Views like /structure are routes inside the app with no file of their own, so
+    # anything unmatched returns the page and lets the app route it
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+#+end_src
+
+*** Other servers
+- *Apache*: ~FallbackResource /index.html~
+- *Caddy*: ~try_files {path} /index.html~
+- *S3 and GitHub Pages*: set the error document to ~index.html~
