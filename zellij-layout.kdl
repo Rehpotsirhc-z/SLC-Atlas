@@ -15,13 +15,12 @@ layout {
         pane split_direction="vertical" {
             pane {
                 command "fastapi"
-                args "dev" "main.py" "--host" "0.0.0.0" "--port" "8000"
-                cwd "backend"
+                args "dev" "src/slc_atlas/main.py" "--host" "0.0.0.0" "--port" "8000"
             }
             pane {
                 command "npm"
                 args "run" "dev"
-                cwd "frontend"
+                cwd "web"
                 focus true
             }
         }

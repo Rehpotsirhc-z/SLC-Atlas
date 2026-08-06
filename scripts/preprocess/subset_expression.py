@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lib.reporting import report_missing
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 RAW_DIR = DATA_DIR / "raw"
 DATASET_DIR = DATA_DIR / "dataset"
 DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"

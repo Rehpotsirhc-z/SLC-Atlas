@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.http import post_json
 from lib.reporting import report_missing
 
-DATASET_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset"
+DATASET_DIR = Path(__file__).resolve().parents[2] / "data" / "dataset"
 DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"
 DEFAULT_CDS_PATH = DATASET_DIR / "cds.fasta"
 DEFAULT_PROTEIN_PATH = DATASET_DIR / "protein.fasta"

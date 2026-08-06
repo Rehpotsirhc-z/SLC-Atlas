@@ -24,7 +24,7 @@ from model_files import copy_models, stale_models
 from lib.reporting import report_missing
 from lib.structures import rank_experimental
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DATASET_DIR = DATA_DIR / "dataset" / "structure"
 OUT_DIR = DATA_DIR / "structure"
 

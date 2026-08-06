@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.http import get_json
 from lib.reporting import report_missing
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_IN_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_OUT_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"
 

@@ -14,7 +14,7 @@ Methods:
   family_grouping        flat grouping by HGNC family (not a distance tree)
 
 Every distance method uses average linkage (UPGMA) so topology and branch-length
-semantics stay comparable. A Newick per method is also written under backend/data/raw/.
+semantics stay comparable. A Newick per method is also written under data/raw/.
 
 Usage:
     python scripts/build/build_clustering.py
@@ -28,7 +28,7 @@ import polars as pl
 from clustering_metrics import codon_align, corr_distance, ortho_distance, pdistance, run_mafft
 from tree_table import CLUSTERING_SCHEMA, family_grouping, tree_rows
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 RAW_DIR = DATA_DIR / "raw"
 DATASET_DIR = DATA_DIR / "dataset"
 GENES_PATH = DATASET_DIR / "genes.tsv"

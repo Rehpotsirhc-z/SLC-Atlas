@@ -16,7 +16,6 @@ reuse annotate \
     --copyright "Dong Lab, Yale School of Medicine <https://donglab.org>" \
     --license Apache-2.0 \
     --recursive \
-    backend/app/ \
-    backend/main.py \
-    frontend/src/ \
-    frontend/vite.config.ts
+    src/slc_atlas/ \
+    web/src/ \
+    web/vite.config.ts

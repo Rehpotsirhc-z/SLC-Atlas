@@ -14,7 +14,7 @@ from pathlib import Path
 
 import polars as pl
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DATASET_DIR = DATA_DIR / "dataset"
 EXPRESSION_PATH = DATASET_DIR / "expression.parquet"
 TISSUE_PATH = DATASET_DIR / "sample_tissue.tsv"

@@ -17,19 +17,19 @@ dist/
 .env.*
 
 # Data files
-backend/data/*.parquet
-backend/data/*.tsv
-backend/data/*.csv
-backend/data/*.h5
-backend/data/*.hdf5
-backend/data/raw/*
-backend/data/dataset/*
-backend/data/structure/*
+data/*.parquet
+data/*.tsv
+data/*.csv
+data/*.h5
+data/*.hdf5
+data/raw/*
+data/dataset/*
+data/structure/*
 
 # Frontend build
-frontend/dist/
-frontend/.vite/
-frontend/*.tsbuildinfo
+web/dist/
+web/.vite/
+web/*.tsbuildinfo
 
 # Node
 node_modules/

@@ -21,7 +21,7 @@ from fetch_uniprot_map import fetch_entries
 
 from lib.reporting import report_missing
 
-STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset" / "structure"
+STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "data" / "dataset" / "structure"
 DEFAULT_MAP_PATH = STRUCTURE_DIR / "uniprot_map.tsv"
 DEFAULT_OUT_PATH = STRUCTURE_DIR / "sequences.tsv"
 

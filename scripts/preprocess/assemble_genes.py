@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Join annotation + Ensembl coords + NCBI summaries into dataset/genes.tsv and
-dataset/transcripts.tsv (columns mirror the models in backend/app/models/gene.py).
+dataset/transcripts.tsv (columns mirror the models in src/slc_atlas/models/gene.py).
 
 Drops the symbols listed in reference/pseudogene_exclusions.txt and promotes an SLC*
 alias to the primary symbol where the HGNC approved symbol isn't SLC*.
@@ -21,7 +21,7 @@ from lib.dataset_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
 from lib.reporting import report_missing
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT / "backend" / "data"
+DATA_DIR = ROOT / "data"
 DEFAULT_ANNOTATION_PATH = DATA_DIR / "raw" / "annotation.tsv"
 DEFAULT_ENSEMBL_PATH = DATA_DIR / "raw" / "ensembl_genes.tsv"
 DEFAULT_NCBI_PATH = DATA_DIR / "raw" / "ncbi_gene_summaries.tsv"

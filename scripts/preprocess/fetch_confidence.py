@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.http import get_json
 from lib.reporting import report_missing
 
-STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset" / "structure"
+STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "data" / "dataset" / "structure"
 DEFAULT_STRUCTURES_PATH = STRUCTURE_DIR / "structures.tsv"
 DEFAULT_OUT_PATH = STRUCTURE_DIR / "confidence.parquet"
 

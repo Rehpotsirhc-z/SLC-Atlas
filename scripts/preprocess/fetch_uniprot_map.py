@@ -26,11 +26,11 @@ from lib.http import fetch_text, get_json, post_form
 from lib.reporting import report_missing
 
 ROOT = Path(__file__).resolve().parents[2]
-DATASET_DIR = ROOT / "backend" / "data" / "dataset"
+DATASET_DIR = ROOT / "data" / "dataset"
 DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"
 DEFAULT_PROTEIN_PATH = DATASET_DIR / "protein.fasta"
 DEFAULT_OUT_PATH = DATASET_DIR / "structure" / "uniprot_map.tsv"
-ANNOTATION_PATH = ROOT / "backend" / "data" / "raw" / "annotation.tsv"
+ANNOTATION_PATH = ROOT / "data" / "raw" / "annotation.tsv"
 OVERRIDES_PATH = ROOT / "reference" / "uniprot_overrides.tsv"
 
 REST = "https://rest.uniprot.org"

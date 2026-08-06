@@ -23,7 +23,7 @@ from lib.reporting import report_missing
 from species_tree_sources import DEFAULT, PROVIDERS
 
 ROOT = Path(__file__).resolve().parents[2]
-DATASET_DIR = ROOT / "backend" / "data" / "dataset"
+DATASET_DIR = ROOT / "data" / "dataset"
 DEFAULT_SPECIES_PATH = ROOT / "reference" / "species.tsv"
 DEFAULT_OUT_PATH = DATASET_DIR / "species_tree.nwk"
 DEFAULT_SPECIES_OUT_PATH = DATASET_DIR / "species.tsv"

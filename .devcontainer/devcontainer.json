@@ -21,7 +21,7 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
   "mounts": [
     "source=${localWorkspaceFolderBasename}-venv,target=/workspace/.venv,type=volume",
-    "source=${localWorkspaceFolderBasename}-node-modules,target=/workspace/frontend/node_modules,type=volume"
+    "source=${localWorkspaceFolderBasename}-node-modules,target=/workspace/web/node_modules,type=volume"
   ],
   "remoteUser": "ubuntu",
   "runArgs": ["--name", "${localWorkspaceFolderBasename}"],

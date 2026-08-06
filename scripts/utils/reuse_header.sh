@@ -10,7 +10,7 @@
 # to use CC0 instead (e.g. for config/boilerplate files).
 #
 # Examples:
-#   scripts/utils/reuse_header.sh backend/app/routers/new_router.py
+#   scripts/utils/reuse_header.sh src/slc_atlas/routers/new_router.py
 #   scripts/utils/reuse_header.sh --license CC0-1.0 some-config-file.yml
 
 set -e

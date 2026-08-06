@@ -16,7 +16,7 @@ from pathlib import Path
 import polars as pl
 from Bio import Phylo
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DATASET_DIR = DATA_DIR / "dataset"
 SPECIES_PATH = DATASET_DIR / "species.tsv"
 ORTHOLOGS_PATH = DATASET_DIR / "orthologs.tsv"

@@ -18,7 +18,7 @@ from lib.orchestration import run_script
 from lib.pipeline_args import parse_args, preprocess_flags, skip_flags
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-GENES_TSV = SCRIPT_DIR.parent / "backend" / "data" / "dataset" / "genes.tsv"
+GENES_TSV = SCRIPT_DIR.parent / "data" / "dataset" / "genes.tsv"
 
 
 def main() -> None:

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Column contract for the standard-format gene tables in backend/data/dataset/.
+"""Column contract for the standard-format gene tables in data/dataset/.
 
 Lives outside both phases: preprocess writes these columns, build reads them, and
 neither imports the other.

@@ -17,7 +17,7 @@ from gene_family_utils import derive_family_keys
 from lib.reporting import report_missing
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT / "backend" / "data"
+DATA_DIR = ROOT / "data"
 REFERENCE_DIR = ROOT / "reference"
 DEFAULT_HGNC_PATH = DATA_DIR / "raw" / "hgnc_family.txt"
 DEFAULT_NAMES_PATH = REFERENCE_DIR / "family_names.md"

@@ -27,11 +27,13 @@ devcontainer exec --workspace-folder . bash  # shell inside the container
 ```
 
 `up` is idempotent: re-running it reuses the existing container. Dependency
-installation (Python venv + backend `requirements.txt`, frontend `node_modules`)
+installation (Python venv + an editable install of `pyproject.toml` with the
+`pipeline` and `dev` extras, which also puts the `atlas` command on `PATH`;
+`web/node_modules`)
 happens once via `post-create.sh`. The Python venv is on `PATH` in every `exec`
 session, so `python`/`fastapi` resolve without activating anything.
 
-`.venv` and `frontend/node_modules` live in named Docker volumes rather than the
+`.venv` and `web/node_modules` live in named Docker volumes rather than the
 workspace bind mount: they survive container rebuilds and stay off the host
 filesystem (faster I/O, no cross-OS `node_modules` breakage). The volumes are
 named after the workspace folder—`<folder>-venv` and `<folder>-node-modules`—so

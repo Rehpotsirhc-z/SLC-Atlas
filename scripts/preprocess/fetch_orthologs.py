@@ -24,7 +24,7 @@ from lib.http import get_json
 from lib.reporting import report_missing
 
 ROOT = Path(__file__).resolve().parents[2]
-DATASET_DIR = ROOT / "backend" / "data" / "dataset"
+DATASET_DIR = ROOT / "data" / "dataset"
 DEFAULT_GENES_PATH = DATASET_DIR / "genes.tsv"
 DEFAULT_SPECIES_PATH = ROOT / "reference" / "species.tsv"
 DEFAULT_OUT_PATH = DATASET_DIR / "orthologs.tsv"

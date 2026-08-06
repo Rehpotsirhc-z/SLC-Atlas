@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lib.dataset_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "backend" / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_GENES_IN = DATA_DIR / "dataset" / "genes.tsv"
 DEFAULT_TRANSCRIPTS_IN = DATA_DIR / "dataset" / "transcripts.tsv"
 DEFAULT_GENES_OUT = DATA_DIR / "genes.parquet"

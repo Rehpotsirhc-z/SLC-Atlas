@@ -20,8 +20,8 @@ from lib.pipeline_args import parse_args, skipped_views
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[1]
-RAW = ROOT / "backend" / "data" / "raw"
-DATASET = ROOT / "backend" / "data" / "dataset"
+RAW = ROOT / "data" / "raw"
+DATASET = ROOT / "data" / "dataset"
 NAMES_FILE = ROOT / "reference" / "family_names.md"
 
 STAGES = [

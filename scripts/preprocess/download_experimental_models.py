@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.http import fetch_bytes
 from lib.reporting import report_missing
 
-STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "backend" / "data" / "dataset" / "structure"
+STRUCTURE_DIR = Path(__file__).resolve().parents[2] / "data" / "dataset" / "structure"
 DEFAULT_EXPERIMENTAL_PATH = STRUCTURE_DIR / "experimental.tsv"
 DEFAULT_MODELS_DIR = STRUCTURE_DIR / "models" / "pdb"
 

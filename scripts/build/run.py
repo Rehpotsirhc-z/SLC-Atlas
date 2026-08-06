@@ -18,7 +18,7 @@ from lib.orchestration import run_script
 from lib.pipeline_args import parse_args, skipped_views
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DATA_DIR = SCRIPT_DIR.parents[1] / "backend" / "data"
+DATA_DIR = SCRIPT_DIR.parents[1] / "data"
 
 STEP_FOR_VIEW = {
     "clustering": "build_clustering",
