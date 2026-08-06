@@ -9,11 +9,11 @@ import type { ConservationCell, SpeciesNode } from "@/types/conservation"
 export const useConservation = () =>
   useQuery({
     queryKey: ["conservation"],
-    queryFn: () => api.get<ConservationCell[]>("/conservation"),
+    queryFn: () => api.get<ConservationCell[]>("/conservation.json"),
   })
 
 export const useSpeciesTree = () =>
   useQuery({
     queryKey: ["conservation", "species-tree"],
-    queryFn: () => api.get<SpeciesNode[]>("/conservation/species-tree"),
+    queryFn: () => api.get<SpeciesNode[]>("/conservation/species-tree.json"),
   })

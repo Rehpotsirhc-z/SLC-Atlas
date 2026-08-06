@@ -2,17 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from ..data.source import DataSource
 from ..deps import get_source
-from ..models.expression import ExpressionCell
+from ..models.expression import ExpressionCell, TissueScope
 
 router = APIRouter()
 
 
-@router.get("/expression", response_model=list[ExpressionCell])
+@router.get("/expression/{tissue_scope}.json", response_model=list[ExpressionCell])
 def get_expression(
-    tissue_scope: str = Query("all", pattern="^(all|brain)$"),
+    tissue_scope: TissueScope,
     source: DataSource = Depends(get_source),
 ):
     return source.get_expression(tissue_scope=tissue_scope).to_dicts()

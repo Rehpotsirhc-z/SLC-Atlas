@@ -26,12 +26,12 @@ def require(df: pl.DataFrame | None) -> pl.DataFrame:
     return df
 
 
-@router.get("/structure", response_model=list[Structure])
+@router.get("/structure.json", response_model=list[Structure])
 def list_structures(source: DataSource = Depends(get_source)):
     return require(source.get_structure()).to_dicts()
 
 
-@router.get("/structure/sources", response_model=list[DataSourceRecord])
+@router.get("/structure/sources.json", response_model=list[DataSourceRecord])
 def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_data_sources()).to_dicts()
 
@@ -49,7 +49,7 @@ def get_model(filename: str, source: DataSource = Depends(get_source)):
     )
 
 
-@router.get("/structure/{gene_id}", response_model=StructureDetail)
+@router.get("/structure/{gene_id}.json", response_model=StructureDetail)
 def get_structure(gene_id: str, source: DataSource = Depends(get_source)):
     df = require(source.get_structure(gene_id))
     if df.is_empty():
@@ -57,11 +57,11 @@ def get_structure(gene_id: str, source: DataSource = Depends(get_source)):
     return df.to_dicts()[0]
 
 
-@router.get("/structure/{gene_id}/features", response_model=list[ProteinFeature])
+@router.get("/structure/{gene_id}/features.json", response_model=list[ProteinFeature])
 def get_features(gene_id: str, source: DataSource = Depends(get_source)):
     return require(source.get_protein_features(gene_id)).to_dicts()
 
 
-@router.get("/structure/{gene_id}/experimental", response_model=list[ExperimentalStructure])
+@router.get("/structure/{gene_id}/experimental.json", response_model=list[ExperimentalStructure])
 def get_experimental(gene_id: str, source: DataSource = Depends(get_source)):
     return require(source.get_experimental_structures(gene_id)).to_dicts()

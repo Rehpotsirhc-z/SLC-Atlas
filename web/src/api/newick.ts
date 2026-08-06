@@ -12,7 +12,7 @@ async function download(path: string, filename: string) {
 }
 
 export const downloadGeneTreeNewick = (method: ClusterMethod, filename: string) =>
-  download(`/clustering/newick?method=${method}`, filename)
+  download(`/clustering/${method}.nwk`, filename)
 
 export const downloadSpeciesTreeNewick = (filename: string) =>
-  download("/conservation/species-tree/newick", filename)
+  download("/conservation/species-tree.nwk", filename)

@@ -52,5 +52,5 @@ export function resolveClusterMethod(metric: TreeMetric, tissue: TreeTissue): Cl
 export const useClustering = (method: ClusterMethod) =>
   useQuery({
     queryKey: ["clustering", method],
-    queryFn: () => api.get<ClusterNode[]>(`/clustering?method=${method}`),
+    queryFn: () => api.get<ClusterNode[]>(`/clustering/${method}.json`),
   })

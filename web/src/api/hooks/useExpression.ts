@@ -9,5 +9,5 @@ import type { ExpressionRow } from "../../types/expression"
 export const useExpressionMatrix = (tissueScope: "all" | "brain") =>
   useQuery({
     queryKey: ["expression", "matrix", tissueScope],
-    queryFn: () => api.get<ExpressionRow[]>(`/expression?tissue_scope=${tissueScope}`),
+    queryFn: () => api.get<ExpressionRow[]>(`/expression/${tissueScope}.json`),
   })

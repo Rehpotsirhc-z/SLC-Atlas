@@ -9,7 +9,7 @@ import { api } from "../client"
 export const useCapabilities = () =>
   useQuery({
     queryKey: ["capabilities"],
-    queryFn: () => api.get<Record<string, boolean>>("/capabilities"),
+    queryFn: () => api.get<Record<string, boolean>>("/capabilities.json"),
     staleTime: Infinity,
   })
 

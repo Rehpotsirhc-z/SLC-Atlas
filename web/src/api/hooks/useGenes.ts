@@ -10,7 +10,7 @@ import type { Gene, Transcript } from "@/types/gene"
 export const useGenes = () =>
   useQuery({
     queryKey: ["genes"],
-    queryFn: () => api.get<Gene[]>("/genes"),
+    queryFn: () => api.get<Gene[]>("/genes.json"),
   })
 
 export function useGeneById(): Map<string, Gene> {
@@ -25,6 +25,6 @@ export function useGeneById(): Map<string, Gene> {
 export const useTranscripts = (geneId: string | null) =>
   useQuery({
     queryKey: ["transcripts", geneId],
-    queryFn: () => api.get<Transcript[]>(`/genes/${geneId}/transcripts`),
+    queryFn: () => api.get<Transcript[]>(`/genes/${geneId}/transcripts.json`),
     enabled: geneId != null,
   })

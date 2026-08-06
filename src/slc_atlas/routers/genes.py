@@ -10,12 +10,12 @@ from ..models.gene import Gene, Transcript
 router = APIRouter()
 
 
-@router.get("/genes", response_model=list[Gene])
+@router.get("/genes.json", response_model=list[Gene])
 def list_genes(source: DataSource = Depends(get_source)):
     return source.get_genes().to_dicts()
 
 
-@router.get("/genes/{gene_id}/transcripts", response_model=list[Transcript])
+@router.get("/genes/{gene_id}/transcripts.json", response_model=list[Transcript])
 def list_transcripts(
     gene_id: str,
     source: DataSource = Depends(get_source),

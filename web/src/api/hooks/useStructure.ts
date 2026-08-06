@@ -15,32 +15,32 @@ import type {
 export const useStructures = () =>
   useQuery({
     queryKey: ["structure"],
-    queryFn: () => api.get<StructureRecord[]>("/structure"),
+    queryFn: () => api.get<StructureRecord[]>("/structure.json"),
   })
 
 export const useStructureDetail = (geneId: string | null) =>
   useQuery({
     queryKey: ["structure", geneId, "detail"],
-    queryFn: () => api.get<StructureDetail>(`/structure/${geneId}`),
+    queryFn: () => api.get<StructureDetail>(`/structure/${geneId}.json`),
     enabled: geneId != null,
   })
 
 export const useProteinFeatures = (geneId: string | null) =>
   useQuery({
     queryKey: ["structure", geneId, "features"],
-    queryFn: () => api.get<ProteinFeature[]>(`/structure/${geneId}/features`),
+    queryFn: () => api.get<ProteinFeature[]>(`/structure/${geneId}/features.json`),
     enabled: geneId != null,
   })
 
 export const useExperimentalStructures = (geneId: string | null) =>
   useQuery({
     queryKey: ["structure", geneId, "experimental"],
-    queryFn: () => api.get<ExperimentalStructure[]>(`/structure/${geneId}/experimental`),
+    queryFn: () => api.get<ExperimentalStructure[]>(`/structure/${geneId}/experimental.json`),
     enabled: geneId != null,
   })
 
 export const useStructureSources = () =>
   useQuery({
     queryKey: ["structure", "sources"],
-    queryFn: () => api.get<DataSourceRecord[]>("/structure/sources"),
+    queryFn: () => api.get<DataSourceRecord[]>("/structure/sources.json"),
   })
