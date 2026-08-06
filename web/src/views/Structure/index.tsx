@@ -18,6 +18,8 @@ import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
+import { atlas } from "@/config/atlas"
+import { downloadName } from "@/utils/download"
 import { figureExportHandlers, withBackground } from "@/utils/exportFigure"
 import {
   CONTENT_PADDING_PX,
@@ -89,10 +91,15 @@ export default function Structure() {
       : null,
   )
   const exportItems = [
-    { label: "Topology SVG", onClick: () => exportSvg(`slc_topology_${symbol}.svg`) },
-    { label: "Topology PNG", onClick: () => exportPng(`slc_topology_${symbol}.png`) },
+    { label: "Topology SVG", onClick: () => exportSvg(downloadName(`topology_${symbol}.svg`)) },
+    { label: "Topology PNG", onClick: () => exportPng(downloadName(`topology_${symbol}.png`)) },
     ...(exportModelPng
-      ? [{ label: "3D model PNG", onClick: () => void exportModelPng(`slc_model_${symbol}.png`) }]
+      ? [
+          {
+            label: "3D model PNG",
+            onClick: () => void exportModelPng(downloadName(`model_${symbol}.png`)),
+          },
+        ]
       : []),
   ]
 
@@ -102,7 +109,7 @@ export default function Structure() {
   const header = (
     <ViewHeader
       title="Structure"
-      subtitle="AlphaFold models, membrane topology, and experimental structures for each SLC"
+      subtitle={`AlphaFold models, membrane topology, and experimental structures for each ${atlas.familyLabel}`}
     />
   )
 

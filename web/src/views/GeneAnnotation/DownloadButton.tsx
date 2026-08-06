@@ -6,7 +6,7 @@ import { useState } from "react"
 import DownloadIcon from "@mui/icons-material/Download"
 import { Button, Menu, MenuItem, useMediaQuery, useTheme } from "@mui/material"
 import type { Gene } from "@/types/gene"
-import { triggerDownload } from "@/utils/download"
+import { downloadName, triggerDownload } from "@/utils/download"
 
 interface DownloadButtonProps {
   genes: Gene[]
@@ -46,7 +46,7 @@ export default function DownloadButton({ genes, compact }: DownloadButtonProps) 
 
   function handleDownload(format: "tsv" | "json") {
     const blob = format === "tsv" ? genesToTsvBlob(genes) : genesToJsonBlob(genes)
-    triggerDownload(blob, `slc_genes.${format}`)
+    triggerDownload(blob, downloadName(`genes.${format}`))
     setAnchorEl(null)
   }
 

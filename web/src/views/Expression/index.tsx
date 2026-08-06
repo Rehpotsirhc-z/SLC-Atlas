@@ -12,6 +12,8 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
+import { atlas } from "@/config/atlas"
+import { downloadName } from "@/utils/download"
 import AnatomogramDock from "./AnatomogramDock"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
 import ExpressionLegend from "./ExpressionLegend"
@@ -61,15 +63,15 @@ export default function Expression() {
   const exportItems = [
     {
       label: "Download SVG",
-      onClick: () => heatmapRef.current?.exportSvg(`slc_expression_${tissue}.svg`),
+      onClick: () => heatmapRef.current?.exportSvg(downloadName(`expression_${tissue}.svg`)),
     },
     {
       label: "Download PNG",
-      onClick: () => heatmapRef.current?.exportPng(`slc_expression_${tissue}.png`),
+      onClick: () => heatmapRef.current?.exportPng(downloadName(`expression_${tissue}.png`)),
     },
     {
       label: "Gene tree (.nwk)",
-      onClick: () => downloadGeneTreeNewick(method, "slc_expression_gene_tree.nwk"),
+      onClick: () => downloadGeneTreeNewick(method, downloadName("expression_gene_tree.nwk")),
     },
   ]
 
@@ -94,7 +96,7 @@ export default function Expression() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Expression"
-        subtitle="RNA abundance (TPM) of each SLC across GTEx tissues"
+        subtitle={`RNA abundance (TPM) of each ${atlas.familyLabel} across GTEx tissues`}
       />
 
       <Paper

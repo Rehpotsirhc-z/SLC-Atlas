@@ -5,17 +5,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from .config import settings
+from .config import PRODUCT_VERSION, settings
 from .routers import genes, expression, conservation, clustering, meta, structure
 
-app = FastAPI(title=settings.api_title, version="0.1.0")
+app = FastAPI(title=settings.api_title, version=PRODUCT_VERSION)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["GET"],
-    allow_headers=["*"],
-)
+# Only needed when the frontend is served from a different origin than the API
+if settings.cors_origin_list:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_methods=["GET"],
+        allow_headers=["*"],
+    )
 # Binary-CIF coordinates compress about threefold
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 

@@ -18,6 +18,8 @@ import {
 import GeneSearchBar from "@/components/autocomplete/GeneSearchBar"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
+import ViewHeader from "@/components/view/ViewHeader"
+import { atlas } from "@/config/atlas"
 import { useUIStore } from "@/store/uiStore"
 import DownloadButton from "./DownloadButton"
 import GeneTable from "./GeneTable"
@@ -132,14 +134,7 @@ export default function GeneAnnotation() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      <Box>
-        <Typography variant="h5" fontWeight={600} color="primary">
-          Genes
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          SLC superfamily gene and transcript annotation browser
-        </Typography>
-      </Box>
+      <ViewHeader title="Genes" subtitle={atlas.description} />
       <Box ref={outerRef} sx={{ display: "flex", flex: 1, gap: 0, minHeight: 0 }}>
         <FamilyRail
           genes={genes}

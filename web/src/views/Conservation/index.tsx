@@ -11,6 +11,8 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
+import { atlas } from "@/config/atlas"
+import { downloadName } from "@/utils/download"
 import ConservationHeatmap, { type ConservationHeatmapHandle } from "./ConservationHeatmap"
 import ConservationLegend from "./ConservationLegend"
 import ConservationToolbar from "./ConservationToolbar"
@@ -50,19 +52,19 @@ export default function Conservation() {
   const exportItems = [
     {
       label: "Download SVG",
-      onClick: () => heatmapRef.current?.exportSvg(`slc_conservation_${cellMetric}.svg`),
+      onClick: () => heatmapRef.current?.exportSvg(downloadName(`conservation_${cellMetric}.svg`)),
     },
     {
       label: "Download PNG",
-      onClick: () => heatmapRef.current?.exportPng(`slc_conservation_${cellMetric}.png`),
+      onClick: () => heatmapRef.current?.exportPng(downloadName(`conservation_${cellMetric}.png`)),
     },
     {
       label: "Gene tree (.nwk)",
-      onClick: () => downloadGeneTreeNewick(method, "slc_gene_tree.nwk"),
+      onClick: () => downloadGeneTreeNewick(method, downloadName("gene_tree.nwk")),
     },
     {
       label: "Species tree (.nwk)",
-      onClick: () => downloadSpeciesTreeNewick("slc_species_tree.nwk"),
+      onClick: () => downloadSpeciesTreeNewick(downloadName("species_tree.nwk")),
     },
   ]
 
@@ -87,7 +89,7 @@ export default function Conservation() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Conservation"
-        subtitle="Ortholog sequence conservation of each SLC across vertebrate species"
+        subtitle={`Ortholog sequence conservation of each ${atlas.familyLabel} across vertebrate species`}
       />
 
       <Paper

@@ -103,7 +103,7 @@ export const useUIStore = create<UIState>()(
         ),
     }),
     {
-      name: "slc-atlas-ui",
+      name: "atlas-ui",
       partialize: (state) => ({
         themeMode: state.themeMode,
         railOpen: state.railOpen,

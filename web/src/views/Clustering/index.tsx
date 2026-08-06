@@ -11,6 +11,8 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
+import { atlas } from "@/config/atlas"
+import { downloadName } from "@/utils/download"
 import ClusteringToolbar from "./ClusteringToolbar"
 import LayoutToggle from "./LayoutToggle"
 import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
@@ -45,13 +47,13 @@ export default function Clustering() {
     if (familyFilter) treeRef.current?.focusFamily(familyFilter)
   }, [familyFilter, data])
 
-  const filenameBase = `slc_${method}_${layout}`
+  const filenameBase = downloadName(`${method}_${layout}`)
   const exportItems = [
     { label: "Download SVG", onClick: () => treeRef.current?.exportSvg(`${filenameBase}.svg`) },
     { label: "Download PNG", onClick: () => treeRef.current?.exportPng(`${filenameBase}.png`) },
     {
       label: "Download Newick (.nwk)",
-      onClick: () => downloadGeneTreeNewick(method, `slc_${method}.nwk`),
+      onClick: () => downloadGeneTreeNewick(method, downloadName(`${method}.nwk`)),
     },
   ]
 
@@ -73,7 +75,7 @@ export default function Clustering() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Clustering"
-        subtitle="SLC similarity trees by amino-acid, DNA (CDS), GTEx RNA co-expression, and ortholog identity"
+        subtitle={`${atlas.familyLabel} similarity trees by amino-acid, DNA (CDS), GTEx RNA co-expression, and ortholog identity`}
       />
 
       <Paper
