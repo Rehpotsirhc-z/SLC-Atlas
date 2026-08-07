@@ -46,6 +46,7 @@ export default function Structure() {
   // Present only while the viewer is mounted, which is what gates the export menu entry
   const [exportModelPng, setExportModelPng] = useState<ModelExporter | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const paneRef = useRef<HTMLDivElement>(null)
   const available = useCapability("structure")
 
   const {
@@ -61,6 +62,8 @@ export default function Structure() {
     error,
     familyFilter,
     setFamilyFilter,
+    collapseSignal,
+    resetView,
     selectGene,
     modelSource,
     modelOptions,
@@ -83,6 +86,11 @@ export default function Structure() {
   }, [isLoading, isMobile, expandRail])
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+
+  const handleResetView = useCallback(() => {
+    paneRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+    resetView()
+  }, [resetView])
 
   const handleExporterChange = useCallback(
     (exporter: ModelExporter | null) => setExportModelPng(() => exporter),
@@ -147,6 +155,7 @@ export default function Structure() {
           drawerOpen={drawerOpen}
           onDrawerClose={closeDrawer}
           onDragStart={onDragStart}
+          collapseSignal={collapseSignal}
         />
 
         <Paper
@@ -166,6 +175,7 @@ export default function Structure() {
             onOpenTree={() => setDrawerOpen(true)}
             onSelectGene={selectGene}
             counterText={counterText}
+            onResetView={handleResetView}
             exportItems={exportItems}
           />
           <Divider />
@@ -176,7 +186,7 @@ export default function Structure() {
               loading={isLoading}
               errorMessage="Failed to load structure data."
             >
-              <Box sx={{ height: "100%", overflowY: "auto", p: 2 }}>
+              <Box ref={paneRef} sx={{ height: "100%", overflowY: "auto", p: 2 }}>
                 {selected && (
                   <Stack spacing={3}>
                     <LinkedPanes

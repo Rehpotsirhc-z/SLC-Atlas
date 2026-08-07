@@ -29,7 +29,8 @@ import TranscriptTable from "./TranscriptTable"
 interface GeneRowProps {
   gene: Gene
   isSelected: boolean
-  autoExpand: boolean
+  expanded: boolean
+  onToggleExpanded: (geneId: string) => void
   onFamilyClick?: (family: string) => void
 }
 
@@ -38,8 +39,7 @@ const rowFlash = keyframes`
   100% { background-color: transparent; }
 `
 
-function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) {
-  const [expanded, setExpanded] = useState(false)
+function GeneRow({ gene, isSelected, expanded, onToggleExpanded, onFamilyClick }: GeneRowProps) {
   const [flashing, setFlashing] = useState(false)
   const theme = useTheme()
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -67,16 +67,12 @@ function GeneRow({ gene, isSelected, autoExpand, onFamilyClick }: GeneRowProps) 
     return () => clearTimeout(t)
   }, [isSelected])
 
-  useEffect(() => {
-    if (autoExpand) setExpanded(true)
-  }, [autoExpand])
-
   return (
     <>
       <TableRow
         hover
         data-gene-id={gene.id}
-        onClick={() => setExpanded((e) => !e)}
+        onClick={() => onToggleExpanded(gene.id)}
         sx={{
           cursor: "pointer",
           ...(isSelected && { bgcolor: alpha(theme.palette.primary.main, 0.08) }),

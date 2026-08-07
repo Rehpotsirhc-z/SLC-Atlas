@@ -4,12 +4,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { MouseEvent } from "react"
-import { Stack, Typography, useTheme } from "@mui/material"
+import { Box, Stack, Typography, useTheme } from "@mui/material"
 import HoverTooltip from "@/components/HoverTooltip"
 import { doomColors } from "@/theme"
 import TopologyWallGroup from "./TopologyWallGroup"
+import TopologyWallHeader from "./TopologyWallHeader"
 import type { WallInk } from "./TopologyGlyph"
-import type { Wall, WallGene } from "./topologyWall"
+import { summariseWall, type Wall, type WallGene } from "./topologyWall"
 
 interface Props {
   wall: Wall
@@ -51,6 +52,8 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
     [wall],
   )
 
+  const summary = useMemo(() => summariseWall(wall, familyFilter), [wall, familyFilter])
+
   const handleMove = useCallback(
     (e: MouseEvent) => {
       const geneId = geneIdAt(e.target)
@@ -81,24 +84,31 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
           {`[data-topology-wall] [data-family]:not([data-family="${CSS.escape(familyFilter)}"]) { display: none }`}
         </style>
       )}
-      <Stack
-        spacing={3}
-        useFlexGap
+      <Box
         data-topology-wall=""
         sx={{ display: hidden ? "none" : undefined }}
         onMouseMove={handleMove}
         onMouseLeave={handleLeave}
         onClick={handleClick}
       >
-        {wall.groups.map((group) => (
-          <TopologyWallGroup
-            key={group.nTransmembrane}
-            group={group}
-            ink={ink}
-            familyFilter={familyFilter}
+        {wall.groups.length > 0 && (
+          <TopologyWallHeader
+            family={familyFilter}
+            category={summary.category}
+            count={summary.count}
           />
-        ))}
-      </Stack>
+        )}
+        <Stack spacing={3} useFlexGap>
+          {wall.groups.map((group) => (
+            <TopologyWallGroup
+              key={group.nTransmembrane}
+              group={group}
+              ink={ink}
+              familyFilter={familyFilter}
+            />
+          ))}
+        </Stack>
+      </Box>
 
       {!hidden && hovered && (
         <HoverTooltip x={hovered.x} y={hovered.y}>

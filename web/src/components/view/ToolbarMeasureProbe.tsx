@@ -11,17 +11,10 @@ import type { ToolbarProbeRefs } from "./useToolbarFit"
 interface Props {
   refs: ToolbarProbeRefs
   counterText: string
-  // Must match the toolbar being measured, or it folds at the wrong width
-  showReset?: boolean
   children: ReactNode
 }
 
-export default function ToolbarMeasureProbe({
-  refs,
-  counterText,
-  showReset = true,
-  children,
-}: Props) {
+export default function ToolbarMeasureProbe({ refs, counterText, children }: Props) {
   return (
     <Box
       aria-hidden
@@ -43,21 +36,17 @@ export default function ToolbarMeasureProbe({
         {counterText}
       </Typography>
       <Box ref={refs.textButtonsRef} sx={{ display: "flex", gap: 1.5 }}>
-        {showReset && (
-          <Button size="small" variant="outlined" startIcon={<RestartAltIcon />}>
-            Reset view
-          </Button>
-        )}
+        <Button size="small" variant="outlined" startIcon={<RestartAltIcon />}>
+          Reset view
+        </Button>
         <Button size="small" variant="outlined" startIcon={<DownloadIcon />}>
           Export
         </Button>
       </Box>
       <Box ref={refs.iconButtonsRef} sx={{ display: "flex", gap: 1.5 }}>
-        {showReset && (
-          <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
-            <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
-          </Button>
-        )}
+        <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
+          <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+        </Button>
         <Button size="small" variant="outlined" sx={{ minWidth: 0, px: "16px", py: "5px" }}>
           <DownloadIcon fontSize="small" sx={{ display: "block" }} />
         </Button>

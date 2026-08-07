@@ -24,7 +24,8 @@ interface GeneTableProps {
   sortDirection: SortDirection
   onSort: (key: SortKey) => void
   scrollToGeneId: string | null
-  autoExpandGeneId: string | null
+  expandedGeneIds: ReadonlySet<string>
+  onToggleExpanded: (geneId: string) => void
   onFamilyClick?: (family: string) => void
 }
 
@@ -77,7 +78,8 @@ export default function GeneTable({
   sortDirection,
   onSort,
   scrollToGeneId,
-  autoExpandGeneId,
+  expandedGeneIds,
+  onToggleExpanded,
   onFamilyClick,
 }: GeneTableProps) {
   return (
@@ -118,7 +120,8 @@ export default function GeneTable({
               key={gene.id}
               gene={gene}
               isSelected={gene.id === scrollToGeneId}
-              autoExpand={gene.id === autoExpandGeneId}
+              expanded={expandedGeneIds.has(gene.id)}
+              onToggleExpanded={onToggleExpanded}
               onFamilyClick={onFamilyClick}
             />
           ))}

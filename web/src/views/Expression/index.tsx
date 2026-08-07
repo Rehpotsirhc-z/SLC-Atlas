@@ -62,15 +62,15 @@ export default function Expression() {
 
   const exportItems = [
     {
-      label: "Download SVG",
+      label: "Heatmap SVG",
       onClick: () => heatmapRef.current?.exportSvg(downloadName(`expression_${tissue}.svg`)),
     },
     {
-      label: "Download PNG",
+      label: "Heatmap PNG",
       onClick: () => heatmapRef.current?.exportPng(downloadName(`expression_${tissue}.png`)),
     },
     {
-      label: "Gene tree (.nwk)",
+      label: "Gene tree Newick",
       onClick: () => downloadGeneTreeNewick(method, downloadName("expression_gene_tree.nwk")),
     },
   ]

@@ -51,19 +51,19 @@ export default function Conservation() {
 
   const exportItems = [
     {
-      label: "Download SVG",
+      label: "Heatmap SVG",
       onClick: () => heatmapRef.current?.exportSvg(downloadName(`conservation_${cellMetric}.svg`)),
     },
     {
-      label: "Download PNG",
+      label: "Heatmap PNG",
       onClick: () => heatmapRef.current?.exportPng(downloadName(`conservation_${cellMetric}.png`)),
     },
     {
-      label: "Gene tree (.nwk)",
+      label: "Gene tree Newick",
       onClick: () => downloadGeneTreeNewick(method, downloadName("gene_tree.nwk")),
     },
     {
-      label: "Species tree (.nwk)",
+      label: "Species tree Newick",
       onClick: () => downloadSpeciesTreeNewick(downloadName("species_tree.nwk")),
     },
   ]

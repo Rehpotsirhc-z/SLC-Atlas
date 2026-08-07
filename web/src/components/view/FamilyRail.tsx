@@ -18,6 +18,7 @@ interface Props {
   drawerOpen: boolean
   onDrawerClose: () => void
   onDragStart: (e: React.MouseEvent) => void
+  collapseSignal?: number
 }
 
 export default function FamilyRail({
@@ -29,6 +30,7 @@ export default function FamilyRail({
   drawerOpen,
   onDrawerClose,
   onDragStart,
+  collapseSignal,
 }: Props) {
   const treeMounted = useDrawerWarmup({
     active: useDrawer,
@@ -50,6 +52,7 @@ export default function FamilyRail({
           onSelectFamily={onSelectFamily}
           onClose={onDrawerClose}
           width={RAIL_DRAWER_WIDTH}
+          collapseSignal={collapseSignal}
         />
       </Drawer>
     )
@@ -62,6 +65,7 @@ export default function FamilyRail({
         familyFilter={familyFilter}
         onSelectFamily={onSelectFamily}
         width={railWidth}
+        collapseSignal={collapseSignal}
       />
       <FamilyRailSplitter onDragStart={onDragStart} />
     </>

@@ -21,6 +21,7 @@ export function useStructureState() {
   const [familyFilter, setFamilyFilter] = useState<string | null>(null)
   // Keyed by gene so picking an entry for one gene cannot leak into the next
   const [pdbChoice, setPdbChoice] = useState<{ geneId: string; pdbId: string } | null>(null)
+  const [collapseSignal, setCollapseSignal] = useState(0)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -77,6 +78,16 @@ export function useStructureState() {
     if (family && genes.some((g) => g.family === family)) setFamilyFilter(family)
   }, [selectedGeneId, geneById, genes])
 
+  const resetView = useCallback(() => {
+    if (selectedGeneId) {
+      setSelectedGeneId(null)
+      return
+    }
+    if (!familyFilter) return
+    setFamilyFilter(null)
+    setCollapseSignal((n) => n + 1)
+  }, [selectedGeneId, setSelectedGeneId, familyFilter])
+
   const selectedPdbId = pdbChoice?.geneId === selectedGeneId ? pdbChoice.pdbId : null
   const selectPdbId = useCallback(
     (pdbId: string | null) =>
@@ -110,6 +121,8 @@ export function useStructureState() {
     error,
     familyFilter,
     setFamilyFilter,
+    collapseSignal,
+    resetView,
     selectedGeneId,
     setSelectedGeneId,
     selectGene,

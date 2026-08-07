@@ -29,7 +29,15 @@ const GlyphButton = styled("button")(({ theme }) => ({
 
 const WallGenes = memo(function WallGenes({ genes, ink }: { genes: WallGene[]; ink: WallInk }) {
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: "4px 8px", pt: 1.5 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "4px 8px",
+        pt: 1.5,
+        mx: `${-WALL.cellPadX}px`,
+      }}
+    >
       {genes.map((gene) => (
         <GlyphButton
           key={gene.geneId}

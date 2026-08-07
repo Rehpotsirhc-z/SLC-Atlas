@@ -49,10 +49,10 @@ export default function Clustering() {
 
   const filenameBase = downloadName(`${method}_${layout}`)
   const exportItems = [
-    { label: "Download SVG", onClick: () => treeRef.current?.exportSvg(`${filenameBase}.svg`) },
-    { label: "Download PNG", onClick: () => treeRef.current?.exportPng(`${filenameBase}.png`) },
+    { label: "Gene tree SVG", onClick: () => treeRef.current?.exportSvg(`${filenameBase}.svg`) },
+    { label: "Gene tree PNG", onClick: () => treeRef.current?.exportPng(`${filenameBase}.png`) },
     {
-      label: "Download Newick (.nwk)",
+      label: "Gene tree Newick",
       onClick: () => downloadGeneTreeNewick(method, downloadName(`${method}.nwk`)),
     },
   ]

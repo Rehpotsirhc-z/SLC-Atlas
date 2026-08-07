@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useDeferredValue, useMemo, useState } from "react"
 import { useGenes } from "@/api/hooks/useGenes"
+import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
 
 export type SortKey = "id" | "symbol" | "name" | "position" | "length" | "category" | "family"
@@ -53,6 +54,8 @@ export function useGeneAnnotationState() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(50)
+  const [expandedGeneIds, setExpandedGeneIds] = useState<ReadonlySet<string>>(() => new Set())
+  const selectedGeneId = useUIStore((s) => s.selectedGeneId)
 
   const search = useCallback((text: string) => {
     setSearchText(text)
@@ -74,6 +77,26 @@ export function useGeneAnnotationState() {
   useEffect(() => {
     setPage(0)
   }, [deferredSearchText, deferredFamilyFilter])
+
+  useEffect(() => {
+    if (!selectedGeneId) return
+    setExpandedGeneIds((prev) =>
+      prev.has(selectedGeneId) ? prev : new Set(prev).add(selectedGeneId),
+    )
+  }, [selectedGeneId])
+
+  const toggleExpanded = useCallback((geneId: string) => {
+    setExpandedGeneIds((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(geneId)) next.add(geneId)
+      return next
+    })
+  }, [])
+
+  const resetView = useCallback(() => {
+    setExpandedGeneIds(new Set())
+    setPage(0)
+  }, [])
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
@@ -100,5 +123,8 @@ export function useGeneAnnotationState() {
     setPage,
     rowsPerPage,
     setRowsPerPage,
+    expandedGeneIds,
+    toggleExpanded,
+    resetView,
   }
 }

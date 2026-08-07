@@ -18,6 +18,7 @@ interface FamilyTreeProps {
   onSelectFamily: (family: string | null) => void
   onClose?: () => void
   width: number
+  collapseSignal?: number
 }
 
 interface FamilyGroup {
@@ -50,6 +51,7 @@ const FamilyTree = memo(function FamilyTree({
   onSelectFamily,
   onClose,
   width,
+  collapseSignal,
 }: FamilyTreeProps) {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -76,6 +78,13 @@ const FamilyTree = memo(function FamilyTree({
     },
     [selectedFamily, setSelectedGeneId],
   )
+
+  const collapsedAt = useRef(collapseSignal)
+  useEffect(() => {
+    if (collapseSignal === collapsedAt.current) return
+    collapsedAt.current = collapseSignal
+    startTransition(() => setExpandedItems([]))
+  }, [collapseSignal])
 
   useEffect(() => {
     if (!familyFilter || familyGroups.length === 0) return

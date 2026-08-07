@@ -12,6 +12,7 @@ export interface WallGene {
   symbol: string
   family: string
   familyName: string
+  category: string | null
   length: number
   segments: MembraneSegment[]
   nTransmembrane: number
@@ -30,6 +31,24 @@ export interface Wall {
 }
 
 export const EMPTY_WALL: Wall = { groups: [] }
+
+export interface WallSummary {
+  count: number
+  category: string | null
+}
+
+export function summariseWall(wall: Wall, family: string | null): WallSummary {
+  let count = 0
+  let category: string | null = null
+  for (const group of wall.groups) {
+    for (const gene of group.genes) {
+      if (family && gene.family !== family) continue
+      count += 1
+      if (family) category = gene.category
+    }
+  }
+  return { count, category }
+}
 
 export function buildWall(
   topology: GeneTopology[] | undefined,
@@ -50,6 +69,7 @@ export function buildWall(
       symbol: gene.symbol,
       family: gene.family,
       familyName: gene.family_name,
+      category: gene.category,
       length: entry.uniprot_length ?? record.uniprot_length ?? 0,
       segments: entry.segments,
       nTransmembrane: record.n_transmembrane,

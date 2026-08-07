@@ -17,18 +17,20 @@ interface Props {
   showTreeButton: boolean
   familyFilter: string | null
   onOpenTree: () => void
-  onSelectGene: (geneId: string) => void
+  searchText: string
+  onSearchChange: (value: string) => void
   counterText: string
   onResetView: () => void
   exportItems: ExportItem[]
 }
 
-export default function StructureToolbar({
+export default function GeneAnnotationToolbar({
   genes,
   showTreeButton,
   familyFilter,
   onOpenTree,
-  onSelectGene,
+  searchText,
+  onSearchChange,
   counterText,
   onResetView,
   exportItems,
@@ -54,7 +56,8 @@ export default function StructureToolbar({
             )}
             <GeneSearchBar
               genes={genes}
-              onSelect={onSelectGene}
+              value={searchText}
+              onChange={onSearchChange}
               width={wrapped ? "100%" : SEARCH_WIDTH}
             />
           </Box>

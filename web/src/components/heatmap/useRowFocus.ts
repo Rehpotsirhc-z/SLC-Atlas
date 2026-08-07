@@ -49,7 +49,7 @@ export function useRowFocus({
   }, [clusterNodes, selectedGeneId, rowByGene, scrollToRow, containerW])
 
   const resetView = useCallback(
-    () => containerRef.current?.scrollTo({ top: 0, behavior: "smooth" }),
+    () => containerRef.current?.scrollTo({ top: 0, left: 0, behavior: "smooth" }),
     [containerRef],
   )
 
