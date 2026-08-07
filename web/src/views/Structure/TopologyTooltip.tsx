@@ -30,7 +30,7 @@ export default function TopologyTooltip({ hover, point, model }: Props) {
     </Typography>
   )
   const Line = ({ children }: { children: string }) => (
-    <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+    <Typography variant="caption" sx={{ display: "block", color: "text.secondary", fontSize: 13 }}>
       {children}
     </Typography>
   )
@@ -93,7 +93,7 @@ export default function TopologyTooltip({ hover, point, model }: Props) {
           </Line>
           <Typography
             variant="caption"
-            sx={{ display: "block", fontFamily: custom.monoFontFamily, fontWeight: 600 }}
+            sx={{ display: "block", fontFamily: custom.monoFontFamily, fontWeight: 600, fontSize: 13 }}
           >
             {formatSpans(hover.item.spans)}
           </Typography>

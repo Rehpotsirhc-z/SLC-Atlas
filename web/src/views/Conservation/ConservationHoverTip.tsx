@@ -38,7 +38,11 @@ export default function ConservationHoverTip({
           </Box>
         </Typography>
       ) : (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mt: 0.25, fontSize: 13 }}
+        >
           No ortholog
         </Typography>
       )}

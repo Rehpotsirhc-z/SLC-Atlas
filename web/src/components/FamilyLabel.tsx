@@ -24,10 +24,10 @@ export default function FamilyLabel({ label, color, familyName, category }: Fami
           sx: {
             ...tooltipSurfaceSx,
             color: "text.primary",
-            px: 1.25,
+            px: 1,
             m: 0,
             maxWidth: 240,
-            fontSize: "0.7rem",
+            fontSize: 13,
             lineHeight: 1.45,
           },
         },

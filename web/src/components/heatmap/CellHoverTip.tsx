@@ -38,7 +38,11 @@ export default function CellHoverTip({
         {columnLabel}
       </Typography>
       {name && (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "justify" }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "justify", fontSize: 13 }}
+        >
           {name}
         </Typography>
       )}
