@@ -24,12 +24,15 @@ interface Row {
   content: ReactNode
 }
 
+const LINE = 10
+const DASH_WIDTH = 22
+
 const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unresolvedAs }: Props) {
   const { palette, custom } = useTheme()
 
   const valueSx = {
     fontFamily: custom.monoFontFamily,
-    fontSize: 10,
+    fontSize: LINE,
     lineHeight: 1,
     color: "text.primary",
   }
@@ -86,12 +89,17 @@ const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unre
       label: "Unresolved",
       content: (
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <Box component="svg" width={22} height={16} sx={{ flexShrink: 0 }}>
+          <Box
+            component="svg"
+            width={unresolvedAs === "ring" ? LINE : DASH_WIDTH}
+            height={LINE}
+            sx={{ flexShrink: 0 }}
+          >
             {unresolvedAs === "ring" ? (
               <circle
-                cx={11}
-                cy={8}
-                r={6}
+                cx={LINE / 2}
+                cy={LINE / 2}
+                r={(LINE - TRACK.chainWidth) / 2}
                 fill="none"
                 stroke={palette.text.secondary}
                 strokeWidth={TRACK.chainWidth}
@@ -100,9 +108,9 @@ const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unre
             ) : (
               <line
                 x1={1}
-                y1={8}
-                x2={21}
-                y2={8}
+                y1={LINE / 2}
+                x2={DASH_WIDTH - 1}
+                y2={LINE / 2}
                 stroke={palette.text.secondary}
                 strokeWidth={TRACK.chainWidth}
                 strokeDasharray={TRACK.unresolvedDash}
@@ -127,8 +135,7 @@ const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unre
           rowGap: 0.75,
           alignItems: "center",
           px: 1.25,
-          pt: 1,
-          pb: 0.625,
+          py: 1,
           border: 1,
           borderColor: "divider",
           borderRadius: 1,

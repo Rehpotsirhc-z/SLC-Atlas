@@ -74,9 +74,13 @@ const FamilyTree = memo(function FamilyTree({
   const handleExpandedChange = useCallback(
     (items: string[]) => {
       startTransition(() => setExpandedItems(items))
-      if (selectedFamily && !items.includes(selectedFamily)) setSelectedGeneId(null)
+      if (!selectedFamily) return
+      const opened = items.filter((family) => !expandedItems.includes(family))
+      if (!items.includes(selectedFamily) || opened.some((family) => family !== selectedFamily)) {
+        setSelectedGeneId(null)
+      }
     },
-    [selectedFamily, setSelectedGeneId],
+    [expandedItems, selectedFamily, setSelectedGeneId],
   )
 
   const collapsedAt = useRef(collapseSignal)
