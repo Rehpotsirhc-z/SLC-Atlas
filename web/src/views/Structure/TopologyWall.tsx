@@ -28,7 +28,7 @@ function geneIdAt(target: EventTarget): string | null {
 }
 
 export default function TopologyWall({ wall, onSelectGene }: Props) {
-  const { palette } = useTheme()
+  const { palette, custom } = useTheme()
   const [hovered, setHovered] = useState<Hovered | null>(null)
 
   const ink = useMemo<WallInk>(() => {
@@ -78,21 +78,35 @@ export default function TopologyWall({ wall, onSelectGene }: Props) {
 
       {hovered && (
         <HoverTooltip x={hovered.x} y={hovered.y}>
-          <Typography variant="caption" component="div" fontWeight={700}>
+          <Typography
+            variant="caption"
+            component="div"
+            sx={{ fontFamily: custom.monoFontFamily, fontWeight: 600, fontSize: 13 }}
+          >
             {hovered.gene.symbol}
           </Typography>
-          <Typography variant="caption" component="div" color="text.secondary">
+          <Typography
+            variant="caption"
+            component="div"
+            color="text.secondary"
+            sx={{ fontSize: 13 }}
+          >
             {hovered.gene.familyName}
           </Typography>
-          <Typography variant="caption" component="div">
-            {hovered.gene.length} residues, {hovered.gene.nTransmembrane} crossing the membrane
-          </Typography>
-          <Typography variant="caption" component="div" color="text.secondary">
+          <Typography
+            variant="caption"
+            component="div"
+            color="text.secondary"
+            sx={{ fontSize: 13 }}
+          >
             {hovered.gene.nExperimental === 0
               ? "Predicted model only"
               : `${hovered.gene.nExperimental} experimental ${
                   hovered.gene.nExperimental === 1 ? "structure" : "structures"
                 }, best ${hovered.gene.bestPdbId?.toUpperCase()}`}
+          </Typography>
+          <Typography variant="caption" component="div" sx={{ fontSize: 13 }}>
+            {hovered.gene.length} residues, {hovered.gene.nTransmembrane} crossing the membrane
           </Typography>
         </HoverTooltip>
       )}
