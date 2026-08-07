@@ -5,7 +5,9 @@
 """Write the whole app to disk as static files, ready for any web server.
 
 Every API response is fetched from the app in-process and saved at the same URL the
-frontend already asks for, so a plain file server behaves like the running app.
+frontend already asks for, so a plain file server behaves like the running app. Each of the
+frontend's routes gets a page of its own for the same reason, so a host that cannot rewrite
+an unmatched path still answers a deep link.
 
 Re-exporting over an existing directory only touches what actually differs, and deletes
 what the dataset no longer produces. Files that did not change keep their timestamps, so
@@ -13,6 +15,7 @@ rsync skips them and browsers keep their cached copies.
 """
 
 import asyncio
+import json
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -34,6 +37,8 @@ CONCURRENCY = 8
 
 # Directories the export owns completely, and may therefore delete from
 MANAGED = ("api", "assets")
+
+ROUTES_FILE = "routes.json"
 
 
 @dataclass
@@ -79,6 +84,30 @@ def _prune(out_dir: Path, keep: set[Path]) -> int:
         for path in sorted(root.rglob("*"), reverse=True):
             if path.is_dir() and not any(path.iterdir()):
                 path.rmdir()
+    return removed
+
+
+def _routes(source: Path) -> list[str]:
+    """Route paths as directory names, dropping the root, whose page is index.html itself."""
+    return [path.strip("/") for path in json.loads(source.read_text()) if path.strip("/")]
+
+
+def _write_pages(out_dir: Path, routes: list[str], shell: bytes) -> int:
+    """Give every route a file of its own, so a deep link needs no rewrite rule behind it."""
+    changed = sum(_write(out_dir / route / "index.html", shell) for route in routes)
+    return changed + _write(out_dir / "404.html", shell)
+
+
+def _prune_pages(out_dir: Path, previous: list[str], routes: list[str]) -> int:
+    """Drop the pages of routes an earlier export wrote and this one no longer has."""
+    removed = 0
+    for route in set(previous) - set(routes):
+        page = out_dir / route / "index.html"
+        if page.is_file():
+            page.unlink()
+            removed += 1
+        if page.parent.is_dir() and not any(page.parent.iterdir()):
+            page.parent.rmdir()
     return removed
 
 
@@ -180,7 +209,7 @@ def _copy_models(data_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, i
 def _copy_frontend(web_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
     files = size = changed = 0
     for src in web_dir.rglob("*"):
-        if not src.is_file() or src.name in {"index.html", "index.html.template"}:
+        if not src.is_file() or src.name in {"index.html", "index.html.template", ROUTES_FILE}:
             continue
         dst = out_dir / src.relative_to(web_dir)
         keep.add(dst)
@@ -199,20 +228,32 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     if not source.is_file():
         raise FileNotFoundError(f"no built frontend at {web_dir}")
 
+    manifest = web_dir / ROUTES_FILE
+    if not manifest.is_file():
+        raise FileNotFoundError(f"no {ROUTES_FILE} at {web_dir}, run `npm --prefix web run build`")
+    routes = _routes(manifest)
+    # Only pages a previous export recorded are ours to remove
+    served = out_dir / ROUTES_FILE
+    previous = _routes(served) if served.is_file() else []
+
     keep: set[Path] = set()
     web_files, web_size, changed = _copy_frontend(web_dir, out_dir, keep)
     shell = render(source.read_text()).encode()
     changed += _write(out_dir / "index.html", shell)
     changed += _write(out_dir / "index.html.template", source.read_bytes())
+    changed += _write_pages(out_dir, routes, shell)
+    changed += _write(served, manifest.read_bytes())
 
     stats = asyncio.run(_dump(out_dir, keep))
     model_files, model_size, model_changes = _copy_models(settings.data_dir, out_dir, keep)
 
-    # index.html and its template are outside MANAGED, so _prune leaves them alone
-    stats.files += web_files + model_files + 2
-    stats.bytes += web_size + model_size + len(shell) + source.stat().st_size
+    # The route pages and the root files sit outside MANAGED, so _prune leaves them alone
+    pages = len(routes) + 1
+    stats.files += web_files + model_files + pages + 3
+    stats.bytes += web_size + model_size + len(shell) * (pages + 1) + source.stat().st_size
+    stats.bytes += manifest.stat().st_size
     stats.changed += changed + model_changes
-    stats.removed = _prune(out_dir, keep)
+    stats.removed = _prune(out_dir, keep) + _prune_pages(out_dir, previous, routes)
     return stats
 
 

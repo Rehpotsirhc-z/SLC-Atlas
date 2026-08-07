@@ -18,6 +18,11 @@ import "@fontsource/source-sans-3/700.css"
 import AppThemeProvider from "./components/AppThemeProvider"
 import App from "./App"
 
+const { pathname, search, hash } = window.location
+if (pathname.length > 1 && pathname.endsWith("/")) {
+  window.history.replaceState(null, "", pathname.slice(0, -1) + search + hash)
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 5 * 60 * 1000 },

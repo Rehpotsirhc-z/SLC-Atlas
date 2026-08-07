@@ -47,10 +47,10 @@ export default function App() {
         }}
       >
         <Routes>
-          <Route path="/" element={<Navigate to="/genes" replace />} />
           {routes.map((r) => (
             <Route key={r.path} path={r.path} element={r.element} />
           ))}
+          <Route path="*" element={<Navigate to="/genes" replace />} />
         </Routes>
       </Box>
       <GeneInfoPopup />

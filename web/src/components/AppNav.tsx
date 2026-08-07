@@ -7,17 +7,17 @@ import { useLocation, useNavigate } from "react-router-dom"
 import MenuIcon from "@mui/icons-material/Menu"
 import { IconButton, Menu, MenuItem, Tab, Tabs } from "@mui/material"
 import { useCapabilities } from "@/api/hooks/useCapabilities"
-import { routes } from "@/routes"
+import { ROUTES, type RouteMeta } from "@/config/routes"
 
 function useVisibleRoutes() {
   const { data } = useCapabilities()
   return useMemo(
-    () => routes.filter((r) => !r.capability || data?.[r.capability] !== false),
+    () => ROUTES.filter((r) => !r.capability || data?.[r.capability] !== false),
     [data],
   )
 }
 
-function useActiveRoute(visible: typeof routes) {
+function useActiveRoute(visible: RouteMeta[]) {
   const { pathname } = useLocation()
   return visible.findIndex((r) => pathname.startsWith(r.path))
 }

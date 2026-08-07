@@ -5,7 +5,7 @@
 import { useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useUIStore } from "@/store/uiStore"
-import { POPUP_PATHS } from "@/routes"
+import { POPUP_PATHS } from "@/config/routes"
 import GeneInfoPanel from "./genePanel/GeneInfoPanel"
 import GeneConservationPanel from "./genePanel/GeneConservationPanel"
 import GeneExpressionPanel from "./genePanel/GeneExpressionPanel"

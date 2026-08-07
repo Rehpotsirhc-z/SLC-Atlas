@@ -8,6 +8,7 @@ import { VitePWA } from "vite-plugin-pwa"
 import { fileURLToPath, URL } from "node:url"
 import { doomColors } from "./src/theme/palette"
 import { resolveAtlasConfig, type AtlasConfig } from "./src/config/product"
+import { ROUTES } from "./src/config/routes"
 
 const doomScssVars = Object.entries(doomColors)
   .flatMap(([mode, colors]) =>
@@ -38,6 +39,17 @@ export default defineConfig(({ mode }) => {
         apply: "serve",
         transformIndexHtml: (html: string) => renderShell(html, atlasConfig),
       },
+      {
+        name: "atlas-routes",
+        apply: "build",
+        generateBundle() {
+          this.emitFile({
+            type: "asset",
+            fileName: "routes.json",
+            source: JSON.stringify(ROUTES.map((r) => r.path)),
+          })
+        },
+      },
       VitePWA({
         registerType: "autoUpdate",
         manifest: {
@@ -53,9 +65,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,woff,woff2}"],
-          // the Mol* viewer chunk is lazy/tap-loaded to keep it off cellular; caching it ahead of
-          // time in the precache would force that download on install, so it's fetched on demand
-          // and cached only after that first fetch
+          // Keeps the Mol* chunk out of the precache, so it downloads on first use not on install
           globIgnores: ["**/MolstarViewer-*.js"],
           runtimeCaching: [
             {
