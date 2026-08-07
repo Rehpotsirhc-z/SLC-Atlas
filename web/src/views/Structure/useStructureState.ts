@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTheme } from "@mui/material"
 import { useGeneById, useGenes } from "@/api/hooks/useGenes"
 import {
@@ -70,6 +70,12 @@ export function useStructureState() {
     },
     [geneById, setSelectedGeneId],
   )
+
+  useEffect(() => {
+    if (!selectedGeneId) return
+    const family = geneById.get(selectedGeneId)?.family
+    if (family && genes.some((g) => g.family === family)) setFamilyFilter(family)
+  }, [selectedGeneId, geneById, genes])
 
   const selectedPdbId = pdbChoice?.geneId === selectedGeneId ? pdbChoice.pdbId : null
   const selectPdbId = useCallback(

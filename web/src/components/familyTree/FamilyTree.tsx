@@ -78,7 +78,7 @@ const FamilyTree = memo(function FamilyTree({
   )
 
   useEffect(() => {
-    if (!familyFilter) return
+    if (!familyFilter || familyGroups.length === 0) return
     startTransition(() =>
       setExpandedItems((prev) => (prev.includes(familyFilter) ? prev : [...prev, familyFilter])),
     )
@@ -99,7 +99,7 @@ const FamilyTree = memo(function FamilyTree({
     scrollParent?.addEventListener("scrollend", startFlash, { once: true })
     contentEl.scrollIntoView({ block: "start", behavior: "smooth" })
     setTimeout(startFlash, 600)
-  }, [familyFilter]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [familyFilter, familyGroups]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Paper variant="outlined" sx={{ width, flexShrink: 0, overflowY: "auto", p: 1 }}>
