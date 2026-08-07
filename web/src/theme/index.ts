@@ -22,6 +22,8 @@ declare module "@mui/material/styles" {
   }
 }
 
+const headingWeight = { fontWeight: 700 }
+
 function buildTheme(mode: ThemeMode): Theme {
   const c = doomColors[mode]
 
@@ -41,6 +43,12 @@ function buildTheme(mode: ThemeMode): Theme {
     typography: {
       fontFamily: sansFontFamily,
       fontSize: 15,
+      h1: headingWeight,
+      h2: headingWeight,
+      h3: headingWeight,
+      h4: headingWeight,
+      h5: headingWeight,
+      h6: headingWeight,
     },
     custom: { monoFontFamily, monoFontSize },
     components: componentOverrides(c, mode),

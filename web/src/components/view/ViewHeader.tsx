@@ -12,7 +12,7 @@ interface Props {
 export default function ViewHeader({ title, subtitle }: Props) {
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} color="primary">
+      <Typography variant="h5" color="primary">
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">
