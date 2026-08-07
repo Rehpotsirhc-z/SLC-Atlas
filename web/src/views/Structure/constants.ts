@@ -138,10 +138,10 @@ export const CONTENT_PADDING_PX = 32
 
 export const WALL = {
   glyphWidth: 152,
-  glyphHeight: 35,
-  labelBaseline: 9,
-  labelSize: 10.5,
-  bandTop: 17,
+  glyphHeight: 37,
+  labelBaseline: 10.5,
+  labelSize: 12.5,
+  bandTop: 19,
   bandHeight: 18,
   cellPadX: 5,
   cellPadTop: 4,
@@ -149,7 +149,7 @@ export const WALL = {
   pillRadius: 2,
   // Below this a span is too thin to read as a helix, and a long protein has several
   minPillWidth: 2,
-  pdbSize: 9.5,
+  pdbSize: 12.5,
   // An intramembrane stretch does not cross, so it reads as a lighter mark than a helix
   intramembraneOpacity: 0.45,
 } as const
