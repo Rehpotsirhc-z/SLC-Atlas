@@ -16,6 +16,7 @@ interface SearchBarProps {
   /** Only needed by views that filter their own content by the query text */
   value?: string
   onChange?: (value: string) => void
+  onSelect?: (geneId: string) => void
   width?: number | string
 }
 
@@ -33,9 +34,11 @@ export default function GeneSearchBar({
   genes,
   value = "",
   onChange = () => {},
+  onSelect,
   width = 360,
 }: SearchBarProps) {
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
+  const selectGene = onSelect ?? setSelectedGeneId
   const [inputValue, setInputValue] = useState(value)
 
   const index = useMemo(() => buildIndex(genes), [genes])
@@ -85,14 +88,14 @@ export default function GeneSearchBar({
   const handleChange = useCallback(
     (_event: React.SyntheticEvent, newValue: Gene | string | null) => {
       if (newValue && typeof newValue !== "string") {
-        setSelectedGeneId(newValue.id)
+        selectGene(newValue.id)
         setInputValue(newValue.symbol)
         onChange(newValue.symbol)
       } else if (newValue === null) {
         onChange("")
       }
     },
-    [onChange, setSelectedGeneId],
+    [onChange, selectGene],
   )
 
   return (

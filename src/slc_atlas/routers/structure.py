@@ -10,6 +10,7 @@ from ..deps import get_source
 from ..models.structure import (
     DataSourceRecord,
     ExperimentalStructure,
+    GeneTopology,
     ProteinFeature,
     Structure,
     StructureDetail,
@@ -34,6 +35,11 @@ def list_structures(source: DataSource = Depends(get_source)):
 @router.get("/structure/sources.json", response_model=list[DataSourceRecord])
 def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_data_sources()).to_dicts()
+
+
+@router.get("/structure/topology.json", response_model=list[GeneTopology])
+def list_topology(source: DataSource = Depends(get_source)):
+    return require(source.get_topology()).to_dicts()
 
 
 # :path so mirrored experimental coordinates resolve under models/pdb/

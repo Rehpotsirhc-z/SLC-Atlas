@@ -69,6 +69,14 @@ const FamilyTree = memo(function FamilyTree({
     else familyRefs.current.delete(family)
   }, [])
 
+  const handleExpandedChange = useCallback(
+    (items: string[]) => {
+      setExpandedItems(items)
+      if (selectedFamily && !items.includes(selectedFamily)) setSelectedGeneId(null)
+    },
+    [selectedFamily, setSelectedGeneId],
+  )
+
   useEffect(() => {
     if (!familyFilter) return
     setExpandedItems((prev) => (prev.includes(familyFilter) ? prev : [...prev, familyFilter]))
@@ -102,7 +110,7 @@ const FamilyTree = memo(function FamilyTree({
       </Typography>
       <SimpleTreeView
         expandedItems={expandedItems}
-        onExpandedItemsChange={(_, items) => setExpandedItems(items)}
+        onExpandedItemsChange={(_, items) => handleExpandedChange(items)}
         slots={{ expandIcon: ChevronRightIcon, collapseIcon: ExpandMoreIcon }}
       >
         {familyGroups.map(({ family, label, members }) => (

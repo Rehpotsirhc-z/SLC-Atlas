@@ -16,7 +16,7 @@ export interface ExportItem {
 interface Props {
   tbState: TbState
   counterText: string
-  onResetView: () => void
+  onResetView?: () => void
   exportItems: ExportItem[]
 }
 
@@ -50,16 +50,18 @@ export default function ViewToolbarActions({
       <Divider orientation="vertical" flexItem sx={{ display: showCounter ? "block" : "none" }} />
       {iconButtons ? (
         <>
-          <Tooltip title="Reset view">
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={onResetView}
-              sx={{ minWidth: 0, px: "16px", py: "5px" }}
-            >
-              <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
-            </Button>
-          </Tooltip>
+          {onResetView && (
+            <Tooltip title="Reset view">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={onResetView}
+                sx={{ minWidth: 0, px: "16px", py: "5px" }}
+              >
+                <RestartAltIcon fontSize="small" sx={{ display: "block" }} />
+              </Button>
+            </Tooltip>
+          )}
           <Tooltip title="Export">
             <Button
               size="small"
@@ -73,20 +75,22 @@ export default function ViewToolbarActions({
         </>
       ) : (
         <>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<RestartAltIcon />}
-            onClick={onResetView}
-            sx={{
-              whiteSpace: "nowrap",
-              flex: wrapped ? 1 : "none",
-              gap: "6px",
-              "& .MuiButton-startIcon": { margin: 0 },
-            }}
-          >
-            Reset view
-          </Button>
+          {onResetView && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<RestartAltIcon />}
+              onClick={onResetView}
+              sx={{
+                whiteSpace: "nowrap",
+                flex: wrapped ? 1 : "none",
+                gap: "6px",
+                "& .MuiButton-startIcon": { margin: 0 },
+              }}
+            >
+              Reset view
+            </Button>
+          )}
           <Button
             size="small"
             variant="outlined"

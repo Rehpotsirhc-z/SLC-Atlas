@@ -29,8 +29,8 @@ import {
 } from "./constants"
 import ExperimentalTable from "./ExperimentalTable"
 import IdentityCard from "./IdentityCard"
-import StructureSummary from "./StructureSummary"
 import StructureToolbar from "./StructureToolbar"
+import TopologyWall from "./TopologyWall"
 import LinkedPanes from "./LinkedPanes"
 import { useStructureState } from "./useStructureState"
 import type { ModelExporter } from "./molstar/types"
@@ -45,7 +45,7 @@ export default function Structure() {
   const available = useCapability("structure")
 
   const {
-    structures,
+    wall,
     genes,
     selected,
     plddt,
@@ -57,7 +57,7 @@ export default function Structure() {
     error,
     familyFilter,
     setFamilyFilter,
-    setSelectedGeneId,
+    selectGene,
     modelSource,
     modelOptions,
     selectedPdbId,
@@ -156,11 +156,8 @@ export default function Structure() {
             showTreeButton={isMobile || useDrawer}
             familyFilter={familyFilter}
             onOpenTree={() => setDrawerOpen(true)}
+            onSelectGene={selectGene}
             counterText={counterText}
-            onResetView={() => {
-              setSelectedGeneId(null)
-              setFamilyFilter(null)
-            }}
             exportItems={exportItems}
           />
           <Divider />
@@ -203,7 +200,7 @@ export default function Structure() {
                     )}
                   </Stack>
                 ) : (
-                  <StructureSummary structures={structures ?? []} />
+                  <TopologyWall wall={wall} onSelectGene={selectGene} />
                 )}
               </Box>
             </ViewStatus>

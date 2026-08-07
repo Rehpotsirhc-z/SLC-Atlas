@@ -15,6 +15,10 @@ SOURCES_FILE = "structure/sources.parquet"
 # Megabytes across a family, and only ever read one gene at a time
 PER_RESIDUE_COLUMNS = ("plddt", "sequence")
 
+# The feature types that sit in the membrane, which is all the topology overview draws
+MEMBRANE_FEATURES = ("transmembrane", "intramembrane")
+SEGMENT_LIST = pl.List(pl.Struct({"start": pl.Int64, "end": pl.Int64, "kind": pl.String}))
+
 
 class ParquetSource:
     def __init__(self, data_dir: Path) -> None:
@@ -93,6 +97,24 @@ class ParquetSource:
 
     def get_protein_features(self, gene_id: str | None = None) -> pl.DataFrame | None:
         return self._scan_by_gene(FEATURES_FILE, gene_id)
+
+    def get_topology(self) -> pl.DataFrame | None:
+        features = self._scan_optional(FEATURES_FILE)
+        structure = self._scan_optional(STRUCTURE_FILE)
+        if features is None or structure is None:
+            return None
+        segments = (
+            features.filter(pl.col("feature_type").is_in(MEMBRANE_FEATURES))
+            .sort("gene_id", "start")
+            .group_by("gene_id", maintain_order=True)
+            .agg(pl.struct(start="start", end="end", kind="feature_type").alias("segments"))
+        )
+        return (
+            structure.select("gene_id", "uniprot_length")
+            .join(segments, on="gene_id", how="left")
+            .with_columns(pl.col("segments").fill_null(pl.lit([], dtype=SEGMENT_LIST)))
+            .collect()
+        )
 
     def get_experimental_structures(self, gene_id: str | None = None) -> pl.DataFrame | None:
         return self._scan_by_gene(EXPERIMENTAL_FILE, gene_id)

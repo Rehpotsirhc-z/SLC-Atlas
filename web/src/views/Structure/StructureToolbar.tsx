@@ -17,8 +17,8 @@ interface Props {
   showTreeButton: boolean
   familyFilter: string | null
   onOpenTree: () => void
+  onSelectGene: (geneId: string) => void
   counterText: string
-  onResetView: () => void
   exportItems: ExportItem[]
 }
 
@@ -27,8 +27,8 @@ export default function StructureToolbar({
   showTreeButton,
   familyFilter,
   onOpenTree,
+  onSelectGene,
   counterText,
-  onResetView,
   exportItems,
 }: Props) {
   const { tbState, toolbarRef, probeRefs } = useToolbarFit({ counterText, toggleCount: 1 })
@@ -50,19 +50,22 @@ export default function StructureToolbar({
                 <AccountTreeIcon fontSize="small" />
               </IconButton>
             )}
-            <GeneSearchBar genes={genes} width={wrapped ? "100%" : SEARCH_WIDTH} />
+            <GeneSearchBar
+              genes={genes}
+              onSelect={onSelectGene}
+              width={wrapped ? "100%" : SEARCH_WIDTH}
+            />
           </Box>
         }
         actions={
           <ViewToolbarActions
             tbState={tbState}
             counterText={counterText}
-            onResetView={onResetView}
             exportItems={exportItems}
           />
         }
       />
-      <ToolbarMeasureProbe refs={probeRefs} counterText={counterText}>
+      <ToolbarMeasureProbe refs={probeRefs} counterText={counterText} showReset={false}>
         <Box ref={probeRefs.registerToggle(0)} sx={{ width: SEARCH_WIDTH }} />
       </ToolbarMeasureProbe>
     </>

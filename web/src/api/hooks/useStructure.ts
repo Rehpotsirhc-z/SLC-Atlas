@@ -7,6 +7,7 @@ import { api } from "../client"
 import type {
   DataSourceRecord,
   ExperimentalStructure,
+  GeneTopology,
   ProteinFeature,
   StructureDetail,
   StructureRecord,
@@ -16,6 +17,12 @@ export const useStructures = () =>
   useQuery({
     queryKey: ["structure"],
     queryFn: () => api.get<StructureRecord[]>("/structure.json"),
+  })
+
+export const useTopology = () =>
+  useQuery({
+    queryKey: ["structure", "topology"],
+    queryFn: () => api.get<GeneTopology[]>("/structure/topology.json"),
   })
 
 export const useStructureDetail = (geneId: string | null) =>

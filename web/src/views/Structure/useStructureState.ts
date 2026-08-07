@@ -3,15 +3,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useMemo, useState } from "react"
+import { useTheme } from "@mui/material"
 import { useGeneById, useGenes } from "@/api/hooks/useGenes"
 import {
   useExperimentalStructures,
   useProteinFeatures,
   useStructureDetail,
   useStructures,
+  useTopology,
 } from "@/api/hooks/useStructure"
 import { useUIStore } from "@/store/uiStore"
 import { buildModelOptions, PREDICTED_ID } from "./modelOptions"
+import { buildWall } from "./topologyWall"
 import type { ModelSource } from "./molstar/types"
 
 export function useStructureState() {
@@ -22,8 +25,10 @@ export function useStructureState() {
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
 
+  const { palette } = useTheme()
   const { data: structures, isLoading, error } = useStructures()
   const { data: allGenes } = useGenes()
+  const { data: topology } = useTopology()
   const geneById = useGeneById()
   const { data: detail } = useStructureDetail(selectedGeneId)
   const { data: features } = useProteinFeatures(selectedGeneId)
@@ -50,6 +55,20 @@ export function useStructureState() {
     [structures],
   )
 
+  const wall = useMemo(
+    () => buildWall(topology, structures, geneById, familyFilter, palette.mode),
+    [topology, structures, geneById, familyFilter, palette.mode],
+  )
+
+  const selectGene = useCallback(
+    (geneId: string) => {
+      setSelectedGeneId(geneId)
+      const family = geneById.get(geneId)?.family
+      if (family) setFamilyFilter(family)
+    },
+    [geneById, setSelectedGeneId],
+  )
+
   const selectedPdbId = pdbChoice?.geneId === selectedGeneId ? pdbChoice.pdbId : null
   const selectPdbId = useCallback(
     (pdbId: string | null) =>
@@ -71,6 +90,7 @@ export function useStructureState() {
 
   return {
     structures,
+    wall,
     genes,
     selected,
     plddt: detail?.gene_id === selectedGeneId ? (detail?.plddt ?? null) : null,
@@ -84,6 +104,7 @@ export function useStructureState() {
     setFamilyFilter,
     selectedGeneId,
     setSelectedGeneId,
+    selectGene,
     selectedPdbId,
     selectPdbId,
     modelOptions,

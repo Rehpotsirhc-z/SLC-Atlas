@@ -59,6 +59,18 @@ class StructureDetail(Structure):
     sequence: str | None = None
 
 
+class MembraneSegment(BaseModel):
+    start: int
+    end: int
+    kind: Literal["transmembrane", "intramembrane"]
+
+
+class GeneTopology(BaseModel):
+    gene_id: str
+    uniprot_length: int | None = None
+    segments: list[MembraneSegment] = []
+
+
 class ProteinFeature(BaseModel):
     gene_id: str
     uniprot_accession: str | None = None

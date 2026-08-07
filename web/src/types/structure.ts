@@ -53,6 +53,18 @@ export type FeatureType =
   | "disulfide_bond"
   | "signal_peptide"
 
+export interface MembraneSegment {
+  start: number
+  end: number
+  kind: "transmembrane" | "intramembrane"
+}
+
+export interface GeneTopology {
+  gene_id: string
+  uniprot_length: number | null
+  segments: MembraneSegment[]
+}
+
 export interface ProteinFeature {
   gene_id: string
   uniprot_accession: string | null

@@ -128,7 +128,11 @@ def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
         urls += [f"/api/clustering/{method.value}.json", f"/api/clustering/{method.value}.nwk"]
     urls += [f"/api/genes/{gid}/transcripts.json" for gid in gene_ids]
     if capabilities.get("structure"):
-        urls += ["/api/structure.json", "/api/structure/sources.json"]
+        urls += [
+            "/api/structure.json",
+            "/api/structure/sources.json",
+            "/api/structure/topology.json",
+        ]
         for gid in gene_ids:
             urls += [
                 f"/api/structure/{gid}.json",
