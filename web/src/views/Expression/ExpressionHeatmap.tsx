@@ -34,6 +34,8 @@ interface ExpressionHeatmapProps {
   geneById: Map<string, Gene>
   cornerSlot?: React.ReactNode
   onTissueClick?: (tissue: string) => void
+  showGeneTree?: boolean
+  onToggleGeneTree?: () => void
   legendSlot?: React.ReactNode
 }
 
@@ -48,6 +50,8 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       geneById,
       cornerSlot,
       onTissueClick,
+      showGeneTree = true,
+      onToggleGeneTree,
       legendSlot,
     },
     ref,
@@ -59,6 +63,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       selectedGeneId,
       onSelect,
       geneById,
+      showGeneTree,
       hasLegend: !!legendSlot,
     })
 
@@ -90,6 +95,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
         headerRef={h.headerRef}
         contentW={h.contentW}
         fits={h.fits}
+        leftColW={h.leftColW}
         cornerSlot={cornerSlot}
         headerSlot={
           <TissueColumnHeader
@@ -101,6 +107,8 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
             onTissueClick={onTissueClick}
           />
         }
+        showGeneTree={showGeneTree}
+        onToggleGeneTree={onToggleGeneTree}
         showLegend={h.showLegend}
         legendSlot={legendSlot}
         headerH={h.headerH}
@@ -119,6 +127,7 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
             geneFont={h.geneFont}
             geneDotR={h.geneDotR}
             height={h.gridH}
+            showGeneTree={showGeneTree}
             onPick={h.pickGene}
           />
         }

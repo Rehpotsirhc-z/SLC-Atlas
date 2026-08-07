@@ -83,8 +83,6 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
         },
         select: {
           fontFamily: monoFontFamily,
-          display: "flex",
-          alignItems: "center",
           minHeight: "unset",
           paddingTop: "7px",
           paddingBottom: "7px",

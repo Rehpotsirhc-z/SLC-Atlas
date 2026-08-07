@@ -20,6 +20,7 @@ interface GeneSidebarProps {
   geneFont: number
   geneDotR: number
   height: number
+  showGeneTree: boolean
   onPick: (geneId: string | null) => void
 }
 
@@ -33,6 +34,7 @@ export default function GeneSidebar({
   geneFont,
   geneDotR,
   height,
+  showGeneTree,
   onPick,
 }: GeneSidebarProps) {
   const theme = useTheme()
@@ -43,6 +45,8 @@ export default function GeneSidebar({
 
   const selectedGeneIdRef = useRef(selectedGeneId)
   selectedGeneIdRef.current = selectedGeneId
+
+  const dotX = showGeneTree ? GENE_TREE_W : geneDotR
 
   const renderGeneRow = useCallback(
     (g: GeneRow, i: number) => {
@@ -58,10 +62,10 @@ export default function GeneSidebar({
             onPick(g.geneId === selectedGeneIdRef.current ? null : g.geneId)
           }}
         >
-          <circle cx={GENE_TREE_W} cy={cy} r={geneDotR} fill={paper} />
-          <circle cx={GENE_TREE_W} cy={cy} r={geneDotR} fill={color} opacity={familyOpacity} />
+          <circle cx={dotX} cy={cy} r={geneDotR} fill={paper} />
+          <circle cx={dotX} cy={cy} r={geneDotR} fill={color} opacity={familyOpacity} />
           <text
-            x={GENE_TREE_W + GENE_LABEL_GAP}
+            x={dotX + GENE_LABEL_GAP}
             y={cy + geneFont * 0.28}
             fontSize={geneFont}
             fontFamily={monoFont}
@@ -73,7 +77,7 @@ export default function GeneSidebar({
         </g>
       )
     },
-    [familyFilter, cellH, geneDotR, geneFont, mode, monoFont, paper, onPick],
+    [familyFilter, cellH, dotX, geneDotR, geneFont, mode, monoFont, paper, onPick],
   )
 
   const geneRowEls = useMemo(
@@ -82,8 +86,12 @@ export default function GeneSidebar({
   )
 
   return (
-    <svg width={LEFT_W} height={height} style={{ display: "block" }}>
-      <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />
+    <svg
+      width={showGeneTree ? LEFT_W : LEFT_W - GENE_TREE_W}
+      height={height}
+      style={{ display: "block" }}
+    >
+      {showGeneTree && <path d={geneTree?.edges} stroke={muted} strokeWidth={0.7} fill="none" />}
       <g opacity={selectedRow !== null ? 0.35 : 1}>{geneRowEls}</g>
       {selectedRow !== null && geneRows[selectedRow] && (
         <g>{renderGeneRow(geneRows[selectedRow], selectedRow)}</g>

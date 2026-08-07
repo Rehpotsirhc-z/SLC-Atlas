@@ -24,6 +24,7 @@ export default function Conservation() {
   const [cellMetric, setCellMetric] = useState<CellMetricKey>("perc_id")
   const [searchOpen, setSearchOpen] = useState(false)
   const [showSpeciesTree, setShowSpeciesTree] = useState(true)
+  const [showGeneTree, setShowGeneTree] = useState(true)
   const heatmapRef = useRef<ConservationHeatmapHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 
@@ -131,6 +132,8 @@ export default function Conservation() {
               }
               showSpeciesTree={showSpeciesTree}
               onToggleSpeciesTree={() => setShowSpeciesTree((v) => !v)}
+              showGeneTree={showGeneTree}
+              onToggleGeneTree={() => setShowGeneTree((v) => !v)}
               legendSlot={<ConservationLegend metric={cellMetric} />}
             />
 

@@ -7,7 +7,7 @@ import { Box, useTheme } from "@mui/material"
 import ExpandLessIcon from "@mui/icons-material/ExpandLess"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import ColumnLabels from "@/components/heatmap/ColumnLabels"
-import { COL_LABEL_GAP, LEFT_COL_W, RIGHT_PAD } from "@/components/heatmap/constants"
+import { COL_LABEL_GAP, RIGHT_PAD } from "@/components/heatmap/constants"
 import type { DendroLayout } from "@/utils/dendrogram"
 import { SP_TREE_PAD, SPECIES_LABEL_H, SPECIES_TOGGLE_H, SPECIES_TREE_H } from "./constants"
 import type { SpeciesCol } from "./useConservationMatrix"
@@ -20,6 +20,7 @@ interface SpeciesHeaderProps {
   font: number
   fits: boolean
   containerW: number
+  leftColW: number
   showSpeciesTree: boolean
   onToggleSpeciesTree?: () => void
 }
@@ -32,6 +33,7 @@ const SpeciesHeader = memo(function SpeciesHeader({
   font,
   fits,
   containerW,
+  leftColW,
   showSpeciesTree,
   onToggleSpeciesTree,
 }: SpeciesHeaderProps) {
@@ -80,8 +82,8 @@ const SpeciesHeader = memo(function SpeciesHeader({
             height: SPECIES_TOGGLE_H,
             minHeight: SPECIES_TOGGLE_H,
             position: fits ? "static" : "sticky",
-            left: LEFT_COL_W,
-            width: Math.min(gridW + RIGHT_PAD, Math.max(0, containerW - LEFT_COL_W)),
+            left: leftColW,
+            width: Math.min(gridW + RIGHT_PAD, Math.max(0, containerW - leftColW)),
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useMemo, useState } from "react"
-import { LEFT_COL_W, RIGHT_PAD } from "./constants"
+import { RIGHT_PAD } from "./constants"
 import type { CellPos } from "./types"
 import type { GeneRow } from "./useGeneRows"
 
@@ -17,6 +17,7 @@ interface HeatmapGridOptions<C, T> {
   cellW: number
   cellH: number
   containerW: number
+  leftColW: number
   legendReserve: number
   familyFilter: string | null
   selectedGeneId: string | null
@@ -33,6 +34,7 @@ export function useHeatmapGrid<C, T>({
   cellW,
   cellH,
   containerW,
+  leftColW,
   legendReserve,
   familyFilter,
   selectedGeneId,
@@ -53,7 +55,7 @@ export function useHeatmapGrid<C, T>({
 
   const gridW = cols.length * cellW
   const gridH = geneRows.length * cellH
-  const contentW = LEFT_COL_W + gridW + RIGHT_PAD + legendReserve
+  const contentW = leftColW + gridW + RIGHT_PAD + legendReserve
   const fits = containerW > 0 && contentW <= containerW
   const selectedRow = selectedGeneId ? (rowByGene.get(selectedGeneId) ?? null) : null
   const selectedCol =

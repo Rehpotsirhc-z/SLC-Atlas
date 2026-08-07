@@ -37,6 +37,8 @@ interface ConservationHeatmapProps {
   cornerSlot?: React.ReactNode
   showSpeciesTree?: boolean
   onToggleSpeciesTree?: () => void
+  showGeneTree?: boolean
+  onToggleGeneTree?: () => void
   legendSlot?: React.ReactNode
 }
 
@@ -54,6 +56,8 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       cornerSlot,
       showSpeciesTree = true,
       onToggleSpeciesTree,
+      showGeneTree = true,
+      onToggleGeneTree,
       legendSlot,
     },
     ref,
@@ -68,6 +72,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       onSelect,
       geneById,
       showSpeciesTree,
+      showGeneTree,
       hasLegend: !!legendSlot,
     })
 
@@ -98,6 +103,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
         headerRef={h.headerRef}
         contentW={h.contentW}
         fits={h.fits}
+        leftColW={h.leftColW}
         cornerSlot={cornerSlot}
         cornerMinHeight={showSpeciesTree ? undefined : COLLAPSED_CORNER_H}
         headerSlot={
@@ -109,10 +115,13 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
             font={h.speciesFont}
             fits={h.fits}
             containerW={h.containerW}
+            leftColW={h.leftColW}
             showSpeciesTree={showSpeciesTree}
             onToggleSpeciesTree={onToggleSpeciesTree}
           />
         }
+        showGeneTree={showGeneTree}
+        onToggleGeneTree={onToggleGeneTree}
         showLegend={h.showLegend}
         legendSlot={legendSlot}
         headerH={h.headerH}
@@ -139,6 +148,7 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
             geneFont={h.geneFont}
             geneDotR={h.geneDotR}
             height={h.gridH}
+            showGeneTree={showGeneTree}
             onPick={h.pickGene}
           />
         }

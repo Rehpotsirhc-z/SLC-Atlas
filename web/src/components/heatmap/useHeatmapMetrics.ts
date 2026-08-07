@@ -4,6 +4,7 @@
 
 import { useMemo } from "react"
 import {
+  GENE_TREE_W,
   LEFT_COL_W,
   LEGEND_W,
   MAX_CELL_W,
@@ -14,6 +15,7 @@ import {
 } from "./constants"
 
 interface HeatmapMetrics {
+  leftColW: number
   legendReserve: number
   showLegend: boolean
   cellW: number
@@ -27,20 +29,23 @@ export function useHeatmapMetrics(
   containerW: number,
   nCols: number,
   hasLegend: boolean,
+  showGeneTree: boolean,
 ): HeatmapMetrics {
+  const leftColW = showGeneTree ? LEFT_COL_W : LEFT_COL_W - GENE_TREE_W
   const legendReserve =
-    hasLegend && containerW - LEFT_COL_W - LEGEND_W - RIGHT_PAD >= nCols * MIN_CELL_W ? LEGEND_W : 0
+    hasLegend && containerW - leftColW - LEGEND_W - RIGHT_PAD >= nCols * MIN_CELL_W ? LEGEND_W : 0
 
   const cellW = useMemo(() => {
     if (!nCols || !containerW) return MIN_CELL_W
-    const avail = containerW - LEFT_COL_W - legendReserve
+    const avail = containerW - leftColW - legendReserve
     return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(avail / nCols)))
-  }, [containerW, nCols, legendReserve])
+  }, [containerW, nCols, leftColW, legendReserve])
 
   const cellH = Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
   const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
 
   return {
+    leftColW,
     legendReserve,
     showLegend: legendReserve > 0,
     cellW,

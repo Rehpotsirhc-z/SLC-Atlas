@@ -4,17 +4,22 @@
 
 import type { ReactNode, RefObject } from "react"
 import { Box, useTheme } from "@mui/material"
-import { BOTTOM_PAD, LEFT_COL_W, LEFT_GUTTER, LEGEND_W } from "./constants"
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft"
+import ChevronRightIcon from "@mui/icons-material/ChevronRight"
+import { BOTTOM_PAD, GENE_TOGGLE_W, LEFT_GUTTER, LEGEND_W } from "./constants"
 
 interface HeatmapShellProps {
   containerRef: RefObject<HTMLDivElement | null>
   headerRef: RefObject<HTMLDivElement | null>
   contentW: number
   fits: boolean
+  leftColW: number
   cornerSlot?: ReactNode
   cornerMinHeight?: number
   headerSlot: ReactNode
   sidebar: ReactNode
+  showGeneTree?: boolean
+  onToggleGeneTree?: () => void
   showLegend: boolean
   legendSlot?: ReactNode
   headerH: number
@@ -30,10 +35,13 @@ export default function HeatmapShell({
   headerRef,
   contentW,
   fits,
+  leftColW,
   cornerSlot,
   cornerMinHeight,
   headerSlot,
   sidebar,
+  showGeneTree = true,
+  onToggleGeneTree,
   showLegend,
   legendSlot,
   headerH,
@@ -62,7 +70,7 @@ export default function HeatmapShell({
               position: fits ? "static" : "sticky",
               left: 0,
               zIndex: 1,
-              width: LEFT_COL_W,
+              width: leftColW,
               pl: LEFT_GUTTER / 8,
               flexShrink: 0,
               bgcolor: stickyBg,
@@ -84,13 +92,47 @@ export default function HeatmapShell({
               position: fits ? "static" : "sticky",
               left: 0,
               zIndex: 2,
-              width: LEFT_COL_W,
+              width: leftColW,
               pl: LEFT_GUTTER / 8,
               flexShrink: 0,
               bgcolor: stickyBg,
+              display: "flex",
             }}
           >
             {sidebar}
+            {onToggleGeneTree && (
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleGeneTree()
+                }}
+                sx={{
+                  ml: "auto",
+                  width: GENE_TOGGLE_W,
+                  flexShrink: 0,
+                  cursor: "pointer",
+                  color: "text.disabled",
+                }}
+              >
+                <Box
+                  sx={{
+                    position: "sticky",
+                    top: headerH,
+                    height: `min(100%, ${Math.max(0, containerH - headerH)}px)`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 0,
+                  }}
+                >
+                  {showGeneTree ? (
+                    <ChevronLeftIcon sx={{ fontSize: 12, display: "block" }} />
+                  ) : (
+                    <ChevronRightIcon sx={{ fontSize: 12, display: "block" }} />
+                  )}
+                </Box>
+              </Box>
+            )}
           </Box>
 
           {children}

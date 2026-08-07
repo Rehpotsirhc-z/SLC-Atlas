@@ -24,6 +24,7 @@ import { useExpressionState } from "./useExpressionState"
 
 export default function Expression() {
   const [searchOpen, setSearchOpen] = useState(false)
+  const [showGeneTree, setShowGeneTree] = useState(true)
   const heatmapRef = useRef<ExpressionHeatmapHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 
@@ -132,6 +133,8 @@ export default function Expression() {
                 geneById={geneById}
                 cornerSlot={<GeneOrderSelect metric={metric} onChange={setMetric} />}
                 onTissueClick={(t) => rail.pickTissue([t])}
+                showGeneTree={showGeneTree}
+                onToggleGeneTree={() => setShowGeneTree((v) => !v)}
                 legendSlot={<ExpressionLegend rows={rows ?? []} />}
               />
 

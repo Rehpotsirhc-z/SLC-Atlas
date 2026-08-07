@@ -37,6 +37,7 @@ interface Options {
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
+  showGeneTree: boolean
   hasLegend: boolean
 }
 
@@ -50,6 +51,7 @@ export function useExpressionHeatmapState({
   selectedGeneId,
   onSelect,
   geneById,
+  showGeneTree,
   hasLegend,
 }: Options) {
   const theme = useTheme()
@@ -66,6 +68,7 @@ export function useExpressionHeatmapState({
   const tissueCols = useMemo(() => sortedTissues(rows), [rows])
 
   const {
+    leftColW,
     cellW,
     cellH,
     geneFont,
@@ -73,7 +76,7 @@ export function useExpressionHeatmapState({
     colFont: tissueFont,
     legendReserve,
     showLegend,
-  } = useHeatmapMetrics(containerW, tissueCols.length, hasLegend)
+  } = useHeatmapMetrics(containerW, tissueCols.length, hasLegend, showGeneTree)
 
   const topH = useMemo(() => {
     if (!tissueCols.length) return TISSUE_LABEL_H_MIN
@@ -93,6 +96,7 @@ export function useExpressionHeatmapState({
     cellW,
     cellH,
     containerW,
+    leftColW,
     legendReserve,
     familyFilter,
     selectedGeneId,
@@ -164,6 +168,7 @@ export function useExpressionHeatmapState({
     containerRef,
     tissueCols,
     cellW,
+    leftColW,
   })
 
   const figure = () =>
@@ -201,6 +206,7 @@ export function useExpressionHeatmapState({
     tissueCols,
     topH,
     tissueFont,
+    leftColW,
     cellW,
     cellH,
     geneFont,

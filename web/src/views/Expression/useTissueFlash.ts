@@ -5,16 +5,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { RefObject } from "react"
 import { useMediaQuery } from "@mui/material"
-import { LEFT_COL_W } from "@/components/heatmap/constants"
 import { TISSUE_FLASH_MS, TISSUE_FLASH_MS_REDUCED } from "./constants"
 
 interface Options {
   containerRef: RefObject<HTMLDivElement | null>
   tissueCols: string[]
   cellW: number
+  leftColW: number
 }
 
-export function useTissueFlash({ containerRef, tissueCols, cellW }: Options) {
+export function useTissueFlash({ containerRef, tissueCols, cellW, leftColW }: Options) {
   const [flashCols, setFlashCols] = useState<Set<number>>(new Set())
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
@@ -41,7 +41,7 @@ export function useTissueFlash({ containerRef, tissueCols, cellW }: Options) {
         const minCol = Math.min(...cols)
         const maxCol = Math.max(...cols)
         const midX = ((minCol + maxCol + 1) / 2) * cellW
-        const target = midX - (c.clientWidth - LEFT_COL_W) / 2
+        const target = midX - (c.clientWidth - leftColW) / 2
         const max = c.scrollWidth - c.clientWidth
         c.scrollTo({
           left: Math.max(0, Math.min(max, target)),
@@ -55,7 +55,7 @@ export function useTissueFlash({ containerRef, tissueCols, cellW }: Options) {
         reduceMotion ? TISSUE_FLASH_MS_REDUCED : TISSUE_FLASH_MS,
       )
     },
-    [containerRef, tissueCols, cellW, reduceMotion],
+    [containerRef, tissueCols, cellW, leftColW, reduceMotion],
   )
 
   useEffect(() => () => void (flashTimer.current && clearTimeout(flashTimer.current)), [])

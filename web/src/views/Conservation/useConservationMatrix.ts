@@ -44,6 +44,7 @@ interface Options {
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
   showSpeciesTree: boolean
+  showGeneTree: boolean
   hasLegend: boolean
 }
 
@@ -60,6 +61,7 @@ export function useConservationMatrix({
   onSelect,
   geneById,
   showSpeciesTree,
+  showGeneTree,
   hasLegend,
 }: Options) {
   const theme = useTheme()
@@ -78,6 +80,7 @@ export function useConservationMatrix({
   const nSpecies = useMemo(() => speciesNodes.filter((n) => n.species).length, [speciesNodes])
 
   const {
+    leftColW,
     cellW,
     cellH,
     geneFont,
@@ -85,7 +88,7 @@ export function useConservationMatrix({
     colFont: speciesFont,
     legendReserve,
     showLegend,
-  } = useHeatmapMetrics(containerW, nSpecies, hasLegend)
+  } = useHeatmapMetrics(containerW, nSpecies, hasLegend, showGeneTree)
 
   const { geneTree, geneRows, rowByGene } = useGeneRows(clusterNodes, cellH)
 
@@ -108,6 +111,7 @@ export function useConservationMatrix({
     cellW,
     cellH,
     containerW,
+    leftColW,
     legendReserve,
     familyFilter,
     selectedGeneId,
@@ -208,6 +212,7 @@ export function useConservationMatrix({
     speciesCols,
     speciesFont,
     containerW,
+    leftColW,
     cellW,
     cellH,
     geneFont,
