@@ -75,6 +75,12 @@ export const EMPTY_MODEL: ChainModel = {
 
 const uniprotName = (description: string | null) => /Name=([^;]+)/.exec(description ?? "")?.[1]
 
+const displayDescription = (description: string | null, crosses: boolean) => {
+  let text = (description ?? "").replace(/;?\s*Name=[^;]*/, "").trim()
+  if (crosses) text = text.replace(/^Helical(;\s*|$)/, "").trim()
+  return text || null
+}
+
 export function buildChainModel(features: ProteinFeature[], length: number): ChainModel {
   const domains = features
     .filter((f) => f.feature_type === "topological_domain")
@@ -108,7 +114,7 @@ export function buildChainModel(features: ProteinFeature[], length: number): Cha
       name: crosses ? `Transmembrane helix ${label}` : `Intramembrane segment ${label}`,
       start: segment.start,
       end: segment.end,
-      description: segment.description,
+      description: displayDescription(segment.description, crosses),
       entrySide: entry,
       exitSide: exit,
       unresolved,
