@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { Paper, Typography, useTheme } from "@mui/material"
@@ -71,7 +71,7 @@ const FamilyTree = memo(function FamilyTree({
 
   const handleExpandedChange = useCallback(
     (items: string[]) => {
-      setExpandedItems(items)
+      startTransition(() => setExpandedItems(items))
       if (selectedFamily && !items.includes(selectedFamily)) setSelectedGeneId(null)
     },
     [selectedFamily, setSelectedGeneId],
@@ -79,7 +79,9 @@ const FamilyTree = memo(function FamilyTree({
 
   useEffect(() => {
     if (!familyFilter) return
-    setExpandedItems((prev) => (prev.includes(familyFilter) ? prev : [...prev, familyFilter]))
+    startTransition(() =>
+      setExpandedItems((prev) => (prev.includes(familyFilter) ? prev : [...prev, familyFilter])),
+    )
     const el = familyRefs.current.get(familyFilter)
     if (!el) return
     const contentEl = el.closest<HTMLElement>(".MuiTreeItem-content") ?? el

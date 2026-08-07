@@ -29,16 +29,15 @@ export interface Wall {
   groups: WallGroup[]
 }
 
-const EMPTY: Wall = { groups: [] }
+export const EMPTY_WALL: Wall = { groups: [] }
 
 export function buildWall(
   topology: GeneTopology[] | undefined,
   structures: StructureRecord[] | undefined,
   geneById: Map<string, Gene>,
-  familyFilter: string | null,
   mode: ThemeMode,
 ): Wall {
-  if (!topology || !structures) return EMPTY
+  if (!topology || !structures) return EMPTY_WALL
 
   const recordById = new Map(structures.map((s) => [s.gene_id, s]))
   const genes: WallGene[] = []
@@ -46,7 +45,6 @@ export function buildWall(
     const record = recordById.get(entry.gene_id)
     const gene = geneById.get(entry.gene_id)
     if (!record || !gene) continue
-    if (familyFilter && gene.family !== familyFilter) continue
     genes.push({
       geneId: entry.gene_id,
       symbol: gene.symbol,

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { MouseEvent } from "react"
 import { Stack, Typography, useTheme } from "@mui/material"
 import HoverTooltip from "@/components/HoverTooltip"
@@ -13,6 +13,8 @@ import type { Wall, WallGene } from "./topologyWall"
 
 interface Props {
   wall: Wall
+  familyFilter: string | null
+  hidden: boolean
   onSelectGene: (geneId: string) => void
 }
 
@@ -27,9 +29,13 @@ function geneIdAt(target: EventTarget): string | null {
   return target.closest("[data-gene-id]")?.getAttribute("data-gene-id") ?? null
 }
 
-export default function TopologyWall({ wall, onSelectGene }: Props) {
+export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene }: Props) {
   const { palette, custom } = useTheme()
   const [hovered, setHovered] = useState<Hovered | null>(null)
+
+  useEffect(() => {
+    if (hidden) setHovered(null)
+  }, [hidden])
 
   const ink = useMemo<WallInk>(() => {
     const c = doomColors[palette.mode]
@@ -70,13 +76,31 @@ export default function TopologyWall({ wall, onSelectGene }: Props) {
 
   return (
     <>
-      <Stack spacing={3} onMouseMove={handleMove} onMouseLeave={handleLeave} onClick={handleClick}>
+      {familyFilter && (
+        <style>
+          {`[data-topology-wall] [data-family]:not([data-family="${CSS.escape(familyFilter)}"]) { display: none }`}
+        </style>
+      )}
+      <Stack
+        spacing={3}
+        useFlexGap
+        data-topology-wall=""
+        sx={{ display: hidden ? "none" : undefined }}
+        onMouseMove={handleMove}
+        onMouseLeave={handleLeave}
+        onClick={handleClick}
+      >
         {wall.groups.map((group) => (
-          <TopologyWallGroup key={group.nTransmembrane} group={group} ink={ink} />
+          <TopologyWallGroup
+            key={group.nTransmembrane}
+            group={group}
+            ink={ink}
+            familyFilter={familyFilter}
+          />
         ))}
       </Stack>
 
-      {hovered && (
+      {!hidden && hovered && (
         <HoverTooltip x={hovered.x} y={hovered.y}>
           <Typography
             variant="caption"

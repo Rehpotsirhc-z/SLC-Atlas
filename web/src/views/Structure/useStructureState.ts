@@ -55,9 +55,11 @@ export function useStructureState() {
     [structures],
   )
 
+  // The wall is built unfiltered so its groups stay referentially stable while the
+  // family filter changes, which is what lets the glyph grid skip re-rendering
   const wall = useMemo(
-    () => buildWall(topology, structures, geneById, familyFilter, palette.mode),
-    [topology, structures, geneById, familyFilter, palette.mode],
+    () => buildWall(topology, structures, geneById, palette.mode),
+    [topology, structures, geneById, palette.mode],
   )
 
   const selectGene = useCallback(

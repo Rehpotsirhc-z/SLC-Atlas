@@ -3,20 +3,62 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo } from "react"
-import { Box, ButtonBase, Typography } from "@mui/material"
+import { Box, Typography } from "@mui/material"
+import { styled } from "@mui/material/styles"
 import { WALL } from "./constants"
 import TopologyGlyph, { type WallInk } from "./TopologyGlyph"
-import type { WallGroup } from "./topologyWall"
+import type { WallGene, WallGroup } from "./topologyWall"
 
 interface Props {
   group: WallGroup
   ink: WallInk
+  familyFilter: string | null
 }
 
-const TopologyWallGroup = memo(function TopologyWallGroup({ group, ink }: Props) {
-  const { nTransmembrane, genes } = group
+const GlyphButton = styled("button")(({ theme }) => ({
+  all: "unset",
+  boxSizing: "border-box",
+  cursor: "pointer",
+  padding: `${WALL.cellPadTop}px ${WALL.cellPadX}px ${WALL.cellPadBottom}px`,
+  borderRadius: theme.shape.borderRadius,
+  display: "block",
+  flexShrink: 0,
+  "&:hover": { backgroundColor: theme.palette.action.hover },
+  "&:focus-visible": { outline: `2px solid ${theme.palette.primary.main}` },
+}))
+
+const WallGenes = memo(function WallGenes({ genes, ink }: { genes: WallGene[]; ink: WallInk }) {
   return (
-    <Box component="section">
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: "4px 8px", pt: 1.5 }}>
+      {genes.map((gene) => (
+        <GlyphButton
+          key={gene.geneId}
+          type="button"
+          data-gene-id={gene.geneId}
+          data-family={gene.family}
+        >
+          <TopologyGlyph gene={gene} ink={ink} />
+        </GlyphButton>
+      ))}
+    </Box>
+  )
+})
+
+const TopologyWallGroup = memo(function TopologyWallGroup({ group, ink, familyFilter }: Props) {
+  const { nTransmembrane, genes } = group
+  const count = familyFilter
+    ? genes.reduce((n, g) => (g.family === familyFilter ? n + 1 : n), 0)
+    : genes.length
+  return (
+    <Box
+      component="section"
+      style={{
+        display: count === 0 ? "none" : undefined,
+        // Offscreen groups skip layout and paint, which is most of a filter toggle's cost
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 300px",
+      }}
+    >
       <Box
         sx={{
           display: "grid",
@@ -41,30 +83,11 @@ const TopologyWallGroup = memo(function TopologyWallGroup({ group, ink }: Props)
           transmembrane {nTransmembrane === 1 ? "helix" : "helices"}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {genes.length === 1 ? "1 gene" : `${genes.length} genes`}
+          {count === 1 ? "1 gene" : `${count} genes`}
         </Typography>
       </Box>
 
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: "4px 8px", pt: 1.5 }}>
-        {genes.map((gene) => (
-          <ButtonBase
-            key={gene.geneId}
-            data-gene-id={gene.geneId}
-            focusRipple
-            sx={{
-              padding: `${WALL.cellPadTop}px ${WALL.cellPadX}px ${WALL.cellPadBottom}px`,
-              borderRadius: 1,
-              display: "block",
-              // The glyph is drawn to a residue scale, so it must never be squeezed to fit a row
-              flexShrink: 0,
-              "&:hover": { bgcolor: "action.hover" },
-              "&.Mui-focusVisible": { outline: 2, outlineColor: "primary.main" },
-            }}
-          >
-            <TopologyGlyph gene={gene} ink={ink} />
-          </ButtonBase>
-        ))}
-      </Box>
+      <WallGenes genes={genes} ink={ink} />
     </Box>
   )
 })

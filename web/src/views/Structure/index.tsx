@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react"
 import {
   Alert,
   Box,
@@ -33,7 +33,11 @@ import StructureToolbar from "./StructureToolbar"
 import TopologyWall from "./TopologyWall"
 import LinkedPanes from "./LinkedPanes"
 import { useStructureState } from "./useStructureState"
+import { EMPTY_WALL } from "./topologyWall"
+import type { Gene } from "@/types/gene"
 import type { ModelExporter } from "./molstar/types"
+
+const NO_GENES: Gene[] = []
 
 export default function Structure() {
   const theme = useTheme()
@@ -64,6 +68,10 @@ export default function Structure() {
     selectPdbId,
     counterText,
   } = useStructureState()
+
+  // The rail and the wall are the two expensive mounts, so both fill in a deferred render
+  const deferredGenes = useDeferredValue(genes, NO_GENES)
+  const deferredWall = useDeferredValue(wall, EMPTY_WALL)
 
   const { outerRef, railWidth, expandRail, useDrawer, contentWidth, onDragStart } = useFamilyRail({
     minContentWidth: MIN_CONTENT_WIDTH,
@@ -131,7 +139,7 @@ export default function Structure() {
 
       <Box ref={outerRef} sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         <FamilyRail
-          genes={genes}
+          genes={deferredGenes}
           familyFilter={familyFilter}
           onSelectFamily={setFamilyFilter}
           railWidth={railWidth}
@@ -169,7 +177,7 @@ export default function Structure() {
               errorMessage="Failed to load structure data."
             >
               <Box sx={{ height: "100%", overflowY: "auto", p: 2 }}>
-                {selected ? (
+                {selected && (
                   <Stack spacing={3}>
                     <LinkedPanes
                       identity={<IdentityCard structure={selected} gene={selectedGene} />}
@@ -199,9 +207,14 @@ export default function Structure() {
                       </Box>
                     )}
                   </Stack>
-                ) : (
-                  <TopologyWall wall={wall} onSelectGene={selectGene} />
                 )}
+                {/* The wall stays mounted behind the detail so deselecting never rebuilds it */}
+                <TopologyWall
+                  wall={deferredWall}
+                  familyFilter={familyFilter}
+                  hidden={selected != null}
+                  onSelectGene={selectGene}
+                />
               </Box>
             </ViewStatus>
           </Box>

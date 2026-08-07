@@ -7,6 +7,7 @@ import { memo, useCallback } from "react"
 import { Box, Typography } from "@mui/material"
 import { TreeItem } from "@mui/x-tree-view/TreeItem"
 import type { Gene } from "@/types/gene"
+import GeneTreeItem from "./GeneTreeItem"
 
 const familyFlash = keyframes`
   0%   { background-color: rgba(81, 175, 239, 0.45); }
@@ -62,6 +63,7 @@ const FamilyTreeItem = memo(function FamilyTreeItem({
         if (isActive) onSelectFamily(null)
         else if (!isExpanded) onSelectFamily(family)
       }}
+      slotProps={{ groupTransition: { unmountOnExit: false, mountOnEnter: true } }}
       sx={{
         "& > .MuiTreeItem-content, & > .MuiTreeItem-content:hover, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected.Mui-focused":
           {
@@ -75,35 +77,17 @@ const FamilyTreeItem = memo(function FamilyTreeItem({
         }),
       }}
     >
-      {members.map((gene) => {
-        const isGeneSelected = gene.id === selectedGeneId
-        return (
-          <TreeItem
-            key={gene.id}
-            itemId={gene.id}
-            label={
-              <Typography variant="body2" noWrap fontWeight={isGeneSelected ? 700 : 400}>
-                {gene.symbol}
-              </Typography>
-            }
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelectGene(gene.id)
-              if (!isActive) onSelectFamily(family)
-              onClose?.()
-            }}
-            sx={{
-              "& > .MuiTreeItem-content, & > .MuiTreeItem-content.Mui-focused, & > .MuiTreeItem-content.Mui-selected, & > .MuiTreeItem-content.Mui-selected:hover":
-                {
-                  bgcolor: isGeneSelected ? `${color}50` : `${color}18`,
-                },
-              "& > .MuiTreeItem-content:hover": {
-                bgcolor: isGeneSelected ? `${color}60` : `${color}30`,
-              },
-            }}
-          />
-        )
-      })}
+      {members.map((gene) => (
+        <GeneTreeItem
+          key={gene.id}
+          gene={gene}
+          color={color}
+          isSelected={gene.id === selectedGeneId}
+          onSelectFamily={onSelectFamily}
+          onSelectGene={onSelectGene}
+          onClose={onClose}
+        />
+      ))}
     </TreeItem>
   )
 })
