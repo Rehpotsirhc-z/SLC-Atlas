@@ -20,6 +20,10 @@ These files are modified copies of the originals:
   element `transform`s are preserved unchanged.
 - Element fills/strokes are re-themed to the application palette at runtime; the
   source files ship the interactive parts as `fill:none;stroke:none`.
+- The per-organ `<title>` elements are kept in these files (their ids are how
+  the app maps organs to tissues) but are removed from the DOM at display time,
+  so organ names appear only in the app's own tooltip, not the browser's native
+  one.
 - The embedded attribution badge (`<a
   xlink:href="https://www.ebi.ac.uk/gxa/licence.html">`) was removed from each
   SVG. Per CC BY 4.0 §3(a)(2), the required credit and license link are instead

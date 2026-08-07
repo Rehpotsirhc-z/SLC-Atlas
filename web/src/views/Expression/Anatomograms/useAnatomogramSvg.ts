@@ -89,6 +89,9 @@ export function useAnatomogramSvg({
       })
     }
 
+    // With the shapes found, the titles would only add native browser tooltips
+    wrap.querySelectorAll("title").forEach((t) => t.remove())
+
     // Tissues sharing one shape become a single hotspot
     const groupByShape = new Map<string, { tissue: string; hit: SVGElement }[]>()
     for (const entry of rawEntries) {
