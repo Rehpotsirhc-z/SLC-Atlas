@@ -6,7 +6,7 @@ import { createTheme, type Theme, type ThemeOptions } from "@mui/material/styles
 import type {} from "@mui/x-tree-view/themeAugmentation"
 import { componentOverrides } from "./components"
 import { monoFontFamily, monoFontSize, sansFontFamily } from "./fonts"
-import { doomColors, type ThemeMode } from "./palette"
+import { doomColors, secondaryTextFor, type ThemeMode } from "./palette"
 
 export { doomColors, type ThemeMode } from "./palette"
 export { monoFontFamily, monoFontSize, sansFontFamily } from "./fonts"
@@ -35,7 +35,7 @@ function buildTheme(mode: ThemeMode): Theme {
       success: { main: c.green },
       info: { main: c.teal },
       background: { default: c.bgAlt, paper: c.bg },
-      text: { primary: c.fg, secondary: mode === "dark" ? c.base6 : c.base5 },
+      text: { primary: c.fg, secondary: secondaryTextFor(mode) },
       divider: mode === "dark" ? c.base4 : c.base3,
     },
     typography: {

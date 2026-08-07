@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import { darken } from "@mui/material/styles"
+
 export type ThemeMode = "light" | "dark"
 
 // Doom One and its official light sibling Doom One Light
@@ -53,3 +55,6 @@ export type DoomColors = (typeof doomColors)[ThemeMode]
 
 export const dividerFor = (mode: ThemeMode) =>
   mode === "dark" ? doomColors.dark.base4 : doomColors.light.base3
+
+export const secondaryTextFor = (mode: ThemeMode) =>
+  mode === "dark" ? doomColors.dark.base6 : darken(doomColors.light.base4, 0.15)

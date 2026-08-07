@@ -4,11 +4,12 @@
 
 import type { ThemeOptions } from "@mui/material/styles"
 import { capBoxSx } from "./capBox"
-import { dividerFor, type DoomColors, type ThemeMode } from "./palette"
+import { dividerFor, secondaryTextFor, type DoomColors, type ThemeMode } from "./palette"
 import { monoFontFamily } from "./fonts"
 
 export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions["components"] {
   const divider = dividerFor(mode)
+  const dimText = secondaryTextFor(mode)
   return {
     MuiTab: {
       styleOverrides: {
@@ -33,7 +34,7 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
           fontSize: "0.8rem",
           letterSpacing: "0.06em",
           padding: "6px",
-          color: mode === "dark" ? c.base6 : c.base5,
+          color: dimText,
           borderColor: divider,
           "&.Mui-selected": {
             color: c.magenta,
@@ -88,7 +89,7 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
           paddingTop: "7px",
           paddingBottom: "7px",
         },
-        icon: { color: mode === "dark" ? c.base6 : c.base5 },
+        icon: { color: dimText },
       },
     },
     MuiMenuItem: {
@@ -99,7 +100,7 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
           fontWeight: 500,
           letterSpacing: "0.02em",
           lineHeight: 1.4,
-          color: mode === "dark" ? c.base7 : c.base5,
+          color: mode === "dark" ? c.base7 : dimText,
           minHeight: "unset",
           paddingTop: "11px",
           paddingBottom: "9px",
@@ -128,7 +129,7 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
           letterSpacing: "0.09em",
           textTransform: "uppercase",
           lineHeight: 1.4,
-          color: mode === "dark" ? c.base6 : c.base5,
+          color: dimText,
           backgroundColor: c.bgAlt,
           padding: "10px 10px 10px",
           borderBottom: `1px solid ${divider}`,
