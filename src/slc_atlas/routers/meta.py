@@ -9,7 +9,11 @@ from ..deps import get_source
 router = APIRouter()
 
 
-@router.get("/capabilities.json", response_model=dict[str, bool])
+@router.get(
+    "/capabilities.json",
+    response_model=dict[str, bool],
+    summary="Which optional views this dataset was built with",
+)
 def get_capabilities(source: DataSource = Depends(get_source)):
-    """Which optional views this dataset was built with, so the nav can hide the rest."""
+    # The nav bar hides the tab of any view this reports as false
     return source.capabilities()

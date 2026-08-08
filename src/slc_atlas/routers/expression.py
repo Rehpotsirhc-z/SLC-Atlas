@@ -10,7 +10,11 @@ from ..models.expression import ExpressionCell, TissueScope
 router = APIRouter()
 
 
-@router.get("/expression/{tissue_scope}.json", response_model=list[ExpressionCell])
+@router.get(
+    "/expression/{tissue_scope}.json",
+    response_model=list[ExpressionCell],
+    summary="Mean expression for every gene and tissue",
+)
 def get_expression(
     tissue_scope: TissueScope,
     source: DataSource = Depends(get_source),

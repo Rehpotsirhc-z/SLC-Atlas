@@ -12,7 +12,11 @@ from ..responses import newick_response
 router = APIRouter()
 
 
-@router.get("/clustering/{method}.json", response_model=list[ClusterNode])
+@router.get(
+    "/clustering/{method}.json",
+    response_model=list[ClusterNode],
+    summary="One similarity tree, as a flat table of nodes",
+)
 def get_clustering(
     method: ClusterMethod,
     source: DataSource = Depends(get_source),
@@ -20,7 +24,11 @@ def get_clustering(
     return source.get_clustering(method=method).to_dicts()
 
 
-@router.get("/clustering/{method}.nwk", response_class=PlainTextResponse)
+@router.get(
+    "/clustering/{method}.nwk",
+    response_class=PlainTextResponse,
+    summary="The same similarity tree, as Newick",
+)
 def get_clustering_newick(
     method: ClusterMethod,
     source: DataSource = Depends(get_source),

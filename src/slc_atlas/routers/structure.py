@@ -27,23 +27,35 @@ def require(df: pl.DataFrame | None) -> pl.DataFrame:
     return df
 
 
-@router.get("/structure.json", response_model=list[Structure])
+@router.get(
+    "/structure.json",
+    response_model=list[Structure],
+    summary="One row per gene, describing its predicted model",
+)
 def list_structures(source: DataSource = Depends(get_source)):
     return require(source.get_structure()).to_dicts()
 
 
-@router.get("/structure/sources.json", response_model=list[DataSourceRecord])
+@router.get(
+    "/structure/sources.json",
+    response_model=list[DataSourceRecord],
+    summary="Where the structure data came from, and under what licence",
+)
 def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_data_sources()).to_dicts()
 
 
-@router.get("/structure/topology.json", response_model=list[GeneTopology])
+@router.get(
+    "/structure/topology.json",
+    response_model=list[GeneTopology],
+    summary="Membrane topology for every gene at once",
+)
 def list_topology(source: DataSource = Depends(get_source)):
     return require(source.get_topology()).to_dicts()
 
 
 # :path so mirrored experimental coordinates resolve under models/pdb/
-@router.get("/structure/models/{filename:path}")
+@router.get("/structure/models/{filename:path}", summary="One mirrored coordinate file")
 def get_model(filename: str, source: DataSource = Depends(get_source)):
     path = source.model_path(filename)
     if path is None:
@@ -55,7 +67,11 @@ def get_model(filename: str, source: DataSource = Depends(get_source)):
     )
 
 
-@router.get("/structure/{gene_id}.json", response_model=StructureDetail)
+@router.get(
+    "/structure/{gene_id}.json",
+    response_model=StructureDetail,
+    summary="One gene's structure record, with its per-residue confidence",
+)
 def get_structure(gene_id: str, source: DataSource = Depends(get_source)):
     df = require(source.get_structure(gene_id))
     if df.is_empty():
@@ -63,11 +79,19 @@ def get_structure(gene_id: str, source: DataSource = Depends(get_source)):
     return df.to_dicts()[0]
 
 
-@router.get("/structure/{gene_id}/features.json", response_model=list[ProteinFeature])
+@router.get(
+    "/structure/{gene_id}/features.json",
+    response_model=list[ProteinFeature],
+    summary="One gene's topology and binding features",
+)
 def get_features(gene_id: str, source: DataSource = Depends(get_source)):
     return require(source.get_protein_features(gene_id)).to_dicts()
 
 
-@router.get("/structure/{gene_id}/experimental.json", response_model=list[ExperimentalStructure])
+@router.get(
+    "/structure/{gene_id}/experimental.json",
+    response_model=list[ExperimentalStructure],
+    summary="The experimental structures covering one gene",
+)
 def get_experimental(gene_id: str, source: DataSource = Depends(get_source)):
     return require(source.get_experimental_structures(gene_id)).to_dicts()

@@ -12,16 +12,28 @@ from ..responses import newick_response
 router = APIRouter()
 
 
-@router.get("/conservation.json", response_model=list[ConservationCell])
+@router.get(
+    "/conservation.json",
+    response_model=list[ConservationCell],
+    summary="Ortholog identity for every gene and species",
+)
 def get_conservation(source: DataSource = Depends(get_source)):
     return source.get_conservation().to_dicts()
 
 
-@router.get("/conservation/species-tree.json", response_model=list[SpeciesNode])
+@router.get(
+    "/conservation/species-tree.json",
+    response_model=list[SpeciesNode],
+    summary="The species tree, as a flat table of nodes",
+)
 def get_species_tree(source: DataSource = Depends(get_source)):
     return source.get_species_tree().to_dicts()
 
 
-@router.get("/conservation/species-tree.nwk", response_class=PlainTextResponse)
+@router.get(
+    "/conservation/species-tree.nwk",
+    response_class=PlainTextResponse,
+    summary="The species tree, as Newick",
+)
 def get_species_tree_newick(source: DataSource = Depends(get_source)):
     return newick_response(source.get_species_tree_newick(), "species_tree")
