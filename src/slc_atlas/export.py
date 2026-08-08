@@ -2,16 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Write the whole app to disk as static files, ready for any web server.
+"""Write the whole app to disk as static files that any web server can serve.
 
-Every API response is fetched from the app in-process and saved at the same URL the
-frontend already asks for, so a plain file server behaves like the running app. Each of the
-frontend's routes gets a page of its own for the same reason, so a host that cannot rewrite
-an unmatched path still answers a deep link.
+Every API response is asked for from the app itself and saved under the same URL the
+frontend already requests, so that an ordinary file server behaves the same way the
+running app does. Every route of the frontend gets a page of its own for the same reason,
+so that a host which cannot redirect an unrecognised path still answers a link into the
+middle of the app.
 
-Re-exporting over an existing directory only touches what actually differs, and deletes
-what the dataset no longer produces. Files that did not change keep their timestamps, so
-rsync skips them and browsers keep their cached copies.
+Exporting again over an existing directory writes only the files that have really changed
+and deletes the ones the dataset no longer produces. A file that has not changed keeps its
+timestamp, so rsync leaves it alone and browsers go on using the copy they have.
 """
 
 import asyncio
@@ -29,13 +30,13 @@ from .models.clustering import ClusterMethod
 from .models.expression import TissueScope
 from .shell import render
 
-# Coordinate files are copied wholesale rather than fetched one URL at a time
+# The coordinate files are copied as a directory rather than fetched one URL at a time
 NOT_EXPORTED = {"/api/structure/models/{filename}"}
 
 # How many responses to render at once
 CONCURRENCY = 8
 
-# Directories the export owns completely, and may therefore delete from
+# The directories the export owns outright, and so may delete files from
 MANAGED = ("api", "assets")
 
 ROUTES_FILE = "routes.json"
@@ -51,7 +52,7 @@ class ExportStats:
 
 
 def _write(path: Path, data: bytes) -> bool:
-    """Write only when the contents differ, and report whether anything was written."""
+    """Write the file only if its contents would change, and say whether it was written."""
     if path.is_file() and path.read_bytes() == data:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -60,7 +61,8 @@ def _write(path: Path, data: bytes) -> bool:
 
 
 def _copy(src: Path, dst: Path) -> bool:
-    """Copy only when size or timestamp differ, the same test rsync makes by default."""
+    """Copy the file only if its size or its timestamp has changed, which is the same test
+    rsync makes unless it is told otherwise."""
     if dst.is_file():
         a, b = src.stat(), dst.stat()
         if a.st_size == b.st_size and int(a.st_mtime) == int(b.st_mtime):
@@ -71,7 +73,8 @@ def _copy(src: Path, dst: Path) -> bool:
 
 
 def _prune(out_dir: Path, keep: set[Path]) -> int:
-    """Delete files the dataset no longer produces, within the directories we own."""
+    """Delete the files that the dataset no longer produces, looking only inside the
+    directories the export owns."""
     removed = 0
     for name in MANAGED:
         root = out_dir / name
@@ -88,18 +91,21 @@ def _prune(out_dir: Path, keep: set[Path]) -> int:
 
 
 def _routes(source: Path) -> list[str]:
-    """Route paths as directory names, dropping the root, whose page is index.html itself."""
+    """Return each route as the name of the directory its page goes in, leaving out the
+    root route, whose page is index.html itself."""
     return [path.strip("/") for path in json.loads(source.read_text()) if path.strip("/")]
 
 
 def _write_pages(out_dir: Path, routes: list[str], shell: bytes) -> int:
-    """Give every route a file of its own, so a deep link needs no rewrite rule behind it."""
+    """Write a page for every route, so that a link into the middle of the app works
+    without the server having to be told to redirect anything."""
     changed = sum(_write(out_dir / route / "index.html", shell) for route in routes)
     return changed + _write(out_dir / "404.html", shell)
 
 
 def _prune_pages(out_dir: Path, previous: list[str], routes: list[str]) -> int:
-    """Drop the pages of routes an earlier export wrote and this one no longer has."""
+    """Delete the pages of the routes that an earlier export wrote and this one does not
+    have any more."""
     removed = 0
     for route in set(previous) - set(routes):
         page = out_dir / route / "index.html"
@@ -148,13 +154,14 @@ def _template_regex(template: str) -> re.Pattern[str]:
 
 
 def _uncovered(urls: list[str], capabilities: dict[str, bool]) -> set[str]:
-    """Return the API routes the plan never reaches, so a new endpoint cannot be missed."""
+    """Return the API routes that the export plan never asks for, so that an endpoint added
+    later cannot be left out of the export without anyone noticing."""
     templates = {
         path: _template_regex(path)
         for path, methods in app.openapi()["paths"].items()
         if "get" in methods and path.startswith("/api")
     }
-    # A dataset built without an optional view has nothing to export for it
+    # A dataset built without one of the optional views has nothing to export for it
     if not capabilities.get("structure"):
         templates = {p: r for p, r in templates.items() if not p.startswith("/api/structure")}
     hit = {path for path, regex in templates.items() for u in urls if regex.match(u)}
@@ -178,7 +185,7 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
         async def write(url: str) -> None:
             async with semaphore:
                 response = await _get(client, url)
-            # Genes with no structure record 404 in the running app too
+            # A gene with no structure record answers 404 in the running app as well
             if response.status_code == 404:
                 stats.missing.append(url)
                 return
@@ -193,9 +200,9 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
         return stats
 
 
-def _copy_models(data_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
-    """Copy any mirrored 3D coordinates into the site."""
-    models = data_dir / "structure" / "models"
+def _copy_models(app_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
+    """Copy whatever 3D coordinate files the dataset holds into the exported site."""
+    models = app_dir / "structure" / "models"
     if not models.is_dir():
         return 0, 0, 0
     files = size = changed = 0
@@ -224,19 +231,20 @@ def _copy_frontend(web_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, 
 
 
 def export(out_dir: Path, web_dir: Path) -> ExportStats:
-    """Render the shell, copy the built frontend, and dump every endpoint under api/."""
+    """Fill in the page shell, copy the built frontend, and write every API endpoint out
+    under api/."""
     out_dir.mkdir(parents=True, exist_ok=True)
 
     template = web_dir / "index.html.template"
     source = template if template.is_file() else web_dir / "index.html"
     if not source.is_file():
-        raise FileNotFoundError(f"no built frontend at {web_dir}")
+        raise FileNotFoundError(f"no built frontend at {web_dir}; run `npm --prefix web run build`")
 
     manifest = web_dir / ROUTES_FILE
     if not manifest.is_file():
-        raise FileNotFoundError(f"no {ROUTES_FILE} at {web_dir}, run `npm --prefix web run build`")
+        raise FileNotFoundError(f"no {ROUTES_FILE} at {web_dir}; run `npm --prefix web run build`")
     routes = _routes(manifest)
-    # Only pages a previous export recorded are ours to remove
+    # A page may only be removed if a previous export is the one that wrote it
     served = out_dir / ROUTES_FILE
     previous = _routes(served) if served.is_file() else []
 
@@ -249,9 +257,9 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     changed += _write(served, manifest.read_bytes())
 
     stats = asyncio.run(_dump(out_dir, keep))
-    model_files, model_size, model_changes = _copy_models(settings.data_dir, out_dir, keep)
+    model_files, model_size, model_changes = _copy_models(settings.app_dir, out_dir, keep)
 
-    # The route pages and the root files sit outside MANAGED, so _prune leaves them alone
+    # The route pages and the files at the root are not in MANAGED, so _prune skips them
     pages = len(routes) + 1
     stats.files += web_files + model_files + pages + 3
     stats.bytes += web_size + model_size + len(shell) * (pages + 1) + source.stat().st_size
@@ -259,6 +267,15 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     stats.changed += changed + model_changes
     stats.removed = _prune(out_dir, keep) + _prune_pages(out_dir, previous, routes)
     return stats
+
+
+def report(stats: ExportStats, out_dir: Path) -> None:
+    print(f"{stats.files} files, {stats.bytes / 1e6:.1f} MB -> {out_dir}")
+    print(
+        f"{stats.changed} written, {stats.files - stats.changed} unchanged, {stats.removed} removed"
+    )
+    if stats.missing:
+        print(f"{len(stats.missing)} endpoints had no record for their gene and were skipped")
 
 
 def main() -> None:
@@ -269,10 +286,7 @@ def main() -> None:
     parser.add_argument("--web-dir", type=Path, required=True, help="the built frontend")
     args = parser.parse_args()
 
-    stats = export(args.out_dir, args.web_dir)
-    print(f"{stats.files} files, {stats.bytes / 1e6:.1f} MB -> {args.out_dir}")
-    if stats.missing:
-        print(f"{len(stats.missing)} endpoints had no record and were skipped")
+    report(export(args.out_dir, args.web_dir), args.out_dir)
 
 
 if __name__ == "__main__":

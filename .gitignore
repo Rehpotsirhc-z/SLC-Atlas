@@ -17,14 +17,7 @@ dist/
 .env.*
 
 # Data files
-data/*.parquet
-data/*.tsv
-data/*.csv
-data/*.h5
-data/*.hdf5
-data/raw/*
-data/dataset/*
-data/structure/*
+/data/
 
 # Frontend build
 web/dist/

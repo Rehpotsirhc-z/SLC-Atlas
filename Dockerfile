@@ -19,7 +19,6 @@ RUN apt-get update \
 WORKDIR /opt/atlas
 COPY pyproject.toml README.org ./
 COPY src/ ./src/
-COPY scripts/ ./scripts/
 # Installs the command the entrypoint runs
 RUN pip install --no-cache-dir .
 
