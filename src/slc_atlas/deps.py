@@ -10,4 +10,4 @@ from .data.source import DataSource
 
 @lru_cache(maxsize=1)
 def get_source() -> DataSource:
-    return ParquetSource(settings.data_dir)
+    return ParquetSource(settings.app_dir)

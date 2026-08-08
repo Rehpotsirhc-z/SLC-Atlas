@@ -10,8 +10,9 @@ set -eu
 SITE_DIR="${ATLAS_SITE_DIR:-/srv/www}"
 DATA_DIR="${ATLAS_DATA_DIR:-/data}"
 
-if [ ! -d "$DATA_DIR" ]; then
-    echo "No dataset at $DATA_DIR. Mount one with -v /your/data:$DATA_DIR" >&2
+# Only the build outputs under app/ are served, the rest of the dataset is pipeline input
+if [ ! -d "$DATA_DIR/app" ]; then
+    echo "No built dataset at $DATA_DIR/app. Mount one with -v /your/data:$DATA_DIR" >&2
     exit 1
 fi
 

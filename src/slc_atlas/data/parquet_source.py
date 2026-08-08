@@ -12,7 +12,7 @@ FEATURES_FILE = "structure/features.parquet"
 EXPERIMENTAL_FILE = "structure/experimental.parquet"
 SOURCES_FILE = "structure/sources.parquet"
 
-# Megabytes across a family, and only ever read one gene at a time
+# These run to megabytes across a family and are only ever read one gene at a time
 PER_RESIDUE_COLUMNS = ("plddt", "sequence")
 
 # The feature types that sit in the membrane, which is all the topology overview draws
@@ -21,8 +21,8 @@ SEGMENT_LIST = pl.List(pl.Struct({"start": pl.Int64, "end": pl.Int64, "kind": pl
 
 
 class ParquetSource:
-    def __init__(self, data_dir: Path) -> None:
-        self._dir = data_dir
+    def __init__(self, app_dir: Path) -> None:
+        self._dir = app_dir
 
     def _scan(self, filename: str) -> pl.LazyFrame:
         path = self._dir / filename
@@ -31,7 +31,8 @@ class ParquetSource:
         return pl.scan_parquet(path)
 
     def _scan_optional(self, filename: str) -> pl.LazyFrame | None:
-        """None for a view whose build step was skipped, so callers can 404 rather than 500."""
+        """Return None when the file is not there, which happens when the build step for
+        that view was skipped, so that the caller can answer 404 rather than 500."""
         path = self._dir / filename
         return pl.scan_parquet(path) if path.exists() else None
 
@@ -67,7 +68,7 @@ class ParquetSource:
         return self._scan("species_tree.parquet").collect()
 
     def get_species_tree_newick(self) -> str:
-        """Reconstruct Newick from the species-tree adjacency rows."""
+        """Build the Newick form of the species tree back up from its rows."""
         return adjacency_to_newick(
             self.get_species_tree(), ("species_label", "species"), include_root_branch=True
         )
@@ -76,7 +77,7 @@ class ParquetSource:
         return self._scan("clustering.parquet").filter(pl.col("method") == method).collect()
 
     def get_clustering_newick(self, method: str = "aa_sequence") -> str:
-        """Reconstruct Newick from the clustering adjacency rows."""
+        """Build the Newick form of the clustering tree back up from its rows."""
         return adjacency_to_newick(
             self.get_clustering(method=method), ("symbol", "gene_id"), include_root_branch=False
         )
