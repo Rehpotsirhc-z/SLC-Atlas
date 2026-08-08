@@ -20,15 +20,16 @@ def read_shell(web_dir: Path) -> str:
     template = web_dir / "index.html.template"
     source = template if template.is_file() else web_dir / "index.html"
     if not source.is_file():
-        raise FileNotFoundError(f"no built frontend at {web_dir}, run `npm --prefix web run build`")
+        raise FileNotFoundError(f"no built frontend at {web_dir}; run `npm --prefix web run build`")
     return render(source.read_text())
 
 
 class SpaFiles(StaticFiles):
-    """Static files that serve index.html for any path with no file behind it.
+    """Serve the static files, and serve index.html for any path that has no file of its
+    own.
 
-    Views like /structure are client-side routes, so a reload on one must still get the
-    page rather than a 404.
+    A view such as /structure is a route the frontend handles itself, so reloading the page
+    while looking at one has to return the page rather than a 404.
     """
 
     def __init__(self, *, directory: Path, shell: str) -> None:
@@ -48,5 +49,6 @@ class SpaFiles(StaticFiles):
 
 
 def mount_site(app: FastAPI, web_dir: Path) -> None:
-    """Mount the frontend at /, after the API routes so they are matched first."""
+    """Mount the frontend at /, which is done after the API routes so that they are matched
+    first."""
     app.mount("/", SpaFiles(directory=web_dir, shell=read_shell(web_dir)), name="site")
