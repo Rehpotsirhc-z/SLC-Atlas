@@ -29,6 +29,7 @@ from .main import app
 from .models.clustering import ClusterMethod
 from .models.expression import TissueScope
 from .shell import render
+from .site import read_manifest
 
 # The coordinate files are copied as a directory rather than fetched one URL at a time
 NOT_EXPORTED = {"/api/structure/models/{filename}"}
@@ -40,6 +41,8 @@ CONCURRENCY = 8
 MANAGED = ("api", "assets")
 
 ROUTES_FILE = "routes.json"
+
+NOT_COPIED = {"index.html", "index.html.template", "manifest.webmanifest", ROUTES_FILE}
 
 
 @dataclass
@@ -220,7 +223,7 @@ def _copy_models(app_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, in
 def _copy_frontend(web_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
     files = size = changed = 0
     for src in web_dir.rglob("*"):
-        if not src.is_file() or src.name in {"index.html", "index.html.template", ROUTES_FILE}:
+        if not src.is_file() or src.name in NOT_COPIED:
             continue
         dst = out_dir / src.relative_to(web_dir)
         keep.add(dst)
@@ -255,6 +258,16 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     changed += _write(out_dir / "index.html.template", source.read_bytes())
     changed += _write_pages(out_dir, routes, shell)
     changed += _write(served, manifest.read_bytes())
+    rendered = read_manifest(web_dir)
+    rendered_manifest = rendered.encode() if rendered is not None else None
+    webmanifest_out = out_dir / "manifest.webmanifest"
+    stale_manifest = 0
+    if rendered_manifest is not None:
+        changed += _write(webmanifest_out, rendered_manifest)
+    elif webmanifest_out.is_file():
+        # Left by an export from a build that still had one
+        webmanifest_out.unlink()
+        stale_manifest = 1
 
     stats = asyncio.run(_dump(out_dir, keep))
     model_files, model_size, model_changes = _copy_models(settings.app_dir, out_dir, keep)
@@ -264,8 +277,11 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     stats.files += web_files + model_files + pages + 3
     stats.bytes += web_size + model_size + len(shell) * (pages + 1) + source.stat().st_size
     stats.bytes += manifest.stat().st_size
+    if rendered_manifest is not None:
+        stats.files += 1
+        stats.bytes += len(rendered_manifest)
     stats.changed += changed + model_changes
-    stats.removed = _prune(out_dir, keep) + _prune_pages(out_dir, previous, routes)
+    stats.removed = _prune(out_dir, keep) + _prune_pages(out_dir, previous, routes) + stale_manifest
     return stats
 
 

@@ -13,7 +13,7 @@ from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
 
-from .shell import render
+from .shell import render, render_manifest
 
 
 def read_shell(web_dir: Path) -> str:
@@ -24,6 +24,11 @@ def read_shell(web_dir: Path) -> str:
     return render(source.read_text())
 
 
+def read_manifest(web_dir: Path) -> str | None:
+    source = web_dir / "manifest.webmanifest"
+    return render_manifest(source.read_text(encoding="utf-8")) if source.is_file() else None
+
+
 class SpaFiles(StaticFiles):
     """Serve the static files, and serve index.html for any path that has no file of its
     own.
@@ -32,14 +37,17 @@ class SpaFiles(StaticFiles):
     while looking at one has to return the page rather than a 404.
     """
 
-    def __init__(self, *, directory: Path, shell: str) -> None:
+    def __init__(self, *, directory: Path, shell: str, manifest: str | None) -> None:
         super().__init__(directory=directory)
         self.shell = shell
+        self.manifest = manifest
 
     async def get_response(self, path: str, scope: Scope) -> Response:
-        # The copy on disk still holds unfilled __ATLAS_*__ placeholders
+        # The copies on disk still hold the build-time names
         if path in ("", ".", "index.html"):
             return HTMLResponse(self.shell)
+        if path == "manifest.webmanifest" and self.manifest is not None:
+            return Response(self.manifest, media_type="application/manifest+json")
         try:
             return await super().get_response(path, scope)
         except HTTPException as exc:
@@ -51,4 +59,8 @@ class SpaFiles(StaticFiles):
 def mount_site(app: FastAPI, web_dir: Path) -> None:
     """Mount the frontend at /, which is done after the API routes so that they are matched
     first."""
-    app.mount("/", SpaFiles(directory=web_dir, shell=read_shell(web_dir)), name="site")
+    app.mount(
+        "/",
+        SpaFiles(directory=web_dir, shell=read_shell(web_dir), manifest=read_manifest(web_dir)),
+        name="site",
+    )

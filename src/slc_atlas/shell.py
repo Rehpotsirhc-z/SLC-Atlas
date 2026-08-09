@@ -34,3 +34,19 @@ def render(template: str, config: dict[str, str] | None = None) -> str:
         .replace("__ATLAS_APP_DESCRIPTION__", html.escape(config["description"]))
         .replace("__ATLAS_CONFIG_JSON__", island)
     )
+
+
+def render_manifest(template: str) -> str:
+    try:
+        manifest = json.loads(template)
+    except ValueError:
+        return template
+    if not isinstance(manifest, dict):
+        return template
+    manifest["name"] = settings.app_name
+    manifest["short_name"] = settings.app_short_name
+    if settings.app_description:
+        manifest["description"] = settings.app_description
+    else:
+        manifest.pop("description", None)
+    return json.dumps(manifest, separators=(",", ":"))
