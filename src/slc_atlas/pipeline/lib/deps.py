@@ -10,6 +10,8 @@ should print the command that installs them rather than raising an import error.
 
 import importlib
 
+from ...config import DISTRIBUTION_NAME
+
 
 def require(modules: tuple[str, ...]) -> None:
     for module in modules:
@@ -17,5 +19,6 @@ def require(modules: tuple[str, ...]) -> None:
             importlib.import_module(module)
         except ImportError:
             raise SystemExit(
-                f"{module} is missing; install the pipeline extras: pip install 'slc-atlas[pipeline]'"
+                f"{module} is missing; install the pipeline extras: "
+                f"pip install '{DISTRIBUTION_NAME}[pipeline]'"
             ) from None

@@ -14,6 +14,8 @@ _DATA_DIR = _REPO_ROOT / "data" if (_REPO_ROOT / "pyproject.toml").is_file() els
 
 PRODUCT_NAME = "SLC Atlas"
 PRODUCT_VERSION = "0.1.0"
+COMMAND_NAME = "atlas"
+DISTRIBUTION_NAME = __name__.rpartition(".")[0].replace("_", "-")
 
 
 class Settings(BaseSettings):

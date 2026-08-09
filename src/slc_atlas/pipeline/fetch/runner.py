@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from ...config import COMMAND_NAME
 from ..lib.orchestration import Step, preflight, run_stage
 from ..lib.paths import PipelinePaths
 from . import (
@@ -93,8 +94,8 @@ KEPT = "already done (delete its files to fetch it again)"
 
 DONE = (
     "Fetch complete. The dataset is in {source} as plain editable files.\nEdit or replace "
-    "anything there, then run `atlas build` to compile it for the app.\nA re-run of this fetch "
-    "keeps every existing file and only fetches what is missing."
+    "anything there, then run `{command} build` to compile it for the app.\nA re-run of this "
+    "fetch keeps every existing file and only fetches what is missing."
 )
 
 
@@ -301,5 +302,5 @@ def run(options: FetchOptions, paths: PipelinePaths) -> bool:
         if halted:
             return True
 
-    print("\n" + DONE.format(source=paths.source))
+    print("\n" + DONE.format(source=paths.source, command=COMMAND_NAME))
     return False

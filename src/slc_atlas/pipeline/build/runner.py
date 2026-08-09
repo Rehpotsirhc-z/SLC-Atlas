@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from ...config import COMMAND_NAME
 from ..lib.orchestration import Step, preflight, run_stage
 from ..lib.paths import PipelinePaths
 from . import (
@@ -112,8 +113,8 @@ def _summary(steps: Sequence[Step], data_dir: Path) -> None:
 def run(options: BuildOptions, paths: PipelinePaths) -> None:
     if not paths.source.is_dir():
         raise SystemExit(
-            f"no source files at {paths.source}; run `atlas fetch` first or point --data-dir "
-            "at a directory that has them"
+            f"no source files at {paths.source}; run `{COMMAND_NAME} fetch` first or point "
+            "--data-dir at a directory that has them"
         )
     selected = _selected(options)
     mafft = _resolve_mafft(options.mafft) if "clustering" in selected else ""

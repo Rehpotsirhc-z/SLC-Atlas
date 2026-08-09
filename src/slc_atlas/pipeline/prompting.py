@@ -16,10 +16,12 @@ import sys
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
+from ..config import COMMAND_NAME
 from .options import Option
 
 NO_SOURCE = (
-    "pass a source: atlas fetch 752 (HGNC group id) or a gene-list file; see atlas fetch --help"
+    f"pass a source: {COMMAND_NAME} fetch 752 (HGNC group id) or a gene-list file; "
+    f"see {COMMAND_NAME} fetch --help"
 )
 
 INTRO = (
@@ -54,7 +56,7 @@ def command_line(command: str, spec: Sequence[Option], chosen: Mapping[str, Any]
     """Write the run out as a single command that uses only flags. Every option that was
     asked about is included even when its value is the default one, because leaving it out
     would mean the question is asked all over again on the next run."""
-    words = [f"atlas {command}"]
+    words = [f"{COMMAND_NAME} {command}"]
     for option in spec:
         value = chosen[option.name]
         if option.prompt or value != option.default_for(chosen):

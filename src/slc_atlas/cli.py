@@ -14,7 +14,7 @@ import argparse
 import os
 from pathlib import Path
 
-from .config import PRODUCT_NAME, PRODUCT_VERSION, Settings, refresh
+from .config import COMMAND_NAME, PRODUCT_NAME, PRODUCT_VERSION, Settings, refresh
 from .pipeline.cli import add_parsers
 
 
@@ -62,7 +62,7 @@ def _export(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        prog="atlas",
+        prog=COMMAND_NAME,
         description=f"{PRODUCT_NAME} {PRODUCT_VERSION}. Turn a gene family into a browsable "
         "atlas: fetch the data, build it, then serve or export the site.",
     )
