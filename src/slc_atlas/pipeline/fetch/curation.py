@@ -19,6 +19,7 @@ from os.path import commonprefix
 from pathlib import Path
 
 from . import hgnc
+from .. import templates
 
 PROTEIN_CODING = "gene with protein product"
 APPROVED = "Approved"
@@ -182,12 +183,13 @@ def _alias_parts(raw: str) -> list[str]:
     return [alias.strip() for alias in raw.split(",") if alias.strip()]
 
 
-def _family_key(symbols: list[str]) -> str:
+def _family_key(symbols: list[str], fallback: str) -> str:
     """Take the prefix the member symbols have in common and trim it back to its last
-    digit, so that SLC1A1 and SLC1A2 together give SLC1."""
+    digit, so that SLC1A1 and SLC1A2 together give SLC1. Symbols with no common prefix
+    fall back on the group name, so the key is never empty."""
     prefix = commonprefix(symbols)
     trimmed = re.match(r"^(.*\d)", prefix)
-    return trimmed.group(1) if trimmed else prefix
+    return (trimmed.group(1) if trimmed else prefix) or fallback
 
 
 def _symbols_by_group(rows: list[dict]) -> dict[str, list[str]]:
@@ -206,7 +208,7 @@ def _group_families(group_id: str, symbols: dict[str, list[str]]) -> list[_Famil
     families = []
     for detail in details:
         name = detail["groupName"].strip()
-        key = (detail.get("rootSymbol") or "").strip() or _family_key(symbols.get(name, []))
+        key = (detail.get("rootSymbol") or "").strip() or _family_key(symbols.get(name, []), name)
         families.append((name, key, _parse_aliases(detail.get("aliases"))))
     return families
 
@@ -216,7 +218,7 @@ def _families_text(source: str, rows: list[dict]) -> str:
     families = (
         _group_families(source, symbols)
         if source.isdigit()
-        else [(name, _family_key(members), []) for name, members in symbols.items()]
+        else [(name, _family_key(members, name), []) for name, members in symbols.items()]
     )
     lines = []
     for name, key, aliases in families:
@@ -255,5 +257,5 @@ def _overrides_text(rows: list[dict], promote_prefix: str) -> str:
 
 
 def _species_text() -> str:
-    template = resources.files("slc_atlas.pipeline") / "templates" / "species.tsv"
+    template = resources.files(templates) / "species.tsv"
     return template.read_text(encoding="utf-8")
