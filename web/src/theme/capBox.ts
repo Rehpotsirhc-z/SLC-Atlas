@@ -7,3 +7,8 @@ export const capBoxSx = {
   textBoxTrim: "trim-both",
   textBoxEdge: "cap alphabetic",
 } as const
+
+export const capButtonSx = {
+  "&.MuiButton-sizeSmall": { minHeight: "calc(1.75em + 8px)" },
+  "&.MuiButton-sizeMedium": { minHeight: "calc(1.75em + 12px)" },
+} as const

@@ -6,6 +6,7 @@ import { useState } from "react"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import { Box, Button, Divider, Menu, MenuItem, Tooltip, Typography } from "@mui/material"
+import { capBoxSx, capButtonSx } from "@/theme"
 import type { TbState } from "./useToolbarFit"
 
 export interface ExportItem {
@@ -85,10 +86,13 @@ export default function ViewToolbarActions({
                 whiteSpace: "nowrap",
                 flex: wrapped ? 1 : "none",
                 gap: "6px",
+                ...capButtonSx,
                 "& .MuiButton-startIcon": { margin: 0 },
               }}
             >
-              Reset view
+              <Box component="span" sx={capBoxSx}>
+                Reset view
+              </Box>
             </Button>
           )}
           <Button
@@ -99,10 +103,13 @@ export default function ViewToolbarActions({
             sx={{
               flex: wrapped ? 1 : "none",
               gap: "6px",
+              ...capButtonSx,
               "& .MuiButton-startIcon": { margin: 0 },
             }}
           >
-            Export
+            <Box component="span" sx={capBoxSx}>
+              Export
+            </Box>
           </Button>
         </>
       )}

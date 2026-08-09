@@ -9,6 +9,7 @@ import TableRowsIcon from "@mui/icons-material/TableRows"
 import { Box, Button, Divider, IconButton, Paper, Typography, useTheme } from "@mui/material"
 import { keyframes } from "@mui/system"
 import ResizeHandles from "@/components/ResizeHandles"
+import { capBoxSx, capButtonSx } from "@/theme"
 import type { Gene } from "@/types/gene"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
@@ -191,8 +192,11 @@ export default function FloatingGenePanel({
             variant="outlined"
             startIcon={<TableRowsIcon />}
             onClick={onOpenInGenes}
+            sx={capButtonSx}
           >
-            Open in Genes view
+            <Box component="span" sx={capBoxSx}>
+              Open in Genes view
+            </Box>
           </Button>
           <Box sx={{ display: "flex", gap: 0.5 }}>
             {geneId && (
@@ -204,9 +208,11 @@ export default function FloatingGenePanel({
                 href={ensemblUrl(geneId)}
                 target="_blank"
                 rel="noopener"
-                sx={{ flex: 1 }}
+                sx={{ flex: 1, ...capButtonSx }}
               >
-                Ensembl
+                <Box component="span" sx={capBoxSx}>
+                  Ensembl
+                </Box>
               </Button>
             )}
             {ucscGene && (
@@ -218,9 +224,11 @@ export default function FloatingGenePanel({
                 href={ucscUrl(ucscGene)}
                 target="_blank"
                 rel="noopener"
-                sx={{ flex: 1 }}
+                sx={{ flex: 1, ...capButtonSx }}
               >
-                UCSC
+                <Box component="span" sx={capBoxSx}>
+                  UCSC
+                </Box>
               </Button>
             )}
           </Box>

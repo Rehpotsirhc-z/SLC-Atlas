@@ -11,7 +11,7 @@ import { doomColors, secondaryTextFor, type ThemeMode } from "./palette"
 export { doomColors, type ThemeMode } from "./palette"
 export { monoFontFamily, monoFontSize, sansFontFamily } from "./fonts"
 export { floatSurfaceBg, floatSurfaceBgHover, tooltipSurfaceSx } from "./surfaces"
-export { capBoxSx } from "./capBox"
+export { capBoxSx, capButtonSx } from "./capBox"
 
 declare module "@mui/material/styles" {
   interface Theme {

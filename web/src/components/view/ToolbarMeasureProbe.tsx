@@ -6,6 +6,7 @@ import type { ReactNode } from "react"
 import DownloadIcon from "@mui/icons-material/Download"
 import RestartAltIcon from "@mui/icons-material/RestartAlt"
 import { Box, Button, Typography } from "@mui/material"
+import { capBoxSx, capButtonSx } from "@/theme"
 import type { ToolbarProbeRefs } from "./useToolbarFit"
 
 interface Props {
@@ -36,11 +37,15 @@ export default function ToolbarMeasureProbe({ refs, counterText, children }: Pro
         {counterText}
       </Typography>
       <Box ref={refs.textButtonsRef} sx={{ display: "flex", gap: 1.5 }}>
-        <Button size="small" variant="outlined" startIcon={<RestartAltIcon />}>
-          Reset view
+        <Button size="small" variant="outlined" startIcon={<RestartAltIcon />} sx={capButtonSx}>
+          <Box component="span" sx={capBoxSx}>
+            Reset view
+          </Box>
         </Button>
-        <Button size="small" variant="outlined" startIcon={<DownloadIcon />}>
-          Export
+        <Button size="small" variant="outlined" startIcon={<DownloadIcon />} sx={capButtonSx}>
+          <Box component="span" sx={capBoxSx}>
+            Export
+          </Box>
         </Button>
       </Box>
       <Box ref={refs.iconButtonsRef} sx={{ display: "flex", gap: 1.5 }}>

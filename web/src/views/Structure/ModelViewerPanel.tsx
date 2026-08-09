@@ -5,6 +5,7 @@
 import { lazy, Suspense, useState } from "react"
 import ViewInArIcon from "@mui/icons-material/ViewInAr"
 import { Box, Button, CircularProgress, Stack, Typography, useTheme } from "@mui/material"
+import { capBoxSx, capButtonSx } from "@/theme"
 import { VIEWER_MIN_HEIGHT } from "./constants"
 import type { ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
@@ -67,12 +68,16 @@ export default function ModelViewerPanel({
     return (
       <Placeholder>
         <Button
+          size="small"
           variant="outlined"
           startIcon={<ViewInArIcon />}
           onClick={() => setActivated(true)}
           data-testid="load-3d"
+          sx={capButtonSx}
         >
-          Load 3D structure
+          <Box component="span" sx={capBoxSx}>
+            Load 3D structure
+          </Box>
         </Button>
         <Typography variant="caption" color="text.secondary">
           About 1 MB over the network
