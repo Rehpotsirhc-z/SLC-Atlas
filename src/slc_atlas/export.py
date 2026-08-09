@@ -29,7 +29,7 @@ from .main import app
 from .models.clustering import ClusterMethod
 from .models.expression import TissueScope
 from .shell import render
-from .site import read_manifest
+from .site import ROUTES_FILE, read_manifest
 
 # The coordinate files are copied as a directory rather than fetched one URL at a time
 NOT_EXPORTED = {"/api/structure/models/{filename}"}
@@ -39,8 +39,6 @@ CONCURRENCY = 8
 
 # The directories the export owns outright, and so may delete files from
 MANAGED = ("api", "assets")
-
-ROUTES_FILE = "routes.json"
 
 NOT_COPIED = {"index.html", "index.html.template", "manifest.webmanifest", ROUTES_FILE}
 
@@ -101,7 +99,12 @@ def _routes(source: Path) -> list[str]:
 
 def _write_pages(out_dir: Path, routes: list[str], shell: bytes) -> int:
     """Write a page for every route, so that a link into the middle of the app works
-    without the server having to be told to redirect anything."""
+    without the server having to be told to redirect anything.
+
+    The same page goes to 404.html, where a server points its error document. The frontend
+    reads the address it was asked for and draws its not-found page for anything that is
+    not one of these routes.
+    """
     changed = sum(_write(out_dir / route / "index.html", shell) for route in routes)
     return changed + _write(out_dir / "404.html", shell)
 
