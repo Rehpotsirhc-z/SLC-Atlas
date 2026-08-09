@@ -27,4 +27,6 @@ export const ROUTES = [
 
 export type RoutePath = (typeof ROUTES)[number]["path"]
 
+export const HOME_ROUTE = ROUTES[0]
+
 export const POPUP_PATHS = new Set<string>(ROUTES.filter((r) => r.popup).map((r) => r.path))

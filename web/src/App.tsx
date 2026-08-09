@@ -9,6 +9,8 @@ import ThemeToggle from "./components/ThemeToggle"
 import GeneInfoPopup from "./components/GeneInfoPopup"
 import { routes } from "./routes"
 import { atlas } from "./config/atlas"
+import { HOME_ROUTE } from "./config/routes"
+import NotFound from "./views/NotFound"
 
 export default function App() {
   const theme = useTheme()
@@ -50,7 +52,8 @@ export default function App() {
           {routes.map((r) => (
             <Route key={r.path} path={r.path} element={r.element} />
           ))}
-          <Route path="*" element={<Navigate to="/genes" replace />} />
+          <Route path="/" element={<Navigate to={HOME_ROUTE.path} replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Box>
       <GeneInfoPopup />
