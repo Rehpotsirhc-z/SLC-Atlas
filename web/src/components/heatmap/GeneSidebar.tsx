@@ -51,7 +51,7 @@ export default function GeneSidebar({
   const renderGeneRow = useCallback(
     (g: GeneRow, i: number) => {
       const familyOpacity = familyFilter !== null && g.family !== familyFilter ? 0.25 : 1
-      const color = getFamilyColor(g.family ?? "?", mode)
+      const color = getFamilyColor(g.family || "?", mode)
       const cy = i * cellH + cellH / 2
       return (
         <g

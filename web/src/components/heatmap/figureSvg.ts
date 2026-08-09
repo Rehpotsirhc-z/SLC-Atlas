@@ -46,7 +46,7 @@ export function geneLabelsSvg(opts: {
   const { geneRows, y0, cellH, geneDotR, geneFont, svgFont, mode } = opts
   return geneRows
     .map((g, i) => {
-      const color = getFamilyColor(g.family ?? "?", mode)
+      const color = getFamilyColor(g.family || "?", mode)
       const cy = y0 + i * cellH + cellH / 2
       return (
         `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>` +

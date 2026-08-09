@@ -14,7 +14,7 @@ interface LeafLabelProps {
 }
 
 export function LeafLabel({ leaf, monoFont, mode, dimColor, dim }: LeafLabelProps) {
-  const color = dim ? dimColor : getFamilyColor(leaf.family ?? "?", mode)
+  const color = dim ? dimColor : getFamilyColor(leaf.family || "?", mode)
 
   if (leaf.angle === null) {
     return (

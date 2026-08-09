@@ -41,7 +41,7 @@ export default function GeneConservationPanel({
 }: GeneConservationPanelProps) {
   const { geneId, symbol, family, gene, cells } = info
   const { palette, custom } = useTheme()
-  const familyColor = getFamilyColor(family ?? "?", palette.mode)
+  const familyColor = getFamilyColor(family || "?", palette.mode)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const metricDef = CELL_METRICS.find((m) => m.key === metric) ?? CELL_METRICS[0]
@@ -75,7 +75,7 @@ export default function GeneConservationPanel({
       label: "Family",
       value: (
         <FamilyLabel
-          label={family ?? "?"}
+          label={family || "?"}
           color={familyColor}
           familyName={gene?.family_name}
           category={gene?.category}

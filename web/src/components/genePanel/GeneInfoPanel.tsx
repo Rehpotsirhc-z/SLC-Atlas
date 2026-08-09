@@ -23,7 +23,7 @@ interface GeneInfoPanelProps {
 export default function GeneInfoPanel({ info, ...geometry }: GeneInfoPanelProps) {
   const { node, methodLabel, closestSymbol, gene } = info
   const { palette } = useTheme()
-  const family = gene?.family ?? node.family ?? "?"
+  const family = gene?.family || node.family || "?"
   const familyColor = getFamilyColor(family, palette.mode)
 
   const statRows: StatRow[] = [

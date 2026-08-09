@@ -37,7 +37,7 @@ interface GeneExpressionPanelProps {
 export default function GeneExpressionPanel({ info, ...geometry }: GeneExpressionPanelProps) {
   const { geneId, symbol, family, gene, rows } = info
   const { palette, custom } = useTheme()
-  const familyColor = getFamilyColor(family ?? "?", palette.mode)
+  const familyColor = getFamilyColor(family || "?", palette.mode)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const sortedRows = [...rows].sort((a, b) => b.tpm - a.tpm)
@@ -60,7 +60,7 @@ export default function GeneExpressionPanel({ info, ...geometry }: GeneExpressio
       label: "Family",
       value: (
         <FamilyLabel
-          label={family ?? "?"}
+          label={family || "?"}
           color={familyColor}
           familyName={gene?.family_name}
           category={gene?.category}
