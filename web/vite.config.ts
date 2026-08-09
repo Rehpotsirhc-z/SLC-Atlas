@@ -27,6 +27,19 @@ const renderShell = (html: string, config: AtlasConfig) =>
     .replaceAll("__ATLAS_APP_DESCRIPTION__", escapeAttr(config.description))
     .replaceAll("__ATLAS_CONFIG_JSON__", JSON.stringify(config).replace(/</g, "\\u003c"))
 
+const webManifest = (config: AtlasConfig) =>
+  JSON.stringify({
+    name: config.name,
+    short_name: config.shortName,
+    description: config.description,
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    background_color: doomColors.light.bg,
+    theme_color: doomColors.light.blue,
+    icons: [],
+  })
+
 export default defineConfig(({ mode }) => {
   const atlasConfig = resolveAtlasConfig(loadEnv(mode, envDir, "ATLAS_"))
 
@@ -38,9 +51,15 @@ export default defineConfig(({ mode }) => {
         name: "atlas-shell",
         apply: "serve",
         transformIndexHtml: (html: string) => renderShell(html, atlasConfig),
+        configureServer(server) {
+          server.middlewares.use("/manifest.webmanifest", (_req, res) => {
+            res.setHeader("Content-Type", "application/manifest+json")
+            res.end(webManifest(atlasConfig))
+          })
+        },
       },
       {
-        name: "atlas-routes",
+        name: "atlas-assets",
         apply: "build",
         generateBundle() {
           this.emitFile({
@@ -48,26 +67,32 @@ export default defineConfig(({ mode }) => {
             fileName: "routes.json",
             source: JSON.stringify(ROUTES.map((r) => r.path)),
           })
+          this.emitFile({
+            type: "asset",
+            fileName: "manifest.webmanifest",
+            source: webManifest(atlasConfig),
+          })
         },
       },
       VitePWA({
         registerType: "autoUpdate",
-        manifest: {
-          name: atlasConfig.name,
-          short_name: atlasConfig.shortName,
-          description: atlasConfig.description,
-          start_url: "/",
-          scope: "/",
-          display: "standalone",
-          background_color: doomColors.light.bg,
-          theme_color: doomColors.light.blue,
-          icons: [],
-        },
+        manifest: false,
         workbox: {
-          globPatterns: ["**/*.{js,css,html,woff,woff2}"],
+          globPatterns: ["**/*.{js,css,woff,woff2}"],
           // Keeps the Mol* chunk out of the precache, so it downloads on first use not on install
           globIgnores: ["**/MolstarViewer-*.js"],
+          navigateFallback: null,
           runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === "navigate",
+              handler: "NetworkFirst",
+              options: { cacheName: "shell", networkTimeoutSeconds: 3 },
+            },
+            {
+              urlPattern: ({ url }) => url.pathname === "/manifest.webmanifest",
+              handler: "NetworkFirst",
+              options: { cacheName: "shell", networkTimeoutSeconds: 3 },
+            },
             {
               urlPattern: ({ url }) => /\/assets\/MolstarViewer-.*\.js$/.test(url.pathname),
               handler: "CacheFirst",
