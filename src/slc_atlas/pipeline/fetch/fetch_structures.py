@@ -127,12 +127,13 @@ def structure_row(gene_id: str, accession: str, payload: dict) -> dict:
 def experimental_rows(gene_id: str, accession: str, payload: dict) -> list[dict]:
     rows = []
     for summary in summaries(payload["structures"], "PDBe"):
-        chains = [
+        # 3D-Beacons returns chain lists in an unstable order, so sorting keeps refetches diffable
+        chains = sorted(
             chain
             for e in summary.get("entities", [])
             if e.get("identifier") == accession
             for chain in e.get("chain_ids", [])
-        ]
+        )
         rows.append(
             {
                 "gene_id": gene_id,
@@ -144,7 +145,8 @@ def experimental_rows(gene_id: str, accession: str, payload: dict) -> list[dict]
                 "uniprot_start": summary.get("uniprot_start"),
                 "uniprot_end": summary.get("uniprot_end"),
                 "chains": ",".join(chains) or None,
-                "ligand_ccd": ",".join(entity_values(summary, "NON-POLYMER", "CCD")) or None,
+                "ligand_ccd": ",".join(sorted(entity_values(summary, "NON-POLYMER", "CCD")))
+                or None,
                 "model_url": summary.get("model_url"),
                 "model_page_url": summary.get("model_page_url"),
                 "created": summary.get("created"),
