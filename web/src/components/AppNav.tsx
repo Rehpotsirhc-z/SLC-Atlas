@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useMemo, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { matchPath, useLocation, useNavigate } from "react-router-dom"
 import MenuIcon from "@mui/icons-material/Menu"
 import { IconButton, Menu, MenuItem, Tab, Tabs } from "@mui/material"
 import { useCapabilities } from "@/api/hooks/useCapabilities"
@@ -19,7 +19,7 @@ function useVisibleRoutes() {
 
 function useActiveRoute(visible: RouteMeta[]) {
   const { pathname } = useLocation()
-  return visible.findIndex((r) => pathname.startsWith(r.path))
+  return visible.findIndex((r) => matchPath({ path: r.path, end: false }, pathname) !== null)
 }
 
 export function AppNavMenu() {
