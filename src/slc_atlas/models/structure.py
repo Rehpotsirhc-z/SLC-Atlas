@@ -65,10 +65,25 @@ class MembraneSegment(BaseModel):
     kind: Literal["transmembrane", "intramembrane"]
 
 
+class FeatureSpan(BaseModel):
+    """One drawable mark outside the membrane, which is all the overview needs of it."""
+
+    start: int
+    end: int
+    kind: Literal[
+        "binding_site",
+        "active_site",
+        "glycosylation",
+        "disulfide_bond",
+        "signal_peptide",
+    ]
+
+
 class GeneTopology(BaseModel):
     gene_id: str
     uniprot_length: int | None = None
     segments: list[MembraneSegment] = []
+    features: list[FeatureSpan] = []
 
 
 class ProteinFeature(BaseModel):

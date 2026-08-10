@@ -15,9 +15,25 @@ SOURCES_FILE = "structure/sources.parquet"
 # These run to megabytes across a family and are only ever read one gene at a time
 PER_RESIDUE_COLUMNS = ("plddt", "sequence")
 
-# The feature types that sit in the membrane, which is all the topology overview draws
 MEMBRANE_FEATURES = ("transmembrane", "intramembrane")
-SEGMENT_LIST = pl.List(pl.Struct({"start": pl.Int64, "end": pl.Int64, "kind": pl.String}))
+DRAWN_FEATURES = (
+    "binding_site",
+    "active_site",
+    "glycosylation",
+    "disulfide_bond",
+    "signal_peptide",
+)
+SPAN_LIST = pl.List(pl.Struct({"start": pl.Int64, "end": pl.Int64, "kind": pl.String}))
+
+
+def _spans(features: pl.LazyFrame, kinds: tuple[str, ...], name: str) -> pl.LazyFrame:
+    """Collect the features of the given kinds into one list per gene, in sequence order."""
+    return (
+        features.filter(pl.col("feature_type").is_in(kinds))
+        .sort("gene_id", "start")
+        .group_by("gene_id", maintain_order=True)
+        .agg(pl.struct(start="start", end="end", kind="feature_type").alias(name))
+    )
 
 
 class ParquetSource:
@@ -104,16 +120,13 @@ class ParquetSource:
         structure = self._scan_optional(STRUCTURE_FILE)
         if features is None or structure is None:
             return None
-        segments = (
-            features.filter(pl.col("feature_type").is_in(MEMBRANE_FEATURES))
-            .sort("gene_id", "start")
-            .group_by("gene_id", maintain_order=True)
-            .agg(pl.struct(start="start", end="end", kind="feature_type").alias("segments"))
-        )
         return (
             structure.select("gene_id", "uniprot_length")
-            .join(segments, on="gene_id", how="left")
-            .with_columns(pl.col("segments").fill_null(pl.lit([], dtype=SEGMENT_LIST)))
+            .join(_spans(features, MEMBRANE_FEATURES, "segments"), on="gene_id", how="left")
+            .join(_spans(features, DRAWN_FEATURES, "features"), on="gene_id", how="left")
+            .with_columns(
+                pl.col("segments", "features").fill_null(pl.lit([], dtype=SPAN_LIST)),
+            )
             .collect()
         )
 

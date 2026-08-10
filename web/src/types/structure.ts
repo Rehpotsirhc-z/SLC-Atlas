@@ -47,11 +47,14 @@ export type FeatureType =
   | "topological_domain"
   | "binding_site"
   | "active_site"
-  // Not drawn: each one pins its residue to the non-cytoplasmic face, which is how the
-  // figure works out which way round the membrane sits
   | "glycosylation"
   | "disulfide_bond"
   | "signal_peptide"
+
+export type DrawnFeature = Exclude<
+  FeatureType,
+  "transmembrane" | "intramembrane" | "topological_domain"
+>
 
 export interface MembraneSegment {
   start: number
@@ -59,10 +62,17 @@ export interface MembraneSegment {
   kind: "transmembrane" | "intramembrane"
 }
 
+export interface FeatureSpan {
+  start: number
+  end: number
+  kind: DrawnFeature
+}
+
 export interface GeneTopology {
   gene_id: string
   uniprot_length: number | null
   segments: MembraneSegment[]
+  features: FeatureSpan[]
 }
 
 export interface ProteinFeature {
