@@ -2,21 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ResidueSpan } from "./bindingSites"
-import type { ChainModel, GapModel, SegmentModel, SiteModel } from "./chainModel"
+import type { ChainModel, GapModel, SegmentModel } from "./chainModel"
 import { confidenceBars, type ConfidenceBar } from "./confidenceBars"
 import { TRACK } from "./constants"
 import { laneLabel, type LaneLabel, type Side } from "./membraneSides"
+import { residueAxis, type AxisTick, type Window } from "./residueAxis"
+import { placeSites, type PlacedSite } from "./siteLane"
 
 export interface Point {
   x: number
   y: number
-}
-
-/** The x range a box may occupy, once its neighbours have taken their share of the gap. */
-interface Window {
-  from: number
-  to: number
 }
 
 export interface MembraneCylinder extends SegmentModel {
@@ -35,25 +30,6 @@ export interface MembraneCylinder extends SegmentModel {
 
 export interface ChainArc extends GapModel {
   path: string
-}
-
-export interface SiteBar {
-  key: string
-  x: number
-  width: number
-}
-
-export interface PlacedSite extends SiteModel {
-  bars: SiteBar[]
-  connectorFrom: number
-  connectorTo: number
-  y: number
-  ligandIndex: number
-}
-
-export interface AxisTick {
-  residue: number
-  x: number
 }
 
 export interface RegionsLayout {
@@ -122,37 +98,14 @@ function labelSizeFor(label: string, width: number): number | null {
   return size >= TRACK.minLabelSize ? size : null
 }
 
-function axisTicks(length: number, toX: (residue: number) => number): AxisTick[] {
-  const ticks: AxisTick[] = [{ residue: 1, x: toX(1) }]
-  for (let r = TRACK.tickSpacing; r < length; r += TRACK.tickSpacing) {
-    ticks.push({ residue: r, x: toX(r) })
-  }
-  // Drop the last regular tick when the end label would sit on top of it
-  if (length - ticks[ticks.length - 1].residue < TRACK.tickSpacing / 3) ticks.pop()
-  ticks.push({ residue: length, x: toX(length) })
-  return ticks
-}
-
 export function layoutRegions(
   model: ChainModel,
   width: number,
   plddt: number[] | null,
 ): RegionsLayout {
   const { length, segments, gaps, sites } = model
-  const plotLeft = TRACK.gutter + TRACK.padX
-  const span = Math.max(length - 1, 1)
-  const inner = Math.max(width - TRACK.padRight - plotLeft, 1)
-  const plotRight = plotLeft + inner
-  const toX = (residue: number) => plotLeft + ((residue - 1) / span) * inner
-  const perResidue = inner / span
-  // A feature covers its end residue too, so its box runs one residue past that residue's tick
-  const boxFor = (start: number, end: number, minimum: number, limit?: Window) => {
-    const room = limit ? limit.to - limit.from : Number.POSITIVE_INFINITY
-    const boxWidth = Math.min(Math.max(toX(end) - toX(start) + perResidue, minimum), room)
-    const centred = (toX(start) + toX(end) + perResidue - boxWidth) / 2
-    if (!limit) return { x: centred, width: boxWidth }
-    return { x: Math.min(Math.max(centred, limit.from), limit.to - boxWidth), width: boxWidth }
-  }
+  const axis = residueAxis(length, width)
+  const { plotLeft, plotRight, perResidue, toX, boxFor, ticks } = axis
 
   const membraneTop = TRACK.outsideLane
   const membraneBottom = membraneTop + TRACK.membraneHeight
@@ -233,21 +186,7 @@ export function layoutRegions(
     }
   })
 
-  const placed: PlacedSite[] = sites.map((site, row) => {
-    const bars = site.spans.map((s: ResidueSpan) => ({
-      key: `${s.start}-${s.end}`,
-      ...boxFor(s.start, s.end, TRACK.siteBarMinWidth),
-    }))
-    const centre = (bar: SiteBar) => bar.x + bar.width / 2
-    return {
-      ...site,
-      bars,
-      connectorFrom: centre(bars[0]),
-      connectorTo: centre(bars[bars.length - 1]),
-      y: bindsTop + row * TRACK.siteRow + TRACK.siteRow / 2,
-      ligandIndex: model.ligands.findIndex((l) => l.name === site.ligand),
-    }
-  })
+  const placed = placeSites(sites, model.ligands, axis, bindsTop)
 
   const first = arcs[0]
   const last = arcs[arcs.length - 1]
@@ -297,7 +236,7 @@ export function layoutRegions(
     arcs,
     sites: placed,
     confidence,
-    ticks: axisTicks(length, toX),
+    ticks,
     termini,
   }
 }
