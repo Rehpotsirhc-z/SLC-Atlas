@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Box, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material"
+import { capLineSx } from "@/theme"
 import type { TopologyMode } from "./useTopologyState"
 
 const MODES: { value: TopologyMode; label: string; hint: string }[] = [
@@ -35,7 +36,7 @@ export default function TopologyModeToggle({ mode, onChange }: Props) {
       {MODES.map((option) => (
         <ToggleButton key={option.value} value={option.value} sx={{ p: 0 }}>
           <Tooltip title={option.hint} arrow>
-            <Box component="span" sx={{ px: 1.25, py: 0.25 }}>
+            <Box component="span" sx={{ ...capLineSx, px: 1.25, py: 0.25 }}>
               {option.label}
             </Box>
           </Tooltip>

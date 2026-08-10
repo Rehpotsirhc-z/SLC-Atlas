@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { ToggleButton, ToggleButtonGroup } from "@mui/material"
+import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import ToolbarMeasureProbe from "@/components/view/ToolbarMeasureProbe"
 import ViewToolbar from "@/components/view/ViewToolbar"
 import ViewToolbarActions, { type ExportItem } from "@/components/view/ViewToolbarActions"
 import { useToolbarFit } from "@/components/view/useToolbarFit"
+import { capLineSx } from "@/theme"
 import { CELL_METRICS, type CellMetricKey } from "@/types/conservation"
 
 interface Props {
@@ -43,7 +44,9 @@ export default function ConservationToolbar({
           >
             {CELL_METRICS.map((m) => (
               <ToggleButton key={m.key} value={m.key} sx={{ minWidth: wrapped ? 0 : 120 }}>
-                {m.label}
+                <Box component="span" sx={capLineSx}>
+                  {m.label}
+                </Box>
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
@@ -61,7 +64,9 @@ export default function ConservationToolbar({
         <ToggleButtonGroup ref={probeRefs.registerToggle(0)} size="small">
           {CELL_METRICS.map((m) => (
             <ToggleButton key={m.key} value={m.key} sx={{ minWidth: 120 }}>
-              {m.label}
+              <Box component="span" sx={capLineSx}>
+                {m.label}
+              </Box>
             </ToggleButton>
           ))}
         </ToggleButtonGroup>

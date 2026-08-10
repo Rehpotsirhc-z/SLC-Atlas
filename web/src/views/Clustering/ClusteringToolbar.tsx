@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { ToggleButton, ToggleButtonGroup } from "@mui/material"
+import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import {
   METRIC_LABEL,
   METRIC_ORDER,
@@ -13,6 +13,7 @@ import ToolbarMeasureProbe from "@/components/view/ToolbarMeasureProbe"
 import ViewToolbar from "@/components/view/ViewToolbar"
 import ViewToolbarActions, { type ExportItem } from "@/components/view/ViewToolbarActions"
 import { useToolbarFit } from "@/components/view/useToolbarFit"
+import { capLineSx } from "@/theme"
 
 const TISSUE_OPTIONS: { value: TreeTissue; label: string }[] = [
   { value: "all", label: "All tissues" },
@@ -65,7 +66,9 @@ export default function ClusteringToolbar({
             >
               {METRIC_ORDER.map((m) => (
                 <ToggleButton key={m} value={m} sx={{ minWidth }}>
-                  {METRIC_LABEL[m]}
+                  <Box component="span" sx={capLineSx}>
+                    {METRIC_LABEL[m]}
+                  </Box>
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
@@ -80,7 +83,9 @@ export default function ClusteringToolbar({
               >
                 {TISSUE_OPTIONS.map((t) => (
                   <ToggleButton key={t.value} value={t.value} sx={{ minWidth }}>
-                    {t.label}
+                    <Box component="span" sx={capLineSx}>
+                      {t.label}
+                    </Box>
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
@@ -100,14 +105,18 @@ export default function ClusteringToolbar({
         <ToggleButtonGroup ref={probeRefs.registerToggle(0)} size="small">
           {METRIC_ORDER.map((m) => (
             <ToggleButton key={m} value={m} sx={{ minWidth: 120 }}>
-              {METRIC_LABEL[m]}
+              <Box component="span" sx={capLineSx}>
+                {METRIC_LABEL[m]}
+              </Box>
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
         <ToggleButtonGroup ref={probeRefs.registerToggle(1)} size="small">
           {TISSUE_OPTIONS.map((t) => (
             <ToggleButton key={t.value} value={t.value} sx={{ minWidth: 120 }}>
-              {t.label}
+              <Box component="span" sx={capLineSx}>
+                {t.label}
+              </Box>
             </ToggleButton>
           ))}
         </ToggleButtonGroup>

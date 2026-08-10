@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { ToggleButton, ToggleButtonGroup } from "@mui/material"
+import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material"
 import type { TreeTissue } from "@/api/hooks/useClustering"
 import ToolbarMeasureProbe from "@/components/view/ToolbarMeasureProbe"
 import ViewToolbar from "@/components/view/ViewToolbar"
 import ViewToolbarActions, { type ExportItem } from "@/components/view/ViewToolbarActions"
 import { useToolbarFit } from "@/components/view/useToolbarFit"
+import { capLineSx } from "@/theme"
 
 const TISSUE_OPTIONS: { value: TreeTissue; label: string }[] = [
   { value: "all", label: "All tissues" },
@@ -48,7 +49,9 @@ export default function ExpressionToolbar({
           >
             {TISSUE_OPTIONS.map((t) => (
               <ToggleButton key={t.value} value={t.value} sx={{ minWidth: wrapped ? 0 : 120 }}>
-                {t.label}
+                <Box component="span" sx={capLineSx}>
+                  {t.label}
+                </Box>
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
@@ -66,7 +69,9 @@ export default function ExpressionToolbar({
         <ToggleButtonGroup ref={probeRefs.registerToggle(0)} size="small">
           {TISSUE_OPTIONS.map((t) => (
             <ToggleButton key={t.value} value={t.value} sx={{ minWidth: 120 }}>
-              {t.label}
+              <Box component="span" sx={capLineSx}>
+                {t.label}
+              </Box>
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
