@@ -148,9 +148,10 @@ export default function LinkedPanes({
           </Typography>
           <InfoTooltip label="How to read the 3D model">
             <Typography variant="caption" component="p">
-              The predicted model, coloured by AlphaFold&apos;s per-residue confidence. Hovering on
-              either view lights the same residues in the other, and clicking a helix, loop or site
-              in the figure brings its residues into view here.
+              Drag to rotate the model, scroll to zoom, and right-drag to move it. When AlphaFold
+              confidence scores are available, color indicates confidence for each residue. Hovering
+              either view highlights the same residues in the other; clicking a feature in the
+              sequence figure centers those residues here.
             </Typography>
           </InfoTooltip>
         </Stack>
