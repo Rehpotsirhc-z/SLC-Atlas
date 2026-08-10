@@ -259,4 +259,4 @@ def run(
 
     counts = pl.DataFrame(rows)["seq_agreement"].value_counts().sort("seq_agreement")
     summary = ", ".join(f"{r['seq_agreement']}={r['count']}" for r in counts.iter_rows(named=True))
-    print(f"wrote {len(rows)} rows ({summary}) -> {out_path}", file=sys.stderr)
+    print(f"Wrote {len(rows)} rows ({summary}) -> {out_path}", file=sys.stderr)

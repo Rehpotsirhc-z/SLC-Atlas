@@ -27,5 +27,5 @@ def run(source_dir: Path, out_dir: Path) -> None:
 
     n_genes = convert(source_dir / "genes.tsv", genes_out, GENE_SCHEMA)
     n_transcripts = convert(source_dir / "transcripts.tsv", transcripts_out, TRANSCRIPT_SCHEMA)
-    print(f"wrote {n_genes} genes -> {genes_out}", file=sys.stderr)
-    print(f"wrote {n_transcripts} transcripts -> {transcripts_out}", file=sys.stderr)
+    print(f"Wrote {n_genes} genes -> {genes_out}", file=sys.stderr)
+    print(f"Wrote {n_transcripts} transcripts -> {transcripts_out}", file=sys.stderr)

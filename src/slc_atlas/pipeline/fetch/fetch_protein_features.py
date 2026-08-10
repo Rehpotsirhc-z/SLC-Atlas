@@ -134,4 +134,4 @@ def run(map_path: Path, out_path: Path) -> None:
 
     counts = pl.DataFrame(rows)["feature_type"].value_counts().sort("feature_type")
     summary = ", ".join(f"{r['feature_type']}={r['count']}" for r in counts.iter_rows(named=True))
-    print(f"wrote {len(rows)} features ({summary}) -> {out_path}", file=sys.stderr)
+    print(f"Wrote {len(rows)} features ({summary}) -> {out_path}", file=sys.stderr)

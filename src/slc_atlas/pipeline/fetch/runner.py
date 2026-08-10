@@ -90,12 +90,12 @@ LABELS = {
     "download_experimental_models": "Mirroring the experimental structures",
 }
 
-KEPT = "already done (delete its files to fetch it again)"
+KEPT = "Already available (delete its files to fetch it again)"
 
 DONE = (
-    "Fetch complete. The dataset is in {source} as plain editable files.\nEdit or replace "
-    "anything there, then run `{command} build` to compile it for the app.\nA re-run of this "
-    "fetch keeps every existing file and only fetches what is missing."
+    "Fetch complete. Your editable source files are in {source}.\nReview or replace any "
+    "of them, then run `{command} build` to build the atlas.\nRunning fetch again keeps "
+    "existing files and downloads only what is missing."
 )
 
 
@@ -131,13 +131,13 @@ def _acquire(options: FetchOptions, paths: PipelinePaths) -> bool:
     )
     if not seeded or options.accept_seeds or options.only_steps:
         return False
-    print("\n=== Stopping so you can look these over ===")
+    print("\n=== Review the new curation files ===")
     for path in seeded:
-        print(f"Wrote {path}")
+        print(f"Created {path}")
     print(
-        "\nThese files decide the family names, the displayed gene symbols, and which\n"
-        "genes are left out. Edit any of them now, or leave them as they are and\n"
-        "carry on. Pass --accept-seeds to skip this stop on the next new dataset."
+        "\nThese files control family names, display symbols, excluded genes, comparison\n"
+        "species, and UniProt corrections. Edit them now or keep the suggested values.\n"
+        "Use --accept-seeds to continue automatically when creating another dataset."
     )
     return True
 

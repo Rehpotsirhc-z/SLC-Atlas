@@ -244,11 +244,15 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     template = web_dir / "index.html.template"
     source = template if template.is_file() else web_dir / "index.html"
     if not source.is_file():
-        raise FileNotFoundError(f"no built frontend at {web_dir}; run `npm --prefix web run build`")
+        raise FileNotFoundError(
+            f"No built frontend was found at {web_dir}. Run `npm --prefix web run build`."
+        )
 
     manifest = web_dir / ROUTES_FILE
     if not manifest.is_file():
-        raise FileNotFoundError(f"no {ROUTES_FILE} at {web_dir}; run `npm --prefix web run build`")
+        raise FileNotFoundError(
+            f"No {ROUTES_FILE} was found at {web_dir}. Run `npm --prefix web run build`."
+        )
     routes = _routes(manifest)
     # A page may only be removed if a previous export is the one that wrote it
     served = out_dir / ROUTES_FILE
@@ -294,7 +298,7 @@ def report(stats: ExportStats, out_dir: Path) -> None:
         f"{stats.changed} written, {stats.files - stats.changed} unchanged, {stats.removed} removed"
     )
     if stats.missing:
-        print(f"{len(stats.missing)} endpoints had no record for their gene and were skipped")
+        print(f"Skipped {len(stats.missing)} missing gene records")
 
 
 def main() -> None:

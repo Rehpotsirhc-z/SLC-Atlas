@@ -25,62 +25,37 @@ PROTEIN_CODING = "gene with protein product"
 APPROVED = "Approved"
 
 FAMILIES_DOC = [
-    "# This file names the gene families shown in the atlas. Each row has three",
-    "# columns, which are separated by tabs:",
-    "#   group_name     is the family's name at HGNC, exactly as it was",
-    "#                  downloaded. Genes are matched to their family through",
-    "#                  this column, so do not edit it.",
-    "#   family_key     is the short label the atlas groups genes under, usually",
-    "#                  the symbol prefix the members share (SLC1, H2A, and so on).",
-    "#   display_name   is the family name the atlas displays. You can edit it",
-    "#                  freely.",
-    '# A line like "# also: ..." is another name that HGNC lists for the family',
-    "# right above it. To use one of those names, copy it into that family's",
-    "# display_name column.",
-    "# Blank lines and lines starting with # are ignored.",
+    "# Name the gene families shown in the atlas",
+    "# Keep group_name unchanged because it matches genes to their HGNC family",
+    "# Use family_key for the short group label, such as SLC1 or H2A",
+    '# Edit display_name freely; lines beginning with "# also:" list names suggested by HGNC',
+    "# Separate columns with tabs; blank lines and comments are ignored",
 ]
 FAMILIES_HEADER = "group_name\tfamily_key\tdisplay_name"
 
 EXCLUSIONS_DOC = [
-    "# This file is for dropping genes from the dataset, for example pseudogenes",
-    "# and non-coding members that HGNC still lists in the family.",
-    "# List each gene by its HGNC Approved symbol, one gene per line. If you",
-    "# rename a gene in symbol_overrides.tsv, you still have to use its Approved",
-    "# symbol here.",
-    "# Only the first word of a line counts, so a note after the symbol, like the",
-    "# reasons in parentheses below, is fine to keep or to leave off.",
-    "# Blank lines and lines starting with # are ignored.",
+    "# List genes that should not appear in the atlas",
+    "# Use one HGNC approved symbol per line, even if the display symbol changes elsewhere",
+    "# You may add a note after the symbol; blank lines and comments are ignored",
 ]
 EXCLUSIONS_LEAD = [
-    "# The entries below are the ones HGNC itself marks as non-coding or",
-    "# unapproved, each with the reason in parentheses. They are only suggestions",
-    '# and start out ignored: remove the "# " at the start of a line to drop that',
-    "# gene. You can add any other gene the same way, by putting its symbol on a",
-    "# line of its own.\n",
+    "# HGNC marks the genes below as non-coding or unapproved",
+    '# Remove the leading "# " to exclude a suggested gene\n',
 ]
 
 OVERRIDES_DOC = [
-    "# This file is for showing a gene under a different symbol than its HGNC",
-    "# Approved one, for when the name a gene is best known by is officially just",
-    "# an alias. Each row has three columns, which are separated by tabs:",
-    "#   gene_id          is the Ensembl gene id. It is what identifies the gene,",
-    "#                    so it has to be right.",
-    "#   approved_symbol  is the HGNC Approved symbol. It is only here to keep",
-    "#                    the row readable, and changing it changes nothing.",
-    "#   display_symbol   is the symbol the atlas shows instead.",
-    "# The Approved symbol stays with the gene as an alias, so searching for it",
-    "# still finds the gene.",
-    "# Blank lines and lines starting with # are ignored.",
+    "# Choose a different display symbol for a gene",
+    "# Keep gene_id accurate; approved_symbol is included only to make the row readable",
+    "# The approved symbol remains searchable after the display symbol changes",
+    "# Separate columns with tabs; blank lines and comments are ignored",
 ]
 OVERRIDES_HEADER = "gene_id\tapproved_symbol\tdisplay_symbol"
 
 UNIPROT_DOC = [
-    "# This file is for fixing which UniProt protein a gene maps to, for when the",
-    "# automatic mapping picks the wrong accession or finds none. Each row has",
-    "# two columns, which are separated by tabs: first the Ensembl gene id, and",
-    "# then the UniProt accession to use for it. The line below is an example:",
-    '# remove its "# " and edit it.',
-    "# Blank lines and lines starting with # are ignored.",
+    "# Correct a missing or incorrect automatic UniProt match",
+    "# Enter the Ensembl gene ID and UniProt accession, separated by a tab",
+    "# Copy or uncomment the example below, then replace both values",
+    "# Blank lines and comments are ignored",
 ]
 UNIPROT_BODY = ["gene_id\tuniprot_accession", "# ENSG00000106688\tP43005"]
 

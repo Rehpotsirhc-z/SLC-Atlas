@@ -27,7 +27,7 @@ def _tree_base(ensembl_release: int) -> str:
 
 
 def _download(url: str) -> str:
-    print(f"  downloading {url}", file=sys.stderr)
+    print(f"  Downloading {url}", file=sys.stderr)
     return fetch_text(url)
 
 
@@ -47,7 +47,7 @@ def _match_ensembl(leaf_names: list[str], species: list[dict]) -> dict[str, str]
         prefix = parts[0].capitalize() + "_" + "_".join(parts[1:])
         cands = [n for n in leaf_names if n == prefix or n.startswith(prefix + "_")]
         if not cands:
-            print(f"  no tree leaf for {en}", file=sys.stderr)
+            print(f"  No tree leaf for {en}", file=sys.stderr)
             continue
         ref = [c for c in cands if "reference" in c.lower()]
         chosen[(ref or sorted(cands, key=len))[0]] = en

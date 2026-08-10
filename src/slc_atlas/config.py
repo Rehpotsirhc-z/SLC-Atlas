@@ -21,37 +21,35 @@ DISTRIBUTION_NAME = __name__.rpartition(".")[0].replace("_", "-")
 class Settings(BaseSettings):
     data_dir: Path = Field(
         default=_DATA_DIR,
-        description="the dataset directory, holding curation/, source/, cache/ and app/",
+        description="dataset directory containing curation/, source/, cache/, and app/",
     )
     web_dir: Path = Field(
         default=_WEB_DIR,
-        description="the built frontend to serve, which an installed package carries",
+        description="built frontend to serve",
     )
     app_name: str = Field(
         default=PRODUCT_NAME,
-        description="the name in the browser tab, link previews, and the manifest",
+        description="full name used in the browser tab, link previews, and app manifest",
     )
-    app_short_name: str = Field(
-        default=PRODUCT_NAME, description="the name in the app bar, where the full one does not fit"
-    )
+    app_short_name: str = Field(default=PRODUCT_NAME, description="short name used in the app bar")
     app_description: str = Field(
         default="",
-        description="one line under the heading on the Genes view, and the page description",
+        description="description shown on the Genes view and in page metadata",
     )
     family_label: str = Field(
         default="gene",
-        description="what one member of this family is called, used in every subtitle",
+        description="singular name for one member of the gene family",
     )
     download_prefix: str = Field(
         default="atlas",
-        description="the first word of every downloaded figure, table, and tree filename",
+        description="prefix for downloaded figures, tables, and trees",
     )
     cors_origins: str = Field(
         default="http://localhost:3000",
-        description="origins allowed to call the API, comma-separated, empty to disable CORS",
+        description="comma-separated origins allowed to call the API; empty disables CORS",
     )
-    host: str = Field(default="127.0.0.1", description="the address the server listens on")
-    port: int = Field(default=8000, description="the port the server listens on")
+    host: str = Field(default="127.0.0.1", description="address the local server listens on")
+    port: int = Field(default=8000, description="port the local server listens on")
 
     # Let a local .env override the repository defaults
     model_config = SettingsConfigDict(

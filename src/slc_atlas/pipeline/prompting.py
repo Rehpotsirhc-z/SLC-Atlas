@@ -14,18 +14,16 @@ from ..config import COMMAND_NAME
 from .options import Option
 
 NO_SOURCE = (
-    f"pass a source: {COMMAND_NAME} fetch 752 (HGNC group id) or a gene-list file; "
-    f"see {COMMAND_NAME} fetch --help"
+    f"Choose a gene family: run `{COMMAND_NAME} fetch 752` with an HGNC group ID, or pass "
+    f"a gene-list file. See `{COMMAND_NAME} fetch --help` for all supported inputs."
 )
 
 INTRO = (
-    "\nA few questions before the download starts. Press Enter to take the value in\n"
-    "brackets. Every one of these can also be given as a command-line flag, and the\n"
-    "whole command is printed at the end so you can repeat this run without the\n"
-    "questions."
+    "\nLet's set up the dataset. Press Enter to accept the value in brackets.\n"
+    "When you finish, the equivalent command is printed so you can repeat the setup."
 )
 
-CANCELLED = "\ncancelled"
+CANCELLED = "\nSetup cancelled"
 
 
 def asker(spec: Sequence[Option], args: argparse.Namespace) -> Callable[[Option, Any], Any] | None:
@@ -56,7 +54,7 @@ def command_line(command: str, spec: Sequence[Option], chosen: Mapping[str, Any]
 
 
 def echo(command: str) -> None:
-    print("\nThe same run, without the questions:")
+    print("\nRun the same setup again with:")
     print(f"  {command}\n")
 
 
@@ -88,7 +86,7 @@ def _ask_value(option: Option, default: Any) -> Any:
         try:
             return option.parse(answer) if option.parse else answer
         except ValueError:
-            print(f"  {answer} is not a valid {option.prompt.lower()}")
+            print(f"  Enter a valid {option.prompt.lower()}")
 
 
 def _ask_choice(option: Option, default: Any) -> Any:
@@ -104,7 +102,7 @@ def _ask_choice(option: Option, default: Any) -> Any:
             return answer
         if answer.isdigit() and 1 <= int(answer) <= len(choices):
             return choices[int(answer) - 1]
-        print(f"  answer 1-{len(choices)} or the name itself")
+        print(f"  Enter a number from 1 to {len(choices)}, or enter the name")
 
 
 def _ask_flag(option: Option, default: bool) -> bool:
@@ -117,4 +115,4 @@ def _ask_flag(option: Option, default: bool) -> bool:
             return True
         if answer in ("n", "no"):
             return False
-        print("  answer y or n")
+        print("  Enter y or n")

@@ -41,7 +41,7 @@ def run(structures_path: Path, out_path: Path) -> None:
     by_accession = structures.unique(subset="uniprot_accession")
     urls = by_accession["confidence_url"].to_list()
     accessions = by_accession["uniprot_accession"].to_list()
-    print(f"fetching pLDDT for {len(urls)} accessions...", file=sys.stderr)
+    print(f"Fetching pLDDT for {len(urls)} accessions...", file=sys.stderr)
 
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         scores = dict(zip(accessions, pool.map(fetch_scores, urls)))

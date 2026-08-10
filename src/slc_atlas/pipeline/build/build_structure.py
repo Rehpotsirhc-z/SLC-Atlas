@@ -312,7 +312,7 @@ def run(source_dir: Path, out_dir: Path) -> None:
     structure_out = out_dir / "structure"
 
     if not structure_source.exists():
-        print(f"no {structure_source}; skipping the structure view", file=sys.stderr)
+        print(f"No {structure_source}; skipping the structure view", file=sys.stderr)
         return
 
     gene_map = read_tsv(structure_source, "uniprot_map.tsv", UNIPROT_MAP_SCHEMA)

@@ -23,7 +23,9 @@ def read_shell(web_dir: Path) -> str:
     template = web_dir / "index.html.template"
     source = template if template.is_file() else web_dir / "index.html"
     if not source.is_file():
-        raise FileNotFoundError(f"no built frontend at {web_dir}; run `npm --prefix web run build`")
+        raise FileNotFoundError(
+            f"No built frontend was found at {web_dir}. Run `npm --prefix web run build`."
+        )
     return render(source.read_text())
 
 
@@ -31,7 +33,9 @@ def read_routes(web_dir: Path) -> set[str]:
     """Return the page routes recorded by the frontend build"""
     source = web_dir / ROUTES_FILE
     if not source.is_file():
-        raise FileNotFoundError(f"no {ROUTES_FILE} at {web_dir}; run `npm --prefix web run build`")
+        raise FileNotFoundError(
+            f"No {ROUTES_FILE} was found at {web_dir}. Run `npm --prefix web run build`."
+        )
     return {path.strip("/") for path in json.loads(source.read_text())}
 
 

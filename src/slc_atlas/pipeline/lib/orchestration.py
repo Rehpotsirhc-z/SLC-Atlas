@@ -60,9 +60,9 @@ def run_stage(steps: Sequence[Step]) -> None:
             failed = [label for label, future in started if not future.result()]
     if failed:
         raise SystemExit(
-            "Stopped, because this did not finish: "
+            "The pipeline stopped because this step did not finish: "
             + "; ".join(failed)
-            + "\nThe error is printed above. Fix it, then run the same command again."
+            + "\nReview the error above, fix the problem, and run the same command again."
         )
 
 

@@ -62,7 +62,7 @@ def codon_align(protein_aln: Path, cds_fasta: Path, out_fasta: Path) -> None:
     codons that code for the same residue. The coding sequence is the one belonging to the
     canonical transcript, so each residue that is not a gap corresponds to the next codon.
     """
-    print(f"  codon-aligning {cds_fasta.name} via {protein_aln.name}...", file=sys.stderr)
+    print(f"  Codon-aligning {cds_fasta.name} via {protein_aln.name}...", file=sys.stderr)
     aln = read_fasta(protein_aln)
     cds = read_fasta(cds_fasta)
     with open(out_fasta, "w", encoding="utf-8") as out:
@@ -115,7 +115,7 @@ def corr_distance(tpm: pl.DataFrame, sample_cols: list[str]):
     keep = mat.std(axis=1) > 0
     if not keep.all():
         dropped = [g for g, k in zip(ids, keep) if not k]
-        print(f"  dropping {len(dropped)} zero-variance genes: {dropped[:5]}...", file=sys.stderr)
+        print(f"  Dropping {len(dropped)} zero-variance genes: {dropped[:5]}...", file=sys.stderr)
     mat = mat[keep]
     ids = [g for g, k in zip(ids, keep) if k]
     ranks = rankdata(mat, axis=1)  # Spearman is Pearson applied to the ranks

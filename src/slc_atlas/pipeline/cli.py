@@ -19,21 +19,21 @@ if TYPE_CHECKING:
 VIEWS = ("clustering", "conservation", "expression", "structure")
 
 SKIP_HELP = {
-    "clustering": "skip the similarity trees, which are built from expression and sequences",
-    "conservation": "skip the ortholog matrix and species tree",
-    "expression": "skip the gene-by-tissue expression matrix",
-    "structure": "skip the protein models, topology, and coordinate downloads",
+    "clustering": "leave out the Clustering view and its similarity trees",
+    "conservation": "leave out the Conservation view and species tree",
+    "expression": "leave out the Expression view and tissue matrix",
+    "structure": "leave out the Structure view and protein models",
 }
 
 BUILD_SKIP_HELP = SKIP_HELP | {
-    "clustering": "skip the similarity trees, the only step that needs MAFFT"
+    "clustering": "leave out the Clustering view, the only build step that needs MAFFT"
 }
 
 TREE_SOURCES = ("ensembl_compara", "ncbi", "timetree", "ucsc")
 
 BAD_SOURCE = (
-    "{source!r} is neither an HGNC group id nor a file that exists; pass a group id like "
-    "752, a gene-list file, or a downloaded HGNC group TSV"
+    "Could not find {source!r}. Enter an HGNC group ID such as 752, a gene-list file, or "
+    "a downloaded HGNC group TSV."
 )
 
 GROUP_TSV_HEADER = "HGNC ID\t"
@@ -48,15 +48,15 @@ def _settings_data_dir(_: Mapping[str, Any]) -> Path:
 FETCH = (
     Option(
         "source",
-        "HGNC group id (digits), a gene-list file (one symbol or Ensembl gene id per line, "
-        "# comments), or a pre-downloaded HGNC group TSV",
+        "HGNC group ID, gene-list file with one symbol or Ensembl gene ID per line, or "
+        "downloaded HGNC group TSV",
         default="",
         positional=True,
-        prompt="HGNC group id, gene-list file, or HGNC group TSV",
+        prompt="HGNC group ID or gene-list file",
     ),
     Option(
         "data_dir",
-        "directory for curation/, source/, app/, and cache/ (default: $ATLAS_DATA_DIR)",
+        "dataset directory for curation/, source/, cache/, and app/",
         default=_settings_data_dir,
         metavar="PATH",
         parse=Path,
@@ -64,7 +64,7 @@ FETCH = (
     ),
     Option(
         "curation_dir",
-        "editable curation files, seeded on the first run (default: <data-dir>/curation)",
+        "directory for editable family choices",
         default=lambda chosen: Path(chosen["data_dir"]) / "curation",
         metavar="PATH",
         parse=Path,
@@ -79,14 +79,14 @@ FETCH = (
     ),
     Option(
         "gtex_file",
-        "local TPM matrix (.gct.gz or .parquet) instead of downloading one",
+        "local GTEx TPM matrix (.gct.gz or .parquet) to use instead of a download",
         default=None,
         metavar="PATH",
         parse=Path,
     ),
     Option(
         "ensembl_release",
-        "Ensembl release for the pinned Compara species-tree URLs",
+        "Ensembl release used for the Compara species tree",
         default=116,
         metavar="N",
         parse=int,
@@ -94,31 +94,34 @@ FETCH = (
     ),
     Option(
         "download_predicted",
-        "mirror the AlphaFold models instead of streaming them from AlphaFold DB",
-        prompt="Mirror the predicted models?",
+        "download AlphaFold models for local hosting",
+        prompt="Download the predicted models?",
     ),
     Option(
         "download_experimental",
-        "mirror every PDB entry instead of streaming them from RCSB",
-        prompt="Mirror the experimental models?",
+        "download every PDB entry for local hosting",
+        prompt="Download the experimental models?",
     ),
-    Option("tree_source", "species-tree provider", default="ensembl_compara", choices=TREE_SOURCES),
+    Option(
+        "tree_source",
+        "source used to build the species tree",
+        default="ensembl_compara",
+        choices=TREE_SOURCES,
+    ),
     Option(
         "promote_alias_prefix",
-        "show genes under an alias starting with this prefix wherever one exists, "
-        "rather than under their approved symbol",
+        "prefer aliases that begin with this prefix as display symbols",
         default="",
         metavar="PREFIX",
     ),
     Option(
         "accept_seeds",
-        "keep going on the first run instead of stopping to let you edit the curation files",
+        "continue after creating new curation files without pausing for review",
     ),
     *(Option(f"skip_{view}", SKIP_HELP[view]) for view in VIEWS),
     Option(
         "step",
-        "run one named step and nothing else; repeat the flag to run several. This "
-        "overrides the --skip flags and does not stop for curation editing",
+        "run only this fetch step; repeat to select more than one",
         default=(),
         metavar="NAME",
         parse=StepName("fetch"),
@@ -129,8 +132,7 @@ FETCH = (
 BUILD = (
     Option(
         "data_dir",
-        "directory holding source/, receiving the served parquet in app/ "
-        "(default: $ATLAS_DATA_DIR)",
+        "dataset directory containing source/ and receiving the built app/ files",
         default=_settings_data_dir,
         metavar="PATH",
         parse=Path,
@@ -138,7 +140,7 @@ BUILD = (
     *(Option(f"skip_{view}", BUILD_SKIP_HELP[view]) for view in VIEWS),
     Option(
         "step",
-        "run one named step and nothing else; repeat the flag to run several",
+        "run only this build step; repeat to select more than one",
         default=(),
         metavar="NAME",
         parse=StepName("build"),
@@ -146,7 +148,7 @@ BUILD = (
     ),
     Option(
         "mafft",
-        "MAFFT binary for the alignments (default: $ATLAS_MAFFT, else the one on PATH)",
+        "MAFFT executable to use for sequence alignments",
         default="",
         metavar="PATH",
     ),
@@ -210,7 +212,7 @@ def _fetch(args: argparse.Namespace) -> int:
         _paths(chosen),
     )
     if halted:
-        print(f"\nWhen you are done, continue the fetch with:\n\n  {rerun}\n")
+        print(f"\nWhen the curation files are ready, continue with:\n\n  {rerun}\n")
     return 0
 
 
@@ -233,9 +235,9 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
     # Reject shortened flags so misspelled view names do not pass silently
     fetch = sub.add_parser(
         "fetch",
-        help="download a gene family as plain, editable source files",
-        description="Download a gene family from public sources and write it out as plain, "
-        "editable source files. Run it with no source for a short interactive setup.",
+        help="create editable source files for a gene family",
+        description="Gather a gene family from public sources. Run without a source to "
+        "choose the main options interactively.",
         allow_abbrev=False,
     )
     register(fetch, FETCH)
@@ -243,8 +245,8 @@ def add_parsers(sub: argparse._SubParsersAction) -> None:
 
     build = sub.add_parser(
         "build",
-        help="compile the source files into what the app serves",
-        description="Turn the source files into the Parquet files the app serves, written to app/.",
+        help="build an atlas from its source files",
+        description="Build the files the atlas reads and write them to app/.",
         allow_abbrev=False,
     )
     register(build, BUILD)

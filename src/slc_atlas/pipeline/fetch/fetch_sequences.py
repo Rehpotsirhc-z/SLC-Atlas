@@ -32,7 +32,7 @@ def resolve_canonical(gene_ids: list[str]) -> dict[str, str]:
         for gid in chunk:
             info = result.get(gid)
             if not info or not info.get("canonical_transcript"):
-                print(f"  no canonical transcript: {gid}", file=sys.stderr)
+                print(f"  No canonical transcript: {gid}", file=sys.stderr)
                 continue
             mapping[gid] = info["canonical_transcript"].split(".")[0]
     return mapping

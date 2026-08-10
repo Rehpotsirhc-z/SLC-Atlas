@@ -28,7 +28,7 @@ SCHEMA = {
 def run(map_path: Path, out_path: Path) -> None:
     gene_map = pl.read_csv(map_path, separator="\t").drop_nulls("uniprot_accession")
     accessions = sorted(set(gene_map["uniprot_accession"]))
-    print(f"fetching sequences for {len(accessions)} accessions...", file=sys.stderr)
+    print(f"Fetching sequences for {len(accessions)} accessions...", file=sys.stderr)
     entries = fetch_entries(accessions)
 
     rows = [
@@ -49,4 +49,4 @@ def run(map_path: Path, out_path: Path) -> None:
 
     covered = sum(1 for r in rows if r["sequence"])
     residues = sum(len(r["sequence"]) for r in rows if r["sequence"])
-    print(f"wrote {covered}/{len(rows)} genes, {residues} residues -> {out_path}", file=sys.stderr)
+    print(f"Wrote {covered}/{len(rows)} genes, {residues} residues -> {out_path}", file=sys.stderr)

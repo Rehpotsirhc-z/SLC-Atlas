@@ -35,7 +35,7 @@ def download(job: tuple[str, Path]) -> str | None:
     try:
         path.write_bytes(fetch_bytes(url))
     except Exception as exc:
-        print(f"  failed {path.name}: {exc}", file=sys.stderr)
+        print(f"  Failed {path.name}: {exc}", file=sys.stderr)
         return path.stem
     return None
 

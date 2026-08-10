@@ -58,16 +58,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         prog=COMMAND_NAME,
         description=f"{PRODUCT_NAME} {PRODUCT_VERSION}. Turn a gene family into a browsable "
-        "atlas: fetch the data, build it, then serve or export the site.",
+        "atlas: fetch its data, build the dataset, then serve or export the site.",
     )
     parser.add_argument("--version", action="version", version=f"{PRODUCT_NAME} {PRODUCT_VERSION}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    serve = sub.add_parser("serve", help="serve the app from a built dataset")
+    serve = sub.add_parser("serve", help="serve a built atlas on a local server")
     _add_settings_flags(serve)
     serve.set_defaults(func=_serve)
 
-    export = sub.add_parser("export", help="write the whole app to disk as static files")
+    export = sub.add_parser("export", help="export a complete atlas for static hosting")
     export.add_argument("out_dir", type=Path)
     _add_settings_flags(export)
     export.set_defaults(func=_export)

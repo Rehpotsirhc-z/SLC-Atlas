@@ -90,4 +90,4 @@ def run(source_dir: Path, out_dir: Path, work_dir: Path, mafft: str) -> None:
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pl.DataFrame(all_rows, schema=CLUSTERING_SCHEMA).write_parquet(out_path)
-    print(f"wrote {out_path}", file=sys.stderr)
+    print(f"Wrote {out_path}", file=sys.stderr)

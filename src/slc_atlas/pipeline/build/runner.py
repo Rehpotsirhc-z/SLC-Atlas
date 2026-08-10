@@ -32,8 +32,8 @@ STEP_NAMES = ("gene_tables", "clustering", "conservation", "expression", "struct
 ALWAYS = "gene_tables"
 
 NO_MAFFT = (
-    "clustering needs the MAFFT binary; install it (e.g. apt install mafft / "
-    "brew install mafft), point --mafft at it, or pass --skip-clustering"
+    "The Clustering view needs MAFFT. Install it with `apt install mafft` or "
+    "`brew install mafft`, pass its location with --mafft, or use --skip-clustering."
 )
 
 
@@ -103,7 +103,7 @@ def _steps(paths: PipelinePaths, mafft: str) -> dict[str, Step]:
 
 
 def _summary(steps: Sequence[Step], data_dir: Path) -> None:
-    print("\nBuild complete. The app now has these files to serve:")
+    print("\nBuild complete. The atlas is ready with these files:")
     for step in steps:
         for path in step.outputs:
             if path.exists():
@@ -113,8 +113,8 @@ def _summary(steps: Sequence[Step], data_dir: Path) -> None:
 def run(options: BuildOptions, paths: PipelinePaths) -> None:
     if not paths.source.is_dir():
         raise SystemExit(
-            f"no source files at {paths.source}; run `{COMMAND_NAME} fetch` first or point "
-            "--data-dir at a directory that has them"
+            f"No source files were found in {paths.source}. Run `{COMMAND_NAME} fetch` first, "
+            "or use --data-dir with an existing dataset."
         )
     selected = _selected(options)
     mafft = _resolve_mafft(options.mafft) if "clustering" in selected else ""

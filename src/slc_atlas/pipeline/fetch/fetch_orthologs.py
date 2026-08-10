@@ -101,7 +101,7 @@ def run(genes_path: Path, species_path: Path, out_path: Path) -> None:
                 print(f"  {i}/{len(gene_ids)} genes...", file=sys.stderr)
 
     # Coverage per species flags species-name mismatches fast
-    print("\northolog coverage per species:", file=sys.stderr)
+    print("\nOrtholog coverage per species:", file=sys.stderr)
     for sp in targets:
         n = sum(1 for r in all_rows if r["species"] == sp)
         flag = "  <-- ZERO, check ensembl_name" if n == 0 else ""
@@ -113,4 +113,4 @@ def run(genes_path: Path, species_path: Path, out_path: Path) -> None:
         writer = csv.DictWriter(f, fieldnames=FIELDS, delimiter="\t")
         writer.writeheader()
         writer.writerows(all_rows)
-    print(f"\nwrote {len(all_rows)} ortholog rows -> {out_path}", file=sys.stderr)
+    print(f"\nWrote {len(all_rows)} ortholog rows -> {out_path}", file=sys.stderr)

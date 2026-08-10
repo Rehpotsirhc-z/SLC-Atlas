@@ -19,6 +19,6 @@ def require(modules: tuple[str, ...]) -> None:
             importlib.import_module(module)
         except ImportError:
             raise SystemExit(
-                f"{module} is missing; install the pipeline extras: "
-                f"pip install '{DISTRIBUTION_NAME}[pipeline]'"
+                f"The {module} package is required for this step. Install the pipeline "
+                f"dependencies with `pip install '{DISTRIBUTION_NAME}[pipeline]'`."
             ) from None

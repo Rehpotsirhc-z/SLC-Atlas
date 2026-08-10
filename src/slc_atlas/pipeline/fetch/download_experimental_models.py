@@ -34,14 +34,14 @@ def download(job: tuple[str, Path]) -> str | None:
     try:
         path.write_bytes(fetch_bytes(url))
     except Exception as exc:
-        print(f"  failed {path.name}: {exc}", file=sys.stderr)
+        print(f"  Failed {path.name}: {exc}", file=sys.stderr)
         return path.stem
     return None
 
 
 def run(experimental_path: Path, models_dir: Path) -> None:
     if not experimental_path.exists():
-        print(f"no {experimental_path}; nothing to mirror", file=sys.stderr)
+        print(f"No {experimental_path}; nothing to mirror", file=sys.stderr)
         return
 
     experimental = pl.read_csv(

@@ -1,18 +1,10 @@
-# This file lists the species the conservation view compares human genes
-# against, one row per species. You can edit the set freely: add or remove
-# rows, but keep the homo_sapiens row. Each row has five columns, which are
-# separated by tabs:
-#   ensembl_name    is the species' production name at Ensembl, written in
-#                   lowercase with underscores. Orthologs are looked up by it,
-#                   so it has to match Ensembl exactly.
-#   display_name    is the label the atlas shows for the species.
-#   taxon_id        is the species' NCBI Taxonomy id, which the build carries
-#                   into the conservation table.
-#   timetree_name   is the species' name at TimeTree. It is only used with
-#                   --tree-source timetree.
-#   ucsc_name       is the assembly name at UCSC. It is only used with
-#                   --tree-source ucsc.
-# Blank lines and lines starting with # are ignored.
+# Choose the species shown in the Conservation view
+# Add or remove rows freely, but keep homo_sapiens
+# Set ensembl_name to the lowercase production name used by Ensembl
+# Set display_name to the label shown in the atlas
+# Set taxon_id to the NCBI Taxonomy ID
+# Set timetree_name and ucsc_name only when using their matching tree sources
+# Separate columns with tabs; blank lines and comments are ignored
 
 ensembl_name	display_name	taxon_id	timetree_name	ucsc_name
 homo_sapiens	Human	9606	Homo sapiens	hg38
