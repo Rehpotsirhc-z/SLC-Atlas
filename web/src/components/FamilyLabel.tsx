@@ -10,11 +10,10 @@ const CAP_HEIGHT_EM = "0.7em"
 interface FamilyLabelProps {
   label: string
   color: string
-  familyName?: string | null
   category?: string | null
 }
 
-export default function FamilyLabel({ label, color, familyName, category }: FamilyLabelProps) {
+export default function FamilyLabel({ label, color, category }: FamilyLabelProps) {
   return (
     <Tooltip
       placement="left"
@@ -32,16 +31,7 @@ export default function FamilyLabel({ label, color, familyName, category }: Fami
           },
         },
       }}
-      title={
-        category ? (
-          <>
-            {familyName && <Box sx={{ fontWeight: 600, display: "block" }}>{familyName}</Box>}
-            <Box sx={{ color: "text.secondary", display: "block" }}>{category}</Box>
-          </>
-        ) : (
-          ""
-        )
-      }
+      title={category ? <Box sx={{ fontWeight: 600, display: "block" }}>{category}</Box> : ""}
     >
       <Box
         sx={{

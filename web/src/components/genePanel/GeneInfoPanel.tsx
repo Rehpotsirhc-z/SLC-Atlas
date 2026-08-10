@@ -29,14 +29,7 @@ export default function GeneInfoPanel({ info, ...geometry }: GeneInfoPanelProps)
   const statRows: StatRow[] = [
     {
       label: "Family",
-      value: (
-        <FamilyLabel
-          label={family}
-          color={familyColor}
-          familyName={gene?.family_name}
-          category={gene?.category}
-        />
-      ),
+      value: <FamilyLabel label={family} color={familyColor} category={gene?.category} />,
     },
     { label: "Metric", value: methodLabel },
     { label: "Branch length", value: node.branch_length.toFixed(3) },

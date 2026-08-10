@@ -73,14 +73,7 @@ export default function GeneConservationPanel({
   const statRows: StatRow[] = [
     {
       label: "Family",
-      value: (
-        <FamilyLabel
-          label={family || "?"}
-          color={familyColor}
-          familyName={gene?.family_name}
-          category={gene?.category}
-        />
-      ),
+      value: <FamilyLabel label={family || "?"} color={familyColor} category={gene?.category} />,
     },
     { label: "Species compared", value: cells.length },
     { label: "1:1 orthologs", value: oneToOneCount },

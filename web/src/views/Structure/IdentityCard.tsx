@@ -125,7 +125,6 @@ export default function IdentityCard({ structure, gene }: Props) {
             <FamilyLabel
               label={family}
               color={getFamilyColor(family, palette.mode)}
-              familyName={gene?.family_name}
               category={gene?.category}
             />
           </Box>
