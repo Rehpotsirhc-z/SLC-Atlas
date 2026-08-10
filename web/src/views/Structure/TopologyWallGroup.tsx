@@ -77,6 +77,7 @@ const TopologyWallGroup = memo(function TopologyWallGroup({
   return (
     <Box
       component="section"
+      sx={{ mx: `${-WALL.cellPadX}px`, px: `${WALL.cellPadX}px` }}
       style={{
         display: count === 0 ? "none" : undefined,
         // Offscreen groups skip layout and paint, which is most of a filter toggle's cost
