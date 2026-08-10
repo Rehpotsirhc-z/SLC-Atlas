@@ -130,11 +130,11 @@ const TopologyLegend = memo(function TopologyLegend({
   }
   if (membrane && !model.oriented) {
     rows.push({
-      key: "sides",
-      label: "Sides",
+      key: "orientation",
+      label: "Orientation",
       content: (
         <Typography sx={{ ...valueSx, color: "text.secondary" }}>
-          UniProt does not say which side is which, so the figure picked one
+          Assumed, N-terminus cytoplasmic
         </Typography>
       ),
     })
