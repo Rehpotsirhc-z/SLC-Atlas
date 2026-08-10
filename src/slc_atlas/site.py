@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Serve the built frontend alongside the API, for `atlas serve`."""
+"""Serve a built atlas alongside its API"""
 
 import json
 from pathlib import Path
@@ -28,7 +28,7 @@ def read_shell(web_dir: Path) -> str:
 
 
 def read_routes(web_dir: Path) -> set[str]:
-    """Return the addresses the frontend answers itself, which the build writes down."""
+    """Return the page routes recorded by the frontend build"""
     source = web_dir / ROUTES_FILE
     if not source.is_file():
         raise FileNotFoundError(f"no {ROUTES_FILE} at {web_dir}; run `npm --prefix web run build`")
@@ -41,14 +41,7 @@ def read_manifest(web_dir: Path) -> str | None:
 
 
 class SpaFiles(StaticFiles):
-    """Serve the static files, and serve the page itself for any path that has no file of
-    its own.
-
-    A view such as /structure is a route the frontend handles itself, so reloading the page
-    while looking at one has to return the page rather than a 404. An address that is not
-    one of those routes gets the same page with a 404 status, which is the not-found page
-    the frontend draws for it.
-    """
+    """Serve static assets and the app shell for frontend routes"""
 
     def __init__(
         self, *, directory: Path, shell: str, manifest: str | None, routes: set[str]
@@ -59,7 +52,7 @@ class SpaFiles(StaticFiles):
         self.routes = routes
 
     async def get_response(self, path: str, scope: Scope) -> Response:
-        # The copies on disk still hold the build-time names
+        # Render deployment names without changing the built files
         if path in ("", ".", "index.html"):
             return HTMLResponse(self.shell)
         if path == "manifest.webmanifest" and self.manifest is not None:
@@ -73,8 +66,7 @@ class SpaFiles(StaticFiles):
 
 
 def mount_site(app: FastAPI, web_dir: Path) -> None:
-    """Mount the frontend at /, which is done after the API routes so that they are matched
-    first."""
+    """Mount the frontend after the API routes"""
     app.mount(
         "/",
         SpaFiles(

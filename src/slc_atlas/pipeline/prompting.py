@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The setup questions that `atlas fetch` asks when it was not given the flags instead.
-
-An option that was passed as a flag is never asked about, and only the options that make a
-real difference to the result are ever asked about at all. Nobody is asked anything unless
-there is a person at the terminal, so a script or a CI job is given a plain error rather
-than being left waiting for an answer.
-"""
+"""Run the optional interactive setup for `atlas fetch`"""
 
 import argparse
 import shlex
@@ -35,8 +29,7 @@ CANCELLED = "\ncancelled"
 
 
 def asker(spec: Sequence[Option], args: argparse.Namespace) -> Callable[[Option, Any], Any] | None:
-    """Return the function that asks the questions, or None when the flags have already
-    answered all of them or there is nobody at the terminal to ask."""
+    """Return an interactive prompt when the terminal and missing options require one"""
     pending = [o for o in spec if o.prompt and getattr(args, o.name, None) is None]
     if not pending or not (sys.stdin.isatty() and sys.stdout.isatty()):
         return None
@@ -53,9 +46,7 @@ def ask(option: Option, default: Any) -> Any:
 
 
 def command_line(command: str, spec: Sequence[Option], chosen: Mapping[str, Any]) -> str:
-    """Write the run out as a single command that uses only flags. Every option that was
-    asked about is included even when its value is the default one, because leaving it out
-    would mean the question is asked all over again on the next run."""
+    """Return a reusable command containing every answer from interactive setup"""
     words = [f"{COMMAND_NAME} {command}"]
     for option in spec:
         value = chosen[option.name]

@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 # Stamps Apache-2.0 headers on all Python and TypeScript source files.
-# Safe to re-run — reuse annotate won't duplicate existing headers.
+# Safe to rerun since REUSE does not duplicate existing headers
 
 set -e
 

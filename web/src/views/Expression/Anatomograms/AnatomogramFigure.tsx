@@ -93,7 +93,10 @@ export default function AnatomogramFigure({
       />
       {hover && (
         <HoverTooltip x={hover.cx} y={hover.cy} maxWidth={220}>
-          <Typography variant="caption" sx={{ fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
+          >
             {tissuesOf(hover.tissue).map(displayTissue).join(", ")}
           </Typography>
         </HoverTooltip>

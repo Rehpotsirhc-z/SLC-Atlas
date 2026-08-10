@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-# Runs on every container start (postStartCommand). Renders the site with `atlas export`
-# and serves it on :80 through deploy/nginx.conf, the same config the Docker image uses.#
-#
-# Vite on :3000 with HMR and `fastapi dev` are for development purposes.
-
 set -e
 
 find /home/ubuntu/.cache/ms-playwright-mcp -maxdepth 2 -name 'Singleton*' -delete 2>/dev/null || true

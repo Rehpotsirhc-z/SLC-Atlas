@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// trim the line box to cap height / baseline so all-caps text centers against sibling icons
+// Trim the line box so all-caps text centers beside icons
 export const capBoxSx = {
   textBoxTrim: "trim-both",
   textBoxEdge: "cap alphabetic",

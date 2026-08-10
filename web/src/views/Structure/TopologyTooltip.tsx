@@ -93,7 +93,12 @@ export default function TopologyTooltip({ hover, point, model }: Props) {
           </Line>
           <Typography
             variant="caption"
-            sx={{ display: "block", fontFamily: custom.monoFontFamily, fontWeight: 600, fontSize: 13 }}
+            sx={{
+              display: "block",
+              fontFamily: custom.monoFontFamily,
+              fontWeight: 600,
+              fontSize: 13,
+            }}
           >
             {formatSpans(hover.item.spans)}
           </Typography>

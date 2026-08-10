@@ -14,7 +14,7 @@ export async function fetchCoordinates(sources: CoordinateSource[]): Promise<Arr
       const res = await fetch(url)
       if (res.ok) return await res.arrayBuffer()
     } catch {
-      // a cross-origin or offline failure rejects rather than returning a response
+      // Cross-origin and offline failures reject instead of returning a response
     }
   }
   throw new Error(`No coordinates at ${tried.join(" or ")}`)

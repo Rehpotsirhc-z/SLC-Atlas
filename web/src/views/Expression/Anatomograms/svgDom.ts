@@ -58,7 +58,7 @@ export function tissueAt(wrap: HTMLElement, clientX: number, clientY: number): s
       const b = hit.getBBox()
       area = b.width * b.height
     } catch {
-      /* not laid out */
+      /* Not laid out */
     }
     if (area < bestArea) {
       bestArea = area

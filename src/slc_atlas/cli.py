@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The `atlas` command.
-
-atlas fetch <source>   download a gene family as plain, editable source files
-atlas build            compile those source files into what the app serves
-atlas serve            serve the app from a built dataset
-atlas export <dir>     write the whole app to disk as static files
-"""
+"""Provide the `atlas` commands for creating, serving, and exporting a gene-family site"""
 
 import argparse
 import os
@@ -20,7 +14,7 @@ from .pipeline.cli import add_parsers
 
 def _add_settings_flags(parser: argparse.ArgumentParser) -> None:
     for name, field in Settings.model_fields.items():
-        # A path default is wherever this copy happens to be installed, so it is not shown
+        # Hide path defaults since they depend on where the package is installed
         shown = "" if isinstance(field.default, Path) or field.default == "" else field.default
         env = f"ATLAS_{name.upper()}"
         parser.add_argument(
@@ -36,7 +30,7 @@ def _apply_settings_flags(args: argparse.Namespace) -> None:
         value = getattr(args, name, None)
         if value is not None:
             os.environ[f"ATLAS_{name.upper()}"] = str(value)
-    # Re-read the settings now that the flags are in the environment
+    # Apply command-line settings before loading the application
     refresh()
 
 

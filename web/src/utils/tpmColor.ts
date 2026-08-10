@@ -18,7 +18,7 @@ export function hexToRgb(hex: string): [number, number, number] {
   return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)]
 }
 
-// t is clamped to [0,1]
+// Clamp t to [0, 1]
 export function lerpHex(from: string, to: string, t: number): string {
   const u = Math.max(0, Math.min(1, t))
   const [ar, ag, ab] = hexToRgb(from)

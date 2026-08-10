@@ -2,14 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The description of an option that both pipeline command lines are built from.
-
-Each option is declared once in cli.py and then used in two ways. register() turns it into
-an argparse argument, and resolve() combines what argparse parsed with whatever the wizard
-asked the user for and produces the value that a runner is given. Every argparse argument
-defaults to None so that a value the user supplied can still be told apart from one they
-left alone, and the real default is applied in resolve() instead.
-"""
+"""Share option definitions between command-line flags and interactive setup"""
 
 import argparse
 import importlib
@@ -20,13 +13,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Option:
-    """A single input to a pipeline command, which becomes an argparse argument and, when
-    prompt is set, a wizard question as well.
-
-    An option whose default is False becomes a --flag. An option whose default is callable
-    computes it from the options resolved before it, which is how the default curation
-    directory is able to sit inside whichever data directory was chosen.
-    """
+    """Describe one command-line option and its optional setup question"""
 
     name: str
     help: str
@@ -47,14 +34,7 @@ class Option:
 
 
 class StepName:
-    """A --step value, checked against the list of steps that the phase runner defines.
-
-    The check is made here rather than through argparse's choices, because argparse reads
-    the list of choices whenever it formats its help text. Reading the list means importing
-    the runner, and the runner imports every step module it drives, so --help would then
-    need the pipeline dependencies installed. Doing it this way delays the import until a
-    step name actually has to be checked.
-    """
+    """Validate a step name without loading optional pipeline dependencies for `--help`"""
 
     def __init__(self, phase: str) -> None:
         self._phase = phase
@@ -77,7 +57,7 @@ def register(parser: argparse.ArgumentParser, spec: Sequence[Option]) -> None:
     for option in spec:
         kwargs: dict[str, Any] = {"default": None, "help": _help(option)}
         if option.default is False:
-            # A prompted flag needs its --no- form so the printed rerun command can use it
+            # Prompted flags need both forms for the generated rerun command
             kwargs["action"] = argparse.BooleanOptionalAction if option.prompt else "store_true"
         else:
             kwargs["choices"] = option.choices

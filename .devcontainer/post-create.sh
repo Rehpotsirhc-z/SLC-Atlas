@@ -35,7 +35,7 @@ fi
 npx -y playwright install --with-deps chromium
 
 # ── System packages ──────────────────────────────────────────────────────────
-# mafft is the one non-Python prerequisite `atlas build` needs, for the clustering view
+# MAFFT is the only non-Python requirement for the Clustering view
 if ! dpkg -s neovim less nginx mafft build-essential pkg-config \
     libcurl4-openssl-dev >/dev/null 2>&1; then
     sudo apt-get update

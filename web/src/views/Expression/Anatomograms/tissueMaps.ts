@@ -29,10 +29,10 @@ const BODY_MAP: Record<string, string> = {
   Spleen: "UBERON_0002106",
   Stomach: "UBERON_0000945",
   Thyroid: "UBERON_0002046",
-  // male-only
+  // Male only
   Prostate: "UBERON_0002367",
   Testis: "UBERON_0000473",
-  // female-only
+  // Female only
   "Cervix Uteri": "UBERON_0000002",
   "Fallopian Tube": "UBERON_0003889",
   Ovary: "UBERON_0000992",

@@ -20,7 +20,7 @@ class _MethodField(BaseModel):
     method: str
 
 
-# reverse-MRO field collection keeps `method` ahead of the tree fields on the wire
+# Keep `method` ahead of the tree fields in serialized responses
 class ClusterNode(TreeNodeBase, _MethodField):
     gene_id: str | None = None
     symbol: str | None = None

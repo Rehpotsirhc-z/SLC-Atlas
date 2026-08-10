@@ -4,40 +4,65 @@ SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# Dev Container
+# Develop in a container
+The dev container gives you Python 3.12, Node.js, MAFFT, nginx, and all project
+dependencies without installing them on your machine. You need Docker and the
+[Dev Container CLI](https://containers.dev/). Install the CLI with
+`npm install -g @devcontainers/cli` if your package manager does not provide it.
 
-A standard [Dev Container](https://containers.dev/), driven entirely from the
-CLI. There is no Dockerfile: `devcontainer.json` declares a base image plus
-[Features](https://containers.dev/features), and `post-create.sh` installs
-everything else. `post-start.sh` runs on every container start. The first
-`devcontainer up` downloads the base image and Features, so it is slower than
-subsequent runs.
-
-## Prerequisites
-
-- Docker
-- The Dev Container CLI. On Arch: `paru -S devcontainer-cli` (provides the
-  `devcontainer` binary). Elsewhere: `npm install -g @devcontainers/cli`.
-
-## Start and enter
+From the repository root, start the container and open a shell:
 
 ```bash
-devcontainer up --workspace-folder .         # build + start; runs post-create on first create
-devcontainer exec --workspace-folder . bash  # shell inside the container
+./enter-dev.sh
 ```
 
-`up` is idempotent: re-running it reuses the existing container. Dependency
-installation (Python venv + an editable install of `pyproject.toml` with the
-`pipeline` and `dev` extras, which also puts the `atlas` command on `PATH`;
-`web/node_modules`)
-happens once via `post-create.sh`. The Python venv is on `PATH` in every `exec`
-session, so `python`/`fastapi` resolve without activating anything.
+The first start downloads the base image and installs dependencies, so it takes
+longer than later starts. Once inside, launch both development servers:
 
-`.venv` and `web/node_modules` live in named Docker volumes rather than the
-workspace bind mount: they survive container rebuilds and stay off the host
-filesystem (faster I/O, no cross-OS `node_modules` breakage). The volumes are
-named after the workspace folder—`<folder>-venv` and `<folder>-node-modules`—so
-copying `.devcontainer/` into another project needs no edits. Docker creates
-these volumes as `root`, so `post-create.sh` chowns them to the container user
-before installing. To force a clean reinstall, remove the volumes with the
-container down: `docker volume rm <folder>-venv <folder>-node-modules`.
+```bash
+./dev-zellij.sh
+```
+
+Open the Vite frontend at <http://localhost:3000>. It uses the FastAPI server at
+<http://localhost:8000>. The container also serves the latest production-style
+static export at <http://localhost>.
+
+## After changing the frontend
+Vite updates <http://localhost:3000> as you edit files under `web/src/`, so
+normal frontend work does not require a build or restart.
+
+However, the static preview at <http://localhost> uses the compiled frontend in
+`web/dist`, not the source files. You need to rebuild and export after changing
+the frontend:
+
+```bash
+# Run this in the container
+npm --prefix web run build
+atlas export /srv/www
+```
+
+Reload <http://localhost> when both commands finish. Restarting the container
+also runs the export, but it doesn't build the frontend first, so build
+`web/dist` before restarting when you want the preview to include frontend
+changes.
+
+## Direct CLI use
+You can manage the container without the helper scripts:
+
+```bash
+devcontainer up --workspace-folder .
+devcontainer exec --workspace-folder . bash
+```
+
+The Python environment is already on `PATH` in container shells. Dependencies
+are kept in Docker volumes named `<folder>-venv` and `<folder>-node-modules`, so
+they survive a rebuild and do not create host-specific files in the checkout.
+
+To reinstall dependencies after changing the setup, run:
+
+```bash
+.devcontainer/post-create.sh
+```
+
+To start clean, stop the container and remove those two named volumes before
+running `devcontainer up` again.

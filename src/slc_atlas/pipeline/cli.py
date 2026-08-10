@@ -2,14 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The command lines for `atlas fetch` and `atlas build`.
-
-Each subcommand has one list of options, and that list does two jobs. It registers the
-command-line flags, and for the few options worth asking about it also supplies the
-questions that prompting.py puts to the user, so the flags and the questions cannot fall
-out of step with each other. No runner is imported at module level here, which is what
-lets --help work before the pipeline dependencies have been installed.
-"""
+"""Define the `atlas fetch` and `atlas build` commands"""
 
 import argparse
 import os
@@ -170,7 +163,7 @@ def _paths(chosen: Mapping[str, Any]) -> "PipelinePaths":
 
     data_dir = Path(chosen["data_dir"])
     if data_dir != settings.data_dir:
-        # A directory the user was asked for did not pass through the settings flags in main()
+        # Keep interactive choices consistent with the shared settings
         os.environ["ATLAS_DATA_DIR"] = str(data_dir)
         refresh()
     return PipelinePaths(data_dir, Path(chosen.get("curation_dir") or data_dir / "curation"))
@@ -237,7 +230,7 @@ def _build(args: argparse.Namespace) -> int:
 
 
 def add_parsers(sub: argparse._SubParsersAction) -> None:
-    # Without allow_abbrev off, argparse would accept a truncated typo like --skip-clusterin
+    # Reject shortened flags so misspelled view names do not pass silently
     fetch = sub.add_parser(
         "fetch",
         help="download a gene family as plain, editable source files",

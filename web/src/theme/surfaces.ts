@@ -9,8 +9,7 @@ export const floatSurfaceBg = (theme: Theme) => alpha(theme.palette.background.p
 export const floatSurfaceBgHover = (theme: Theme) =>
   alpha(emphasize(theme.palette.background.paper, 0.06), 0.9)
 
-// Bordered translucent skin shared by the hover tooltip and the family-label tooltip.
-// Bottom padding sits under the top so short text reads optically centered.
+// Bordered translucent skin shared by hover and family-label tooltips
 export const tooltipSurfaceSx = {
   bgcolor: "background.default",
   border: 1,

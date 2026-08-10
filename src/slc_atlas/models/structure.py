@@ -24,7 +24,7 @@ class Structure(BaseModel):
     uniprot_accession: str | None = None
     uniprot_id: str | None = None
     uniprot_length: int | None = None
-    # exact | isoform | differs | unknown, against the Ensembl canonical protein
+    # Agreement with the Ensembl canonical protein: exact, isoform, differs, or unknown
     seq_agreement: str | None = None
     id_route: str | None = None
     afdb_entry_id: str | None = None
