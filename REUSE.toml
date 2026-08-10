@@ -12,9 +12,11 @@ path = [
   "web/index.html",
   "zellij-layout.kdl",
   ".gitattributes",
+  ".devcontainer/README.org",
   "README.org",
+  "docs/source-files.org",
   "src/slc_atlas/pipeline/templates/**",
-  "web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.md"
+  "web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.org"
 ]
 SPDX-FileCopyrightText = "2026 Dong Lab, Yale School of Medicine <https://donglab.org>"
 SPDX-License-Identifier = "CC0-1.0"

@@ -29,7 +29,7 @@ atlas build --data-dir ./my-atlas
 atlas serve --data-dir ./my-atlas
 #+end_src
 
-Open http://127.0.0.1:8000. Here, ~752~ is an HGNC gene group ID. You can instead
+Open [[http://localhost:8000]]. Here, ~752~ is an HGNC gene group ID. You can instead
 pass a text file containing one gene symbol or Ensembl gene ID per line, or a
 downloaded HGNC group TSV. Run ~atlas fetch~ without a source for an interactive
 setup.
@@ -104,7 +104,7 @@ its directory and set the ~ATLAS_*~ names for your atlas:
 docker compose up --build
 #+end_src
 
-Open http://localhost:8080. The container exports the site when it starts and
+Open [[http://localhost:8080]]. The container exports the site when it starts and
 serves it through nginx. Put a reverse proxy in front of it when you need HTTPS;
 see the [[https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/][nginx guide]] or [[https://caddyserver.com/docs/quick-starts/reverse-proxy][Caddy guide]] for more details on reverse proxying.
 
@@ -132,9 +132,9 @@ Container CLI, and then run:
 ./dev-zellij.sh
 #+end_src
 
-The frontend runs at http://localhost:3000 and sends API requests to FastAPI at
-http://localhost:8000. A production-style static preview is available at
-http://localhost. See [[file:.devcontainer/README.md][Dev container setup]] for direct CLI commands and container details.
+The frontend runs at [[http://localhost:3000]] and sends API requests to FastAPI at
+[[http://localhost:8000]]. A production-style static preview is available at
+[[http://localhost]]. See [[file:.devcontainer/README.org][Dev container setup]] for direct CLI commands and container details.
 
 For a manual setup:
 
@@ -152,6 +152,7 @@ Run the two development servers in separate terminals. Before submitting a chang
 ~npm --prefix web run build~.
 
 * Licensing
-This project is licensed under the Apache-2.0 license and is fully [[https://reuse.software/][REUSE-compliant]].
-Anatomogram artwork from EMBL-EBI is available under CC BY 4.0; see [[file:web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.md][Anatomogram
-artwork]] for its source, attribution, and modification details.
+This project is licensed under the Apache-2.0 license and is fully
+[[https://reuse.software/][REUSE-compliant]]. Anatomogram artwork from EMBL-EBI is available under CC BY
+4.0; see [[file:web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.org][Anatomogram Artwork]] for its source, attribution, and modification
+details.
