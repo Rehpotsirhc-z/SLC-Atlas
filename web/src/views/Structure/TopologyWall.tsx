@@ -25,6 +25,9 @@ interface Hovered {
   y: number
 }
 
+const markCount = (gene: WallGene) =>
+  gene.features.length === 1 ? "1 annotated residue" : `${gene.features.length} annotated residues`
+
 function geneIdAt(target: EventTarget): string | null {
   if (!(target instanceof Element)) return null
   return target.closest("[data-gene-id]")?.getAttribute("data-gene-id") ?? null
@@ -44,6 +47,8 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
       band: palette.mode === "dark" ? c.base3 : c.bgAlt,
       chain: palette.mode === "dark" ? c.base4 : c.base3,
       label: palette.text.secondary,
+      mark: palette.text.primary,
+      paper: palette.background.paper,
     }
   }, [palette])
 
@@ -101,10 +106,11 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
         <Stack spacing={3} useFlexGap>
           {wall.groups.map((group) => (
             <TopologyWallGroup
-              key={group.nTransmembrane}
+              key={group.key}
               group={group}
               ink={ink}
               familyFilter={familyFilter}
+              membrane={wall.membrane}
             />
           ))}
         </Stack>
@@ -125,7 +131,7 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
             color="text.secondary"
             sx={{ fontSize: 13 }}
           >
-            {hovered.gene.familyName}
+            {hovered.gene.category}
           </Typography>
           <Typography
             variant="caption"
@@ -140,7 +146,9 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
                 }, best ${hovered.gene.bestPdbId?.toUpperCase()}`}
           </Typography>
           <Typography variant="caption" component="div" sx={{ fontSize: 13 }}>
-            {hovered.gene.length} residues, {hovered.gene.nTransmembrane} crossing the membrane
+            {wall.membrane
+              ? `${hovered.gene.length} residues, ${hovered.gene.nTransmembrane} crossing the membrane`
+              : `${hovered.gene.length} residues, ${markCount(hovered.gene)}`}
           </Typography>
         </HoverTooltip>
       )}

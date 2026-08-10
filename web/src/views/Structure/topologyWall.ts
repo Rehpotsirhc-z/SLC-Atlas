@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Gene } from "@/types/gene"
-import type { GeneTopology, MembraneSegment, StructureRecord } from "@/types/structure"
+import type { FeatureSpan, GeneTopology, MembraneSegment, StructureRecord } from "@/types/structure"
 import type { ThemeMode } from "@/theme"
 import { getFamilyColor } from "@/utils/familyColor"
 
@@ -11,10 +11,10 @@ export interface WallGene {
   geneId: string
   symbol: string
   family: string
-  familyName: string
   category: string | null
   length: number
   segments: MembraneSegment[]
+  features: FeatureSpan[]
   nTransmembrane: number
   nExperimental: number
   bestPdbId: string | null
@@ -22,15 +22,19 @@ export interface WallGene {
 }
 
 export interface WallGroup {
-  nTransmembrane: number
+  key: string
+  nTransmembrane: number | null
+  family: string | null
+  familyDetail: string | null
   genes: WallGene[]
 }
 
 export interface Wall {
+  membrane: boolean
   groups: WallGroup[]
 }
 
-export const EMPTY_WALL: Wall = { groups: [] }
+export const EMPTY_WALL: Wall = { membrane: true, groups: [] }
 
 export interface WallSummary {
   count: number
@@ -48,6 +52,47 @@ export function summariseWall(wall: Wall, family: string | null): WallSummary {
     }
   }
   return { count, category }
+}
+
+const bySymbol = (a: WallGene, b: WallGene) =>
+  a.symbol.localeCompare(b.symbol, undefined, { numeric: true })
+
+function byHelixCount(genes: WallGene[]): WallGroup[] {
+  const counts = new Map<number, WallGene[]>()
+  for (const gene of genes) {
+    const members = counts.get(gene.nTransmembrane) ?? []
+    members.push(gene)
+    counts.set(gene.nTransmembrane, members)
+  }
+
+  return [...counts.entries()]
+    .map(([nTransmembrane, members]) => ({
+      key: `tm-${nTransmembrane}`,
+      nTransmembrane,
+      family: null,
+      familyDetail: null,
+      genes: members.sort(bySymbol),
+    }))
+    .sort((a, b) => a.nTransmembrane - b.nTransmembrane)
+}
+
+function byFamily(genes: WallGene[]): WallGroup[] {
+  const families = new Map<string, WallGene[]>()
+  for (const gene of genes) {
+    const members = families.get(gene.family) ?? []
+    members.push(gene)
+    families.set(gene.family, members)
+  }
+
+  return [...families.entries()]
+    .map(([family, members]) => ({
+      key: `family-${family}`,
+      nTransmembrane: null,
+      family,
+      familyDetail: members[0].category,
+      genes: members.sort(bySymbol),
+    }))
+    .sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }))
 }
 
 export function buildWall(
@@ -68,10 +113,10 @@ export function buildWall(
       geneId: entry.gene_id,
       symbol: gene.symbol,
       family: gene.family,
-      familyName: gene.family_name,
       category: gene.category,
       length: entry.uniprot_length ?? record.uniprot_length ?? 0,
       segments: entry.segments,
+      features: entry.features,
       nTransmembrane: record.n_transmembrane,
       nExperimental: record.n_experimental,
       bestPdbId: record.best_pdb_id,
@@ -79,19 +124,6 @@ export function buildWall(
     })
   }
 
-  const byCount = new Map<number, WallGene[]>()
-  for (const gene of genes) {
-    const members = byCount.get(gene.nTransmembrane) ?? []
-    members.push(gene)
-    byCount.set(gene.nTransmembrane, members)
-  }
-
-  const groups = [...byCount.entries()]
-    .map(([nTransmembrane, members]) => ({
-      nTransmembrane,
-      genes: members.sort((a, b) => a.symbol.localeCompare(b.symbol, undefined, { numeric: true })),
-    }))
-    .sort((a, b) => a.nTransmembrane - b.nTransmembrane)
-
-  return { groups }
+  const membrane = genes.some((gene) => gene.segments.length > 0)
+  return { membrane, groups: membrane ? byHelixCount(genes) : byFamily(genes) }
 }
