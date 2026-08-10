@@ -95,6 +95,8 @@ export const RESIDUES = {
   letterSize: 8,
   segmentLabelSize: 11,
   segmentLabelGap: 7,
+  terminusSize: 12,
+  terminusGap: 8,
   chainWidth: 1.5,
   beadStroke: 1,
   siteRing: 2.5,

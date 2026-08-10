@@ -10,6 +10,9 @@ import { RESIDUES, RESIDUES_BAND, TRACK } from "./constants"
 import { laneLabel, type LaneLabel, type Side } from "./membraneSides"
 import type { Point } from "./regionsLayout"
 
+const textWidth = (label: string, size: number) => label.length * size * TRACK.labelAspect
+const beadInk = RESIDUES.bead + RESIDUES.litRing / 2
+
 export interface Bead {
   residue: number
   x: number
@@ -31,6 +34,12 @@ export interface BeadElement {
   chain: string
 }
 
+interface Terminus {
+  label: "N" | "C"
+  x: number
+  y: number
+}
+
 export interface ResiduesLayout {
   width: number
   height: number
@@ -42,7 +51,7 @@ export interface ResiduesLayout {
   labelY: number
   lanes: LaneLabel[]
   elements: BeadElement[]
-  termini: { label: "N" | "C"; x: number; y: number }[]
+  termini: Terminus[]
   hits: BeadGrid
   hasConfidence: boolean
 }
@@ -94,8 +103,7 @@ function placeLabel(
   after: number,
 ) {
   const inset = (side: number) => side + RESIDUES.bead + RESIDUES.segmentLabelGap
-  const needed =
-    label.length * RESIDUES.segmentLabelSize * TRACK.labelAspect + RESIDUES.segmentLabelGap
+  const needed = textWidth(label, RESIDUES.segmentLabelSize) + RESIDUES.segmentLabelGap
   if (after >= needed) {
     return { label, labelX: centre + inset(reach.right), labelAnchor: "start" as const }
   }
@@ -103,6 +111,24 @@ function placeLabel(
     return { label, labelX: centre - inset(reach.left), labelAnchor: "end" as const }
   }
   return { label: null, labelX: centre, labelAnchor: "start" as const }
+}
+
+function inkedRight(elements: BeadElement[], termini: Terminus[]): number {
+  let edge = 0
+  for (const element of elements) {
+    for (const bead of element.beads) edge = Math.max(edge, bead.x + beadInk)
+    if (element.label !== null) {
+      const runs =
+        element.labelAnchor === "start" ? textWidth(element.label, RESIDUES.segmentLabelSize) : 0
+      edge = Math.max(edge, element.labelX + runs)
+    }
+  }
+  for (const terminus of termini) {
+    if (terminus.label !== "C") continue
+    const half = textWidth(terminus.label, RESIDUES.terminusSize) / 2
+    edge = Math.max(edge, terminus.x + RESIDUES.bead + RESIDUES.terminusGap + half)
+  }
+  return edge
 }
 
 function ligandIndexByResidue(model: ChainModel): Map<number, number> {
@@ -243,8 +269,13 @@ export function layoutResidues(
   const lastBeads = withBeads[withBeads.length - 1]?.beads
   const last = lastBeads?.[lastBeads.length - 1]
 
+  const termini: Terminus[] = [
+    ...(first ? [{ label: "N" as const, x: first.x, y: first.y }] : []),
+    ...(last ? [{ label: "C" as const, x: last.x, y: last.y }] : []),
+  ]
+
   return {
-    width: plotRight + RESIDUES.padX,
+    width: Math.max(plotRight, inkedRight(elements, termini)) + RESIDUES.padX,
     height: membraneBottom + insideLane,
     length,
     plotLeft,
@@ -262,10 +293,7 @@ export function layoutResidues(
       },
     ],
     elements,
-    termini: [
-      ...(first ? [{ label: "N" as const, x: first.x, y: first.y }] : []),
-      ...(last ? [{ label: "C" as const, x: last.x, y: last.y }] : []),
-    ],
+    termini,
     hits: indexBeads(elements.flatMap((element) => element.beads)),
     hasConfidence: confidence !== null,
   }

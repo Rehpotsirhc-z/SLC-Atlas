@@ -159,9 +159,12 @@ const ResiduesDiagram = memo(function ResiduesDiagram({
         {layout.termini.map((terminus) => (
           <text
             key={terminus.label}
-            x={terminus.x + (terminus.label === "N" ? -RESIDUES.bead - 8 : RESIDUES.bead + 8)}
+            x={
+              terminus.x +
+              (terminus.label === "N" ? -1 : 1) * (RESIDUES.bead + RESIDUES.terminusGap)
+            }
             y={terminus.y}
-            fontSize={12}
+            fontSize={RESIDUES.terminusSize}
             fontWeight={700}
             textAnchor="middle"
             dominantBaseline="central"
