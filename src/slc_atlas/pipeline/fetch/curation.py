@@ -24,14 +24,6 @@ from .. import templates
 PROTEIN_CODING = "gene with protein product"
 APPROVED = "Approved"
 
-# REUSE-IgnoreStart
-SPDX_HEADER = [
-    "# SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>",
-    "#",
-    "# SPDX-License-Identifier: Apache-2.0",
-]
-# REUSE-IgnoreEnd
-
 FAMILIES_DOC = [
     "# This file names the gene families shown in the atlas. Each row has three",
     "# columns, which are separated by tabs:",
@@ -149,7 +141,7 @@ def seed(source: str, hgnc_path: Path, curation_dir: Path, *, promote_prefix: st
         ("exclusions.txt", lambda: _exclusions_text(rows)),
         ("symbol_overrides.tsv", lambda: _overrides_text(rows, promote_prefix)),
         ("species.tsv", _species_text),
-        ("uniprot_overrides.tsv", lambda: _document(SPDX_HEADER, UNIPROT_DOC, UNIPROT_BODY)),
+        ("uniprot_overrides.tsv", lambda: _document(UNIPROT_DOC, UNIPROT_BODY)),
     ]
     curation_dir.mkdir(parents=True, exist_ok=True)
     written = []
@@ -224,7 +216,7 @@ def _families_text(source: str, rows: list[dict]) -> str:
     for name, key, aliases in families:
         lines.append("\t".join((name, key, aliases[0] if aliases else name)))
         lines.extend(f"# also: {alias}" for alias in aliases[1:])
-    return _document(SPDX_HEADER, FAMILIES_DOC, [FAMILIES_HEADER, *lines])
+    return _document(FAMILIES_DOC, [FAMILIES_HEADER, *lines])
 
 
 def _exclusions_text(rows: list[dict]) -> str:
@@ -235,9 +227,7 @@ def _exclusions_text(rows: list[dict]) -> str:
             continue
         reason = locus if locus != PROTEIN_CODING else status.lower()
         suggestions.append(f"# {row['Approved symbol'].strip()}  ({reason})")
-    return _document(
-        SPDX_HEADER, EXCLUSIONS_DOC, [*EXCLUSIONS_LEAD, "", *suggestions] if suggestions else []
-    )
+    return _document(EXCLUSIONS_DOC, [*EXCLUSIONS_LEAD, "", *suggestions] if suggestions else [])
 
 
 def _overrides_text(rows: list[dict], promote_prefix: str) -> str:
@@ -253,7 +243,7 @@ def _overrides_text(rows: list[dict], promote_prefix: str) -> str:
             )
             if promoted and gene_id:
                 lines.append("\t".join((gene_id, approved, promoted)))
-    return _document(SPDX_HEADER, OVERRIDES_DOC, [OVERRIDES_HEADER, *lines])
+    return _document(OVERRIDES_DOC, [OVERRIDES_HEADER, *lines])
 
 
 def _species_text() -> str:
