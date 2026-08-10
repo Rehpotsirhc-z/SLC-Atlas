@@ -36,7 +36,8 @@ FAMILIES_HEADER = "group_name\tfamily_key\tdisplay_name"
 EXCLUSIONS_DOC = [
     "# List genes that should not appear in the atlas",
     "# Use one HGNC approved symbol per line, even if the display symbol changes elsewhere",
-    "# You may add a note after the symbol; blank lines and comments are ignored",
+    "# Anything after a # is a note, so you may write one after a symbol",
+    "# Blank lines and lines that are only a comment are ignored",
 ]
 EXCLUSIONS_LEAD = [
     "# HGNC marks the genes below as non-coding or unapproved",
@@ -90,12 +91,12 @@ def read_families(path: Path) -> tuple[dict[str, str], dict[str, str]]:
 
 
 def read_exclusions(path: Path) -> frozenset[str]:
-    """Read the excluded symbols, one per line. The first word of a line is the symbol and
-    anything after it is a note the reader wrote for themselves."""
+    """Read the excluded symbols, one per line, with everything after a pound sign taken
+    as a note and ignored."""
     if not path.exists():
         return frozenset()
-    words = (line.split("#", 1)[0].split() for line in path.read_text().splitlines())
-    return frozenset(parts[0] for parts in words if parts)
+    symbols = (line.split("#", 1)[0].strip() for line in path.read_text().splitlines())
+    return frozenset(symbol for symbol in symbols if symbol)
 
 
 def read_symbol_overrides(path: Path) -> dict[str, str]:
@@ -201,7 +202,7 @@ def _exclusions_text(rows: list[dict]) -> str:
         if locus == PROTEIN_CODING and status == APPROVED:
             continue
         reason = locus if locus != PROTEIN_CODING else status.lower()
-        suggestions.append(f"# {row['Approved symbol'].strip()}  ({reason})")
+        suggestions.append(f"# {row['Approved symbol'].strip()}  # {reason}")
     return _document(EXCLUSIONS_DOC, [*EXCLUSIONS_LEAD, "", *suggestions] if suggestions else [])
 
 
