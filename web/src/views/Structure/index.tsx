@@ -18,7 +18,6 @@ import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
-import { atlas } from "@/config/atlas"
 import { downloadName } from "@/utils/download"
 import { figureExportHandlers, withBackground } from "@/utils/exportFigure"
 import {
@@ -129,7 +128,7 @@ export default function Structure() {
   const header = (
     <ViewHeader
       title="Structure"
-      subtitle={`AlphaFold models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures for each ${atlas.familyLabel}`}
+      subtitle={`AlphaFold models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures`}
     />
   )
 

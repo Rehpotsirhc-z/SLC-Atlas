@@ -12,7 +12,6 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
-import { atlas } from "@/config/atlas"
 import { downloadName } from "@/utils/download"
 import AnatomogramDock from "./AnatomogramDock"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
@@ -97,7 +96,7 @@ export default function Expression() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Expression"
-        subtitle={`RNA abundance (TPM) of each ${atlas.familyLabel} across GTEx tissues`}
+        subtitle="RNA abundance (TPM) across GTEx tissues"
       />
 
       <Paper

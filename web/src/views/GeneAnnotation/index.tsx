@@ -7,7 +7,6 @@ import { Alert, Box, Divider, Paper, TablePagination, useMediaQuery, useTheme } 
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
-import { atlas } from "@/config/atlas"
 import { useUIStore } from "@/store/uiStore"
 import { MIN_CONTENT_WIDTH } from "./constants"
 import GeneAnnotationToolbar from "./GeneAnnotationToolbar"
@@ -102,7 +101,10 @@ export default function GeneAnnotation() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      <ViewHeader title="Genes" subtitle={atlas.description} />
+      <ViewHeader
+        title="Genes"
+        subtitle="Symbols, names, genomic coordinates, and transcript models for every gene"
+      />
       <Box ref={outerRef} sx={{ display: "flex", flex: 1, gap: 0, minHeight: 0 }}>
         <FamilyRail
           genes={genes}

@@ -11,7 +11,6 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
-import { atlas } from "@/config/atlas"
 import { downloadName } from "@/utils/download"
 import ClusteringToolbar from "./ClusteringToolbar"
 import LayoutToggle from "./LayoutToggle"
@@ -75,7 +74,7 @@ export default function Clustering() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Clustering"
-        subtitle={`${atlas.familyLabel} similarity trees by amino-acid, DNA (CDS), GTEx RNA co-expression, and ortholog identity`}
+        subtitle="Similarity trees by amino-acid, DNA (CDS), GTEx RNA co-expression, and ortholog identity"
       />
 
       <Paper

@@ -11,7 +11,6 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
-import { atlas } from "@/config/atlas"
 import { downloadName } from "@/utils/download"
 import ConservationHeatmap, { type ConservationHeatmapHandle } from "./ConservationHeatmap"
 import ConservationLegend from "./ConservationLegend"
@@ -90,7 +89,7 @@ export default function Conservation() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Conservation"
-        subtitle={`Ortholog sequence conservation of each ${atlas.familyLabel} across vertebrate species`}
+        subtitle="Ortholog sequence conservation across species"
       />
 
       <Paper
