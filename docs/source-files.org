@@ -25,15 +25,15 @@ Structure sources live in ~<data-dir>/source/structure/~. The pipeline starts wi
 models, confidence scores, and experimental entries. Delete the structure directory to
 fetch it again, or delete one file under ~models/~ to fetch only that model again.
 
-| File                 | Columns / format                                                                                              |
-|----------------------+---------------------------------------------------------------------------------------------------------------|
-| ~uniprot_map.tsv~    | gene_id, symbol, uniprot_accession, uniprot_id, uniprot_length, seq_agreement, id_route                       |
-| ~features.tsv~       | gene_id, uniprot_accession, feature_type, start, end, description, ligand_name, ligand_chebi, ligand_label    |
-| ~structures.tsv~     | gene_id, uniprot_accession, afdb_entry_id, afdb_version, model_url, ..., alphafill_page_url                   |
-| ~experimental.tsv~   | gene_id, uniprot_accession, pdb_id, method, resolution, coverage, chains, ligand_ccd, ...                     |
-| ~sequences.tsv~      | gene_id, uniprot_accession, sequence, the UniProt canonical sequence the topology figure numbers residues by  |
-| ~confidence.parquet~ | gene_id, uniprot_accession, plddt (one 0-100 score per residue)                                               |
-| ~models/~            | one binary-CIF file per accession, only under ~--download-predicted~; experimental entries mirror the same way into ~models/pdb/~ under ~--download-experimental~ |
+| File               | Columns / format                                                                                                                                                                                                                              |
+|--------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ~uniprot_map.tsv~    | gene_id, symbol, uniprot_accession, uniprot_id, uniprot_length, seq_agreement, id_route                                                                                                                                                       |
+| ~features.tsv~       | gene_id, uniprot_accession, feature_type, start, end, description, ligand_name, ligand_chebi, ligand_label                                                                                                                                    |
+| ~structures.tsv~     | gene_id, uniprot_accession, afdb_entry_id, afdb_version, model_url, ..., alphafill_page_url                                                                                                                                                   |
+| ~experimental.tsv~   | gene_id, uniprot_accession, pdb_id, method, resolution, coverage, chains, ligand_ccd, ...                                                                                                                                                     |
+| ~sequences.tsv~      | gene_id, uniprot_accession, sequence, the UniProt canonical sequence the topology figure numbers residues by                                                                                                                                  |
+| ~confidence.parquet~ | gene_id, uniprot_accession, plddt (one 0-100 score per residue). A gene appears here only when AlphaFold's model is built from the UniProt canonical sequence, because scores belonging to any other sequence cannot be placed on the figure. |
+| ~models/~            | one binary-CIF file per accession, only under ~--download-predicted~; experimental entries mirror the same way into ~models/pdb/~ under ~--download-experimental~                                                                                   |
 
 Manual changes to the gene to UniProt mapping belong in ~uniprot_overrides.tsv~
 under the curation directory, not in ~uniprot_map.tsv~, which is regenerated.

@@ -46,7 +46,8 @@ STAGES = [
     ["subset_expression", "fetch_sequences"],
     ["fetch_orthologs", "fetch_species_tree"],
     ["fetch_uniprot_map"],
-    ["fetch_protein_features", "fetch_structures", "fetch_uniprot_sequences"],
+    ["fetch_uniprot_sequences"],
+    ["fetch_protein_features", "fetch_structures"],
     ["download_models", "download_experimental_models", "fetch_confidence"],
 ]
 
@@ -247,7 +248,9 @@ def _steps(options: FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
         ),
         Step(
             "fetch_structures",
-            lambda: fetch_structures.run(uniprot_map, structures, experimental),
+            lambda: fetch_structures.run(
+                uniprot_map, structure / "sequences.tsv", structures, experimental
+            ),
             outputs=(structures, experimental),
         ),
         Step(

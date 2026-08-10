@@ -6,7 +6,7 @@ import { Fragment, memo, type ReactNode } from "react"
 import { Box, Typography, useTheme, type SxProps, type Theme } from "@mui/material"
 import SwatchLegend, { type Swatch } from "@/components/SwatchLegend"
 import { formatSpans } from "./bindingSites"
-import { PLDDT_BANDS } from "./confidenceColor"
+import { PLDDT_BANDS, unscoredColor } from "./confidenceColor"
 import { TRACK } from "./constants"
 import { ligandColorAt } from "./ligandColor"
 import type { ChainModel } from "./chainModel"
@@ -103,6 +103,11 @@ const TopologyLegend = memo(function TopologyLegend({
     detail: band.range,
   }))
 
+  // Identify the grey beads explicitly when confidence scores are unavailable
+  const unscored: Swatch[] = [
+    { key: "unscored", color: unscoredColor(palette.mode), label: "unscored" },
+  ]
+
   const rows: Row[] = []
   if (!membrane && (model.marks.length > 0 || model.signal)) {
     rows.push({
@@ -114,13 +119,11 @@ const TopologyLegend = memo(function TopologyLegend({
   if (ligands.length) {
     rows.push({ key: "binds", label: "Binds", content: <SwatchLegend swatches={ligands} /> })
   }
-  if (hasConfidence) {
-    rows.push({
-      key: "confidence",
-      label: "Confidence",
-      content: <SwatchLegend swatches={bands} />,
-    })
-  }
+  rows.push({
+    key: "confidence",
+    label: "Confidence",
+    content: <SwatchLegend swatches={hasConfidence ? bands : unscored} />,
+  })
   if (membrane && model.membrane) {
     rows.push({
       key: "membrane",

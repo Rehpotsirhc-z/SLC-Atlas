@@ -234,6 +234,17 @@ export default function IdentityCard({ structure, gene, hasMembrane, marks, sign
           <ExternalLink key={link.label} {...link} />
         ))}
       </Box>
+
+      {structure.afdb_entry_id && !structure.model_is_canonical && (
+        <Alert severity="info" variant="outlined">
+          <Typography variant="body2">
+            This AlphaFold model uses a different sequence from the one currently listed by UniProt.
+            Its per-residue confidence scores therefore cannot be mapped to the topology figure,
+            which shows the residues as unscored. The 3D model still shows confidence using its own
+            residue numbering, but highlighting is not linked between the two views.
+          </Typography>
+        </Alert>
+      )}
     </Stack>
   )
 }

@@ -17,6 +17,11 @@ export const PLDDT_BANDS = [
   },
 ] as const
 
+// Match the previous translucent fill without changing tone across backgrounds
+const UNSCORED = { dark: "#545963", light: "#d7d7d9" } as const
+
+export const unscoredColor = (mode: "light" | "dark") => UNSCORED[mode]
+
 function bandFor(score: number) {
   return PLDDT_BANDS.find((band) => score >= band.min) ?? PLDDT_BANDS[3]
 }

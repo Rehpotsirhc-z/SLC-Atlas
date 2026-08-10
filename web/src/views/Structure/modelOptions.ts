@@ -16,6 +16,10 @@ export interface ModelOption {
   source: ModelSource
 }
 
+/** Return whether the model and topology figure use the same residue numbering. */
+export const indexesFigure = (source: ModelSource | null | undefined) =>
+  source?.kind === "afdb" && source.canonical
+
 export function buildModelOptions(
   structure: StructureRecord | null,
   experimental: ExperimentalStructure[] | undefined,
@@ -32,6 +36,7 @@ export function buildModelOptions(
         accession: structure.uniprot_accession,
         entryId: structure.afdb_entry_id,
         label: PREDICTED_LABEL,
+        canonical: structure.model_is_canonical,
       },
     })
   }

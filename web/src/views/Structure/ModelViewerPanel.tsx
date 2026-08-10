@@ -7,7 +7,7 @@ import ViewInArIcon from "@mui/icons-material/ViewInAr"
 import { Box, Button, CircularProgress, Stack, Typography, useTheme } from "@mui/material"
 import { capBoxSx, capButtonSx } from "@/theme"
 import { VIEWER_MIN_HEIGHT } from "./constants"
-import type { ModelOption } from "./modelOptions"
+import { indexesFigure, type ModelOption } from "./modelOptions"
 import type { ModelExporter, ModelSource, ResidueSpan } from "./molstar/types"
 import { useSlowConnection } from "./useSlowConnection"
 
@@ -86,8 +86,8 @@ export default function ModelViewerPanel({
     )
   }
 
-  // An experimental entry counts in its own residues, so nothing crosses to the figure
-  const linked = source.kind === "afdb"
+  // Link only models whose residue numbering matches the topology figure
+  const linked = indexesFigure(source)
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, width: "100%", display: "flex", flexDirection: "column" }}>

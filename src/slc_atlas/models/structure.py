@@ -40,6 +40,7 @@ class Structure(BaseModel):
     frac_plddt_low: float | None = None
     frac_plddt_very_low: float | None = None
     model_created: str | None = None
+    model_is_canonical: bool = False
     alphafill_page_url: str | None = None
     n_transmembrane: int = 0
     n_intramembrane: int = 0

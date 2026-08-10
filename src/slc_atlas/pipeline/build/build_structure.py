@@ -110,6 +110,7 @@ STRUCTURES_SCHEMA = {
     "frac_plddt_low": pl.Float64,
     "frac_plddt_very_low": pl.Float64,
     "model_created": pl.Utf8,
+    "model_is_canonical": pl.Boolean,
     "confidence_url": pl.Utf8,
     "alphafill_url": pl.Utf8,
     "alphafill_page_url": pl.Utf8,
@@ -125,16 +126,22 @@ def read_tsv(source_dir: Path, name: str, schema: dict | None = None) -> pl.Data
 
 def read_confidence(source_dir: Path) -> pl.DataFrame:
     path = source_dir / "confidence.parquet"
+    schema = {"gene_id": pl.Utf8, "plddt_accession": pl.Utf8, "plddt": pl.List(pl.UInt8)}
     if not path.exists():
-        return pl.DataFrame(schema={"gene_id": pl.Utf8, "plddt": pl.List(pl.UInt8)})
-    return pl.read_parquet(path).select("gene_id", "plddt")
+        return pl.DataFrame(schema=schema)
+    return pl.read_parquet(path).select(
+        "gene_id", pl.col("uniprot_accession").alias("plddt_accession"), "plddt"
+    )
 
 
 def read_sequences(source_dir: Path) -> pl.DataFrame:
     path = source_dir / "sequences.tsv"
+    schema = {"gene_id": pl.Utf8, "sequence_accession": pl.Utf8, "sequence": pl.Utf8}
     if not path.exists():
-        return pl.DataFrame(schema={"gene_id": pl.Utf8, "sequence": pl.Utf8})
-    return pl.read_csv(path, separator="\t").select("gene_id", "sequence")
+        return pl.DataFrame(schema=schema)
+    return pl.read_csv(path, separator="\t").select(
+        "gene_id", pl.col("uniprot_accession").alias("sequence_accession"), "sequence"
+    )
 
 
 def feature_counts(features: pl.DataFrame) -> pl.DataFrame:
@@ -234,6 +241,7 @@ def build_structure(
                 "n_binding_residues",
                 "n_experimental",
             ).fill_null(0),
+            pl.col("model_is_canonical").fill_null(False),
             model_file=pl.col("uniprot_accession")
             + pl.when(pl.col("model_format") == "BCIF")
             .then(pl.lit(".bcif"))
@@ -242,47 +250,46 @@ def build_structure(
         .rename({"model_url": "model_source_url"})
     )
     present = {p.name for p in models_dir.glob("*.*cif")}
-    return drop_misaligned(
-        df.with_columns(pl.col("model_file").is_in(present).alias("model_available"))
-    )
+    return drop_stale(df.with_columns(pl.col("model_file").is_in(present).alias("model_available")))
 
 
-# The columns that hold one value per residue, each with the way to measure its length
-PER_RESIDUE = [
-    ("plddt", pl.col("plddt").list.len()),
-    ("sequence", pl.col("sequence").str.len_chars()),
-]
+# Per-residue columns and the accession each was fetched for
+PER_RESIDUE = [("plddt", "plddt_accession"), ("sequence", "sequence_accession")]
 
 
-def drop_misaligned(df: pl.DataFrame) -> pl.DataFrame:
-    """Drop any per-residue column whose length does not match the protein it belongs to.
+def drop_stale(df: pl.DataFrame) -> pl.DataFrame:
+    """Drop any per-residue column that was fetched for a different accession.
 
-    AlphaFold numbers its confidence scores against the sequence of its own model, and for
-    an entry that has not been rebuilt in a while that is not the UniProt canonical
-    sequence the features are numbered against. A sequence fetched after the accession map
-    changed is not the right one either. There is no way to line either of them up
-    afterwards, so the figure is given nothing rather than something stretched to fit.
+    The gene to UniProt mapping is regenerated on every fetch, while the confidence scores
+    and the canonical sequence are numbered against whichever accession was current when
+    they were fetched. When the mapping has moved on since, they describe a different
+    protein and there is no way to line them up, so the figure is given nothing rather than
+    something that does not belong to the gene.
+
+    Scores that are numbered against the right accession but the wrong sequence version
+    never get this far. fetch_structures records a confidence URL only for a model whose
+    sequence is the canonical one, so an unplaceable score is never fetched at all.
     """
-    for column, measured in PER_RESIDUE:
-        misaligned = measured != pl.col("uniprot_length")
+    for column, accession in PER_RESIDUE:
+        stale = pl.col(accession).is_null() | (pl.col(accession) != pl.col("uniprot_accession"))
         report_missing(
             "gene",
-            f"whose {column} length disagrees with uniprot_length, so the {column} was dropped",
-            df.filter(pl.col(column).is_not_null() & misaligned)
+            f"whose {column} was fetched for a different accession, so the {column} was dropped",
+            df.filter(pl.col(column).is_not_null() & stale)
             .select(
                 pl.format(
-                    "{} {}: {} vs {} residues",
+                    "{} {}: fetched for {}, currently {}",
                     "symbol",
+                    "gene_id",
+                    accession,
                     "uniprot_accession",
-                    measured,
-                    "uniprot_length",
                 )
             )
             .to_series()
             .to_list(),
         )
-        df = df.with_columns(pl.when(misaligned).then(None).otherwise(pl.col(column)).alias(column))
-    return df
+        df = df.with_columns(pl.when(stale).then(None).otherwise(pl.col(column)).alias(column))
+    return df.drop(accession for _, accession in PER_RESIDUE)
 
 
 def build_sources(source_dir: Path, structures: pl.DataFrame) -> pl.DataFrame:

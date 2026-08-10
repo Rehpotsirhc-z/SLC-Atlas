@@ -12,7 +12,7 @@ import FeaturesFigure from "./FeaturesFigure"
 import LinkedResidues from "./LinkedResidues"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
-import { PREDICTED_ID } from "./modelOptions"
+import { indexesFigure, PREDICTED_ID } from "./modelOptions"
 import RegionsFigure from "./RegionsFigure"
 import ResiduesFigure from "./ResiduesFigure"
 import TopologyGuide from "./TopologyGuide"
@@ -179,7 +179,7 @@ export default function LinkedPanes({
           )}
           <LinkedResidues
             highlightSpans={topology.highlightSpans}
-            linkable={modelSource?.kind === "afdb"}
+            linkable={indexesFigure(modelSource)}
           />
         </Stack>
       </Box>

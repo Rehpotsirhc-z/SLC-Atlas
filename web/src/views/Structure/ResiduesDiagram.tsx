@@ -7,7 +7,7 @@ import { alpha, Box, useTheme } from "@mui/material"
 import BeadChain from "./BeadChain"
 import { beadNear } from "./beadHitTest"
 import type { BeadInk } from "./beadInk"
-import { PLDDT_BANDS } from "./confidenceColor"
+import { PLDDT_BANDS, unscoredColor } from "./confidenceColor"
 import { DIM_OPACITY, RESIDUES } from "./constants"
 import { ligandColorAt } from "./ligandColor"
 import LitBead from "./LitBead"
@@ -47,7 +47,7 @@ const ResiduesDiagram = memo(function ResiduesDiagram({
     () => ({
       chain: palette.text.secondary,
       edge: palette.background.default,
-      neutralFill: alpha(palette.text.primary, palette.mode === "dark" ? 0.3 : 0.18),
+      neutralFill: unscoredColor(palette.mode),
       neutralInk: palette.text.primary,
       label: palette.text.secondary,
       lit: palette.secondary.main,

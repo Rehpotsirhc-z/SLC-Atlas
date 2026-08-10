@@ -23,6 +23,7 @@ export interface StructureRecord {
   frac_plddt_low: number | null
   frac_plddt_very_low: number | null
   model_created: string | null
+  model_is_canonical: boolean
   alphafill_page_url: string | null
   n_transmembrane: number
   n_intramembrane: number
