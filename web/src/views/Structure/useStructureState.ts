@@ -14,6 +14,7 @@ import {
 } from "@/api/hooks/useStructure"
 import { useUIStore } from "@/store/uiStore"
 import { buildModelOptions, PREDICTED_ID } from "./modelOptions"
+import { countMarks, featureMarks, signalPeptide } from "./sequenceFeatures"
 import { buildWall } from "./topologyWall"
 import type { ModelSource } from "./molstar/types"
 
@@ -55,6 +56,24 @@ export function useStructureState() {
     () => (structures ?? []).filter((s) => s.n_experimental > 0).length,
     [structures],
   )
+
+  const hasMembrane = useMemo(
+    () => (topology ?? []).some((gene) => gene.segments.length > 0),
+    [topology],
+  )
+
+  const selectedHasMembrane = useMemo(() => {
+    const selectedTopology = topology?.find((gene) => gene.gene_id === selectedGeneId)
+    if (selectedTopology) return selectedTopology.segments.length > 0
+    return (selected?.n_transmembrane ?? 0) + (selected?.n_intramembrane ?? 0) > 0
+  }, [topology, selectedGeneId, selected])
+
+  const selectedFeatures = useMemo(
+    () => (features ?? []).filter((feature) => feature.gene_id === selectedGeneId),
+    [features, selectedGeneId],
+  )
+  const marks = useMemo(() => countMarks(featureMarks(selectedFeatures)), [selectedFeatures])
+  const hasSignal = useMemo(() => signalPeptide(selectedFeatures) !== null, [selectedFeatures])
 
   // The wall is built unfiltered so its groups stay referentially stable while the
   // family filter changes, which is what lets the glyph grid skip re-rendering
@@ -111,6 +130,10 @@ export function useStructureState() {
     structures,
     wall,
     genes,
+    hasMembrane,
+    selectedHasMembrane,
+    marks,
+    hasSignal,
     selected,
     plddt: detail?.gene_id === selectedGeneId ? (detail?.plddt ?? null) : null,
     sequence: detail?.gene_id === selectedGeneId ? (detail?.sequence ?? null) : null,

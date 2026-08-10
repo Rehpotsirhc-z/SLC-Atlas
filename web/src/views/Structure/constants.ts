@@ -47,6 +47,22 @@ export const TRACK = {
   unresolvedDash: "5 4",
 } as const
 
+export const SEQUENCE = {
+  emptyLane: 10,
+  markPad: 6,
+  markRadius: 4,
+  markStroke: 1.5,
+  litStroke: 2.5,
+  stem: 14,
+  rowStep: 13,
+  markMinGap: 11,
+  railHeight: 13,
+  railRadius: 3,
+  signalMinWidth: 8,
+  terminusGap: 10,
+  hitRadius: 8,
+} as const
+
 export const RESIDUES = {
   gutter: TRACK.gutter,
   padX: 16,
@@ -152,4 +168,8 @@ export const WALL = {
   pdbSize: 12.5,
   // An intramembrane stretch does not cross, so it reads as a lighter mark than a helix
   intramembraneOpacity: 0.45,
+  railTop: 25,
+  railHeight: 9,
+  markRadius: 2.5,
+  markGap: 4,
 } as const

@@ -14,6 +14,12 @@ import {
 } from "./bindingSites"
 import { membraneFaces, type Side } from "./membraneSides"
 import {
+  featureMarks,
+  signalPeptide,
+  type FeatureMark,
+  type SignalPeptide,
+} from "./sequenceFeatures"
+import {
   isOrientingEvidence,
   isSegment,
   resolveChainSides,
@@ -55,6 +61,8 @@ export interface ChainModel {
   gaps: GapModel[]
   sites: SiteModel[]
   ligands: LigandTotal[]
+  marks: FeatureMark[]
+  signal: SignalPeptide | null
   sideLabels: Record<Side, string>
   membrane: string | null
   oriented: boolean
@@ -67,6 +75,8 @@ export const EMPTY_MODEL: ChainModel = {
   gaps: [],
   sites: [],
   ligands: [],
+  marks: [],
+  signal: null,
   sideLabels: { inside: "", outside: "" },
   membrane: null,
   oriented: false,
@@ -152,6 +162,8 @@ export function buildChainModel(features: ProteinFeature[], length: number): Cha
     gaps,
     sites,
     ligands: ligandTotals(raws),
+    marks: featureMarks(features),
+    signal: signalPeptide(features),
     sideLabels: faces.labels,
     membrane: faces.membrane,
     oriented: chain.oriented,

@@ -105,6 +105,25 @@ export default function TopologyTooltip({ hover, point, model }: Props) {
         </>
       )}
 
+      {hover.kind === "mark" && (
+        <>
+          <Title>{`${hover.item.name} ${hover.item.start}`}</Title>
+          {hover.item.description && <Line>{hover.item.description}</Line>}
+          {bindingLines(hover.item.start, hover.item.end).map((line) => (
+            <Line key={line}>{line}</Line>
+          ))}
+        </>
+      )}
+
+      {hover.kind === "signal" && (
+        <>
+          <Title>Signal peptide</Title>
+          <Line>
+            {`residues ${hover.item.start}–${hover.item.end} · cleaved from the mature protein`}
+          </Line>
+        </>
+      )}
+
       {hover.kind === "confidence" && (
         <>
           <Title>{`pLDDT ${hover.score}`}</Title>

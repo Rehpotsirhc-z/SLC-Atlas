@@ -8,6 +8,7 @@ import InfoTooltip from "@/components/InfoTooltip"
 import { capBoxSx } from "@/theme"
 import { useElementSize } from "@/utils/useElementSize"
 import { COLUMN_GAP, TRACK, VIEWER_MIN_HEIGHT } from "./constants"
+import FeaturesFigure from "./FeaturesFigure"
 import LinkedResidues from "./LinkedResidues"
 import ModelSwitcher from "./ModelSwitcher"
 import ModelViewerPanel from "./ModelViewerPanel"
@@ -34,6 +35,7 @@ interface Props {
   sideBySide: boolean
   svgRef: RefObject<SVGSVGElement | null>
   onExporterChange: (exporter: ModelExporter | null) => void
+  membrane: boolean
 }
 
 export default function LinkedPanes({
@@ -49,6 +51,7 @@ export default function LinkedPanes({
   sideBySide,
   svgRef,
   onExporterChange,
+  membrane,
 }: Props) {
   const selectModel = useCallback(
     (id: string) => onSelectPdbId(id === PREDICTED_ID ? null : id),
@@ -67,6 +70,7 @@ export default function LinkedPanes({
     sequence,
     protein: structure.uniprot_accession ?? null,
     mode,
+    membrane,
   })
 
   return (
@@ -89,15 +93,19 @@ export default function LinkedPanes({
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 3, mb: 1 }}>
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Typography variant="overline" color="primary" sx={capBoxSx}>
-              Membrane topology
+              {topology.membrane ? "Membrane topology" : "Sequence features"}
             </Typography>
-            <TopologyGuide mode={mode} />
+            <TopologyGuide mode={topology.membrane ? mode : "features"} />
           </Stack>
-          <TopologyModeToggle mode={mode} onChange={setMode} />
+          {topology.membrane && <TopologyModeToggle mode={mode} onChange={setMode} />}
         </Stack>
-        {features?.length && structure.uniprot_length ? (
-          <Box sx={{ overflowX: "auto" }}>
-            {mode === "regions" ? (
+        <Box sx={{ overflowX: "auto" }}>
+          {!structure.uniprot_length ? (
+            <Typography variant="body2" color="text.secondary">
+              No UniProt sequence for this protein, so there is no chain to draw.
+            </Typography>
+          ) : topology.membrane ? (
+            mode === "regions" ? (
               <RegionsFigure
                 svgRef={svgRef}
                 model={topology.model}
@@ -112,13 +120,17 @@ export default function LinkedPanes({
                 layout={topology.residues}
                 topology={topology}
               />
-            )}
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            UniProt has no topology annotation for this protein.
-          </Typography>
-        )}
+            )
+          ) : (
+            <FeaturesFigure
+              svgRef={svgRef}
+              model={topology.model}
+              layout={topology.featureMap}
+              plddt={plddt}
+              topology={topology}
+            />
+          )}
+        </Box>
       </Box>
 
       <Box

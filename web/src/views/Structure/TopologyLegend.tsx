@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Fragment, memo, type ReactNode } from "react"
-import { Box, Typography, useTheme } from "@mui/material"
+import { Box, Typography, useTheme, type SxProps, type Theme } from "@mui/material"
 import SwatchLegend, { type Swatch } from "@/components/SwatchLegend"
 import { formatSpans } from "./bindingSites"
 import { PLDDT_BANDS } from "./confidenceColor"
@@ -15,7 +15,8 @@ interface Props {
   model: ChainModel
   hasConfidence: boolean
   // How the figure marks a stretch whose sides the annotation cannot settle
-  unresolvedAs: "line" | "ring"
+  unresolvedAs?: "line" | "ring"
+  variant?: "membrane" | "sequence"
 }
 
 interface Row {
@@ -26,9 +27,57 @@ interface Row {
 
 const LINE = 10
 const DASH_WIDTH = 22
+const SIGNAL_WIDTH = 16
 
-const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unresolvedAs }: Props) {
+const MARK_SHAPES = [
+  { kind: "glycosylation", label: "Glycosylation", filled: true },
+  { kind: "disulfide_bond", label: "Disulfide cysteine", filled: false },
+] as const
+
+function MarkKey({ model, sx }: { model: ChainModel; sx: SxProps<Theme> }) {
+  const { palette } = useTheme()
+  const kinds = new Set(model.marks.map((mark) => mark.kind))
+  const shapes = MARK_SHAPES.filter((shape) => kinds.has(shape.kind))
+
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
+      {shapes.map((shape) => (
+        <Box key={shape.kind} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Box component="svg" width={LINE} height={LINE} sx={{ flexShrink: 0 }}>
+            <circle
+              cx={LINE / 2}
+              cy={LINE / 2}
+              r={LINE / 2 - 1}
+              fill={shape.filled ? palette.text.primary : "none"}
+              stroke={palette.text.primary}
+              strokeWidth={1.5}
+            />
+          </Box>
+          <Typography sx={sx}>{shape.label}</Typography>
+        </Box>
+      ))}
+      {model.signal && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Box component="svg" width={SIGNAL_WIDTH} height={LINE} sx={{ flexShrink: 0 }}>
+            <rect width={SIGNAL_WIDTH} height={LINE} rx={2} fill={palette.primary.main} />
+          </Box>
+          <Typography sx={sx}>
+            {`Signal peptide ${model.signal.start}–${model.signal.end}`}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+const TopologyLegend = memo(function TopologyLegend({
+  model,
+  hasConfidence,
+  unresolvedAs = "line",
+  variant = "membrane",
+}: Props) {
   const { palette, custom } = useTheme()
+  const membrane = variant === "membrane"
 
   const valueSx = {
     fontFamily: custom.monoFontFamily,
@@ -55,6 +104,13 @@ const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unre
   }))
 
   const rows: Row[] = []
+  if (!membrane && (model.marks.length > 0 || model.signal)) {
+    rows.push({
+      key: "marks",
+      label: "Marks",
+      content: <MarkKey model={model} sx={valueSx} />,
+    })
+  }
   if (ligands.length) {
     rows.push({ key: "binds", label: "Binds", content: <SwatchLegend swatches={ligands} /> })
   }
@@ -65,14 +121,14 @@ const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unre
       content: <SwatchLegend swatches={bands} />,
     })
   }
-  if (model.membrane) {
+  if (membrane && model.membrane) {
     rows.push({
       key: "membrane",
       label: "Membrane",
       content: <Typography sx={valueSx}>{model.membrane}</Typography>,
     })
   }
-  if (!model.oriented) {
+  if (membrane && !model.oriented) {
     rows.push({
       key: "sides",
       label: "Sides",
@@ -83,7 +139,7 @@ const TopologyLegend = memo(function TopologyLegend({ model, hasConfidence, unre
       ),
     })
   }
-  if (model.unresolved.length) {
+  if (membrane && model.unresolved.length) {
     rows.push({
       key: "unresolved",
       label: "Unresolved",

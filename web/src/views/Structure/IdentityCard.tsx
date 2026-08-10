@@ -16,6 +16,7 @@ import {
   LINK_ROW_WRAPPED_COLUMNS,
 } from "./constants"
 import { methodLabel, resolutionLabel } from "./experimentalEntry"
+import type { MarkKind } from "./sequenceFeatures"
 import { useRowFits } from "./useRowFits"
 import type { Gene } from "@/types/gene"
 import type { StructureRecord } from "@/types/structure"
@@ -23,6 +24,9 @@ import type { StructureRecord } from "@/types/structure"
 interface Props {
   structure: StructureRecord
   gene: Gene | null
+  hasMembrane: boolean
+  marks: { kind: MarkKind; count: number }[]
+  signal: boolean
 }
 
 const SEQ_AGREEMENT_DETAIL: Record<string, string> = {
@@ -61,6 +65,17 @@ function ExternalLink({ label, href }: LinkOut) {
   )
 }
 
+const MARK_LABELS: Record<MarkKind, string> = {
+  glycosylation: "glycosylation",
+  disulfide_bond: "disulfide",
+}
+
+function markSummary(marks: { kind: MarkKind; count: number }[], signal: boolean): string {
+  const parts = marks.map(({ kind, count }) => `${count} ${MARK_LABELS[kind]}`)
+  if (signal) parts.push("signal peptide")
+  return parts.join(" · ") || "none annotated"
+}
+
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Box>
@@ -72,7 +87,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-export default function IdentityCard({ structure, gene }: Props) {
+export default function IdentityCard({ structure, gene, hasMembrane, marks, signal }: Props) {
   const { palette, custom } = useTheme()
   const family = gene?.family ?? null
   const accession = structure.uniprot_accession
@@ -158,14 +173,18 @@ export default function IdentityCard({ structure, gene }: Props) {
           }
         />
         <Stat label="Length" value={`${structure.uniprot_length ?? "?"} aa`} />
-        <Stat
-          label="TM helices"
-          value={
-            structure.n_intramembrane > 0
-              ? `${structure.n_transmembrane} · ${structure.n_intramembrane} intramembrane`
-              : structure.n_transmembrane
-          }
-        />
+        {hasMembrane ? (
+          <Stat
+            label="TM helices"
+            value={
+              structure.n_intramembrane > 0
+                ? `${structure.n_transmembrane} · ${structure.n_intramembrane} intramembrane`
+                : structure.n_transmembrane
+            }
+          />
+        ) : (
+          <Stat label="Marked residues" value={markSummary(marks, signal)} />
+        )}
         <Stat
           label="Binding sites"
           value={

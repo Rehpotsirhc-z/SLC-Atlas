@@ -4,6 +4,7 @@
 
 import { useMemo } from "react"
 import { buildChainModel, EMPTY_MODEL } from "./chainModel"
+import { EMPTY_FEATURES, layoutFeatures } from "./featuresLayout"
 import { EMPTY_REGIONS, layoutRegions } from "./regionsLayout"
 import { EMPTY_RESIDUES, layoutResidues } from "./residuesLayout"
 import { useTopologyHover } from "./useTopologyHover"
@@ -19,6 +20,7 @@ interface Options {
   sequence: string | null
   protein: string | null
   mode: TopologyMode
+  membrane: boolean
 }
 
 export function useTopologyState({
@@ -29,23 +31,43 @@ export function useTopologyState({
   sequence,
   protein,
   mode,
+  membrane,
 }: Options) {
   const model = useMemo(
-    () => (features.length && length ? buildChainModel(features, length) : EMPTY_MODEL),
+    () => (length ? buildChainModel(features, length) : EMPTY_MODEL),
     [features, length],
   )
 
   const regions = useMemo(
-    () => (mode === "regions" && model.length ? layoutRegions(model, width, plddt) : EMPTY_REGIONS),
-    [mode, model, width, plddt],
+    () =>
+      membrane && mode === "regions" && model.length
+        ? layoutRegions(model, width, plddt)
+        : EMPTY_REGIONS,
+    [membrane, mode, model, width, plddt],
   )
 
   const residues = useMemo(
     () =>
-      mode === "residues" && model.length ? layoutResidues(model, plddt, sequence) : EMPTY_RESIDUES,
-    [mode, model, plddt, sequence],
+      membrane && mode === "residues" && model.length
+        ? layoutResidues(model, plddt, sequence)
+        : EMPTY_RESIDUES,
+    [membrane, mode, model, plddt, sequence],
   )
 
-  // Only the residues plot has a mark small enough for a viewer pick to land on one residue
-  return { model, regions, residues, ...useTopologyHover(model, protein, mode === "residues") }
+  const featureMap = useMemo(
+    () => (!membrane && length ? layoutFeatures(model, width, plddt) : EMPTY_FEATURES),
+    [membrane, model, width, plddt, length],
+  )
+
+  // Rail and bead figures map viewer picks to individual residues
+  const perResidue = !membrane || mode === "residues"
+
+  return {
+    model,
+    membrane,
+    regions,
+    residues,
+    featureMap,
+    ...useTopologyHover(model, protein, perResidue),
+  }
 }

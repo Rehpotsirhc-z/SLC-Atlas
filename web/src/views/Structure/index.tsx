@@ -52,6 +52,10 @@ export default function Structure() {
   const {
     wall,
     genes,
+    hasMembrane,
+    selectedHasMembrane,
+    marks,
+    hasSignal,
     selected,
     plddt,
     sequence,
@@ -125,7 +129,7 @@ export default function Structure() {
   const header = (
     <ViewHeader
       title="Structure"
-      subtitle={`AlphaFold models, membrane topology, and experimental structures for each ${atlas.familyLabel}`}
+      subtitle={`AlphaFold models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures for each ${atlas.familyLabel}`}
     />
   )
 
@@ -190,7 +194,15 @@ export default function Structure() {
                 {selected && (
                   <Stack spacing={3}>
                     <LinkedPanes
-                      identity={<IdentityCard structure={selected} gene={selectedGene} />}
+                      identity={
+                        <IdentityCard
+                          structure={selected}
+                          gene={selectedGene}
+                          hasMembrane={selectedHasMembrane}
+                          marks={marks}
+                          signal={hasSignal}
+                        />
+                      }
                       structure={selected}
                       features={features}
                       plddt={plddt}
@@ -202,6 +214,7 @@ export default function Structure() {
                       sideBySide={sideBySide}
                       svgRef={svgRef}
                       onExporterChange={handleExporterChange}
+                      membrane={selectedHasMembrane}
                     />
 
                     {experimental && experimental.length > 0 && (

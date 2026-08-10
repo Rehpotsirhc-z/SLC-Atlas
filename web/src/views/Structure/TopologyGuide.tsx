@@ -12,7 +12,30 @@ const Para = ({ children }: { children: React.ReactNode }) => (
   </Typography>
 )
 
-export default function TopologyGuide({ mode }: { mode: TopologyMode }) {
+export default function TopologyGuide({ mode }: { mode: TopologyMode | "features" }) {
+  if (mode === "features") {
+    return (
+      <InfoTooltip label="How to read the sequence figure">
+        <Para>
+          The horizontal axis shows residue positions from the N-terminus to the C-terminus. The
+          gray bar represents the protein chain.
+        </Para>
+        <Para>
+          Filled circles mark glycosylation sites. Hollow circles mark cysteines involved in
+          disulfide bonds. A colored block on the chain marks the signal peptide.
+        </Para>
+        <Para>
+          Each Binds row shows one ligand-binding site. Its colored blocks mark the residues that
+          contact that ligand. The Confidence row shows AlphaFold confidence along the sequence.
+        </Para>
+        <Para>
+          Hover over a feature to highlight the same residues in the 3D model. Click it to center
+          those residues in the model.
+        </Para>
+      </InfoTooltip>
+    )
+  }
+
   return (
     <InfoTooltip label="How to read the topology diagram">
       {mode === "regions" ? (
