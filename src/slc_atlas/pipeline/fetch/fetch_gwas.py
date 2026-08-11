@@ -32,6 +32,9 @@ CATALOG = "https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics"
 ACCESSION = re.compile(r"^GCST\d+$")
 HARMONISED = re.compile(r'href="([^"]+\.h\.tsv\.gz)"')
 
+# File suffixes accepted for local summary statistics
+READABLE = {".tsv", ".txt", ".csv", ".gz", ".parquet"}
+
 STUDIES_HEADER = (
     "study_id",
     "trait",
@@ -86,9 +89,11 @@ def catalog_url(accession: str) -> str:
     return listing + names[0]
 
 
-def position_of(text: str, where: str, line: int) -> int:
+def position_of(raw, where: str, line: int) -> int:
     """Read a coordinate, refusing one that has already lost its low digits."""
-    value = text.strip()
+    if isinstance(raw, int):
+        return raw
+    value = str(raw).strip()
     if "e" in value or "E" in value:
         raise SystemExit(
             f"{where} line {line} writes the position as {value!r}. Scientific notation "
@@ -123,39 +128,71 @@ def _open(path: Path):
 
 def payload_files(source: Path) -> list[Path]:
     if source.is_dir():
-        return sorted(p for p in source.iterdir() if p.suffix in {".tsv", ".txt", ".gz"})
+        return sorted(p for p in source.iterdir() if p.suffix in READABLE)
     return [source]
+
+
+def _delimiter(header: str) -> str:
+    """Return the most frequent supported delimiter in a header."""
+    return max(("\t", ",", " "), key=header.count)
+
+
+def _text_rows(path: Path):
+    """Yield column names and rows from a delimited text file."""
+    with _open(path) as handle:
+        first = handle.readline()
+        if not first:
+            return
+        reader = csv.DictReader(handle, delimiter=_delimiter(first))
+        reader.fieldnames = next(csv.reader([first], delimiter=_delimiter(first)))
+        yield reader.fieldnames
+        yield from reader
+
+
+def _parquet_rows(path: Path):
+    """Yield column names and recognized values from a Parquet file."""
+    import polars as pl
+
+    lazy = pl.scan_parquet(path)
+    names = lazy.collect_schema().names()
+    yield names
+    wanted = [name for name in _index(names, COLUMNS).values()]
+    frame = lazy.select(wanted).collect(engine="streaming")
+    yield from frame.iter_rows(named=True)
 
 
 def read_variants(path: Path, spell, keep):
     """Yield the in-window variants of one file, however its columns happen to be named."""
-    with _open(path) as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
-        columns = _index(reader.fieldnames, COLUMNS)
-        missing = {"position", "p_value"} - set(columns)
-        if missing:
-            raise SystemExit(
-                f"{path} has no {' or '.join(sorted(missing))} column. Looked for "
-                + "; ".join(f"{k}: {', '.join(COLUMNS[k])}" for k in sorted(missing))
-            )
-        # A directory of per-chromosome files names the chromosome in the file name
-        default_chrom = spell(path.name.split(".")[0])
+    rows = _parquet_rows(path) if path.suffix == ".parquet" else _text_rows(path)
+    fieldnames = next(rows, None)
+    if fieldnames is None:
+        return
+    columns = _index(fieldnames, COLUMNS)
+    missing = {"position", "p_value"} - set(columns)
+    if missing:
+        raise SystemExit(
+            f"{path} has no {' or '.join(sorted(missing))} column. Looked for "
+            + "; ".join(f"{k}: {', '.join(COLUMNS[k])}" for k in sorted(missing))
+        )
+    # A directory of per-chromosome files names the chromosome in the file name
+    default_chrom = spell(path.name.split(".")[0])
 
-        for number, row in enumerate(reader, start=2):
-            chrom = spell(row[columns["chrom"]]) if "chrom" in columns else default_chrom
-            if chrom is None:
-                continue
-            position = position_of(row[columns["position"]], path, number)
-            if not keep(chrom, position):
-                continue
-            beta = row.get(columns.get("beta", ""), "")
-            yield (
-                chrom,
-                position,
-                (row.get(columns.get("snp_id", ""), "") or "").strip(),
-                float(row[columns["p_value"]] or "nan"),
-                float(beta) if beta not in ("", None, "NA", "NaN") else None,
-            )
+    for number, row in enumerate(rows, start=2):
+        chrom = spell(str(row[columns["chrom"]])) if "chrom" in columns else default_chrom
+        if chrom is None:
+            continue
+        position = position_of(row[columns["position"]], path, number)
+        if not keep(chrom, position):
+            continue
+        beta = row.get(columns.get("beta", ""), "")
+        p_value = row[columns["p_value"]]
+        yield (
+            chrom,
+            position,
+            str(row.get(columns.get("snp_id", ""), "") or "").strip(),
+            float(p_value) if p_value not in ("", None) else float("nan"),
+            float(beta) if beta not in ("", None, "NA", "NaN") else None,
+        )
 
 
 def membership(spans: dict[str, list[tuple[int, int]]]):

@@ -3,14 +3,23 @@
 # This file starts empty because the relevant traits depend on the gene family
 # Add a row, then run the fetch again to include the study
 #
-# source may be either of:
+# source may be either of the following:
 #   a GWAS Catalog accession   GCST009325, whose harmonised summary statistics are
 #                              downloaded and cut to this family's windows
-#   a path                     to a TSV or parquet of summary statistics, or to a
-#                              directory holding one file per chromosome
-# Each dataset needs a variant ID, a whole-number position, and a p-value
-# Effect sizes are optional and are shown when available
-# Positions in scientific notation are rejected because they may not identify the exact base
+#   a path                     to a summary-statistics table or directory containing
+#                              one file per chromosome. Text files may use tabs, commas,
+#                              or spaces and may be compressed with .gz; Parquet also works
+#
+# Columns are recognized by name in any order; unrecognized columns are ignored
+#   position     base_pair_location, position, pos, bp, hm_pos, chromStart   required
+#   p-value      p_value, p, pval, pvalue                                    required
+#   chromosome   chromosome, chrom, chr, hm_chrom, #chrom                    unless one file per chromosome
+#   variant id   rsid, snp_id, variant_id, hm_rsid, snp, rs_id               optional
+#   effect size  beta, beta_value, hm_beta, effect_size, b                   optional
+#
+# Chromosomes may use names such as 9 or chr9
+# Positions must be whole numbers; for example, 59855319 and 59855319.0 are accepted
+# Scientific notation such as 5.98553e+07 is rejected because it may not identify the exact base
 # The assembly must match the gene data, which uses GRCh38
 #
 # Copy the example below and replace its values
