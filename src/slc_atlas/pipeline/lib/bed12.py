@@ -2,15 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Transcript models, and the three shapes they arrive in.
+"""Read and write transcript models in GTF, GFF3, and BED formats.
 
 The browser's bottom track draws exons, introns, and the coding part of each transcript, so
-a gene model has to survive as blocks rather than as one span. BED12 is the format that
-says exactly that and nothing more, so it is what the pipeline stores; a GTF or a GFF3 is
-folded into it on the way in.
+a gene model must retain exon blocks rather than a single span. GTF and GFF3 store a
+transcript across multiple exon and CDS rows. The pipeline therefore normalizes them to
+BED, which stores each transcript on one line.
+
+BED12 provides only one free-text name field. The pipeline appends three columns for the
+gene ID, biotype, and gene name. Genome browsers ignore these extra columns and can still
+open and label the file correctly.
 
 Coordinates here are 0-based and half-open throughout, which is BED's own convention and
-the one every other browser artifact uses.
+the convention used by every other browser file.
 """
 
 import gzip
@@ -18,9 +22,11 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-# The four things a transcript has to carry, packed into BED's single name field the way
-# the gene-model files in the wild already pack them
+# Separator used when a BED name field contains the full transcript identity
 NAME_SEPARATOR = "___"
+
+# Columns appended to BED12 records
+EXTRA_COLUMNS = ("gene_id", "biotype", "gene_name")
 
 GTF_ATTR = re.compile(r'(\S+)\s+"([^"]*)"')
 
@@ -146,6 +152,20 @@ def from_gff3(path: Path) -> list[Transcript]:
     return _assemble(_feature_rows(path, attrs_of, {"exon", "CDS"}))
 
 
+def _identify(name: str, extra: list[str]) -> tuple[str, str, str, str]:
+    """Read the transcript ID, gene ID, biotype, and gene name from a BED row.
+
+    This pipeline writes extra columns, some pipelines pack all four values into the name
+    field, and files converted directly from GTF with genePredToBed contain only the
+    transcript ID.
+    """
+    if NAME_SEPARATOR in name:
+        packed = name.split(NAME_SEPARATOR) + [""] * 4
+        return packed[0], packed[1], packed[2], packed[3] or packed[1]
+    gene_id, biotype, gene_name = (extra + ["", "", ""])[:3]
+    return name, gene_id, biotype, gene_name or gene_id
+
+
 def read_bed12(path: Path) -> list[Transcript]:
     out = []
     with _open(path) as f:
@@ -160,18 +180,17 @@ def read_bed12(path: Path) -> list[Transcript]:
             thick_start, thick_end = int(parts[6]), int(parts[7])
             sizes = [int(v) for v in parts[10].rstrip(",").split(",") if v]
             starts = [int(v) for v in parts[11].rstrip(",").split(",") if v]
-            fields = name.split(NAME_SEPARATOR)
-            fields += [""] * (4 - len(fields))
+            transcript_id, gene_id, biotype, gene_name = _identify(name, parts[12:])
             coding = thick_start != thick_end
             out.append(
                 Transcript(
                     chrom=chrom,
                     start=start,
                     end=end,
-                    transcript_id=fields[0],
-                    gene_id=fields[1],
-                    biotype=fields[2],
-                    gene_name=fields[3] or fields[1],
+                    transcript_id=transcript_id,
+                    gene_id=gene_id,
+                    biotype=biotype,
+                    gene_name=gene_name,
                     strand=strand,
                     cds_start=thick_start if coding else None,
                     cds_end=thick_end if coding else None,
@@ -202,7 +221,6 @@ def write_bed12(path: Path, transcripts) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as f:
         for t in transcripts:
-            name = NAME_SEPARATOR.join((t.transcript_id, t.gene_id, t.biotype, t.gene_name))
             # A transcript with no CDS marks it the way BED does, by giving thick no width
             thick_start = t.cds_start if t.cds_start is not None else t.end
             thick_end = t.cds_end if t.cds_end is not None else t.end
@@ -212,7 +230,7 @@ def write_bed12(path: Path, transcripts) -> None:
                         t.chrom,
                         str(t.start),
                         str(t.end),
-                        name,
+                        t.transcript_id,
                         "0",
                         t.strand,
                         str(thick_start),
@@ -221,6 +239,9 @@ def write_bed12(path: Path, transcripts) -> None:
                         str(len(t.exons)),
                         ",".join(str(end - start) for start, end in t.exons) + ",",
                         ",".join(str(start - t.start) for start, _ in t.exons) + ",",
+                        t.gene_id,
+                        t.biotype,
+                        t.gene_name,
                     )
                 )
                 + "\n"
