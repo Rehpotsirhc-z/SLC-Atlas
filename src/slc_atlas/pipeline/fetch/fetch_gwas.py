@@ -48,10 +48,14 @@ STUDIES_HEADER = (
     "chroms",
 )
 
-# The names the same four things go by across the formats a study arrives in
+# BED chromStart is zero-based; all other accepted position columns are one-based
+ZERO_BASED = ("chromstart",)
+ONE_BASED = ("base_pair_location", "position", "pos", "bp", "hm_pos")
+
+# Column names used by supported summary-statistics formats
 COLUMNS = {
     "chrom": ("chromosome", "chrom", "chr", "hm_chrom", "#chrom"),
-    "position": ("base_pair_location", "position", "pos", "bp", "hm_pos", "chromstart"),
+    "position": ONE_BASED + ZERO_BASED,
     "snp_id": ("rsid", "snp_id", "variant_id", "hm_rsid", "snp", "rs_id"),
     "p_value": ("p_value", "p", "pval", "pvalue"),
     "beta": ("beta", "beta_value", "hm_beta", "effect_size", "b"),
@@ -176,12 +180,14 @@ def read_variants(path: Path, spell, keep):
         )
     # A directory of per-chromosome files names the chromosome in the file name
     default_chrom = spell(path.name.split(".")[0])
+    # Convert one-based source positions to the browser's zero-based coordinates
+    origin = 0 if columns["position"].strip().lower() in ZERO_BASED else 1
 
     for number, row in enumerate(rows, start=2):
         chrom = spell(str(row[columns["chrom"]])) if "chrom" in columns else default_chrom
         if chrom is None:
             continue
-        position = position_of(row[columns["position"]], path, number)
+        position = position_of(row[columns["position"]], path, number) - origin
         if not keep(chrom, position):
             continue
         beta = row.get(columns.get("beta", ""), "")
@@ -301,7 +307,7 @@ def run(
             file=sys.stderr,
         )
 
-    report_missing("GWAS study", "that could not be read", failed)
+    report_missing("GWAS study/GWAS studies", "that could not be read", failed)
     table = pl.concat(frames) if frames else pl.DataFrame(schema=SCHEMA)
     table.write_parquet(out_dir / "gwas.parquet")
     write_studies(out_dir / "gwas_studies.tsv", records)

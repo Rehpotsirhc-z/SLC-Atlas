@@ -18,6 +18,7 @@
 #   effect size  beta, beta_value, hm_beta, effect_size, b                   optional
 #
 # Chromosomes may use names such as 9 or chr9
+# A chromStart column is zero-based, as in BED; every other position column is one-based
 # Positions must be whole numbers; for example, 59855319 and 59855319.0 are accepted
 # Scientific notation such as 5.98553e+07 is rejected because it may not identify the exact base
 # The assembly must match the gene data, which uses GRCh38
