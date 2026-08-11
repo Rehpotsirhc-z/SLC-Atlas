@@ -68,6 +68,6 @@ def run(structures_path: Path, out_path: Path) -> None:
     residues = sum(len(r["plddt"]) for r in rows if r["plddt"])
     print(
         f"wrote {covered}/{len(rows)} genes, {residues} residues "
-        f"({out_path.stat().st_size / 1e3:.0f} kB) -> {out_path}",
+        f"({out_path.stat().st_size / 1024:.0f} KiB) -> {out_path}",
         file=sys.stderr,
     )

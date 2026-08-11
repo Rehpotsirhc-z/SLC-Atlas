@@ -80,7 +80,7 @@ export default function ModelViewerPanel({
           </Box>
         </Button>
         <Typography variant="caption" color="text.secondary">
-          About 1 MB over the network
+          About 1 MiB over the network
         </Typography>
       </Placeholder>
     )

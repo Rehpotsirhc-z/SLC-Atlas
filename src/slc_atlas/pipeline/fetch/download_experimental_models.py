@@ -73,4 +73,4 @@ def run(experimental_path: Path, models_dir: Path) -> None:
 
     mirrored = list(models_dir.glob("*.bcif"))
     total = sum(p.stat().st_size for p in mirrored)
-    print(f"{len(mirrored)} entries, {total / 1e6:.1f} MB in {models_dir}", file=sys.stderr)
+    print(f"{len(mirrored)} entries, {total / 1024**2:.1f} MiB in {models_dir}", file=sys.stderr)
