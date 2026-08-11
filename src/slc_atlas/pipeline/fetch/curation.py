@@ -18,7 +18,7 @@ from importlib import resources
 from os.path import commonprefix
 from pathlib import Path
 
-from . import hgnc
+from . import browser_curation, hgnc
 from .. import templates
 
 PROTEIN_CODING = "gene with protein product"
@@ -108,7 +108,23 @@ def read_symbol_overrides(path: Path) -> dict[str, str]:
     return overrides
 
 
-def seed(source: str, hgnc_path: Path, curation_dir: Path, *, promote_prefix: str) -> list[Path]:
+def read_browser_tracks(path: Path) -> list[browser_curation.TrackRow]:
+    return browser_curation.read_tracks(_rows(path, "track_id"))
+
+
+def read_browser_gwas(path: Path) -> list[browser_curation.GwasRow]:
+    return browser_curation.read_gwas(_rows(path, "study_id"))
+
+
+def seed(
+    source: str,
+    hgnc_path: Path,
+    curation_dir: Path,
+    *,
+    promote_prefix: str,
+    tracks_dir: Path | None = None,
+    gwas_dir: Path | None = None,
+) -> list[Path]:
     """Write the curation files that do not exist yet and return the paths of the ones that
     were written, so an empty list means the user had already written all of them."""
     rows = _read_hgnc(hgnc_path)
@@ -118,6 +134,8 @@ def seed(source: str, hgnc_path: Path, curation_dir: Path, *, promote_prefix: st
         ("symbol_overrides.tsv", lambda: _overrides_text(rows, promote_prefix)),
         ("species.tsv", _species_text),
         ("uniprot_overrides.tsv", lambda: _document(UNIPROT_DOC, UNIPROT_BODY)),
+        (browser_curation.TRACKS_FILE, lambda: browser_curation.tracks_text(tracks_dir)),
+        (browser_curation.GWAS_FILE, lambda: browser_curation.gwas_text(gwas_dir)),
     ]
     curation_dir.mkdir(parents=True, exist_ok=True)
     written = []

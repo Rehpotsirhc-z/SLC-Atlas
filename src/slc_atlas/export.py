@@ -31,8 +31,13 @@ from .models.expression import TissueScope
 from .shell import render
 from .site import ROUTES_FILE, read_manifest
 
-# The coordinate files are copied as a directory rather than fetched one URL at a time
-NOT_EXPORTED = {"/api/structure/models/{filename}"}
+# Copy large binary assets directly because clients request them in byte ranges
+NOT_EXPORTED = {"/api/structure/models/{filename}", "/api/browser/coverage/{filename}"}
+
+COPIED_TREES = (
+    (("structure", "models"), ("api", "structure", "models")),
+    (("browser", "coverage"), ("api", "browser", "coverage")),
+)
 
 # How many responses to render at once
 CONCURRENCY = 8
@@ -127,7 +132,7 @@ async def _get(client: httpx.AsyncClient, url: str) -> httpx.Response:
     return await client.get(url)
 
 
-def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
+def _plan(capabilities: dict[str, bool], gene_ids: list[str], study_ids: list[str]) -> list[str]:
     urls = [
         "/api/capabilities.json",
         "/api/genes.json",
@@ -151,6 +156,10 @@ def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
                 f"/api/structure/{gid}/features.json",
                 f"/api/structure/{gid}/experimental.json",
             ]
+    if capabilities.get("browser"):
+        urls += ["/api/browser/tracks.json", "/api/browser/sources.json"]
+        urls += [f"/api/browser/{gid}/region.json" for gid in gene_ids]
+        urls += [f"/api/browser/{gid}/gwas/{sid}.json" for gid in gene_ids for sid in study_ids]
     return urls
 
 
@@ -168,8 +177,9 @@ def _uncovered(urls: list[str], capabilities: dict[str, bool]) -> set[str]:
         if "get" in methods and path.startswith("/api")
     }
     # A dataset built without one of the optional views has nothing to export for it
-    if not capabilities.get("structure"):
-        templates = {p: r for p, r in templates.items() if not p.startswith("/api/structure")}
+    for view, prefix in (("structure", "/api/structure"), ("browser", "/api/browser")):
+        if not capabilities.get(view):
+            templates = {p: r for p, r in templates.items() if not p.startswith(prefix)}
     hit = {path for path, regex in templates.items() for u in urls if regex.match(u)}
     return set(templates) - hit - NOT_EXPORTED
 
@@ -179,7 +189,11 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
     async with httpx.AsyncClient(transport=transport, base_url="http://export") as client:
         capabilities = (await _get(client, "/api/capabilities.json")).json()
         gene_ids = [g["id"] for g in (await _get(client, "/api/genes.json")).json()]
-        urls = _plan(capabilities, gene_ids)
+        study_ids = []
+        if capabilities.get("browser"):
+            manifest = (await _get(client, "/api/browser/tracks.json")).json()
+            study_ids = [s["study_id"] for s in manifest["studies"]]
+        urls = _plan(capabilities, gene_ids, study_ids)
 
         uncovered = _uncovered(urls, capabilities)
         if uncovered:
@@ -206,20 +220,21 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
         return stats
 
 
-def _copy_models(app_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
-    """Copy whatever 3D coordinate files the dataset holds into the exported site."""
-    models = app_dir / "structure" / "models"
-    if not models.is_dir():
-        return 0, 0, 0
+def _copy_binaries(app_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
+    """Copy binary assets directly into their public URL paths."""
     files = size = changed = 0
-    for src in models.rglob("*"):
-        if not src.is_file():
+    for source_parts, url_parts in COPIED_TREES:
+        root = app_dir.joinpath(*source_parts)
+        if not root.is_dir():
             continue
-        dst = out_dir / "api" / "structure" / "models" / src.relative_to(models)
-        keep.add(dst)
-        changed += _copy(src, dst)
-        files += 1
-        size += src.stat().st_size
+        for src in root.rglob("*"):
+            if not src.is_file():
+                continue
+            dst = out_dir.joinpath(*url_parts, src.relative_to(root))
+            keep.add(dst)
+            changed += _copy(src, dst)
+            files += 1
+            size += src.stat().st_size
     return files, size, changed
 
 
@@ -277,7 +292,7 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
         stale_manifest = 1
 
     stats = asyncio.run(_dump(out_dir, keep))
-    model_files, model_size, model_changes = _copy_models(settings.app_dir, out_dir, keep)
+    model_files, model_size, model_changes = _copy_binaries(settings.app_dir, out_dir, keep)
 
     # The route pages and the files at the root are not in MANAGED, so _prune skips them
     pages = len(routes) + 1
@@ -293,7 +308,7 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
 
 
 def report(stats: ExportStats, out_dir: Path) -> None:
-    print(f"{stats.files} files, {stats.bytes / 1e6:.1f} MB -> {out_dir}")
+    print(f"{stats.files} files, {stats.bytes / 1024**2:.1f} MiB -> {out_dir}")
     print(
         f"{stats.changed} written, {stats.files - stats.changed} unchanged, {stats.removed} removed"
     )

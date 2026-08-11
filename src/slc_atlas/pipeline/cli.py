@@ -11,14 +11,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from . import prompting
+from .lib.windows import FLANK_MAX as WINDOW_FLANK_MAX, FLANK_MIN as WINDOW_FLANK_MIN
 from .options import Option, StepName, register, resolve
 
 if TYPE_CHECKING:
     from .lib.paths import PipelinePaths
 
-VIEWS = ("clustering", "conservation", "expression", "structure")
+VIEWS = ("browser", "clustering", "conservation", "expression", "structure")
 
 SKIP_HELP = {
+    "browser": "leave out the Genome Browser view, its gene models, coverage, and GWAS",
     "clustering": "leave out the Clustering view and its similarity trees",
     "conservation": "leave out the Conservation view and species tree",
     "expression": "leave out the Expression view and tissue matrix",
@@ -103,6 +105,67 @@ FETCH = (
         prompt="Download the experimental models?",
     ),
     Option(
+        "gene_models_file",
+        "local GTF, GFF3, or BED12 of transcript models to use instead of a GENCODE download",
+        default=None,
+        metavar="PATH",
+        parse=Path,
+    ),
+    Option(
+        "gencode_release",
+        "GENCODE release for the gene models, by default the one merged from --ensembl-release",
+        default="",
+        metavar="N",
+    ),
+    Option(
+        "browser_tracks",
+        "directory or bigWig manifest to seed the coverage curation file from",
+        default=None,
+        metavar="PATH",
+        parse=Path,
+    ),
+    Option(
+        "browser_gwas",
+        "directory or study list to seed the GWAS curation file from",
+        default=None,
+        metavar="PATH",
+        parse=Path,
+    ),
+    Option(
+        "browser_flank_min",
+        "smallest context kept on each side of a gene in the browser",
+        default=WINDOW_FLANK_MIN,
+        metavar="BASES",
+        parse=int,
+    ),
+    Option(
+        "browser_flank_max",
+        "largest context kept on each side of a gene in the browser",
+        default=WINDOW_FLANK_MAX,
+        metavar="BASES",
+        parse=int,
+    ),
+    Option(
+        "browser_bin",
+        "finest resolution kept in a local coverage copy; 0 keeps the source resolution, and "
+        "a track already coarser than this is never made coarser still",
+        default=25,
+        metavar="BASES",
+        parse=int,
+    ),
+    Option(
+        "browser_max_bytes",
+        "refuse to copy coverage tracks that would add more than this to the site",
+        default=500_000_000,
+        metavar="BYTES",
+        parse=int,
+    ),
+    Option(
+        "slice_coverage",
+        "write family-scoped copies of the coverage tracks for local hosting",
+        prompt="Copy the coverage tracks locally?",
+    ),
+    Option(
         "tree_source",
         "source used to build the species tree",
         default="ensembl_compara",
@@ -138,6 +201,20 @@ BUILD = (
         parse=Path,
     ),
     *(Option(f"skip_{view}", BUILD_SKIP_HELP[view]) for view in VIEWS),
+    Option(
+        "browser_flank_min",
+        "smallest context kept on each side of a gene in the browser",
+        default=WINDOW_FLANK_MIN,
+        metavar="BASES",
+        parse=int,
+    ),
+    Option(
+        "browser_flank_max",
+        "largest context kept on each side of a gene in the browser",
+        default=WINDOW_FLANK_MAX,
+        metavar="BASES",
+        parse=int,
+    ),
     Option(
         "step",
         "run only this build step; repeat to select more than one",
@@ -205,6 +282,15 @@ def _fetch(args: argparse.Namespace) -> int:
             promote_prefix=chosen["promote_alias_prefix"],
             download_predicted=chosen["download_predicted"],
             download_experimental=chosen["download_experimental"],
+            gene_models_file=chosen["gene_models_file"],
+            gencode_release=chosen["gencode_release"],
+            browser_tracks=chosen["browser_tracks"],
+            browser_gwas=chosen["browser_gwas"],
+            browser_flank_min=chosen["browser_flank_min"],
+            browser_flank_max=chosen["browser_flank_max"],
+            browser_bin=chosen["browser_bin"],
+            browser_max_bytes=chosen["browser_max_bytes"],
+            slice_coverage=chosen["slice_coverage"],
             accept_seeds=chosen["accept_seeds"],
             skipped_views=_skipped(chosen),
             only_steps=tuple(chosen["step"]),
@@ -223,6 +309,8 @@ def _build(args: argparse.Namespace) -> int:
     run(
         BuildOptions(
             mafft=chosen["mafft"],
+            browser_flank_min=chosen["browser_flank_min"],
+            browser_flank_max=chosen["browser_flank_max"],
             skipped_views=_skipped(chosen),
             only_steps=tuple(chosen["step"]),
         ),

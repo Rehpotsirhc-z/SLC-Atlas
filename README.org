@@ -45,7 +45,7 @@ dataset and keeps your edits.
 - Clustering :: Protein sequence, coding sequence, and co-expression similarity
 - Conservation :: Orthologs across species alongside their evolutionary tree
 - Expression :: Tissue expression with anatomy diagrams linked to the heatmap
-- Genome Browser :: Genomic context, surrounding regions, and annotation tracks
+- Genome Browser :: Coverage and GWAS tracks around each gene, shown with its transcript models
 - Structure :: Predicted and experimental models with membrane topology and residue-level confidence
 
 * Fetch and build options
@@ -62,8 +62,14 @@ reference. The options most often used when creating a dataset are:
 | ~--promote-alias-prefix PREFIX~ | Prefer matching aliases as display symbols |
 | ~--download-predicted~ | Keep local copies of AlphaFold models |
 | ~--download-experimental~ | Keep local copies of PDB structures |
+| ~--gene-models-file PATH~ | Use a local GTF, GFF3, or BED12 instead of a GENCODE download |
+| ~--browser-tracks PATH~ | Create the coverage curation file from an existing bigWig directory |
+| ~--browser-gwas PATH~ | Create the GWAS curation file from an existing study directory |
+| ~--slice-coverage~ | Keep family-scoped local copies of the coverage tracks |
+| ~--browser-bin BASES~ | Set the finest resolution for local coverage copies; the default is 25 |
+| ~--browser-max-bytes BYTES~ | Stop if local coverage copies would exceed this size in bytes |
 | ~--accept-seeds~ | Continue without pausing after new curation files are created |
-| ~--skip-VIEW~ | Omit clustering, conservation, expression, or structure |
+| ~--skip-VIEW~ | Omit browser, clustering, conservation, expression, or structure |
 | ~--step NAME~ | Run only one named step; repeat to select several |
 | ~--mafft PATH~ | Use a specific MAFFT executable during the build |
 

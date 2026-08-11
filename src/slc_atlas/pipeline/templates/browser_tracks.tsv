@@ -1,0 +1,24 @@
+# Choose the coverage tracks to show above the gene models
+#
+# source may be any of:
+#   an ENCODE accession   ENCSR124NNL for an experiment, ENCFF435JGG for one file
+#   a URL                 read by byte range, so the host must allow that and allow CORS
+#   a path                to a bigWig on this machine
+# strand   Leave blank for an unstranded assay; otherwise use plus or minus and give both
+#          files in a stranded pair the same track_id
+# bin      Bases per point in the local copy; leave blank to use --browser-bin or use 0 to
+#          keep the source resolution
+# local    Use yes to add a family-specific copy to the site, no to read it over the
+#          network, or leave blank to follow --slice-coverage
+#
+# The rows below are public ENCODE tissue ATAC-seq tracks read over the network
+# Replace them with your own assay when one is available
+# Separate columns with tabs; blank lines and comments are ignored
+
+track_id	label	group	strand	source	bin	local
+encode_liver	Liver	ENCODE ATAC-seq		ENCSR124NNL		no
+encode_lung	Lung	ENCODE ATAC-seq		ENCSR647AOY		no
+encode_heart	Heart left ventricle	ENCODE ATAC-seq		ENCSR204PZT		no
+encode_muscle	Skeletal muscle	ENCODE ATAC-seq		ENCSR689SDA		no
+encode_stomach	Stomach	ENCODE ATAC-seq		ENCSR337UIU		no
+encode_nerve	Tibial nerve	ENCODE ATAC-seq		ENCSR831KAH		no

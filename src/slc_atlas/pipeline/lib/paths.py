@@ -32,6 +32,14 @@ class PipelinePaths:
         return self.structure_source / "models"
 
     @property
+    def browser_source(self) -> Path:
+        return self.source / "browser"
+
+    @property
+    def coverage_dir(self) -> Path:
+        return self.browser_source / "coverage"
+
+    @property
     def app(self) -> Path:
         return self.data_dir / "app"
 

@@ -19,7 +19,7 @@ export const ROUTES = [
   route({ path: "/genes", label: "Genes" }),
   route({ path: "/clustering", label: "Clustering", popup: true }),
   route({ path: "/conservation", label: "Conservation", popup: true }),
-  route({ path: "/browser", label: "Genome Browser" }),
+  route({ path: "/browser", label: "Genome Browser", capability: "browser" }),
   route({ path: "/expression", label: "Expression", popup: true }),
   route({ path: "/structure", label: "Structure", capability: "structure" }),
   route({ path: "/pet", label: "PET-SCAN" }),

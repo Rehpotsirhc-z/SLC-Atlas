@@ -18,7 +18,9 @@ from pathlib import Path
 from ...config import COMMAND_NAME
 from ..lib.orchestration import Step, preflight, run_stage
 from ..lib.paths import PipelinePaths
+from ..lib import windows
 from . import (
+    build_browser,
     build_clustering,
     build_conservation,
     build_expression,
@@ -26,7 +28,7 @@ from . import (
     build_structure,
 )
 
-STEP_NAMES = ("gene_tables", "clustering", "conservation", "expression", "structure")
+STEP_NAMES = ("gene_tables", "browser", "clustering", "conservation", "expression", "structure")
 
 # Every step apart from gene_tables is named after the view it builds, and so is its flag
 ALWAYS = "gene_tables"
@@ -40,6 +42,8 @@ NO_MAFFT = (
 @dataclass(frozen=True)
 class BuildOptions:
     mafft: str = ""
+    browser_flank_min: int = windows.FLANK_MIN
+    browser_flank_max: int = windows.FLANK_MAX
     skipped_views: frozenset[str] = frozenset()
     only_steps: tuple[str, ...] = ()
 
@@ -58,15 +62,34 @@ def _resolve_mafft(explicit: str) -> str:
     return mafft
 
 
-def _steps(paths: PipelinePaths, mafft: str) -> dict[str, Step]:
+def _steps(paths: PipelinePaths, options: BuildOptions, mafft: str) -> dict[str, Step]:
     source, out = paths.source, paths.app
-    structure_out = out / "structure"
+    structure_out, browser_out = out / "structure", out / "browser"
     return {
         "gene_tables": Step(
             "gene_tables",
             lambda: build_gene_tables.run(source, out),
             label="Building the gene and transcript tables",
             outputs=(out / "genes.parquet", out / "transcripts.parquet"),
+        ),
+        "browser": Step(
+            "browser",
+            lambda: build_browser.run(
+                source,
+                out,
+                flank_min=options.browser_flank_min,
+                flank_max=options.browser_flank_max,
+            ),
+            label="Building the genome browser tables",
+            outputs=(
+                browser_out / "windows.parquet",
+                browser_out / "transcripts.parquet",
+                browser_out / "tracks.parquet",
+                browser_out / "chroms.parquet",
+                browser_out / "gwas.parquet",
+                browser_out / "studies.parquet",
+                browser_out / "sources.parquet",
+            ),
         ),
         "clustering": Step(
             "clustering",
@@ -107,7 +130,7 @@ def _summary(steps: Sequence[Step], data_dir: Path) -> None:
     for step in steps:
         for path in step.outputs:
             if path.exists():
-                print(f"  {path.relative_to(data_dir)}  ({path.stat().st_size / 1e6:.1f} MB)")
+                print(f"  {path.relative_to(data_dir)}  ({path.stat().st_size / 1024**2:.1f} MiB)")
 
 
 def run(options: BuildOptions, paths: PipelinePaths) -> None:
@@ -118,7 +141,7 @@ def run(options: BuildOptions, paths: PipelinePaths) -> None:
         )
     selected = _selected(options)
     mafft = _resolve_mafft(options.mafft) if "clustering" in selected else ""
-    steps = _steps(paths, mafft)
+    steps = _steps(paths, options, mafft)
     chosen = [steps[name] for name in STEP_NAMES if name in selected]
     preflight(chosen)
 

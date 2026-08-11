@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pipeline = ["biopython>=1.83", "scipy>=1.13", "numpy>=1.26"]
+pipeline = ["biopython>=1.83", "scipy>=1.13", "numpy>=1.26", "pybigtools>=0.3"]
 dev = ["black>=24.0", "reuse[charset-normalizer]>=5.0", "parquet-tools>=0.2.16"]
 
 [project.scripts]

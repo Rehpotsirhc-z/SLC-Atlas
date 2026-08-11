@@ -12,6 +12,14 @@ FEATURES_FILE = "structure/features.parquet"
 EXPERIMENTAL_FILE = "structure/experimental.parquet"
 SOURCES_FILE = "structure/sources.parquet"
 
+MODELS_FILE = "browser/transcripts.parquet"
+WINDOWS_FILE = "browser/windows.parquet"
+TRACKS_FILE = "browser/tracks.parquet"
+CHROMS_FILE = "browser/chroms.parquet"
+GWAS_FILE = "browser/gwas.parquet"
+STUDIES_FILE = "browser/studies.parquet"
+BROWSER_SOURCES_FILE = "browser/sources.parquet"
+
 # These run to megabytes across a family and are only ever read one gene at a time
 PER_RESIDUE_COLUMNS = ("plddt", "sequence")
 
@@ -59,6 +67,13 @@ class ParquetSource:
         path = (self._dir / "structure" / "models" / filename).resolve()
         models_dir = (self._dir / "structure" / "models").resolve()
         if models_dir not in path.parents or not path.is_file():
+            return None
+        return path
+
+    def coverage_path(self, filename: str) -> Path | None:
+        path = (self._dir / "browser" / "coverage" / filename).resolve()
+        coverage_dir = (self._dir / "browser" / "coverage").resolve()
+        if coverage_dir not in path.parents or not path.is_file():
             return None
         return path
 
@@ -137,5 +152,50 @@ class ParquetSource:
         lf = self._scan_optional(SOURCES_FILE)
         return lf.collect() if lf is not None else None
 
+    def get_track_manifest(self) -> dict | None:
+        """Everything the browser needs before it draws anything: the tracks it may read,
+        the studies it may plot, and how long each chromosome is."""
+        tracks = self._scan_optional(TRACKS_FILE)
+        chroms = self._scan_optional(CHROMS_FILE)
+        if tracks is None or chroms is None:
+            return None
+        studies = self._scan_optional(STUDIES_FILE)
+        return {
+            "tracks": tracks.collect().to_dicts(),
+            "studies": studies.collect().to_dicts() if studies is not None else [],
+            "chroms": chroms.filter(pl.col("role") == "primary").collect().to_dicts(),
+        }
+
+    def get_region(self, gene_id: str) -> dict | None:
+        """One gene's window and every transcript model drawn inside it."""
+        windows = self._scan_optional(WINDOWS_FILE)
+        models = self._scan_optional(MODELS_FILE)
+        if windows is None or models is None:
+            return None
+        window = windows.filter(pl.col("gene_id") == gene_id).collect()
+        if window.is_empty():
+            return None
+        transcripts = (
+            models.filter(pl.col("gene_id") == gene_id)
+            .drop("gene_id")
+            .sort("start", "transcript_id")
+            .collect()
+        )
+        return {**window.to_dicts()[0], "transcripts": transcripts.to_dicts()}
+
+    def get_gwas(self, gene_id: str, study_id: str) -> pl.DataFrame | None:
+        lf = self._scan_optional(GWAS_FILE)
+        if lf is None:
+            return None
+        return (
+            lf.filter((pl.col("gene_id") == gene_id) & (pl.col("study_id") == study_id))
+            .drop("gene_id", "study_id")
+            .collect()
+        )
+
+    def get_browser_sources(self) -> pl.DataFrame | None:
+        lf = self._scan_optional(BROWSER_SOURCES_FILE)
+        return lf.collect() if lf is not None else None
+
     def capabilities(self) -> dict[str, bool]:
-        return {"structure": self.has(STRUCTURE_FILE)}
+        return {"structure": self.has(STRUCTURE_FILE), "browser": self.has(MODELS_FILE)}

@@ -15,6 +15,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from ...config import COMMAND_NAME
+from ..lib import windows
 from ..lib.orchestration import Step, preflight, run_stage
 from ..lib.paths import PipelinePaths
 from . import (
@@ -24,7 +25,10 @@ from . import (
     download_experimental_models,
     download_models,
     fetch_confidence,
+    fetch_coverage,
     fetch_ensembl_genes,
+    fetch_gene_models,
+    fetch_gwas,
     fetch_ncbi_summaries,
     fetch_orthologs,
     fetch_protein_features,
@@ -35,17 +39,19 @@ from . import (
     fetch_uniprot_sequences,
     gtex,
     hgnc,
+    slice_coverage,
     subset_expression,
 )
+from .browser_curation import GWAS_FILE, TRACKS_FILE
 
 STAGES = [
     ["fetch_hgnc"],
     ["annotate_genes"],
     ["fetch_ensembl_genes", "fetch_ncbi_summaries"],
     ["assemble_genes"],
-    ["subset_expression", "fetch_sequences"],
-    ["fetch_orthologs", "fetch_species_tree"],
-    ["fetch_uniprot_map"],
+    ["subset_expression", "fetch_sequences", "fetch_gene_models"],
+    ["fetch_orthologs", "fetch_species_tree", "fetch_coverage", "fetch_gwas"],
+    ["fetch_uniprot_map", "slice_coverage"],
     ["fetch_uniprot_sequences"],
     ["fetch_protein_features", "fetch_structures"],
     ["download_models", "download_experimental_models", "fetch_confidence"],
@@ -58,6 +64,10 @@ CONSUMED_BY = {
     "fetch_sequences": {"clustering", "structure"},
     "fetch_orthologs": {"conservation"},
     "fetch_species_tree": {"conservation"},
+    "fetch_gene_models": {"browser"},
+    "fetch_coverage": {"browser"},
+    "fetch_gwas": {"browser"},
+    "slice_coverage": {"browser"},
     "fetch_uniprot_map": {"structure"},
     "fetch_protein_features": {"structure"},
     "fetch_structures": {"structure"},
@@ -70,6 +80,7 @@ CONSUMED_BY = {
 GATED_ON_FLAG = {
     "download_models": "download_predicted",
     "download_experimental_models": "download_experimental",
+    "slice_coverage": "slice_coverage",
 }
 
 LABELS = {
@@ -82,6 +93,10 @@ LABELS = {
     "fetch_sequences": "Fetching the canonical coding and protein sequences",
     "fetch_orthologs": "Fetching orthologs from Ensembl Compara",
     "fetch_species_tree": "Building the species tree",
+    "fetch_gene_models": "Fetching the transcript models around each gene",
+    "fetch_coverage": "Resolving the coverage tracks",
+    "fetch_gwas": "Taking this family's windows out of the GWAS studies",
+    "slice_coverage": "Writing family-scoped copies of the coverage tracks",
     "fetch_uniprot_map": "Working out which UniProt entry each gene maps to",
     "fetch_uniprot_sequences": "Fetching the UniProt canonical sequences",
     "fetch_protein_features": "Fetching membrane topology and binding sites",
@@ -110,6 +125,15 @@ class FetchOptions:
     promote_prefix: str = ""
     download_predicted: bool = False
     download_experimental: bool = False
+    gene_models_file: Path | None = None
+    gencode_release: str = ""
+    browser_tracks: Path | None = None
+    browser_gwas: Path | None = None
+    browser_flank_min: int = windows.FLANK_MIN
+    browser_flank_max: int = windows.FLANK_MAX
+    browser_bin: int = 25
+    browser_max_bytes: int = 500_000_000
+    slice_coverage: bool = False
     accept_seeds: bool = False
     skipped_views: frozenset[str] = frozenset()
     only_steps: tuple[str, ...] = ()
@@ -128,7 +152,12 @@ def _acquire(options: FetchOptions, paths: PipelinePaths) -> bool:
     chance to edit them before the rest of the fetch runs."""
     hgnc_path = hgnc.acquire(options.source, paths.cache / "hgnc_family.txt")
     seeded = curation.seed(
-        options.source, hgnc_path, paths.curation_dir, promote_prefix=options.promote_prefix
+        options.source,
+        hgnc_path,
+        paths.curation_dir,
+        promote_prefix=options.promote_prefix,
+        tracks_dir=options.browser_tracks,
+        gwas_dir=options.browser_gwas,
     )
     if not seeded or options.accept_seeds or options.only_steps:
         return False
@@ -152,6 +181,66 @@ def _expression(options: FetchOptions, paths: PipelinePaths) -> None:
         paths.source / "expression.parquet",
         paths.source / "sample_tissue.tsv",
     )
+
+
+def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
+    browser, genes = paths.browser_source, paths.source / "genes.tsv"
+    chroms, coverage = browser / "chroms.tsv", browser / "coverage.tsv"
+    flank = {"flank_min": options.browser_flank_min, "flank_max": options.browser_flank_max}
+    return [
+        Step(
+            "fetch_gene_models",
+            lambda: fetch_gene_models.run(
+                genes,
+                paths.cache,
+                browser,
+                ensembl_release=options.ensembl_release,
+                gencode_override=options.gencode_release,
+                models_file=options.gene_models_file,
+                **flank,
+            ),
+            outputs=(browser / "transcripts.bed", chroms),
+        ),
+        Step(
+            "fetch_coverage",
+            lambda: fetch_coverage.run(
+                paths.curation_dir / TRACKS_FILE,
+                genes,
+                chroms,
+                coverage,
+                default_bin=options.browser_bin,
+                default_local=options.slice_coverage,
+                **flank,
+            ),
+            requires=("pybigtools",),
+            outputs=(coverage,),
+        ),
+        Step(
+            "fetch_gwas",
+            lambda: fetch_gwas.run(
+                paths.curation_dir / GWAS_FILE,
+                genes,
+                chroms,
+                paths.cache,
+                browser,
+                **flank,
+            ),
+            outputs=(browser / "gwas.parquet", browser / "gwas_studies.tsv"),
+        ),
+        # Decides file by file, so its directory is never complete
+        Step(
+            "slice_coverage",
+            lambda: slice_coverage.run(
+                coverage,
+                genes,
+                chroms,
+                paths.coverage_dir,
+                max_bytes=options.browser_max_bytes,
+                **flank,
+            ),
+            requires=("pybigtools",),
+        ),
+    ]
 
 
 def _steps(options: FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
@@ -264,6 +353,7 @@ def _steps(options: FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
             "download_experimental_models",
             lambda: download_experimental_models.run(experimental, paths.models_dir / "pdb"),
         ),
+        *_browser_steps(options, paths),
     ]
     return {step.name: step for step in steps}
 
