@@ -75,6 +75,34 @@ def effective_bin(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int
     return bin_size if density(reader, spans) * bin_size > BIN_WORTH_IT else 0
 
 
+def _binned(reader, chrom: str, start: int, end: int, bin_size: int):
+    """Return bin edges and mean signal values for one window.
+
+    Compute means from the source records instead of its zoom summaries. A zoom summary may
+    cross a requested bin edge and be assigned to the wrong side. Summing the records
+    preserves the source signal within each bin.
+
+    Each mean includes uncovered bases as zero. Averaging only covered bases would spread a
+    short peak across the bin and inflate the total signal.
+    """
+    width = end - start
+    bins = max(1, math.ceil(width / bin_size))
+    edges = [start + index * width // bins for index in range(bins + 1)]
+    totals = [0.0] * bins
+
+    index = 0
+    for record_start, record_end, value in reader.records(chrom, start, end):
+        position, record_end = max(record_start, start), min(record_end, end)
+        while position < record_end:
+            while index + 1 < bins and edges[index + 1] <= position:
+                index += 1
+            edge = min(record_end, edges[index + 1])
+            totals[index] += (edge - position) * value
+            position = edge
+
+    return edges, [total / (edges[i + 1] - edges[i]) for i, total in enumerate(totals)]
+
+
 def read(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int):
     """Yield ``(chrom, start, end, value)`` over the windows, binned when asked.
 
@@ -88,22 +116,15 @@ def read(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int):
                     yield chrom, max(record_start, start), min(record_end, end), value
                 continue
 
-            width = end - start
-            bins = max(1, math.ceil(width / bin_size))
-            values = reader.values(chrom, start, end, bins=bins, summary="mean", fillna=0)
+            edges, values = _binned(reader, chrom, start, end, bin_size)
             index = 0
-            while index < bins:
-                value = float(values[index])
+            while index < len(values):
+                value = values[index]
                 run = index + 1
-                while run < bins and float(values[run]) == value:
+                while run < len(values) and values[run] == value:
                     run += 1
                 if value != 0.0 and not math.isnan(value):
-                    yield (
-                        chrom,
-                        start + index * width // bins,
-                        start + run * width // bins,
-                        value,
-                    )
+                    yield chrom, edges[index], edges[run], value
                 index = run
 
 
