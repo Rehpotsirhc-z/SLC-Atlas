@@ -178,8 +178,8 @@ FETCH = (
         metavar="PREFIX",
     ),
     Option(
-        "accept_seeds",
-        "continue after creating new curation files without pausing for review",
+        "no_review",
+        "skip the pause for reviewing newly created curation files",
     ),
     *(Option(f"skip_{view}", SKIP_HELP[view]) for view in VIEWS),
     Option(
@@ -291,7 +291,7 @@ def _fetch(args: argparse.Namespace) -> int:
             browser_bin=chosen["browser_bin"],
             browser_max_bytes=chosen["browser_max_bytes"],
             slice_coverage=chosen["slice_coverage"],
-            accept_seeds=chosen["accept_seeds"],
+            no_review=chosen["no_review"],
             skipped_views=_skipped(chosen),
             only_steps=tuple(chosen["step"]),
         ),

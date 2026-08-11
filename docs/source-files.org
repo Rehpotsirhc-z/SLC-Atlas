@@ -181,10 +181,11 @@ Columns may appear in any order:
 | Variant ID  | ~rsid~, ~snp_id~, ~variant_id~, ~hm_rsid~, ~snp~, ~rs_id~ | No |
 | Effect size | ~beta~, ~beta_value~, ~hm_beta~, ~effect_size~, ~b~ | No |
 
-Chromosome names may include or omit the ~chr~ prefix. Positions must be whole
-numbers; scientific notation is rejected because it may not identify the exact
-base. A p-value that underflows to zero is preserved and shown above the chart's
-numeric scale.
+Chromosome names may include or omit the ~chr~ prefix. A ~chromStart~ column
+uses BED-style, zero-based coordinates; every other position column uses
+one-based coordinates. Positions must be whole numbers; scientific notation is
+rejected because it may not identify the exact base. A p-value that underflows to
+zero is preserved and shown above the chart's numeric scale.
 
 * Built application files
 ~atlas build~ converts source files into the Parquet tables under ~<data-dir>/app/~.

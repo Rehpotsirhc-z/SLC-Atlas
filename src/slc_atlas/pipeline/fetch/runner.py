@@ -134,7 +134,7 @@ class FetchOptions:
     browser_bin: int = 25
     browser_max_bytes: int = 500_000_000
     slice_coverage: bool = False
-    accept_seeds: bool = False
+    no_review: bool = False
     skipped_views: frozenset[str] = frozenset()
     only_steps: tuple[str, ...] = ()
 
@@ -159,15 +159,15 @@ def _acquire(options: FetchOptions, paths: PipelinePaths) -> bool:
         tracks_dir=options.browser_tracks,
         gwas_dir=options.browser_gwas,
     )
-    if not seeded or options.accept_seeds or options.only_steps:
+    if not seeded or options.no_review or options.only_steps:
         return False
     print("\n=== Review the new curation files ===")
     for path in seeded:
         print(f"Created {path}")
     print(
-        "\nThese files control family names, display symbols, excluded genes, comparison\n"
-        "species, and UniProt corrections. Edit them now or keep the suggested values.\n"
-        "Use --accept-seeds to continue automatically when creating another dataset."
+        "\nThese files control dataset-specific names, exclusions, species, protein mappings,\n"
+        "and browser tracks. Edit them now or keep the suggested values.\n"
+        "Use --no-review to continue automatically when creating another dataset."
     )
     return True
 
