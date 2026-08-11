@@ -26,34 +26,45 @@ from .coverage_files import copy_coverage, stale_coverage
 # Allow minor coordinate differences between annotation releases
 AGREEMENT = 0.95
 
+# Minimum reciprocal overlap between a gene and its transcript models
+OVERLAP = 0.5
+
 
 def check_assembly(genes: pl.DataFrame, transcripts) -> None:
-    """Refuse an annotation that describes a different genome than the gene table does.
+    """Refuse transcript models built for a different genome assembly.
 
-    A bigWig carries no assembly and a GTF's header is easy to get wrong, so the check is
-    made against the coordinates themselves: the same gene in two builds of the genome sits
-    hundreds of kilobases apart, and in the same build it sits at the same base.
+    GTF assembly headers are not always reliable, so compare coordinates instead. Releases
+    for the same assembly generally place a gene within a few bases or extend its span, while
+    different assemblies may place it hundreds of kilobases away. Reciprocal overlap
+    therefore distinguishes compatible annotations without requiring identical starts.
     """
-    starts: dict[str, int] = {}
+    spans: dict[str, tuple[int, int]] = {}
     for t in transcripts:
         gene = bed12.versionless(t.gene_id)
-        starts[gene] = min(starts.get(gene, t.start), t.start)
+        start, end = spans.get(gene, (t.start, t.end))
+        spans[gene] = (min(start, t.start), max(end, t.end))
 
-    shared = genes.filter(pl.col("id").is_in(list(starts)))
+    shared = genes.filter(pl.col("id").is_in(list(spans)))
     if shared.height < 20:
         return
 
     agreed, disagreed = 0, []
-    for gene_id, start in shared.select("id", "start").rows():
-        if start - 1 == starts[gene_id]:
+    for gene_id, start, end in shared.select("id", "start", "end").rows():
+        model_start, model_end = spans[gene_id]
+        shared_bases = min(end, model_end) - max(start - 1, model_start)
+        widest = max(end - start + 1, model_end - model_start)
+        if shared_bases >= OVERLAP * widest:
             agreed += 1
         elif len(disagreed) < 3:
-            disagreed.append(f"{gene_id} at {start - 1} in the genes, {starts[gene_id]} in the models")
+            disagreed.append(
+                f"{gene_id} at {start - 1}-{end} in the genes, "
+                f"{model_start}-{model_end} in the models"
+            )
 
     if agreed / shared.height < AGREEMENT:
         raise SystemExit(
-            f"Only {agreed} of {shared.height} genes start at the same base in the gene table "
-            f"and in the transcript models, so they were built on different genomes: "
+            f"Only {agreed} of {shared.height} genes overlap their transcript models, "
+            f"so the gene table and annotation likely use different genome assemblies: "
             + "; ".join(disagreed)
             + ". Fetch the gene models for the assembly the genes came from."
         )
@@ -73,7 +84,6 @@ def check_flank(source_dir: Path, flank_min: int, flank_max: int) -> None:
         )
 
 
-
 def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> None:
     browser = source_dir / "browser"
     models_path, chroms_path = browser / "transcripts.bed", browser / "chroms.tsv"
@@ -86,7 +96,7 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
 
     check_flank(browser, flank_min, flank_max)
     transcripts = bed12.read_bed12(models_path)
-    genes = pl.read_csv(source_dir / "genes.tsv", separator="\t", columns=["id", "start"])
+    genes = pl.read_csv(source_dir / "genes.tsv", separator="\t", columns=["id", "start", "end"])
     check_assembly(genes, transcripts)
 
     placed, unplaced = windows.load(
@@ -146,6 +156,6 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
         f"{windows.covered_bases(merged) / 1e6:.0f} Mb, "
         f"{count('transcript model', models.height)}, "
         f"{count('coverage track', len(coverage))} ({mirrored} copied here, {copied} new), "
-        f"{count('GWAS study', len(studies))}",
+        f"{count('GWAS study/GWAS studies', len(studies))}",
         file=sys.stderr,
     )

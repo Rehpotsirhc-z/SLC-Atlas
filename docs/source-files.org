@@ -26,8 +26,8 @@ selected steps.
 
 * Curation files
 The first ~atlas fetch~ creates the following files in ~--curation-dir~, which
-defaults to ~<data-dir>/curation/~. The command then pauses so you can review
-newly created files unless ~--accept-seeds~ is set.
+defaults to ~<data-dir>/curation/~. Unless ~--no-review~ is set, the command
+then pauses so you can review any newly created files.
 
 Blank lines and comment lines beginning with ~#~ are ignored. TSV files must
 remain tab-separated.
