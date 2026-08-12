@@ -23,18 +23,23 @@ export interface Locus {
 
 const digits = (value: string) => Number(value.replace(/,/g, ""))
 
-/** Parse a genomic coordinate from user input */
+/**
+ * Parse a genomic coordinate from user input.
+ *
+ * Input uses one-based inclusive coordinates. The browser uses zero-based, half-open
+ * coordinates, so only the start changes.
+ */
 export function parseLocus(text: string, span: number): Locus | null {
   const trimmed = text.trim()
   const range = LOCUS.exec(trimmed)
   if (range) {
-    const start = digits(range[3])
+    const start = digits(range[3]) - 1
     const end = digits(range[4])
     if (end > start) return { chrom: range[0].split(/[:\s]/)[0], start, end }
   }
   const point = POINT.exec(trimmed)
   if (point) {
-    const at = digits(point[3])
+    const at = digits(point[3]) - 1
     return { chrom: point[0].split(/[:\s]/)[0], start: at - span / 2, end: at + span / 2 }
   }
   return null
