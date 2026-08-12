@@ -112,19 +112,19 @@ models from AlphaFold DB or RCSB. Locally downloaded models are copied to
 ~app/structure/models/~ during the build and included in a static export.
 
 ** Genome Browser
-Browser inputs are stored under ~source/browser/~. Every data source is reduced to
-the same windows around the atlas genes. A window uses the gene length as its
-flank, limited by ~--browser-flank-min~ and ~--browser-flank-max~, and is at least
-200 kb wide.
+Browser inputs are stored under ~source/browser/~. By default, each source is limited to
+windows around the atlas genes. Use ~--browser-whole-genome~ to retain genome-wide data
+instead. Each window uses the gene length as its flank, limited by ~--browser-flank-min~
+and ~--browser-flank-max~, and is at least 200 kb wide.
 
 | File                   | Contents | Created by |
 |------------------------+----------+------------|
-| ~transcripts.bed~      | Transcript models overlapping the browser windows, as BED12 followed by ~gene_id~, ~biotype~, and ~gene_name~ | ~fetch_gene_models~ |
+| ~transcripts.bed~      | Transcript models for the retained regions, as BED12 followed by ~gene_id~, ~biotype~, and ~gene_name~ | ~fetch_gene_models~ |
 | ~chroms.tsv~           | Chromosome name, length, and role | ~fetch_gene_models~ |
 | ~gene_models.tsv~      | Annotation source, version, assembly, license, URL, retrieval date, and fetch flanks | ~fetch_gene_models~ |
 | ~coverage.tsv~         | Resolved coverage sources, chromosome checks, binning, hosting mode, and size estimates | ~fetch_coverage~ |
-| ~coverage/*.bw~        | Optional bigWigs containing only the merged browser windows | ~slice_coverage~ |
-| ~gwas.parquet~         | GWAS variants that fall inside the merged browser windows | ~fetch_gwas~ |
+| ~coverage/*.bw~        | Optional local bigWig copies, whole-genome or cut to the merged browser windows | ~slice_coverage~ |
+| ~gwas.parquet~         | GWAS variants in the retained regions | ~fetch_gwas~ |
 | ~gwas_studies.tsv~     | Trait, citation, source, assembly, license, URL, retrieval date, variant count, and chromosomes | ~fetch_gwas~ |
 
 *** Gene model input
@@ -158,9 +158,13 @@ accession, a URL, or a local path. Other coverage formats must be converted to
 bigWig before fetch.
 
 For stranded data, use two rows with the same ~track_id~ and set ~strand~ to ~plus~
-and ~minus~. Set ~local~ to ~yes~ to create a windowed copy under ~coverage/~, or ~no~ to
+and ~minus~. Set ~local~ to ~yes~ to create a copy under ~coverage/~, or ~no~ to
 let the browser read the source URL directly. Remote servers must support byte
 ranges and cross-origin requests.
+
+Slicing and binning are independent. ~--browser-whole-genome~ controls which regions are
+retained, while ~--browser-bin~ controls their resolution. When neither slicing nor
+binning is requested, the source file is copied without being rewritten.
 
 ~--browser-bin~ controls the finest resolution retained in local copies. A source
 that is already coarser is left at its existing resolution. Before slicing, the
@@ -198,6 +202,8 @@ Large binary assets remain in their native formats:
 |--------+----------------+----------|
 | ~source/structure/models/~ | ~app/structure/models/~ | Copied and served locally |
 | ~source/browser/coverage/~ | ~app/browser/coverage/~ | Copied and served with byte-range support |
+| ~source/browser/transcripts.bed~ | ~app/browser/models.bb~ | bigBed read by byte range for the region in view |
+| ~source/browser/gwas.parquet~ | ~app/browser/gwas/{study}.bb~ | One bigBed per study, plus a smaller ~.overview.bb~ for wide views |
 
 The static exporter copies these binary trees directly and renders the remaining
 API responses as JSON.
