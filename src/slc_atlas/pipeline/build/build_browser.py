@@ -10,6 +10,7 @@ from pathlib import Path
 import polars as pl
 
 from ..lib import bed12, chroms as chrom_names, windows
+from ..lib.parquet import write_gene_keyed
 from ..lib.reporting import count, report_missing
 from .browser_tables import (
     CHROM_SCHEMA,
@@ -28,6 +29,9 @@ AGREEMENT = 0.95
 
 # Minimum reciprocal overlap between a gene and its transcript models
 OVERLAP = 0.5
+
+# Keep gene lookups narrow without creating excessive row-group overhead
+MODEL_ROW_GROUP = 4096
 
 
 def check_assembly(genes: pl.DataFrame, transcripts) -> None:
@@ -133,7 +137,14 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
     ensembl_of = {track: source for source, track in spelling.items()}
 
     window_df.write_parquet(out / "windows.parquet")
-    models.write_parquet(out / "transcripts.parquet")
+    write_gene_keyed(
+        models,
+        out / "transcripts.parquet",
+        "gene_id",
+        "start",
+        "transcript_id",
+        row_group=MODEL_ROW_GROUP,
+    )
     track_frame(coverage, coverage_out).write_parquet(out / "tracks.parquet")
     gwas_frame(variants, window_df).write_parquet(out / "gwas.parquet")
     study_frame(studies).write_parquet(out / "studies.parquet")

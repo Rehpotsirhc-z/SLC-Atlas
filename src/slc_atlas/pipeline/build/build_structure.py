@@ -20,6 +20,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ..lib.parquet import write_gene_keyed
 from ..lib.reporting import count, report_missing
 from ..lib.structures import rank_experimental
 from .model_files import copy_models, stale_models
@@ -34,6 +35,9 @@ SOURCES = [
         "https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons",
     ),
 ]
+
+# Structure rows are large, so use small groups to keep gene lookups narrow
+STRUCTURE_ROW_GROUP = 64
 
 # The feature types the topology figure knows how to draw
 FEATURE_TYPES = {
@@ -368,7 +372,9 @@ def run(source_dir: Path, out_dir: Path) -> None:
     )
 
     structure = build_structure(gene_map, structure_source, models_dir, features, experimental)
-    structure.write_parquet(structure_out / "structure.parquet")
+    write_gene_keyed(
+        structure, structure_out / "structure.parquet", "gene_id", row_group=STRUCTURE_ROW_GROUP
+    )
     features.write_parquet(structure_out / "features.parquet")
     experimental.write_parquet(structure_out / "experimental.parquet")
     build_sources(structure_source, structure).write_parquet(structure_out / "sources.parquet")

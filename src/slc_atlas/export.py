@@ -42,6 +42,9 @@ COPIED_TREES = (
 # How many responses to render at once
 CONCURRENCY = 8
 
+# Exported responses are stored uncompressed
+EXPORT_HEADERS = {"Accept-Encoding": "identity"}
+
 # The directories the export owns outright, and so may delete files from
 MANAGED = ("api", "assets")
 
@@ -186,7 +189,9 @@ def _uncovered(urls: list[str], capabilities: dict[str, bool]) -> set[str]:
 
 async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://export") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://export", headers=EXPORT_HEADERS
+    ) as client:
         capabilities = (await _get(client, "/api/capabilities.json")).json()
         gene_ids = [g["id"] for g in (await _get(client, "/api/genes.json")).json()]
         study_ids = []
