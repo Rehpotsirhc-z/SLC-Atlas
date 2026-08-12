@@ -16,6 +16,7 @@
     "@emotion/styled": "^11.14.0",
     "@fontsource/source-code-pro": "^5.2.7",
     "@fontsource/source-sans-3": "^5.2.9",
+    "@gmod/bbi": "^11.0.1",
     "@mui/icons-material": "^6.4.0",
     "@mui/material": "^6.4.0",
     "@mui/x-data-grid": "^7.28.0",

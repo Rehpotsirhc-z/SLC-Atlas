@@ -4,22 +4,13 @@
 
 import { Box, Typography, useTheme } from "@mui/material"
 import type { Transcript } from "@/types/gene"
+import { biotypeColor } from "@/utils/biotypeColor"
 import { useElementSize } from "@/utils/useElementSize"
 
 const ROW_H = 22
 const BAR_H = 10
 const LABEL_W = 95
 const TICK_AREA_H = 20
-
-const TYPE_COLORS: Record<string, string> = {
-  protein_coding: "#51afef",
-  retained_intron: "#c678dd",
-  processed_transcript: "#98be65",
-  nonsense_mediated_decay: "#ff6c6b",
-  lncRNA: "#4db5bd",
-  processed_pseudogene: "#ECBE7B",
-}
-const FALLBACK_COLOR = "#73797e"
 
 const TEXT_COLOR = { dark: "#9ca0a4", light: "#5B6268" }
 const GRID_COLOR = { dark: "#3f444a", light: "#c6c7c7" }
@@ -76,7 +67,7 @@ export default function TranscriptMapDiagram({ transcripts }: Props) {
               />
             ))}
             {transcripts.map((t, i) => {
-              const barColor = TYPE_COLORS[t.type] ?? FALLBACK_COLOR
+              const barColor = biotypeColor(t.type, palette.mode)
               const x1 = toX(t.start)
               const x2 = toX(t.end)
               const midY = i * ROW_H + ROW_H / 2

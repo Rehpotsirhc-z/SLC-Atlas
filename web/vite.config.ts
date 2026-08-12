@@ -102,8 +102,11 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
+              // Bypass the service worker for byte-range responses
               urlPattern: ({ url }) =>
-                url.pathname.startsWith("/api/") && !url.pathname.includes("/models/"),
+                url.pathname.startsWith("/api/") &&
+                !url.pathname.includes("/models/") &&
+                !url.pathname.includes("/browser/coverage/"),
               handler: "NetworkFirst",
               options: {
                 cacheName: "api-cache",
