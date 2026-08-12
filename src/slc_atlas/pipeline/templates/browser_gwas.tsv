@@ -27,4 +27,4 @@
 # Separate columns with tabs; blank lines and comments are ignored
 
 study_id	trait	citation	source	assembly	license_spdx
-# PD_Nalls	Parkinson's disease	Nalls et al. 2019	GCST009325	GRCh38	EBI-terms
+# PD_Nalls	Parkinson's disease	Nalls et al. 2019 Lancet Neurol	GCST009325	GRCh38	EBI-terms

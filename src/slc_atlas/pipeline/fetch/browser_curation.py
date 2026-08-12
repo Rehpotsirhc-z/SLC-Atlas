@@ -6,14 +6,17 @@
 
 Which tissues to show signal for and which trait to plot beside a gene family are choices
 no public source can make, so they live beside the other curated decisions rather than in
-the pipeline. Both files seed from a template, and both can instead be seeded from a
-directory of files that is already laid out the way portals in this field lay one out, so
-that an existing dataset does not have to be retyped.
+the pipeline. Both files seed from a template, and both can instead be seeded from files
+that are already on the machine, which fills in the paths so that a directory of coverage
+does not have to be retyped.
+
+Nothing is assumed about how those files are named or arranged. A bigWig states no cell
+type and a summary-statistics table states no trait, so the seed carries the paths, which
+are known, and leaves the naming to whoever writes the file.
 """
 
-import json
 import re
-import tomllib
+from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -26,13 +29,23 @@ GWAS_FILE = "browser_gwas.tsv"
 TRACKS_HEADER = "track_id\tlabel\tgroup\tstrand\tsource\tbin\tlocal"
 GWAS_HEADER = "study_id\ttrait\tcitation\tsource\tassembly\tlicense_spdx"
 
-# What a portal calls the file that maps a cell type to its bigWig, and the one that lists
-# its GWAS studies
-CELLTYPE_MANIFEST = "celltype_bigwig.json"
-GWAS_MANIFEST = "gwas_datasets.toml"
+BIGWIG_SUFFIXES = ("*.bw", "*.bigWig", "*.bigwig")
 
 PLUS, MINUS = "plus", "minus"
 _SLUG = re.compile(r"[^a-z0-9]+")
+
+# Infer strand only from an explicit filename suffix
+_STRAND_TOKENS = {
+    "plus": PLUS,
+    "fwd": PLUS,
+    "forward": PLUS,
+    "pos": PLUS,
+    "minus": MINUS,
+    "rev": MINUS,
+    "reverse": MINUS,
+    "neg": MINUS,
+}
+_SEPARATORS = re.compile(r"[._-]")
 
 
 @dataclass(frozen=True)
@@ -93,10 +106,14 @@ def read_tracks(rows) -> list[TrackRow]:
 
 def read_gwas(rows) -> list[GwasRow]:
     out = []
+    seen: set[str] = set()
     for cells in rows:
         study_id = _cell(cells, 0)
         if not study_id:
             continue
+        if study_id in seen:
+            raise SystemExit(f"{GWAS_FILE} declares study {study_id!r} twice")
+        seen.add(study_id)
         out.append(
             GwasRow(
                 study_id=study_id,
@@ -141,69 +158,76 @@ def _template(name: str) -> str:
     return (resources.files(templates) / name).read_text(encoding="utf-8")
 
 
-def _manifest(path: Path, filename: str) -> Path | None:
+def bigwigs(path: Path) -> list[Path]:
+    """Return the bigWigs a seed argument stands for, one file or a directory of them."""
+    if not path.exists():
+        raise SystemExit(f"No bigWig at {path}")
     if path.is_file():
-        return path
-    candidate = path / filename
-    return candidate if candidate.is_file() else None
+        return [path]
+    found = sorted({p for pattern in BIGWIG_SUFFIXES for p in path.glob(pattern)})
+    if not found:
+        raise SystemExit(f"No bigWig in {path}")
+    return found
 
 
-def tracks_text(tracks_dir: Path | None) -> str:
-    """Seed the coverage tracks, from a portal's bigWig manifest when one was pointed at."""
-    manifest = _manifest(tracks_dir, CELLTYPE_MANIFEST) if tracks_dir else None
-    if manifest is None:
+def named_strand(stem: str) -> tuple[str, str]:
+    """Remove a recognized strand suffix and return it separately."""
+    head, last = _split_tail(stem)
+    strand = _STRAND_TOKENS.get(last.lower(), "")
+    return (head, strand) if strand else (stem, "")
+
+
+def _split_tail(stem: str) -> tuple[str, str]:
+    parts = _SEPARATORS.split(stem)
+    return (stem[: -len(parts[-1]) - 1], parts[-1]) if len(parts) > 1 else (stem, "")
+
+
+def tracks_text(tracks_dirs: Sequence[Path]) -> str:
+    """Seed one coverage row for each bigWig, filling in known paths and filename hints."""
+    if not tracks_dirs:
         return _template(TRACKS_FILE)
 
-    base = manifest.parent
-    group = base.parent.name or base.name
-    lines = []
-    for label, entry in json.loads(manifest.read_text(encoding="utf-8")).items():
-        track_id = slug(label)
-        files = entry if isinstance(entry, dict) else {"": entry}
-        for strand in ("", PLUS, MINUS):
-            name = files.get(strand)
-            if name:
-                lines.append(
-                    "\t".join((track_id, label, group, strand, str(base / name), "", "yes"))
+    lines: list[str] = []
+    seen: dict[tuple[str, str], Path] = {}
+    for path in tracks_dirs:
+        for bigwig in bigwigs(path):
+            label, strand = named_strand(bigwig.stem)
+            track_id = slug(label)
+            if (track_id, strand) in seen:
+                raise SystemExit(
+                    f"{bigwig} and {seen[(track_id, strand)]} would both be track "
+                    f"{track_id!r}. Rename one, or seed them into separate runs."
                 )
+            seen[(track_id, strand)] = bigwig
+            lines.append("\t".join((track_id, label, "", strand, str(bigwig), "", "yes")))
+
     return _document(
-        [
-            f"# Seeded from {manifest}",
-            "# Edit the labels freely; track_id is what the built manifest is keyed on",
+        [f"# Seeded from {p}" for p in tracks_dirs]
+        + [
+            "# Add a descriptive name and group for each track",
+            "# Check any strand inferred from a file name",
             "# Separate columns with tabs; blank lines and comments are ignored",
         ],
         [TRACKS_HEADER, *lines],
     )
 
 
-def gwas_text(gwas_dir: Path | None) -> str:
-    """Seed the GWAS studies, from a portal's study list when one was pointed at."""
-    manifest = _manifest(gwas_dir, GWAS_MANIFEST) if gwas_dir else None
-    if manifest is None:
+def gwas_text(gwas_dirs: Sequence[Path]) -> str:
+    """Seed one study row for each summary-statistics file or directory."""
+    if not gwas_dirs:
         return _template(GWAS_FILE)
 
-    base = manifest.parent
-    config = tomllib.loads(manifest.read_text(encoding="utf-8"))
     lines = []
-    for study in config.get("datasets", []):
-        study_id = str(study.get("id", "")).strip()
-        if not study_id:
-            continue
-        lines.append(
-            "\t".join(
-                (
-                    study_id,
-                    str(study.get("trait", study_id)),
-                    str(study.get("citation", "")),
-                    str(base / study_id),
-                    "GRCh38",
-                    "",
-                )
-            )
-        )
+    for path in gwas_dirs:
+        if not path.exists():
+            raise SystemExit(f"No GWAS summary statistics at {path}")
+        name = path.name if path.is_dir() else path.name.split(".")[0]
+        lines.append("\t".join((slug(name), name, "", str(path), "GRCh38", "")))
+
     return _document(
-        [
-            f"# Seeded from {manifest}",
+        [f"# Seeded from {p}" for p in gwas_dirs]
+        + [
+            "# Add the trait name and study citation",
             "# Check the assembly column against the genome the atlas genes come from",
             "# Separate columns with tabs; blank lines and comments are ignored",
         ],

@@ -127,8 +127,8 @@ class FetchOptions:
     download_experimental: bool = False
     gene_models_file: Path | None = None
     gencode_release: str = ""
-    browser_tracks: Path | None = None
-    browser_gwas: Path | None = None
+    browser_tracks: tuple[Path, ...] = ()
+    browser_gwas: tuple[Path, ...] = ()
     browser_flank_min: int = windows.FLANK_MIN
     browser_flank_max: int = windows.FLANK_MAX
     browser_bin: int = 25
@@ -156,8 +156,8 @@ def _acquire(options: FetchOptions, paths: PipelinePaths) -> bool:
         hgnc_path,
         paths.curation_dir,
         promote_prefix=options.promote_prefix,
-        tracks_dir=options.browser_tracks,
-        gwas_dir=options.browser_gwas,
+        tracks_dirs=options.browser_tracks,
+        gwas_dirs=options.browser_gwas,
     )
     if not seeded or options.no_review or options.only_steps:
         return False

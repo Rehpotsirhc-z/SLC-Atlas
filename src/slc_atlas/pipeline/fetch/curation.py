@@ -13,7 +13,7 @@ as suggestions. A file that already exists is never written over.
 
 import csv
 import re
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from os.path import commonprefix
 from pathlib import Path
@@ -122,8 +122,8 @@ def seed(
     curation_dir: Path,
     *,
     promote_prefix: str,
-    tracks_dir: Path | None = None,
-    gwas_dir: Path | None = None,
+    tracks_dirs: Sequence[Path] = (),
+    gwas_dirs: Sequence[Path] = (),
 ) -> list[Path]:
     """Write the curation files that do not exist yet and return the paths of the ones that
     were written, so an empty list means the user had already written all of them."""
@@ -134,8 +134,8 @@ def seed(
         ("symbol_overrides.tsv", lambda: _overrides_text(rows, promote_prefix)),
         ("species.tsv", _species_text),
         ("uniprot_overrides.tsv", lambda: _document(UNIPROT_DOC, UNIPROT_BODY)),
-        (browser_curation.TRACKS_FILE, lambda: browser_curation.tracks_text(tracks_dir)),
-        (browser_curation.GWAS_FILE, lambda: browser_curation.gwas_text(gwas_dir)),
+        (browser_curation.TRACKS_FILE, lambda: browser_curation.tracks_text(tracks_dirs)),
+        (browser_curation.GWAS_FILE, lambda: browser_curation.gwas_text(gwas_dirs)),
     ]
     curation_dir.mkdir(parents=True, exist_ok=True)
     written = []
