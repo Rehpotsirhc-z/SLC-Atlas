@@ -2,15 +2,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { memo, useCallback, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useMemo, useRef } from "react"
 import { Box, Tooltip, Typography, useTheme } from "@mui/material"
 import type { CoverageTrack } from "@/types/browser"
 import { EDGE_PAD, LANE_GAP, Y_HEADROOM } from "./constants"
 import { columnPeaks, drawCoverage, valueAt, type CoverageInk } from "./drawCoverage"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
-import { scaleFor } from "./scale"
+import { frameScale } from "./scale"
 import type { LaneData } from "./useCoverageData"
 import { useLaneCanvas } from "./useLaneCanvas"
+import { useHoverFrame } from "./useHoverFrame"
+import type { LaneWatch } from "./useLaneVisibility"
 import type { Painter } from "./useBrowserView"
 import type { Viewport } from "./scale"
 
@@ -25,6 +27,8 @@ interface Props {
   yMax: number | null
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
+  moving: () => boolean
+  watch?: LaneWatch
 }
 
 interface Hovered {
@@ -35,8 +39,10 @@ interface Hovered {
   y: number
 }
 
-const sameHover = (next: Hovered | null) => (current: Hovered | null) =>
-  current?.base === next?.base && current?.x === next?.x ? current : next
+// Compared on what the tooltip says rather than on where the pointer is, so travelling along a
+// stretch the track reads the same across costs no renders at all
+const sameHover = (a: Hovered | null, b: Hovered | null) =>
+  a?.base === b?.base && a?.plus === b?.plus && a?.minus === b?.minus
 
 function formatSignal(value: number): string {
   if (value >= 1000) return value.toExponential(1)
@@ -56,9 +62,13 @@ function TrackLane({
   yMax,
   subscribe,
   liveView,
+  moving,
+  watch,
 }: Props) {
   const { palette, custom } = useTheme()
   const ceilingRef = useRef<HTMLSpanElement>(null)
+  const shownMax = useRef(0)
+  const shownText = useRef("")
 
   const buffers = useMemo(
     () => ({
@@ -85,7 +95,12 @@ function TrackLane({
       const peakPlus = columnPeaks(buffers.plus, data.plus, scale)
       const peakMinus = data.minus ? columnPeaks(buffers.minus, data.minus, scale) : 0
       const seen = Math.max(peakPlus, peakMinus)
-      const ceiling = yMax ?? (seen > 0 ? seen * Y_HEADROOM : 1)
+      // Held through the gesture: a lane rescaled every frame slides its own signal up and down
+      // while the eye is trying to read it along the chromosome
+      if (!moving() || shownMax.current === 0) {
+        shownMax.current = seen > 0 ? seen * Y_HEADROOM : 1
+      }
+      const ceiling = yMax ?? shownMax.current
       drawCoverage({
         ctx,
         scale,
@@ -98,35 +113,45 @@ function TrackLane({
       })
       // Written straight to the node: autoscaling live through React state would render the
       // whole stack on every frame of a drag
-      if (ceilingRef.current) ceilingRef.current.textContent = formatSignal(ceiling)
+      const text = formatSignal(ceiling)
+      if (ceilingRef.current && shownText.current !== text) {
+        ceilingRef.current.textContent = text
+        shownText.current = text
+      }
     },
-    [buffers, data, height, ink, grid, yMax],
+    [buffers, data, height, ink, grid, yMax, moving],
   )
 
-  const canvasRef = useLaneCanvas(subscribe, liveView, width, height, paint)
-  const [hover, setHover] = useState<Hovered | null>(null)
+  const canvasRef = useLaneCanvas(subscribe, liveView, width, height, paint, watch)
+  const plotRef = useRef<HTMLDivElement>(null)
+
+  const read = useCallback(
+    (clientX: number, clientY: number): Hovered | null => {
+      const box = plotRef.current?.getBoundingClientRect()
+      if (!box) return null
+      const scale = frameScale(liveView(), width)
+      const base = Math.floor(scale.toBase(clientX - box.left))
+      return {
+        base,
+        plus: valueAt(data.plus, base),
+        minus: data.minus ? valueAt(data.minus, base) : null,
+        x: clientX,
+        y: clientY,
+      }
+    },
+    [data, liveView, width],
+  )
+
+  const { hovered: hover, onMove, clear: clearHover } = useHoverFrame(read, sameHover)
 
   const onPointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       // A drag is a pan, not a reading
       if (event.buttons !== 0 || data.absent) return
-      const box = event.currentTarget.getBoundingClientRect()
-      const scale = scaleFor(liveView(), width)
-      const base = Math.floor(scale.toBase(event.clientX - box.left))
-      setHover(
-        sameHover({
-          base,
-          plus: valueAt(data.plus, base),
-          minus: data.minus ? valueAt(data.minus, base) : null,
-          x: event.clientX,
-          y: event.clientY,
-        }),
-      )
+      onMove(event.clientX, event.clientY)
     },
-    [data, liveView, width],
+    [data.absent, onMove],
   )
-
-  const clearHover = useCallback(() => setHover(sameHover(null)), [])
 
   return (
     <Box sx={{ display: "flex", alignItems: "stretch", mb: `${LANE_GAP}px`, pr: `${EDGE_PAD}px` }}>
@@ -165,6 +190,7 @@ function TrackLane({
         </Typography>
       </Box>
       <Box
+        ref={plotRef}
         sx={{ position: "relative", flex: 1, minWidth: 0, height }}
         onPointerMove={onPointerMove}
         onPointerLeave={clearHover}

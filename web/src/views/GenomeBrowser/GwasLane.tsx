@@ -2,14 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { memo, useCallback, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useMemo, useRef } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import type { GwasPoint, GwasStudy } from "@/types/browser"
 import { EDGE_PAD, GWAS_LANE_HEIGHT, LANE_GAP } from "./constants"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
 import { drawGwas, gwasCeiling, gwasNear, type GwasInk } from "./drawGwas"
-import { scaleFor, type Scale, type Viewport } from "./scale"
+import { frameScale, type Scale, type Viewport } from "./scale"
+import { useHoverFrame } from "./useHoverFrame"
 import { useLaneCanvas } from "./useLaneCanvas"
+import type { LaneWatch } from "./useLaneVisibility"
 import type { Painter } from "./useBrowserView"
 
 interface Props {
@@ -23,6 +25,8 @@ interface Props {
   showSignificance: boolean
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
+  moving: () => boolean
+  watch?: LaneWatch
 }
 
 interface Hovered {
@@ -31,8 +35,8 @@ interface Hovered {
   y: number
 }
 
-const sameHover = (next: Hovered | null) => (current: Hovered | null) =>
-  current?.point === next?.point && current?.x === next?.x ? current : next
+// The variant is what the tooltip shows, so moving between pixels over the same one is nothing
+const sameHover = (a: Hovered | null, b: Hovered | null) => a?.point === b?.point
 
 function GwasLane({
   study,
@@ -45,11 +49,14 @@ function GwasLane({
   showSignificance,
   subscribe,
   liveView,
+  moving,
+  watch,
 }: Props) {
   const { palette, custom } = useTheme()
-  const [hover, setHover] = useState<Hovered | null>(null)
+  const plotRef = useRef<HTMLDivElement>(null)
   const ceilingRef = useRef<HTMLSpanElement>(null)
-  const shownMax = useRef(1)
+  const shownMax = useRef(0)
+  const shownText = useRef("")
 
   const ink = useMemo<GwasInk>(
     () => ({
@@ -65,8 +72,13 @@ function GwasLane({
 
   const paint = useCallback(
     (ctx: CanvasRenderingContext2D, scale: Scale) => {
-      const max = gwasCeiling(points, scale.start, scale.end)
-      shownMax.current = max
+      // The axis is worked out where the view has settled and held through the gesture: a
+      // ceiling recomputed every frame slides every variant up and down under the drag, and it
+      // is a scan of the window on top of the one that draws it
+      if (!moving() || shownMax.current === 0) {
+        shownMax.current = gwasCeiling(points, scale.start, scale.end)
+      }
+      const max = shownMax.current
       drawGwas({
         ctx,
         scale,
@@ -77,34 +89,44 @@ function GwasLane({
         grid,
         showSignificance,
       })
-      if (ceilingRef.current) ceilingRef.current.textContent = max.toFixed(1)
+      const text = max.toFixed(1)
+      if (ceilingRef.current && shownText.current !== text) {
+        ceilingRef.current.textContent = text
+        shownText.current = text
+      }
     },
-    [points, ink, grid, showSignificance],
+    [points, ink, grid, showSignificance, moving],
   )
 
-  const canvasRef = useLaneCanvas(subscribe, liveView, width, GWAS_LANE_HEIGHT, paint)
+  const canvasRef = useLaneCanvas(subscribe, liveView, width, GWAS_LANE_HEIGHT, paint, watch)
+
+  const read = useCallback(
+    (clientX: number, clientY: number): Hovered | null => {
+      const box = plotRef.current?.getBoundingClientRect()
+      if (!box) return null
+      const found = gwasNear(
+        points,
+        frameScale(liveView(), width),
+        clientX - box.left,
+        clientY - box.top,
+        GWAS_LANE_HEIGHT,
+        shownMax.current,
+      )
+      return found ? { point: found, x: clientX, y: clientY } : null
+    },
+    [points, liveView, width],
+  )
+
+  const { hovered: hover, onMove, clear } = useHoverFrame(read, sameHover)
 
   const onPointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       // A drag is a pan, not an inspection
       if (event.buttons !== 0) return
-      const box = event.currentTarget.getBoundingClientRect()
-      const x = event.clientX - box.left
-      const y = event.clientY - box.top
-      const found = gwasNear(
-        points,
-        scaleFor(liveView(), width),
-        x,
-        y,
-        GWAS_LANE_HEIGHT,
-        shownMax.current,
-      )
-      setHover(sameHover(found ? { point: found, x: event.clientX, y: event.clientY } : null))
+      onMove(event.clientX, event.clientY)
     },
-    [points, liveView, width],
+    [onMove],
   )
-
-  const clear = useCallback(() => setHover(sameHover(null)), [])
 
   return (
     <Box sx={{ display: "flex", alignItems: "stretch", mb: `${LANE_GAP}px`, pr: `${EDGE_PAD}px` }}>
@@ -131,6 +153,7 @@ function GwasLane({
         </Typography>
       </Box>
       <Box
+        ref={plotRef}
         sx={{ position: "relative", flex: 1, minWidth: 0, height: GWAS_LANE_HEIGHT }}
         onPointerMove={onPointerMove}
         onPointerLeave={clear}

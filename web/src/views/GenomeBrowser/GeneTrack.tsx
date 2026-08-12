@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { memo, useCallback, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useMemo, useRef } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import type { TranscriptModel } from "@/types/browser"
 import { biotypeColor } from "@/utils/biotypeColor"
@@ -23,7 +23,8 @@ import {
   layoutTranscripts,
   type GeneSpan,
 } from "./geneLayout"
-import { scaleFor, type Scale, type Viewport } from "./scale"
+import { frameScale, type Scale, type Viewport } from "./scale"
+import { useHoverFrame } from "./useHoverFrame"
 import { useLaneCanvas } from "./useLaneCanvas"
 import type { Painter } from "./useBrowserView"
 
@@ -50,12 +51,12 @@ interface Hovered {
   y: number
 }
 
-const sameHover = (next: Hovered | null) => (current: Hovered | null) =>
-  current?.item === next?.item && current?.x === next?.x ? current : next
+// The model is what the tooltip shows, so moving across one of them is nothing
+const sameHover = (a: Hovered | null, b: Hovered | null) => a?.item === b?.item
 
 function GeneTrack({ transcripts, mode, gap, empty, width, gutter, subscribe, liveView }: Props) {
   const { palette, custom } = useTheme()
-  const [hover, setHover] = useState<Hovered | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const layout = useMemo(
     () =>
@@ -76,6 +77,7 @@ function GeneTrack({ transcripts, mode, gap, empty, width, gutter, subscribe, li
       label: palette.text.secondary,
       highlight: palette.secondary.main,
       font: custom.monoFontFamily,
+      widths: new Map(),
     }),
     [palette, custom],
   )
@@ -93,25 +95,32 @@ function GeneTrack({ transcripts, mode, gap, empty, width, gutter, subscribe, li
   )
 
   const canvasRef = useLaneCanvas(subscribe, liveView, width, contentHeight, paint)
-  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const onPointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.buttons !== 0) return
-      const box = event.currentTarget.getBoundingClientRect()
-      const scale = scaleFor(liveView(), width)
-      const scrolled = event.currentTarget.scrollTop
-      const row = Math.floor((event.clientY - box.top + scrolled - GENE_TRACK_PAD) / GENE_ROW_H)
-      const base = scale.toBase(event.clientX - box.left)
+  const read = useCallback(
+    (clientX: number, clientY: number): Hovered | null => {
+      const plot = scrollRef.current
+      if (!plot) return null
+      const box = plot.getBoundingClientRect()
+      const scale = frameScale(liveView(), width)
+      const row = Math.floor((clientY - box.top + plot.scrollTop - GENE_TRACK_PAD) / GENE_ROW_H)
+      const base = scale.toBase(clientX - box.left)
       // A little slack so a feature drawn at its minimum width is still catchable
       const slack = scale.basesPerPixel * 3
       const found = itemAt(layout as never, row, base, slack) as Target | null
-      setHover(sameHover(found ? { item: found, x: event.clientX, y: event.clientY } : null))
+      return found ? { item: found, x: clientX, y: clientY } : null
     },
     [layout, liveView, width],
   )
 
-  const clear = useCallback(() => setHover(sameHover(null)), [])
+  const { hovered: hover, onMove, clear } = useHoverFrame(read, sameHover)
+
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.buttons !== 0) return
+      onMove(event.clientX, event.clientY)
+    },
+    [onMove],
+  )
 
   return (
     <Box

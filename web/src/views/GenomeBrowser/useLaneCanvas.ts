@@ -5,7 +5,8 @@
 /** Paint a browser lane on a high-density canvas */
 
 import { useEffect, useRef, useState } from "react"
-import { scaleFor, type Scale, type Viewport } from "./scale"
+import { frameScale, type Scale, type Viewport } from "./scale"
+import type { LaneWatch } from "./useLaneVisibility"
 import type { Painter } from "./useBrowserView"
 
 export type LanePaint = (ctx: CanvasRenderingContext2D, scale: Scale) => void
@@ -32,12 +33,17 @@ export function useLaneCanvas(
   width: number,
   height: number,
   paint: LanePaint,
+  watch?: LaneWatch,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const dpr = useDevicePixelRatio()
   // Held in a ref so a changed painter repaints without tearing the canvas down
   const latest = useRef(paint)
   latest.current = paint
+  // Starts on, so a lane nobody watches is never culled and every lane paints once at mount,
+  // the observer's first callback arriving a frame later
+  const onScreen = useRef(true)
+  const missed = useRef(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -47,11 +53,29 @@ export function useLaneCanvas(
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    return subscribe((view) => {
+    const draw = (view: Viewport) => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      latest.current(ctx, scaleFor(view, width))
+      latest.current(ctx, frameScale(view, width))
+    }
+    const stop = subscribe((view) => {
+      if (!onScreen.current) {
+        missed.current = true
+        return
+      }
+      draw(view)
     })
-  }, [subscribe, width, height, dpr])
+    // A lane off the frame is drawn once, where the view got to while it was away
+    const unwatch = watch?.(canvas, (visible) => {
+      onScreen.current = visible
+      if (!visible || !missed.current) return
+      missed.current = false
+      draw(liveView())
+    })
+    return () => {
+      stop()
+      unwatch?.()
+    }
+  }, [subscribe, watch, liveView, width, height, dpr])
 
   // New data, new colours or a theme flip have to land without waiting for the next gesture,
   // and at the position the user is looking at rather than the one React last committed
@@ -59,8 +83,12 @@ export function useLaneCanvas(
     const canvas = canvasRef.current
     const ctx = canvas?.getContext("2d")
     if (!canvas || !ctx || width <= 0 || height <= 0) return
+    if (!onScreen.current) {
+      missed.current = true
+      return
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    paint(ctx, scaleFor(liveView(), width))
+    paint(ctx, frameScale(liveView(), width))
   }, [paint, liveView, width, height, dpr])
 
   return canvasRef

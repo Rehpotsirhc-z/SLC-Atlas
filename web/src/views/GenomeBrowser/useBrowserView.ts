@@ -5,7 +5,7 @@
 /** Keep gesture updates synchronized without rerendering every frame */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { VIEW_SETTLE_MS } from "./constants"
+import { VIEW_REST_MS, VIEW_SETTLE_MS } from "./constants"
 import { clampView, zoomAbout, type Viewport } from "./scale"
 
 export type Painter = (view: Viewport) => void
@@ -15,15 +15,19 @@ export interface BrowserView {
   view: Viewport
   /** Where the view is right now, which during a drag is ahead of the state above */
   liveView: () => Viewport
+  /** Whether the view is mid-gesture, for anything that should hold still until it stops */
+  moving: () => boolean
   bounds: Viewport
   subscribe: (paint: Painter) => () => void
   /** Move without telling React, then repaint on the next frame */
   apply: (next: Viewport) => void
-  /** Publish where the view ended up */
+  /** Publish where the view ended up, and call the movement over */
   commit: () => void
-  /** Publish once the movement stops, for a gesture that arrives as a burst of events */
+  /** For a gesture that arrives as a burst of events and never says when it is done */
   settle: () => void
-  /** Both at once, for a jump that has no gesture behind it */
+  /** For a gesture that announces its own end, like a button coming up */
+  release: () => void
+  /** Publish and come to rest at once, for a jump that has no gesture behind it */
   goTo: (next: Viewport) => void
   panBy: (bases: number) => void
   zoomBy: (factor: number, atBase?: number) => void
@@ -47,6 +51,8 @@ export function useBrowserView(initial: Viewport, bounds: Viewport): BrowserView
   const painters = useRef(new Set<Painter>())
   const frame = useRef(0)
   const pending = useRef(0)
+  const settling = useRef(0)
+  const inFlight = useRef(false)
 
   limitsRef.current = limits
 
@@ -65,21 +71,54 @@ export function useBrowserView(initial: Viewport, bounds: Viewport): BrowserView
       const clamped = clampView(next, limitsRef.current)
       if (same(clamped, live.current)) return
       live.current = clamped
+      inFlight.current = true
+      // Moving again means the gesture was not over after all, so anything waiting on it stands
+      // down rather than landing in the middle of it
+      clearTimeout(pending.current)
+      pending.current = 0
+      clearTimeout(settling.current)
+      settling.current = 0
       schedule()
     },
     [schedule],
   )
 
-  const commit = useCallback(() => {
+  /** Publish the live viewport to React and trigger any required data loading. */
+  const publish = useCallback(() => {
     clearTimeout(pending.current)
     pending.current = 0
     setView((current) => (same(current, live.current) ? current : live.current))
   }, [])
 
+  /** Mark the movement complete after brief pauses used to continue the same gesture. */
+  const rest = useCallback(() => {
+    clearTimeout(settling.current)
+    settling.current = window.setTimeout(() => {
+      settling.current = 0
+      inFlight.current = false
+      // Repaint once so lanes can adopt their resting scale
+      schedule()
+    }, VIEW_REST_MS)
+  }, [schedule])
+
+  const commit = useCallback(() => {
+    clearTimeout(settling.current)
+    settling.current = 0
+    inFlight.current = false
+    schedule()
+    publish()
+  }, [schedule, publish])
+
   const settle = useCallback(() => {
     clearTimeout(pending.current)
-    pending.current = window.setTimeout(commit, VIEW_SETTLE_MS)
-  }, [commit])
+    pending.current = window.setTimeout(publish, VIEW_SETTLE_MS)
+    rest()
+  }, [publish, rest])
+
+  const release = useCallback(() => {
+    publish()
+    rest()
+  }, [publish, rest])
 
   const goTo = useCallback(
     (next: Viewport) => {
@@ -125,6 +164,9 @@ export function useBrowserView(initial: Viewport, bounds: Viewport): BrowserView
   useEffect(() => {
     clearTimeout(pending.current)
     pending.current = 0
+    clearTimeout(settling.current)
+    settling.current = 0
+    inFlight.current = false
     live.current = clampView(steady, limits)
     setView(live.current)
     schedule()
@@ -133,6 +175,7 @@ export function useBrowserView(initial: Viewport, bounds: Viewport): BrowserView
   useEffect(
     () => () => {
       clearTimeout(pending.current)
+      clearTimeout(settling.current)
       cancelAnimationFrame(frame.current)
       // Cleared as well as cancelled. Strict mode runs this between the two mounts it makes,
       // and a handle left behind would tell every later schedule that a frame was already
@@ -143,15 +186,18 @@ export function useBrowserView(initial: Viewport, bounds: Viewport): BrowserView
   )
 
   const liveView = useCallback(() => live.current, [])
+  const moving = useCallback(() => inFlight.current, [])
 
   return {
     view,
     liveView,
+    moving,
     bounds: limits,
     subscribe,
     apply,
     commit,
     settle,
+    release,
     goTo,
     panBy,
     zoomBy,

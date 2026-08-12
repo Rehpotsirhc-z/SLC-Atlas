@@ -67,7 +67,8 @@ export function useGeneModels(nearby: string[]): GeneModels {
     queries: nearby.map((geneId) => ({
       // The same key useRegion uses, so the selected gene's window is never fetched twice
       queryKey: ["browser", geneId, "region"],
-      queryFn: () => api.get<Region>(`/browser/${geneId}/region.json`),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        api.get<Region>(`/browser/${geneId}/region.json`, signal),
       staleTime: Infinity,
     })),
   })
@@ -105,7 +106,8 @@ export function useVisibleGwas(nearby: string[], studyId: string | null) {
   const results = useQueries({
     queries: nearby.map((geneId) => ({
       queryKey: ["browser", geneId, "gwas", studyId],
-      queryFn: () => api.get<GwasPoint[]>(`/browser/${geneId}/gwas/${studyId}.json`),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        api.get<GwasPoint[]>(`/browser/${geneId}/gwas/${studyId}.json`, signal),
       enabled: studyId != null,
       staleTime: Infinity,
     })),

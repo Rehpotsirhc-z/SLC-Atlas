@@ -53,16 +53,28 @@ export const WHEEL_ZOOM_PER_PX = 1 / 250
 // pages arrives in numbers of a different order
 export const WHEEL_ZOOM_MAX = 4
 
-// A gesture arriving as a burst of events is published once, this long after it stops. Every
-// publication renders the whole stack and asks for whatever the new window needs, neither of
-// which belongs inside a movement the eye reads as continuous
+// Publish burst-based gestures shortly after their last event so data loading starts promptly
 export const VIEW_SETTLE_MS = 140
 
-// The narrowest stretch a coverage read covers. A block is a power of two wide, so every zoom
-// short of this one lands inside the bytes already held and costs no read at all
+// Keep lane scales stable across brief pauses in a continuous gesture
+export const VIEW_REST_MS = 400
+
+// The narrowest stretch a coverage read covers, so an ordinary zoom around a gene is answered
+// out of bytes already held rather than by a read of its own
 export const COVERAGE_BLOCK_MIN = 1 << 20
+// The furthest a block reaches past the view. Margin is what makes a pan free, but a block is
+// parsed whole, and a chromosome of every track at once is a couple of million records
+export const COVERAGE_BLOCK_MARGIN_MAX = 1 << 24
 // Records a column may be drawn from before the lane is read at a coarser stride
 export const COVERAGE_RECORDS_PER_PX = 4
+
+// A lane is painted this far outside the frame. A lane scrolled back in repaints itself where
+// the view got to, so this is only cover for the frame that reveal lands on
+export const LANE_REVEAL_PX = 96
+
+// How long the plot's measured position stands during a stream of wheel events. Long enough
+// that a pinch measures once, short enough that a scroll or a resize is picked up
+export const WHEEL_MEASURE_MS = 200
 
 // A drag shorter than this is a click, not a pan
 export const DRAG_SLOP_PX = 4

@@ -23,10 +23,13 @@ export interface GeneInk {
   label: string
   highlight: string
   font: string
+  /** Widths already measured, since a name keeps its width for as long as the face does */
+  widths: Map<string, number>
 }
 
 const rowCentre = (row: number, top: number) => top + row * GENE_ROW_H + GENE_ROW_H / 2
 
+/** One path for a whole intron's worth of arrows, a stroke apiece being most of what they cost. */
 function chevrons(
   ctx: CanvasRenderingContext2D,
   from: number,
@@ -36,14 +39,16 @@ function chevrons(
 ) {
   const reach = 3
   const first = Math.ceil(from / CHEVRON_SPACING) * CHEVRON_SPACING
+  let drawn = false
+  ctx.beginPath()
   for (let x = first; x < to; x += CHEVRON_SPACING) {
     if (x - reach < from) continue
-    ctx.beginPath()
     ctx.moveTo(x - (forward ? reach : -reach), y - reach)
     ctx.lineTo(x + (forward ? reach : -reach), y)
     ctx.lineTo(x - (forward ? reach : -reach), y + reach)
-    ctx.stroke()
+    drawn = true
   }
+  if (drawn) ctx.stroke()
 }
 
 /**
@@ -61,9 +66,19 @@ function labelBefore(
   takenTo: number,
 ): boolean {
   if (x < LABEL_MIN_PX) return false
-  ctx.font = `${bold ? 600 : 400} ${CANVAS_LABEL_PX}px ${ink.font}`
-  const left = x - LABEL_GAP_PX - ctx.measureText(text).width
+  const face = `${bold ? 600 : 400} ${CANVAS_LABEL_PX}px ${ink.font}`
+  // Measuring is the dearest call in this loop and a name is measured on every frame of a drag,
+  // so the width is kept and the face is only set when there is something to draw
+  const key = `${bold ? "b" : "r"}\u0000${text}`
+  let measured = ink.widths.get(key)
+  if (measured === undefined) {
+    ctx.font = face
+    measured = ctx.measureText(text).width
+    ink.widths.set(key, measured)
+  }
+  const left = x - LABEL_GAP_PX - measured
   if (left < 0 || left < takenTo + LABEL_GAP_PX) return false
+  ctx.font = face
   ctx.fillStyle = ink.label
   ctx.textAlign = "right"
   ctx.textBaseline = "middle"
@@ -88,7 +103,9 @@ export function drawTranscripts({ ctx, scale, height, top, layout, ink }: Transc
   const takenTo: number[] = []
 
   for (const { item, row } of layout.items) {
-    if (item.end < scale.start || item.start > scale.end) continue
+    // Packed in start order, so nothing past the right edge can be followed by something inside
+    if (item.start > scale.end) break
+    if (item.end < scale.start) continue
     const y = rowCentre(row, top)
     const color = ink.colorOf(item.biotype)
     const left = scale.toX(item.start)
@@ -153,7 +170,8 @@ export function drawGenes({ ctx, scale, height, top, layout, ink }: GeneFrame) {
   const takenTo: number[] = []
 
   for (const { item, row } of layout.items) {
-    if (item.end < scale.start || item.start > scale.end) continue
+    if (item.start > scale.end) break
+    if (item.end < scale.start) continue
     const y = rowCentre(row, top)
     const color = item.is_atlas_gene ? ink.highlight : ink.colorOf(item.biotype)
     const left = scale.toX(item.start)

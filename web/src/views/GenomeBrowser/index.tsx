@@ -24,7 +24,10 @@ import { EDGE_PAD, GUTTER_W, GUTTER_W_SM, MAX_GENE_ROWS, RULER_H } from "./const
 import { collapseToGenes, layoutGenes, layoutTranscripts } from "./geneLayout"
 import type { LaneData } from "./useCoverageData"
 import { useGenomeBrowserState } from "./useGenomeBrowserState"
+import { useLaneVisibility } from "./useLaneVisibility"
 import { usePanGestures } from "./usePanGestures"
+
+const SETTINGS_SX = { top: 8, right: 8, zIndex: 6 } as const
 
 // Keep the loading placeholder stable across renders
 const UNREAD: LaneData = {
@@ -45,6 +48,7 @@ export default function GenomeBrowser() {
   const gutter = isSmall ? GUTTER_W_SM : GUTTER_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
   const state = useGenomeBrowserState()
+  const watchLane = useLaneVisibility(frameRef)
 
   const gestures = usePanGestures({
     view: state.view,
@@ -165,6 +169,9 @@ export default function GenomeBrowser() {
                   position: "relative",
                   outline: "none",
                   cursor: "grab",
+                  // A pan is not a text selection, and on touch it is not the browser's to claim
+                  userSelect: "none",
+                  touchAction: "pan-y",
                   "&:active": { cursor: "grabbing" },
                 }}
                 {...gestures}
@@ -217,6 +224,8 @@ export default function GenomeBrowser() {
                         yMax={state.yMaxFor()}
                         subscribe={state.view.subscribe}
                         liveView={state.view.liveView}
+                        moving={state.view.moving}
+                        watch={watchLane}
                       />
                     ))}
                   </Box>
@@ -247,6 +256,8 @@ export default function GenomeBrowser() {
                       showSignificance={state.prefs.showSignificance}
                       subscribe={state.view.subscribe}
                       liveView={state.view.liveView}
+                      moving={state.view.moving}
+                      watch={watchLane}
                     />
                   </Box>
                 )}
@@ -312,7 +323,7 @@ export default function GenomeBrowser() {
                 prefs={state.prefs}
                 onChange={state.updatePrefs}
                 tracks={state.allTracks}
-                sx={{ top: 8, right: 8, zIndex: 6 }}
+                sx={SETTINGS_SX}
               />
             )}
           </ViewStatus>

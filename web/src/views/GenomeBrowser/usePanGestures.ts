@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, type RefObject } from "react"
 import {
   DRAG_SLOP_PX,
   RANGE_SELECT_MIN_PX,
+  WHEEL_MEASURE_MS,
   WHEEL_ZOOM_MAX,
   WHEEL_ZOOM_PER_PX,
   ZOOM_STEP,
@@ -43,12 +44,23 @@ export function usePanGestures({ view, plotRef, selectionRef, width, gutter, ena
   const viewRef = useRef(view)
   viewRef.current = view
 
+  // Where the plot sits, measured once per burst of wheel events rather than per event: asking
+  // the layout is asking it to settle, and a trackpad pinch arrives as a stream
+  const plotLeft = useRef<{ left: number; at: number } | null>(null)
+
   const baseAt = useCallback(
     (clientX: number) => {
-      const box = plotRef.current?.getBoundingClientRect()
       const current = viewRef.current.liveView()
-      if (!box || width <= 0) return (current.start + current.end) / 2
-      const share = (clientX - box.left - gutter) / width
+      if (width <= 0) return (current.start + current.end) / 2
+      const now = performance.now()
+      let held = plotLeft.current
+      if (!held || now - held.at > WHEEL_MEASURE_MS) {
+        const box = plotRef.current?.getBoundingClientRect()
+        if (!box) return (current.start + current.end) / 2
+        held = { left: box.left, at: now }
+        plotLeft.current = held
+      }
+      const share = (clientX - held.left - gutter) / width
       return current.start + share * (current.end - current.start)
     },
     [plotRef, gutter, width],
@@ -129,7 +141,8 @@ export function usePanGestures({ view, plotRef, selectionRef, width, gutter, ena
         viewRef.current.goTo({ start: a, end: b })
         return
       }
-      viewRef.current.commit()
+      // Publish immediately, but briefly delay treating the gesture as finished
+      viewRef.current.release()
     },
     [showSelection, width, gutter],
   )

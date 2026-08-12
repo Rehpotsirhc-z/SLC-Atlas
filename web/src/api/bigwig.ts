@@ -28,53 +28,6 @@ export const EMPTY_COVERAGE: CoverageArrays = heldArrays(
   new Float32Array(0),
 )
 
-interface ReadOptions {
-  scale?: number
-  signal?: AbortSignal
-}
-
-interface BigWigFeature {
-  start: number
-  end: number
-  score?: number
-}
-
-interface BigWigReader {
-  getFeatures(
-    chrom: string,
-    start: number,
-    end: number,
-    opts?: ReadOptions,
-  ): Promise<BigWigFeature[]>
-  getFeaturesAsArrays?(
-    chrom: string,
-    start: number,
-    end: number,
-    opts?: ReadOptions,
-  ): Promise<CoverageArrays>
-}
-
-type BigWigCtor = new (args: { url: string }) => BigWigReader
-
-let loading: Promise<BigWigCtor> | null = null
-
-function parser(): Promise<BigWigCtor> {
-  loading ??= import("@gmod/bbi").then((bbi) => bbi.BigWig as unknown as BigWigCtor)
-  return loading
-}
-
-// Reuse parsed headers and chromosome indexes for the life of the page
-const readers = new Map<string, BigWigReader>()
-
-async function open(url: string): Promise<BigWigReader> {
-  const held = readers.get(url)
-  if (held) return held
-  const BigWig = await parser()
-  const reader = new BigWig({ url })
-  readers.set(url, reader)
-  return reader
-}
-
 const coverageUrl = (file: string) => `/api/browser/coverage/${file}`
 
 /** Return the local track URL when available, then fall back to its remote source */
@@ -88,33 +41,88 @@ export function trackUrl(track: CoverageTrack, strand: "plus" | "minus" | null):
   return track.file ? coverageUrl(track.file) : track.url || null
 }
 
-function toArrays(features: BigWigFeature[]): CoverageArrays {
-  const starts = new Int32Array(features.length)
-  const ends = new Int32Array(features.length)
-  const scores = new Float32Array(features.length)
-  for (let i = 0; i < features.length; i++) {
-    starts[i] = features[i].start
-    ends[i] = features[i].end
-    scores[i] = features[i].score ?? 0
-  }
-  return heldArrays(starts, ends, scores)
+interface Reply {
+  id: number
+  starts?: Int32Array
+  ends?: Int32Array
+  scores?: Float32Array
+  error?: string
 }
 
-export async function readCoverage(
+interface Waiting {
+  resolve: (arrays: CoverageArrays) => void
+  reject: (error: Error) => void
+}
+
+let worker: Worker | null = null
+const waiting = new Map<number, Waiting>()
+let nextId = 0
+
+/** Reject pending reads and recreate a worker that fails unexpectedly. */
+function abandon(dead: Worker, reason: string): void {
+  // Ignore late errors from a worker that has already been replaced
+  if (worker !== dead) return
+  worker = null
+  const held = [...waiting.values()]
+  waiting.clear()
+  dead.terminate()
+  for (const { reject } of held) reject(new Error(reason))
+}
+
+/**
+ * Start the reader worker lazily so pages that never open the browser do not load it.
+ */
+function reader(): Worker {
+  if (worker) return worker
+  const started = new Worker(new URL("./bigwig.worker.ts", import.meta.url), { type: "module" })
+  started.onmessage = (event: MessageEvent<Reply>) => {
+    const { id, starts, ends, scores, error } = event.data
+    const held = waiting.get(id)
+    if (!held) return
+    waiting.delete(id)
+    if (error !== undefined || !starts || !ends || !scores) {
+      held.reject(new Error(error ?? "coverage read failed"))
+      return
+    }
+    held.resolve(heldArrays(starts, ends, scores))
+  }
+  started.onerror = () => abandon(started, "Coverage reader failed to start")
+  started.onmessageerror = () => abandon(started, "Coverage reader sent an unreadable reply")
+  worker = started
+  return started
+}
+
+export function readCoverage(
   url: string,
   chrom: string,
   start: number,
   end: number,
-  // Request summarized data only when the visible span is too wide for full resolution
-  scale: number | undefined,
   signal: AbortSignal | undefined,
 ): Promise<CoverageArrays> {
-  const reader = await open(url)
-  const opts: ReadOptions = { signal }
-  if (scale !== undefined) opts.scale = scale
-  if (reader.getFeaturesAsArrays) {
-    const got = await reader.getFeaturesAsArrays(chrom, start, end, opts)
-    return heldArrays(got.starts, got.ends, got.scores)
-  }
-  return toArrays(await reader.getFeatures(chrom, start, end, opts))
+  const id = nextId++
+  return new Promise<CoverageArrays>((resolve, reject) => {
+    // Abort events do not fire retroactively
+    if (signal?.aborted) {
+      reject(new DOMException("aborted", "AbortError"))
+      return
+    }
+    // Drop stale results without terminating a useful in-flight read
+    const drop = () => {
+      waiting.delete(id)
+      reject(new DOMException("aborted", "AbortError"))
+    }
+    signal?.addEventListener("abort", drop, { once: true })
+    const settled = () => signal?.removeEventListener("abort", drop)
+    waiting.set(id, {
+      resolve: (arrays) => {
+        settled()
+        resolve(arrays)
+      },
+      reject: (error) => {
+        settled()
+        reject(error)
+      },
+    })
+    reader().postMessage({ id, url, chrom, start, end })
+  })
 }

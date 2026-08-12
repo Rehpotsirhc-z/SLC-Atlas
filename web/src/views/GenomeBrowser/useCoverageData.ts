@@ -8,9 +8,10 @@
  * A slice holds every window the family has on that chromosome, not just the gene that was
  * searched for, so the view is free to travel the whole chromosome and will find the other
  * loci when it passes over them. Reads are taken a block at a time rather than a screen at a
- * time: the block is a power of two wide and aligned to a quarter of itself, so an ordinary
- * zoom or pan around a gene keeps asking for the block it was already given, and only
- * travelling out of one costs a read.
+ * time, and a block is held for as long as the view sits inside it: records come back at their
+ * stored resolution whatever the block spans, so bytes already held answer a zoom or a pan
+ * exactly as a fresh read would, and re-keying every lane would throw its data away to learn
+ * nothing. Only a view that leaves the block asks for another.
  *
  * What a lane last read is kept for as long as it is on screen, and drawn until its successor
  * arrives. Bytes that have been asked for are not a reason to show nothing: the coordinates
@@ -31,7 +32,7 @@ import { useMemo, useRef } from "react"
 import { useQueries } from "@tanstack/react-query"
 import { EMPTY_COVERAGE, readCoverage, trackUrl, type CoverageArrays } from "@/api/bigwig"
 import type { CoverageTrack } from "@/types/browser"
-import { COVERAGE_BLOCK_MIN } from "./constants"
+import { COVERAGE_BLOCK_MARGIN_MAX, COVERAGE_BLOCK_MIN } from "./constants"
 import type { Viewport } from "./scale"
 
 export interface LaneData {
@@ -51,23 +52,65 @@ const EMPTY_LANE: LaneData = {
   absent: true,
 }
 
+const sameLane = (a: LaneData, b: LaneData) =>
+  a.plus === b.plus &&
+  a.minus === b.minus &&
+  a.loading === b.loading &&
+  a.failed === b.failed &&
+  a.absent === b.absent
+
 export interface CoverageBlock {
   start: number
   end: number
 }
 
 /**
- * The stretch a lane is read in: four times what the view can see, so the view always sits in
- * the middle half of it with a screen's worth of margin on either side, and rounded up to a
- * power of two no smaller than the floor. Zooming in asks for a subset of what is already
- * held, so it is answered by the same block rather than by a read of its own.
+ * The stretch a lane is read in: the view, plus a screen and a half either side while that is
+ * affordable and a fixed margin past the point where it is not, rounded up to a power of two no
+ * smaller than the floor and snapped to a quarter of itself so the same locus asks for the same
+ * bytes twice.
  */
 export function coverageBlock(view: Viewport, chromSize: number): CoverageBlock {
   const span = Math.max(view.end - view.start, 1)
-  const size = Math.max(COVERAGE_BLOCK_MIN, 2 ** Math.ceil(Math.log2(span * 4)))
+  const margin = Math.min(span * 1.5, COVERAGE_BLOCK_MARGIN_MAX)
+  const size = Math.min(
+    chromSize,
+    Math.max(COVERAGE_BLOCK_MIN, 2 ** Math.ceil(Math.log2(span + margin * 2))),
+  )
   const step = size / 4
-  const start = Math.max(0, Math.floor(view.start / step) * step - step)
-  return { start, end: Math.min(chromSize, start + size) }
+  const aligned = Math.floor(view.start / step) * step - step
+  // Slid off the grid where the grid would leave part of the view outside the block: a stretch
+  // on screen that was never read draws as a lane carrying no signal
+  const first = Math.max(0, view.end - size)
+  const last = Math.min(view.start, chromSize - size)
+  const start = Math.round(Math.min(Math.max(aligned, first), last))
+  return { start, end: Math.round(start + size) }
+}
+
+/**
+ * The block every lane is read in, kept for as long as the view sits inside its bytes. The block
+ * decides how much is held, never at what resolution, so a view the held bytes already cover has
+ * nothing to gain from a block of its own.
+ */
+export function useCoverageBlock(
+  view: Viewport,
+  chrom: string | undefined,
+  chromSize: number,
+): CoverageBlock | null {
+  const held = useRef<{ chrom: string; block: CoverageBlock } | null>(null)
+  if (!chrom || chromSize <= 0) return null
+  const kept = held.current
+  if (
+    kept &&
+    kept.chrom === chrom &&
+    view.start >= kept.block.start &&
+    view.end <= kept.block.end
+  ) {
+    return kept.block
+  }
+  const block = coverageBlock(view, chromSize)
+  held.current = { chrom, block }
+  return block
 }
 
 interface Request {
@@ -98,7 +141,7 @@ export function useCoverageData(
     queries: requests.map((request) => ({
       queryKey: ["browser", "coverage", request.url, chrom, block?.start ?? 0, block?.end ?? 0],
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        readCoverage(request.url, chrom as string, block!.start, block!.end, undefined, signal),
+        readCoverage(request.url, chrom as string, block!.start, block!.end, signal),
       enabled: chrom != null && block != null && block.end > block.start,
       staleTime: Infinity,
       gcTime: 5 * 60 * 1000,
@@ -117,11 +160,15 @@ export function useCoverageData(
     readChrom.current = chrom
   }
 
+  // What each lane was last given, so a lane whose own reads have not moved is handed the object
+  // it already had and its canvas is left alone while another track's read lands
+  const lanes = useRef(new Map<string, LaneData>())
+
   return useMemo(() => {
-    const lanes = new Map<string, LaneData>()
+    const built = new Map<string, LaneData>()
     requests.forEach((request, index) => {
       const result = results[index]
-      const held = lanes.get(request.trackId) ?? {
+      const held = built.get(request.trackId) ?? {
         plus: EMPTY_COVERAGE,
         minus: null,
         loading: false,
@@ -134,12 +181,24 @@ export function useCoverageData(
       else held.plus = data
       held.loading ||= result?.isPending ?? false
       held.failed ||= result?.isError ?? false
-      lanes.set(request.trackId, held)
+      built.set(request.trackId, held)
     })
     for (const track of tracks) {
-      if (!lanes.has(track.track_id)) lanes.set(track.track_id, EMPTY_LANE)
+      if (!built.has(track.track_id)) built.set(track.track_id, EMPTY_LANE)
     }
-    return lanes
+
+    const kept = lanes.current
+    const stable = new Map<string, LaneData>()
+    let unchanged = built.size === kept.size
+    for (const [trackId, lane] of built) {
+      const last = kept.get(trackId)
+      const use = last && sameLane(last, lane) ? last : lane
+      if (use !== last) unchanged = false
+      stable.set(trackId, use)
+    }
+    if (unchanged) return kept
+    lanes.current = stable
+    return stable
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requests, tracks, stamp])
 }

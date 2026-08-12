@@ -16,7 +16,7 @@ import { peakInView } from "./drawCoverage"
 import type { Viewport } from "./scale"
 import { trackColors } from "./trackColor"
 import { useBrowserView } from "./useBrowserView"
-import { coverageBlock, useCoverageData } from "./useCoverageData"
+import { useCoverageBlock, useCoverageData } from "./useCoverageData"
 import { useGeneModels, useNearbyGenes, useVisibleGwas } from "./useWindowData"
 
 const NO_TRACKS: CoverageTrack[] = []
@@ -62,19 +62,17 @@ export function useGenomeBrowserState() {
     () => (region ? { start: region.window_start, end: region.window_end } : NOWHERE),
     [region],
   )
+  const chromSize = region ? (region.chrom_size ?? region.pan_end) : 0
   // The whole chromosome, not the gene's own window: a slice carries every window the family
   // has on it, so travelling out of one locus and into the next is a pan rather than a search
   const bounds = useMemo<Viewport>(
-    () => (region ? { start: 0, end: region.chrom_size ?? region.pan_end } : NOWHERE),
-    [region],
+    () => (region ? { start: 0, end: chromSize } : NOWHERE),
+    [region, chromSize],
   )
 
   const view = useBrowserView(initial, bounds)
 
-  const block = useMemo(
-    () => (region ? coverageBlock(view.view, region.chrom_size ?? region.pan_end) : null),
-    [region, view.view],
-  )
+  const block = useCoverageBlock(view.view, region?.chrom, chromSize)
   const coverage = useCoverageData(tracks, region?.chrom, block)
 
   const nearby = useNearbyGenes(genes, region?.chrom_ensembl, view.view)

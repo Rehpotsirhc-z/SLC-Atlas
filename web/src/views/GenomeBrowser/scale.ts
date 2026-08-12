@@ -42,6 +42,23 @@ export function scaleFor(view: Viewport, width: number): Scale {
   }
 }
 
+let heldScale: Scale | null = null
+let heldView: Viewport | null = null
+let heldWidth = 0
+
+/**
+ * The scale for one frame, made once. Every lane is painted from the same viewport object at the
+ * same plot width, so two dozen calls a frame are two dozen copies of the same three closures.
+ * Keyed on the object rather than on its numbers, a viewport being replaced and never edited.
+ */
+export function frameScale(view: Viewport, width: number): Scale {
+  if (heldScale && heldView === view && heldWidth === width) return heldScale
+  heldScale = scaleFor(view, width)
+  heldView = view
+  heldWidth = width
+  return heldScale
+}
+
 /** Hold a viewport inside the bytes that exist, keeping its width where it can. */
 export function clampView(view: Viewport, bounds: Viewport): Viewport {
   const limit = bounds.end - bounds.start

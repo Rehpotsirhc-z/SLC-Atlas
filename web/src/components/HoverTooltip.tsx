@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Box } from "@mui/material"
 import type { SxProps, Theme } from "@mui/material"
@@ -18,8 +18,9 @@ interface HoverTooltipProps {
 
 export default function HoverTooltip({ x, y, maxWidth = 260, children, sx }: HoverTooltipProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
 
+  // Placed by writing to the node rather than through state: a tooltip that follows the pointer
+  // would otherwise render once to be measured and again to be moved, on every event
   useLayoutEffect(() => {
     const tip = ref.current
     if (!tip) return
@@ -28,10 +29,9 @@ export default function HoverTooltip({ x, y, maxWidth = 260, children, sx }: Hov
     let top = y + 14
     if (left + tip.offsetWidth + margin > window.innerWidth) left = x - 14 - tip.offsetWidth
     if (top + tip.offsetHeight + margin > window.innerHeight) top = y - 14 - tip.offsetHeight
-    left = Math.max(margin, left)
-    top = Math.max(margin, top)
-    setPos({ left, top })
-  }, [x, y])
+    tip.style.left = `${Math.max(margin, left)}px`
+    tip.style.top = `${Math.max(margin, top)}px`
+  })
 
   return createPortal(
     <Box
@@ -39,8 +39,8 @@ export default function HoverTooltip({ x, y, maxWidth = 260, children, sx }: Hov
       sx={[
         {
           position: "fixed",
-          left: pos ? pos.left : x + 14,
-          top: pos ? pos.top : y + 14,
+          left: x + 14,
+          top: y + 14,
           pointerEvents: "none",
           zIndex: (t) => t.zIndex.tooltip,
           px: 1,

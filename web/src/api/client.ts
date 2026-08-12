@@ -11,6 +11,8 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
 }
 
 export const api = {
-  get: async <T>(path: string): Promise<T> => (await request(path)).json() as Promise<T>,
-  getText: async (path: string): Promise<string> => (await request(path)).text(),
+  get: async <T>(path: string, signal?: AbortSignal): Promise<T> =>
+    (await request(path, { signal })).json() as Promise<T>,
+  getText: async (path: string, signal?: AbortSignal): Promise<string> =>
+    (await request(path, { signal })).text(),
 }
