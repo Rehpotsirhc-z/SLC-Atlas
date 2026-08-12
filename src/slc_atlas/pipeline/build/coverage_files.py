@@ -13,21 +13,28 @@ from pathlib import Path
 
 PATTERN = "*.bw"
 
+# What a slice still being written is called, which is not a track anyone may be served
+PARTIAL = ".partial.bw"
+
+
+def _tracks(directory: Path):
+    return (p for p in directory.glob(PATTERN) if not p.name.endswith(PARTIAL))
+
 
 def copy_coverage(source_dir: Path, target_dir: Path) -> tuple[int, int]:
     if not source_dir.exists():
         return 0, 0
     target_dir.mkdir(parents=True, exist_ok=True)
     copied = 0
-    for track in source_dir.glob(PATTERN):
+    for track in _tracks(source_dir):
         target = target_dir / track.name
         if target.exists() and target.stat().st_size == track.stat().st_size:
             continue
         shutil.copy2(track, target)
         copied += 1
-    return copied, len(list(target_dir.glob(PATTERN)))
+    return copied, len(list(_tracks(target_dir)))
 
 
 def stale_coverage(source_dir: Path, target_dir: Path) -> list[str]:
-    mirrored = {p.name for p in source_dir.glob(PATTERN)} if source_dir.exists() else set()
-    return sorted(p.name for p in target_dir.glob(PATTERN) if p.name not in mirrored)
+    mirrored = {p.name for p in _tracks(source_dir)} if source_dir.exists() else set()
+    return sorted(p.name for p in _tracks(target_dir) if p.name not in mirrored)

@@ -5,9 +5,9 @@
 """Work out where each coverage track lives and what it would cost to keep a copy of it.
 
 Nothing is copied here. Each track is resolved to an address, opened by byte range to read
-its header, and sampled over a few of the family's windows to estimate how large a
-family-scoped copy of it would be. That estimate is printed and written down, so the size
-of the site is a decision made before the slicing runs rather than discovered afterwards.
+its header, and sampled over a few of the stretches that would be kept to estimate how
+large a local copy of it would be. That estimate is printed and written down, so the size of
+the site is a decision made before the copying runs rather than discovered afterwards.
 
 A track that stays remote is read by the browser straight from its origin and adds nothing
 to the site, which is only possible for a track that has an origin: a bigWig sitting on
@@ -39,7 +39,7 @@ HEADER = (
     "chroms",
     "size_mismatch",
     "source_bytes",
-    "window_bytes",
+    "local_bytes",
 )
 
 
@@ -71,6 +71,7 @@ def probe(
     *,
     default_bin: int,
     default_local: bool,
+    whole_genome: bool,
 ) -> dict:
     address, origin = resolve(row.source)
     local = row.local if row.local is not None else default_local
@@ -91,6 +92,15 @@ def probe(
     # the track was built against a different genome than the genes were
     mismatch = [name for name in present if header[name] != sizes.get(name, header[name])]
 
+    size = remote_size(origin) if origin else Path(address).stat().st_size
+    if not local:
+        kept = 0
+    elif whole_genome and not applied:
+        # An unsliced copy kept at the source's own resolution is the source file
+        kept = size
+    else:
+        kept = bigwig.estimate(reader, sampled, applied) if sampled else 0
+
     return {
         "track_id": row.track_id,
         "label": row.label,
@@ -102,8 +112,8 @@ def probe(
         "local": "yes" if local else "no",
         "chroms": ",".join(sorted(header)),
         "size_mismatch": ",".join(mismatch),
-        "source_bytes": remote_size(origin) if origin else Path(address).stat().st_size,
-        "window_bytes": bigwig.estimate(reader, sampled, applied) if local and sampled else 0,
+        "source_bytes": size,
+        "local_bytes": kept,
         "_absent": sorted(set(spans) - set(present)),
     }
 
@@ -144,7 +154,7 @@ def report(rows: list[dict], genes_by_chrom: dict[str, int]) -> None:
         file=sys.stderr,
     )
     if local:
-        total = sum(r["window_bytes"] for r in local)
+        total = sum(r["local_bytes"] for r in local)
         print(
             f"Copying them adds roughly {total / 1024**2:.0f} MiB to the site. Run the "
             f"slice_coverage step to write them, or set local to no to leave them at "
@@ -163,6 +173,7 @@ def run(
     flank_max: int,
     default_bin: int,
     default_local: bool,
+    whole_genome: bool,
 ) -> None:
     from .curation import read_browser_tracks
 
@@ -173,7 +184,13 @@ def run(
         return
 
     placed, _ = windows.load(genes_path, chroms_path, flank_min=flank_min, flank_max=flank_max)
-    spans = windows.merge(placed)
+    spans = windows.spans(
+        genes_path,
+        chroms_path,
+        flank_min=flank_min,
+        flank_max=flank_max,
+        whole_genome=whole_genome,
+    )
     sizes = chrom_names.sizes(chrom_names.read_chroms(chroms_path))
     genes_by_chrom: dict[str, int] = {}
     for window in placed:
@@ -183,7 +200,14 @@ def run(
 
     def attempt(row: TrackRow):
         try:
-            return probe(row, spans, sizes, default_bin=default_bin, default_local=default_local)
+            return probe(
+                row,
+                spans,
+                sizes,
+                default_bin=default_bin,
+                default_local=default_local,
+                whole_genome=whole_genome,
+            )
         except SystemExit:
             raise
         except Exception as error:

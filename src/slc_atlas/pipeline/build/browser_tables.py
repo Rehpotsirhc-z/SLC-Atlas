@@ -9,9 +9,7 @@ from pathlib import Path
 
 import polars as pl
 
-from ..lib import bed12, windows
-
-EXON = pl.List(pl.Struct({"start": pl.Int64, "end": pl.Int64}))
+from ..lib import bed12, bigbed, windows
 
 WINDOW_SCHEMA = {
     "gene_id": pl.Utf8,
@@ -30,22 +28,6 @@ WINDOW_SCHEMA = {
     "clipped": pl.Boolean,
 }
 
-MODEL_SCHEMA = {
-    "gene_id": pl.Utf8,
-    "transcript_id": pl.Utf8,
-    "transcript_version": pl.Utf8,
-    "model_gene_id": pl.Utf8,
-    "gene_name": pl.Utf8,
-    "biotype": pl.Utf8,
-    "chrom": pl.Utf8,
-    "start": pl.Int64,
-    "end": pl.Int64,
-    "strand": pl.Utf8,
-    "cds_start": pl.Int64,
-    "cds_end": pl.Int64,
-    "exons": EXON,
-    "is_atlas_gene": pl.Boolean,
-}
 
 TRACK_SCHEMA = {
     "track_id": pl.Utf8,
@@ -66,15 +48,6 @@ TRACK_SCHEMA = {
 
 CHROM_SCHEMA = {"chrom": pl.Utf8, "ensembl": pl.Utf8, "size": pl.Int64, "role": pl.Utf8}
 
-GWAS_SCHEMA = {
-    "gene_id": pl.Utf8,
-    "study_id": pl.Utf8,
-    "snp_id": pl.Utf8,
-    "position": pl.Int64,
-    "p_value": pl.Float64,
-    "neg_log10_p": pl.Float32,
-    "beta": pl.Float32,
-}
 
 STUDY_SCHEMA = {
     "study_id": pl.Utf8,
@@ -129,17 +102,19 @@ def window_frame(placed, merged) -> pl.DataFrame:
     return pl.DataFrame(rows, schema=WINDOW_SCHEMA)
 
 
-def model_frame(transcripts, window_df: pl.DataFrame, atlas_ids: set[str]) -> pl.DataFrame:
-    """Create one transcript row for each gene window it overlaps."""
-    if not transcripts:
-        return pl.DataFrame(schema=MODEL_SCHEMA)
-
-    models = pl.DataFrame(
-        [
+def transcript_rows(transcripts, sizes: dict[str, int], atlas_ids: set[str]):
+    """Yield transcripts as bigBed rows in index order."""
+    ordered = sorted(
+        (t for t in transcripts if t.chrom in sizes),
+        key=lambda t: (t.chrom, t.start, t.end, t.transcript_id),
+    )
+    for t in ordered:
+        gene_id = bed12.versionless(t.gene_id)
+        yield bigbed.transcript_row(
             {
                 "transcript_id": bed12.versionless(t.transcript_id),
                 "transcript_version": bed12.version_of(t.transcript_id),
-                "model_gene_id": bed12.versionless(t.gene_id),
+                "model_gene_id": gene_id,
                 "gene_name": t.gene_name,
                 "biotype": t.biotype,
                 "chrom": t.chrom,
@@ -149,34 +124,32 @@ def model_frame(transcripts, window_df: pl.DataFrame, atlas_ids: set[str]) -> pl
                 "cds_start": t.cds_start,
                 "cds_end": t.cds_end,
                 "exons": [{"start": s, "end": e} for s, e in t.exons],
+                "is_atlas_gene": gene_id in atlas_ids,
             }
-            for t in transcripts
-        ],
-        schema={k: v for k, v in MODEL_SCHEMA.items() if k not in ("gene_id", "is_atlas_gene")},
-    )
-    return (
-        models.join(
-            window_df.select("gene_id", "chrom", "window_start", "window_end"), on="chrom"
         )
-        .filter((pl.col("start") < pl.col("window_end")) & (pl.col("window_start") < pl.col("end")))
-        .with_columns(is_atlas_gene=pl.col("model_gene_id").is_in(list(atlas_ids)))
-        .drop("window_start", "window_end")
-        .select(*MODEL_SCHEMA)
-        .sort("gene_id", "start", "transcript_id")
-    )
 
 
-def gwas_frame(variants: pl.DataFrame, window_df: pl.DataFrame) -> pl.DataFrame:
+def overview(variants: pl.DataFrame, bin_size: int, cut: float) -> pl.DataFrame:
+    """Keep significant variants and the strongest variant in each genomic bin."""
     if variants.is_empty():
-        return pl.DataFrame(schema=GWAS_SCHEMA)
-    return (
-        variants.join(
-            window_df.select("gene_id", "chrom", "window_start", "window_end"), on="chrom"
-        )
-        .filter(
-            (pl.col("position") >= pl.col("window_start"))
-            & (pl.col("position") < pl.col("window_end"))
-        )
+        return variants
+    strongest = (
+        variants.with_columns(bin=pl.col("position") // bin_size)
+        .sort("p_value")
+        .group_by("chrom", "bin")
+        .head(1)
+        # Grouping reorders the columns, and stacking two frames goes by position
+        .select(variants.columns)
+    )
+    return pl.concat([variants.filter(pl.col("p_value") < cut), strongest]).unique(
+        subset=["chrom", "position", "snp_id"]
+    )
+
+
+def variant_rows(variants: pl.DataFrame, sizes: dict[str, int]):
+    """One study's variants as bigBed rows, ordered and carrying their own statistics."""
+    frame = (
+        variants.filter(pl.col("chrom").is_in(list(sizes)))
         # Keep underflowed p-values off the numeric scale
         .with_columns(
             neg_log10_p=pl.when(pl.col("p_value") > 0)
@@ -184,9 +157,11 @@ def gwas_frame(variants: pl.DataFrame, window_df: pl.DataFrame) -> pl.DataFrame:
             .otherwise(None)
             .cast(pl.Float32)
         )
-        .select(*GWAS_SCHEMA)
-        .sort("gene_id", "study_id", "position")
+        .select("chrom", "position", "snp_id", "p_value", "neg_log10_p", "beta")
+        .sort("chrom", "position")
     )
+    for row in frame.iter_rows():
+        yield bigbed.variant_row(*row)
 
 
 def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:

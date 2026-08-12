@@ -6,8 +6,9 @@
 
 The gene tables carry one span per gene, which is enough to place a gene on an axis but not
 to draw it. This step gets the exons, the introns between them, and the coding part of each
-transcript, for every transcript that overlaps one of the family's windows, not only the
-family's own genes: a gene is read in the company of its neighbours.
+transcript, for every transcript in whatever stretch of genome the browser keeps, not only
+the family's own genes: a gene is read in the company of its neighbours, and unsliced that
+company is every gene there is.
 
 GENCODE is the default because it is the same annotation Ensembl serves, so the models line
 up with the coordinates the gene tables already hold. Any GTF, GFF3, or BED12 can be used
@@ -78,7 +79,7 @@ def acquire(models_file: Path | None, cache_dir: Path, release: str) -> tuple[Pa
 
 
 def overlapping(transcripts, merged: dict[str, list[tuple[int, int]]]) -> list:
-    """Keep the transcripts that fall in a window, on a chromosome the browser draws."""
+    """Keep the transcripts that fall in a kept span, on a chromosome the browser draws."""
     kept = []
     for transcript in transcripts:
         spans = merged.get(transcript.chrom)
@@ -118,6 +119,7 @@ def run(
     models_file: Path | None,
     flank_min: int,
     flank_max: int,
+    whole_genome: bool,
 ) -> None:
     release = gencode_release(ensembl_release, gencode_override)
     source_path, version, url = acquire(models_file, cache_dir, release)
@@ -134,12 +136,16 @@ def run(
     chroms_path = out_dir / "chroms.tsv"
     chroms.write_chroms(chroms_path, table)
 
-    placed, unplaced = windows.load(
-        genes_path, chroms_path, flank_min=flank_min, flank_max=flank_max
-    )
+    _, unplaced = windows.load(genes_path, chroms_path, flank_min=flank_min, flank_max=flank_max)
     report_missing("gene", "the annotation places on no chromosome the browser draws", unplaced)
-    merged = windows.merge(placed)
-    kept = overlapping(transcripts, merged)
+    kept_spans = windows.spans(
+        genes_path,
+        chroms_path,
+        flank_min=flank_min,
+        flank_max=flank_max,
+        whole_genome=whole_genome,
+    )
+    kept = overlapping(transcripts, kept_spans)
 
     bed12.write_bed12(out_dir / "transcripts.bed", kept)
     write_provenance(
@@ -147,13 +153,14 @@ def run(
         version=version,
         url=url,
         assembly_name=assembly_name,
-        flank=f"{flank_min}-{flank_max}",
+        # An unsliced fetch answers any flank a build asks for, so it names no pair
+        flank="genome" if whole_genome else f"{flank_min}-{flank_max}",
     )
 
     genes_in_view = len({t.gene_id for t in kept})
     print(
         f"{version}: {count('transcript', len(kept))} over {count('gene', genes_in_view)} "
-        f"in {count('window', sum(len(v) for v in merged.values()))} "
-        f"covering {windows.covered_bases(merged) / 1e6:.0f} Mb",
+        f"in {count('span', sum(len(v) for v in kept_spans.values()))} "
+        f"covering {windows.covered_bases(kept_spans) / 1e6:.0f} Mb",
         file=sys.stderr,
     )

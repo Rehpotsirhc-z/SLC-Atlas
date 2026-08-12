@@ -51,27 +51,6 @@ class TrackManifest(BaseModel):
     studies: list[GwasStudy]
 
 
-class Exon(BaseModel):
-    start: int
-    end: int
-
-
-class TranscriptModel(BaseModel):
-    transcript_id: str
-    transcript_version: str | None = None
-    model_gene_id: str | None = None
-    gene_name: str | None = None
-    biotype: str | None = None
-    chrom: str
-    start: int
-    end: int
-    strand: str
-    cds_start: int | None = None
-    cds_end: int | None = None
-    exons: list[Exon] = []
-    is_atlas_gene: bool = False
-
-
 class Region(BaseModel):
     gene_id: str
     symbol: str | None = None
@@ -83,18 +62,8 @@ class Region(BaseModel):
     strand: str | None = None
     window_start: int
     window_end: int
-    # Bounds available when panning a locally sliced track
+    # How far the view may travel from this gene, which is as much genome as the build kept
     pan_start: int
     pan_end: int
     flank: int
     clipped: bool = False
-    transcripts: list[TranscriptModel] = []
-
-
-class GwasPoint(BaseModel):
-    snp_id: str | None = None
-    position: int
-    p_value: float | None = None
-    # Null marks a p-value that underflowed to zero and should be drawn above the scale
-    neg_log10_p: float | None = None
-    beta: float | None = None

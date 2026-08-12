@@ -2,34 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Reading coverage out of a bigWig and writing a family-scoped one back.
-
-A published coverage track covers the whole genome and runs to gigabytes, while an atlas
-only ever draws the windows around its own genes, which is a few percent of it. So the
-pipeline writes a new bigWig holding just those windows. The format keeps its own pyramid
-of reduced views, so one sliced file still answers every zoom level by byte range and the
-browser never needs a server.
-
-A source may be a path or a URL: bigWig is read by byte range either way, so a track can be
-sliced straight out of a public file without downloading it first.
-
-This is the only module that imports pybigtools.
-"""
+"""Read, resample, estimate, and write bigWig coverage tracks."""
 
 import math
 from pathlib import Path
 
-# Measured across the ATAC and RNA tracks this was built against, whose sliced files ran
-# between 7.5 and 11.5 bytes for each interval written. Only ever used to warn about size
-# before a slice runs, never to decide anything
+import numpy as np
+
+# Estimated from representative ATAC and RNA coverage tracks
 BYTES_PER_ITEM = 9
 
 SAMPLE_BASES = 4_000_000
 
-# A bin can only shrink a file when the source is finer than the bin, so a track already
-# written in long runs is copied across untouched rather than being chopped into more
-# intervals than it started with
-BIN_WORTH_IT = 1.0
+# Spread samples across the genome to avoid bias from sparse regions
+SAMPLE_PIECES = 24
 
 
 def open_track(source: str):
@@ -43,71 +29,46 @@ def chrom_sizes(source: str) -> dict[str, int]:
 
 
 def _sample(spans: dict[str, list[tuple[int, int]]], budget: int):
-    """Spread a fixed number of bases over the windows, so no one chromosome speaks alone."""
+    """Sample a fixed number of bases across the available spans."""
     flat = [(chrom, start, end) for chrom in sorted(spans) for start, end in spans[chrom]]
     if not flat:
         return {}
-    step = max(1, len(flat) // 24)
-    taken, total = {}, 0
-    for chrom, start, end in flat[::step]:
-        width = min(end - start, budget - total)
-        if width <= 0:
-            break
-        taken.setdefault(chrom, []).append((start, start + width))
-        total += width
+    step = max(1, len(flat) // SAMPLE_PIECES)
+    chosen = flat[::step][:SAMPLE_PIECES]
+    piece = max(1, budget // len(chosen))
+    taken: dict[str, list[tuple[int, int]]] = {}
+    for index, (chrom, start, end) in enumerate(chosen):
+        width = min(end - start, piece)
+        offset = int((end - start - width) * (index + 0.5) / len(chosen))
+        taken.setdefault(chrom, []).append((start + offset, start + offset + width))
     return taken
 
 
-def density(reader, spans: dict[str, list[tuple[int, int]]]) -> float:
-    """Intervals per base in the source, which is what says whether binning would help."""
-    intervals, bases = 0, 0
-    for chrom, windows in _sample(spans, SAMPLE_BASES).items():
-        for start, end in windows:
-            intervals += sum(1 for _ in reader.records(chrom, start, end))
-            bases += end - start
-    return intervals / bases if bases else 0.0
-
-
 def effective_bin(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int) -> int:
-    """The bin to actually apply, which is none when the source is already coarser."""
+    """Return the bin size only when binning is expected to reduce the file size."""
     if bin_size <= 1:
         return 0
-    return bin_size if density(reader, spans) * bin_size > BIN_WORTH_IT else 0
+    return bin_size if estimate(reader, spans, bin_size) < estimate(reader, spans, 0) else 0
 
 
 def _binned(reader, chrom: str, start: int, end: int, bin_size: int):
-    """Return bin edges and mean signal values for one window.
-
-    Compute means from the source records instead of its zoom summaries. A zoom summary may
-    cross a requested bin edge and be assigned to the wrong side. Summing the records
-    preserves the source signal within each bin.
-
-    Each mean includes uncovered bases as zero. Averaging only covered bases would spread a
-    short peak across the bin and inflate the total signal.
-    """
+    """Return exact mean values per bin, treating uncovered bases as zero."""
     width = end - start
     bins = max(1, math.ceil(width / bin_size))
-    edges = [start + index * width // bins for index in range(bins + 1)]
-    totals = [0.0] * bins
-
-    index = 0
-    for record_start, record_end, value in reader.records(chrom, start, end):
-        position, record_end = max(record_start, start), min(record_end, end)
-        while position < record_end:
-            while index + 1 < bins and edges[index + 1] <= position:
-                index += 1
-            edge = min(record_end, edges[index + 1])
-            totals[index] += (edge - position) * value
-            position = edge
-
-    return edges, [total / (edges[i + 1] - edges[i]) for i, total in enumerate(totals)]
+    edges = start + (np.arange(bins + 1, dtype=np.int64) * width) // bins
+    values = np.asarray(
+        reader.values(chrom, start, end, bins=bins, summary="mean", exact=True, fillna=0),
+        dtype=np.float64,
+    )
+    return edges, values
 
 
 def read(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int):
-    """Yield ``(chrom, start, end, value)`` over the windows, binned when asked.
+    """Yield ``(chrom, start, end, value)`` over the spans, binned when asked.
 
-    Equal neighbouring bins are emitted as one interval, which is most of why a binned
-    slice is so much smaller than the intervals it was reduced from.
+    Equal neighbouring bins are emitted as one interval, which is most of why a binned copy
+    is so much smaller than the intervals it was reduced from, and why a stretch a track
+    holds nothing over costs a genome-wide copy almost nothing.
     """
     for chrom in sorted(spans):
         for start, end in spans[chrom]:
@@ -117,22 +78,17 @@ def read(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int):
                 continue
 
             edges, values = _binned(reader, chrom, start, end, bin_size)
-            index = 0
-            while index < len(values):
-                value = values[index]
-                run = index + 1
-                while run < len(values) and values[run] == value:
-                    run += 1
+            runs = np.concatenate(
+                ([0], np.flatnonzero(np.diff(values)) + 1, [values.size])
+            ).astype(np.int64)
+            for at, stop in zip(runs[:-1], runs[1:]):
+                value = float(values[at])
                 if value != 0.0 and not math.isnan(value):
-                    yield chrom, edges[index], edges[run], value
-                index = run
+                    yield chrom, int(edges[at]), int(edges[stop]), value
 
 
 def estimate(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int) -> int:
-    """Roughly how many bytes slicing these windows would write.
-
-    Sampled rather than exact, because the point is to show the cost before paying it.
-    """
+    """Estimate output size by sampling the requested spans."""
     sampled = _sample(spans, SAMPLE_BASES)
     sampled_bases = sum(end - start for w in sampled.values() for start, end in w)
     if not sampled_bases:

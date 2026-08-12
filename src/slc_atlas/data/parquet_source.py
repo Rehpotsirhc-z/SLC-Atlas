@@ -12,11 +12,11 @@ FEATURES_FILE = "structure/features.parquet"
 EXPERIMENTAL_FILE = "structure/experimental.parquet"
 SOURCES_FILE = "structure/sources.parquet"
 
-MODELS_FILE = "browser/transcripts.parquet"
+MODELS_FILE = "browser/models.bb"
 WINDOWS_FILE = "browser/windows.parquet"
 TRACKS_FILE = "browser/tracks.parquet"
 CHROMS_FILE = "browser/chroms.parquet"
-GWAS_FILE = "browser/gwas.parquet"
+GWAS_DIR = "browser/gwas"
 STUDIES_FILE = "browser/studies.parquet"
 BROWSER_SOURCES_FILE = "browser/sources.parquet"
 
@@ -167,31 +167,23 @@ class ParquetSource:
         }
 
     def get_region(self, gene_id: str) -> dict | None:
-        """One gene's window and every transcript model drawn inside it."""
+        """Return a gene's location and the region available for browsing."""
         windows = self._scan_optional(WINDOWS_FILE)
-        models = self._scan_optional(MODELS_FILE)
-        if windows is None or models is None:
+        if windows is None or not self.has(MODELS_FILE):
             return None
         window = windows.filter(pl.col("gene_id") == gene_id).collect()
-        if window.is_empty():
-            return None
-        transcripts = (
-            models.filter(pl.col("gene_id") == gene_id)
-            .drop("gene_id")
-            .sort("start", "transcript_id")
-            .collect()
-        )
-        return {**window.to_dicts()[0], "transcripts": transcripts.to_dicts()}
+        return window.to_dicts()[0] if not window.is_empty() else None
 
-    def get_gwas(self, gene_id: str, study_id: str) -> pl.DataFrame | None:
-        lf = self._scan_optional(GWAS_FILE)
-        if lf is None:
+    def models_path(self) -> Path | None:
+        path = self._dir / MODELS_FILE
+        return path if path.is_file() else None
+
+    def gwas_path(self, study_id: str) -> Path | None:
+        directory = (self._dir / GWAS_DIR).resolve()
+        path = (directory / f"{study_id}.bb").resolve()
+        if directory not in path.parents or not path.is_file():
             return None
-        return (
-            lf.filter((pl.col("gene_id") == gene_id) & (pl.col("study_id") == study_id))
-            .drop("gene_id", "study_id")
-            .collect()
-        )
+        return path
 
     def get_browser_sources(self) -> pl.DataFrame | None:
         lf = self._scan_optional(BROWSER_SOURCES_FILE)

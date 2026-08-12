@@ -9,17 +9,17 @@ from pathlib import Path
 
 import polars as pl
 
-from ..lib import bed12, chroms as chrom_names, windows
-from ..lib.parquet import write_gene_keyed
+from ..lib import bed12, bigbed, chroms as chrom_names, windows
 from ..lib.reporting import count, report_missing
 from .browser_tables import (
     CHROM_SCHEMA,
-    gwas_frame,
-    model_frame,
+    overview,
     read_tsv,
     source_frame,
     study_frame,
     track_frame,
+    transcript_rows,
+    variant_rows,
     window_frame,
 )
 from .coverage_files import copy_coverage, stale_coverage
@@ -30,8 +30,13 @@ AGREEMENT = 0.95
 # Minimum reciprocal overlap between a gene and its transcript models
 OVERLAP = 0.5
 
-# Keep gene lookups narrow without creating excessive row-group overhead
-MODEL_ROW_GROUP = 4096
+# Marker used instead of flank sizes for a whole-genome fetch
+WHOLE_GENOME = "genome"
+
+# Wide views use significant variants plus the strongest variant in each bin
+OVERVIEW_SUFFIX = ".overview"
+OVERVIEW_BIN = 10_000
+OVERVIEW_P = 1e-2
 
 
 def check_assembly(genes: pl.DataFrame, transcripts) -> None:
@@ -74,6 +79,36 @@ def check_assembly(genes: pl.DataFrame, transcripts) -> None:
         )
 
 
+def write_gwas(
+    variants: pl.DataFrame, studies: list[dict], sizes: dict[str, int], out_dir: Path
+) -> int:
+    """Write full and overview bigBed files for each GWAS study."""
+    if not studies:
+        return 0
+    out_dir.mkdir(parents=True, exist_ok=True)
+    kept = 0
+    for study in studies:
+        study_id = study["study_id"]
+        own = (
+            variants.filter(pl.col("study_id") == study_id)
+            if "study_id" in variants.columns
+            else variants
+        )
+        kept += bigbed.write(out_dir / f"{study_id}.bb", sizes, variant_rows(own, sizes))
+        bigbed.write(
+            out_dir / f"{study_id}{OVERVIEW_SUFFIX}.bb",
+            sizes,
+            variant_rows(overview(own, OVERVIEW_BIN, OVERVIEW_P), sizes),
+        )
+    return kept
+
+
+def fetched_whole_genome(source_dir: Path) -> bool:
+    """Return whether the fetch retained the whole genome."""
+    rows = read_tsv(source_dir / "gene_models.tsv")
+    return bool(rows) and rows[0].get("detail") == WHOLE_GENOME
+
+
 def check_flank(source_dir: Path, flank_min: int, flank_max: int) -> None:
     rows = read_tsv(source_dir / "gene_models.tsv")
     fetched = rows[0].get("detail") if rows else ""
@@ -107,14 +142,21 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
         source_dir / "genes.tsv", chroms_path, flank_min=flank_min, flank_max=flank_max
     )
     report_missing("gene", "with no chromosome the browser can draw", unplaced)
-    merged = windows.merge(placed)
+    whole_genome = fetched_whole_genome(browser)
+    # Pan limits follow the regions retained during fetch
+    merged = windows.spans(
+        source_dir / "genes.tsv",
+        chroms_path,
+        flank_min=flank_min,
+        flank_max=flank_max,
+        whole_genome=whole_genome,
+    )
 
     out = out_dir / "browser"
     out.mkdir(parents=True, exist_ok=True)
     coverage_out = out / "coverage"
 
     window_df = window_frame(placed, merged)
-    models = model_frame(transcripts, window_df, set(genes["id"].to_list()))
     coverage = read_tsv(browser / "coverage.tsv")
     studies = read_tsv(browser / "gwas_studies.tsv")
     variants = (
@@ -136,17 +178,15 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
     )
     ensembl_of = {track: source for source, track in spelling.items()}
 
+    sizes = {c.name: c.size for c in chrom_table if c.role == chrom_names.PRIMARY}
     window_df.write_parquet(out / "windows.parquet")
-    write_gene_keyed(
-        models,
-        out / "transcripts.parquet",
-        "gene_id",
-        "start",
-        "transcript_id",
-        row_group=MODEL_ROW_GROUP,
+    written = bigbed.write(
+        out / "models.bb",
+        sizes,
+        transcript_rows(transcripts, sizes, set(genes["id"].to_list())),
     )
+    kept_variants = write_gwas(variants, studies, sizes, out / "gwas")
     track_frame(coverage, coverage_out).write_parquet(out / "tracks.parquet")
-    gwas_frame(variants, window_df).write_parquet(out / "gwas.parquet")
     study_frame(studies).write_parquet(out / "studies.parquet")
     source_frame(browser, coverage, studies).write_parquet(out / "sources.parquet")
     pl.DataFrame(
@@ -163,10 +203,12 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
     ).write_parquet(out / "chroms.parquet")
 
     print(
-        f"{count('gene window', window_df.height)} covering "
-        f"{windows.covered_bases(merged) / 1e6:.0f} Mb, "
-        f"{count('transcript model', models.height)}, "
+        f"{count('gene', window_df.height)} over "
+        f"{windows.covered_bases(merged) / 1e6:.0f} Mb"
+        f"{' (the whole genome)' if whole_genome else ' of windows'}, "
+        f"{count('transcript model', written)}, "
         f"{count('coverage track', len(coverage))} ({mirrored} copied here, {copied} new), "
-        f"{count('GWAS study/GWAS studies', len(studies))}",
+        f"{count('GWAS study/GWAS studies', len(studies))} "
+        f"holding {count('variant', kept_variants)}",
         file=sys.stderr,
     )

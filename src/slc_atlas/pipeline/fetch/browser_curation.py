@@ -34,6 +34,8 @@ BIGWIG_SUFFIXES = ("*.bw", "*.bigWig", "*.bigwig")
 PLUS, MINUS = "plus", "minus"
 _SLUG = re.compile(r"[^a-z0-9]+")
 
+_SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
+
 # Infer strand only from an explicit filename suffix
 _STRAND_TOKENS = {
     "plus": PLUS,
@@ -83,12 +85,23 @@ def _optional_bool(text: str) -> bool | None:
     return text.lower() in {"yes", "true", "y", "1"}
 
 
+def _check_id(value: str, kind: str, file: str) -> str:
+    """Validate an ID used in filenames and URL paths."""
+    if not _SAFE_ID.fullmatch(value):
+        raise SystemExit(
+            f"{file} has an invalid {kind} ID {value!r}. Use only letters, digits, dashes, "
+            "and underscores."
+        )
+    return value
+
+
 def read_tracks(rows) -> list[TrackRow]:
     out = []
     for cells in rows:
         track_id = _cell(cells, 0)
         if not track_id:
             continue
+        _check_id(track_id, "track", TRACKS_FILE)
         size = _cell(cells, 5)
         out.append(
             TrackRow(
@@ -111,6 +124,7 @@ def read_gwas(rows) -> list[GwasRow]:
         study_id = _cell(cells, 0)
         if not study_id:
             continue
+        _check_id(study_id, "study", GWAS_FILE)
         if study_id in seen:
             raise SystemExit(f"{GWAS_FILE} declares study {study_id!r} twice")
         seen.add(study_id)

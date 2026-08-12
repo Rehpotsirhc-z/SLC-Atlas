@@ -163,9 +163,15 @@ FETCH = (
         parse=int,
     ),
     Option(
-        "slice_coverage",
-        "write family-scoped copies of the coverage tracks for local hosting",
+        "local_coverage",
+        "copy the coverage tracks into the site instead of reading them from their origin",
         prompt="Copy the coverage tracks locally?",
+    ),
+    Option(
+        "browser_whole_genome",
+        "keep the whole genome in the browser rather than slicing its coverage, gene models, "
+        "and GWAS to windows around the family's genes",
+        prompt="Keep the whole genome, rather than slicing to the family's genes?",
     ),
     Option(
         "tree_source",
@@ -292,7 +298,8 @@ def _fetch(args: argparse.Namespace) -> int:
             browser_flank_max=chosen["browser_flank_max"],
             browser_bin=chosen["browser_bin"],
             browser_max_bytes=chosen["browser_max_bytes"],
-            slice_coverage=chosen["slice_coverage"],
+            local_coverage=chosen["local_coverage"],
+            browser_whole_genome=chosen["browser_whole_genome"],
             no_review=chosen["no_review"],
             skipped_views=_skipped(chosen),
             only_steps=tuple(chosen["step"]),

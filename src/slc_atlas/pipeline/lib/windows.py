@@ -2,17 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""How much genome around a gene the browser keeps.
-
-Everything the Genome Browser serves is cut to these windows: the coverage tracks are
-sliced to them, the GWAS studies are filtered to them, and the gene models are the
-transcripts that overlap them. One rule has to suit any family, so the flank is the gene's
-own length, bounded at both ends: a short gene still gets a landscape to sit in, and one
-very long gene cannot drag the whole slice out with it.
-
-The fetch phase slices to these windows and the build phase re-derives them for the
-manifest, so the rule lives here rather than in either phase.
-"""
+"""Define and merge the genomic regions retained by the browser pipeline."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -57,12 +47,7 @@ def gene_windows(
     chrom_sizes: dict[str, int] | None = None,
     alias: dict[str, str] | None = None,
 ) -> tuple[list[Window], list[str]]:
-    """Turn gene rows into windows, and name the genes no track spells a chromosome for.
-
-    Rows arrive in the Ensembl convention the gene tables use, 1-based and inclusive.
-    Windows come back 0-based and half-open, which is what BED, bigWig, and every
-    coordinate under ``app/browser/`` speak.
-    """
+    """Convert gene rows to zero-based browser windows and return unplaced genes."""
     alias = alias or {}
     sizes = chrom_sizes or {}
     windows, unplaced = [], []
@@ -114,11 +99,7 @@ def load(
     flank_max: int = FLANK_MAX,
     min_width: int = MIN_WIDTH,
 ) -> tuple[list[Window], list[str]]:
-    """Read the gene table and the chromosome table, and window every gene in them.
-
-    Both phases start here, so the windows a track was sliced to and the windows the app
-    serves are worked out by the same code from the same two files.
-    """
+    """Read the gene and chromosome tables and create a window for each gene."""
     genes = pl.read_csv(genes_path, separator="\t", columns=GENE_COLUMNS).select(GENE_COLUMNS)
     sizes = chrom_names.sizes(chrom_names.read_chroms(chroms_path))
     alias, _ = chrom_names.alias_map(sizes, genes["chromosome"].unique().to_list())
@@ -130,6 +111,21 @@ def load(
         chrom_sizes=sizes,
         alias=alias,
     )
+
+
+def spans(
+    genes_path: Path,
+    chroms_path: Path,
+    *,
+    flank_min: int = FLANK_MIN,
+    flank_max: int = FLANK_MAX,
+    whole_genome: bool,
+) -> dict[str, list[tuple[int, int]]]:
+    """Return either the whole genome or merged windows around atlas genes."""
+    if whole_genome:
+        return chrom_names.whole_genome(chrom_names.read_chroms(chroms_path))
+    placed, _ = load(genes_path, chroms_path, flank_min=flank_min, flank_max=flank_max)
+    return merge(placed)
 
 
 def merge(windows) -> dict[str, list[tuple[int, int]]]:

@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Take this family's windows out of each GWAS study the curation file names.
+"""Take whatever the browser keeps out of each GWAS study the curation file names.
 
-A genome-wide study runs to hundreds of megabytes and the browser only ever draws the few
-percent of it that lies around the family's genes, so only that is kept. What comes out is
-one table of variants, and it is small enough to serve a gene at a time as plain JSON.
+A genome-wide study runs to hundreds of megabytes. Sliced to the windows around the family's
+genes that is a few percent of it; unsliced it is the study entire, which is worth keeping
+because the view can travel to any locus a study has a point at.
 
 A study named by its GWAS Catalog accession is downloaded in its harmonised form, whose
 columns are already named the same way for every study. A study given as a path is read
@@ -202,7 +202,7 @@ def read_variants(path: Path, spell, keep):
 
 
 def membership(spans: dict[str, list[tuple[int, int]]]):
-    """A fast test for whether a position falls in any window on its chromosome."""
+    """A fast test for whether a position falls in any kept span on its chromosome."""
     starts = {chrom: [s for s, _ in v] for chrom, v in spans.items()}
     ends = {chrom: [e for _, e in v] for chrom, v in spans.items()}
 
@@ -236,6 +236,24 @@ def acquire(source: str, cache_dir: Path, study_id: str) -> tuple[Path, str]:
     return path, ""
 
 
+# Rows held as tuples before a batch becomes a frame. An unsliced study is tens of millions of
+# them, which costs many times over what the table itself does
+BATCH = 1_000_000
+
+
+def variant_frame(study_id: str, source: Path, spell, keep) -> pl.DataFrame:
+    """Read one study into a table, a batch at a time."""
+    batches, rows = [], []
+    for path in payload_files(source):
+        for variant in read_variants(path, spell, keep):
+            rows.append((study_id, *variant))
+            if len(rows) >= BATCH:
+                batches.append(pl.DataFrame(rows, schema=SCHEMA, orient="row"))
+                rows = []
+    batches.append(pl.DataFrame(rows, schema=SCHEMA, orient="row"))
+    return pl.concat(batches)
+
+
 def write_studies(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as f:
@@ -255,6 +273,7 @@ def run(
     *,
     flank_min: int,
     flank_max: int,
+    whole_genome: bool,
 ) -> None:
     from .curation import read_browser_gwas
 
@@ -266,27 +285,28 @@ def run(
         pl.DataFrame(schema=SCHEMA).write_parquet(out_dir / "gwas.parquet")
         return
 
-    placed, _ = windows.load(genes_path, chroms_path, flank_min=flank_min, flank_max=flank_max)
-    spans = windows.merge(placed)
-    keep = membership(spans)
+    keep = membership(
+        windows.spans(
+            genes_path,
+            chroms_path,
+            flank_min=flank_min,
+            flank_max=flank_max,
+            whole_genome=whole_genome,
+        )
+    )
     spell = speller(chroms_path)
 
     frames, records, failed = [], [], []
     for study in studies:
         try:
             source, url = acquire(study.source, cache_dir, study.study_id)
-            rows = [
-                (study.study_id, *variant)
-                for path in payload_files(source)
-                for variant in read_variants(path, spell, keep)
-            ]
+            frame = variant_frame(study.study_id, source, spell, keep)
         except SystemExit:
             raise
         except Exception as error:
             failed.append(f"{study.study_id}: {error}")
             continue
 
-        frame = pl.DataFrame(rows, schema=SCHEMA, orient="row")
         frames.append(frame)
         records.append(
             {
@@ -303,7 +323,7 @@ def run(
             }
         )
         print(
-            f"{study.study_id}: {count('variant', frame.height)} in this family's windows",
+            f"{study.study_id}: {count('variant', frame.height)} kept",
             file=sys.stderr,
         )
 

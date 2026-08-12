@@ -32,12 +32,21 @@ from .shell import render
 from .site import ROUTES_FILE, read_manifest
 
 # Copy large binary assets directly because clients request them in byte ranges
-NOT_EXPORTED = {"/api/structure/models/{filename}", "/api/browser/coverage/{filename}"}
+NOT_EXPORTED = {
+    "/api/structure/models/{filename}",
+    "/api/browser/coverage/{filename}",
+    "/api/browser/models.bb",
+    "/api/browser/gwas/{study_id}.bb",
+}
 
 COPIED_TREES = (
     (("structure", "models"), ("api", "structure", "models")),
     (("browser", "coverage"), ("api", "browser", "coverage")),
+    (("browser", "gwas"), ("api", "browser", "gwas")),
 )
+
+# Assets copied the same way and for the same reason, but that are one file rather than a tree
+COPIED_FILES = ((("browser", "models.bb"), ("api", "browser", "models.bb")),)
 
 # How many responses to render at once
 CONCURRENCY = 8
@@ -135,7 +144,7 @@ async def _get(client: httpx.AsyncClient, url: str) -> httpx.Response:
     return await client.get(url)
 
 
-def _plan(capabilities: dict[str, bool], gene_ids: list[str], study_ids: list[str]) -> list[str]:
+def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
     urls = [
         "/api/capabilities.json",
         "/api/genes.json",
@@ -162,7 +171,6 @@ def _plan(capabilities: dict[str, bool], gene_ids: list[str], study_ids: list[st
     if capabilities.get("browser"):
         urls += ["/api/browser/tracks.json", "/api/browser/sources.json"]
         urls += [f"/api/browser/{gid}/region.json" for gid in gene_ids]
-        urls += [f"/api/browser/{gid}/gwas/{sid}.json" for gid in gene_ids for sid in study_ids]
     return urls
 
 
@@ -194,11 +202,7 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
     ) as client:
         capabilities = (await _get(client, "/api/capabilities.json")).json()
         gene_ids = [g["id"] for g in (await _get(client, "/api/genes.json")).json()]
-        study_ids = []
-        if capabilities.get("browser"):
-            manifest = (await _get(client, "/api/browser/tracks.json")).json()
-            study_ids = [s["study_id"] for s in manifest["studies"]]
-        urls = _plan(capabilities, gene_ids, study_ids)
+        urls = _plan(capabilities, gene_ids)
 
         uncovered = _uncovered(urls, capabilities)
         if uncovered:
@@ -228,6 +232,15 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
 def _copy_binaries(app_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
     """Copy binary assets directly into their public URL paths."""
     files = size = changed = 0
+    for source_parts, url_parts in COPIED_FILES:
+        src = app_dir.joinpath(*source_parts)
+        if not src.is_file():
+            continue
+        dst = out_dir.joinpath(*url_parts)
+        keep.add(dst)
+        changed += _copy(src, dst)
+        files += 1
+        size += src.stat().st_size
     for source_parts, url_parts in COPIED_TREES:
         root = app_dir.joinpath(*source_parts)
         if not root.is_dir():

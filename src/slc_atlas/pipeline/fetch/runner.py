@@ -80,7 +80,7 @@ CONSUMED_BY = {
 GATED_ON_FLAG = {
     "download_models": "download_predicted",
     "download_experimental_models": "download_experimental",
-    "slice_coverage": "slice_coverage",
+    "slice_coverage": "local_coverage",
 }
 
 LABELS = {
@@ -93,10 +93,10 @@ LABELS = {
     "fetch_sequences": "Fetching the canonical coding and protein sequences",
     "fetch_orthologs": "Fetching orthologs from Ensembl Compara",
     "fetch_species_tree": "Building the species tree",
-    "fetch_gene_models": "Fetching the transcript models around each gene",
+    "fetch_gene_models": "Fetching the transcript models",
     "fetch_coverage": "Resolving the coverage tracks",
-    "fetch_gwas": "Taking this family's windows out of the GWAS studies",
-    "slice_coverage": "Writing family-scoped copies of the coverage tracks",
+    "fetch_gwas": "Reading the GWAS studies",
+    "slice_coverage": "Writing the local copies of the coverage tracks",
     "fetch_uniprot_map": "Working out which UniProt entry each gene maps to",
     "fetch_uniprot_sequences": "Fetching the UniProt canonical sequences",
     "fetch_protein_features": "Fetching membrane topology and binding sites",
@@ -133,7 +133,8 @@ class FetchOptions:
     browser_flank_max: int = windows.FLANK_MAX
     browser_bin: int = 25
     browser_max_bytes: int = 500_000_000
-    slice_coverage: bool = False
+    browser_whole_genome: bool = False
+    local_coverage: bool = False
     no_review: bool = False
     skipped_views: frozenset[str] = frozenset()
     only_steps: tuple[str, ...] = ()
@@ -187,6 +188,7 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
     browser, genes = paths.browser_source, paths.source / "genes.tsv"
     chroms, coverage = browser / "chroms.tsv", browser / "coverage.tsv"
     flank = {"flank_min": options.browser_flank_min, "flank_max": options.browser_flank_max}
+    extent = {**flank, "whole_genome": options.browser_whole_genome}
     return [
         Step(
             "fetch_gene_models",
@@ -197,7 +199,7 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 ensembl_release=options.ensembl_release,
                 gencode_override=options.gencode_release,
                 models_file=options.gene_models_file,
-                **flank,
+                **extent,
             ),
             outputs=(browser / "transcripts.bed", chroms),
         ),
@@ -209,8 +211,8 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 chroms,
                 coverage,
                 default_bin=options.browser_bin,
-                default_local=options.slice_coverage,
-                **flank,
+                default_local=options.local_coverage,
+                **extent,
             ),
             requires=("pybigtools",),
             outputs=(coverage,),
@@ -223,7 +225,7 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 chroms,
                 paths.cache,
                 browser,
-                **flank,
+                **extent,
             ),
             outputs=(browser / "gwas.parquet", browser / "gwas_studies.tsv"),
         ),
@@ -236,7 +238,7 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 chroms,
                 paths.coverage_dir,
                 max_bytes=options.browser_max_bytes,
-                **flank,
+                **extent,
             ),
             requires=("pybigtools",),
         ),

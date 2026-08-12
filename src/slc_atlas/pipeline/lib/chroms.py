@@ -102,3 +102,13 @@ def write_chroms(path: Path, chroms) -> None:
 
 def sizes(chroms) -> dict[str, int]:
     return {chrom.name: chrom.size for chrom in chroms}
+
+
+def whole_genome(chroms) -> dict[str, list[tuple[int, int]]]:
+    """Every primary chromosome end to end, in the shape the window spans are given in.
+
+    This is what a browser that is not sliced to the family keeps, and it is expressed the
+    same way as a set of gene windows so that nothing downstream has to know which it was
+    handed.
+    """
+    return {c.name: [(0, c.size)] for c in chroms if c.role == PRIMARY}

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import polars as pl
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
 from ..data.source import DataSource
 from ..deps import get_source
+from ..responses import byte_range_file
 from ..models.structure import (
     DataSourceRecord,
     ExperimentalStructure,
@@ -56,15 +56,11 @@ def list_topology(source: DataSource = Depends(get_source)):
 
 # :path so mirrored experimental coordinates resolve under models/pdb/
 @router.get("/structure/models/{filename:path}", summary="One mirrored coordinate file")
-def get_model(filename: str, source: DataSource = Depends(get_source)):
+def get_model(filename: str, request: Request, source: DataSource = Depends(get_source)):
     path = source.model_path(filename)
     if path is None:
         raise HTTPException(404, f"No model file {filename!r}")
-    return FileResponse(
-        path,
-        media_type="application/octet-stream",
-        headers={"Cache-Control": "public, max-age=86400"},
-    )
+    return byte_range_file(path, request)
 
 
 @router.get(
