@@ -130,7 +130,7 @@ Re-export after changing the dataset or the site name.
 
 * TODO Development
 The dev container is the easiest way to setup the project with Python, Node.js,
-MAFFT, nginx, and the project dependencies bundled. Install Docker and the Dev
+MAFFT, and the project dependencies bundled. Install Docker and the Dev
 Container CLI, and then run:
 
 #+begin_src bash
@@ -139,8 +139,8 @@ Container CLI, and then run:
 #+end_src
 
 The frontend runs at [[http://localhost:3000]] and sends API requests to FastAPI at
-[[http://localhost:8000]]. A production-style static preview is available at
-[[http://localhost]]. See [[file:.devcontainer/README.org][Dev container setup]] for direct CLI commands and container details.
+[[http://localhost:8000]]. See [[file:.devcontainer/README.org][Dev container setup]] for direct CLI commands and container
+details.
 
 For a manual setup:
 

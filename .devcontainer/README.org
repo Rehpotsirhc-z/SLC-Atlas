@@ -1,7 +1,7 @@
 #+title: Dev Container
 
 * Develop in a container
-The dev container gives you Python 3.12, Node.js, MAFFT, nginx, and all project
+The dev container gives you Python 3.12, Node.js, MAFFT, and all project
 dependencies without installing them on your machine. You need Docker and the
 [[https://containers.dev/][Dev Container CLI]]. Install the CLI with ~npm install -g @devcontainers/cli~ if your
 package manager does not provide it.
@@ -20,25 +20,20 @@ than later starts. Once inside, launch both development servers:
 #+end_src
 
 Open the Vite frontend at http://localhost:3000. It uses the FastAPI server at
-http://localhost:8000. The container also serves the latest production-style static
-export at http://localhost.
+http://localhost:8000.
 
 * After changing the frontend
 Vite updates http://localhost:3000 as you edit files under ~web/src/~, so normal frontend
 work does not require a build or restart.
 
-The static preview at http://localhost is different. ~atlas export~ uses the compiled
-frontend in ~web/dist~, not the source files. Rebuild and export after changing the
-frontend:
+The dev server is not what a deployment serves, so check anything that depends on the
+built site, the export, or the caching rules against the production image instead. It
+builds the frontend itself, so run this on the host rather than inside the container and
+open http://localhost:8080:
 
 #+begin_src bash
-npm --prefix web run build
-atlas export /srv/www
+docker compose up --build
 #+end_src
-
-Reload http://localhost when both commands finish. Restarting the container also runs the
-export, but it does not build the frontend first, so build ~web/dist~ before restarting
-when you want the preview to include frontend changes.
 
 * Direct CLI use
 You can manage the container without the helper scripts:

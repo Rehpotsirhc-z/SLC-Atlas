@@ -36,11 +36,11 @@ npx -y playwright install --with-deps chromium
 
 # ── System packages ──────────────────────────────────────────────────────────
 # MAFFT is the only non-Python requirement for the Clustering view
-if ! dpkg -s neovim less nginx mafft build-essential pkg-config \
+if ! dpkg -s neovim less mafft build-essential pkg-config \
     libcurl4-openssl-dev >/dev/null 2>&1; then
     sudo apt-get update
     sudo apt-get install -y --no-install-recommends \
-        neovim less nginx mafft \
+        neovim less mafft \
         build-essential pkg-config libcurl4-openssl-dev
     sudo rm -rf /var/lib/apt/lists/*
 fi

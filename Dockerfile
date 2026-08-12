@@ -19,16 +19,15 @@ RUN apt-get update \
 WORKDIR /opt/atlas
 COPY pyproject.toml README.org ./
 COPY src/ ./src/
+COPY --from=web /build/dist ./web/dist
 # Installs the command the entrypoint runs
 RUN pip install --no-cache-dir .
 
-COPY --from=web /build/dist /opt/atlas/web
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-ENV ATLAS_DATA_DIR=/data \
-    ATLAS_WEB_DIR=/opt/atlas/web
+ENV ATLAS_DATA_DIR=/data
 
 VOLUME ["/data"]
 EXPOSE 80

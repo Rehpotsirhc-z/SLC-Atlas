@@ -25,7 +25,7 @@
   ],
   "remoteUser": "ubuntu",
   "runArgs": ["--name", "${localWorkspaceFolderBasename}"],
-  "appPort": ["0.0.0.0:8000:8000", "0.0.0.0:3000:3000", "0.0.0.0:80:80"],
+  "appPort": ["0.0.0.0:8000:8000", "0.0.0.0:3000:3000"],
   "remoteEnv": {
     "PATH": "/workspace/.venv/bin:${containerEnv:PATH}"
   },
