@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "../client"
-import type { GwasPoint, Region, TrackManifest } from "@/types/browser"
+import type { Region, TrackManifest } from "@/types/browser"
 import type { DataSourceRecord } from "@/types/structure"
 
 export const useTrackManifest = () =>
@@ -19,13 +19,6 @@ export const useRegion = (geneId: string | null) =>
     queryKey: ["browser", geneId, "region"],
     queryFn: () => api.get<Region>(`/browser/${geneId}/region.json`),
     enabled: geneId != null,
-  })
-
-export const useGwas = (geneId: string | null, studyId: string | null) =>
-  useQuery({
-    queryKey: ["browser", geneId, "gwas", studyId],
-    queryFn: () => api.get<GwasPoint[]>(`/browser/${geneId}/gwas/${studyId}.json`),
-    enabled: geneId != null && studyId != null,
   })
 
 export const useBrowserSources = () =>

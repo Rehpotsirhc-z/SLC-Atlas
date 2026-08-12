@@ -2,22 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Reads bigWig coverage off the main thread.
- *
- * A read is a range request, a WASM inflate and a walk into typed arrays, and a view holds two
- * dozen tracks that all answer at once, so doing it here is what keeps a gene switch or a zoom
- * out from standing on the frame loop. The arrays go back as transferables, so handing them over
- * copies nothing.
- *
- * The reader map lives here rather than on the other side: a reader holds the file's header and
- * chromosome index, which is the part worth keeping between reads.
- */
+/** Read bigWig coverage and bigBed features outside the main thread. */
 
-import { BigWig } from "@gmod/bbi"
+import { BigBed, BigWig } from "@gmod/bbi"
 
 interface ReadRequest {
   id: number
+  kind: "coverage" | "features"
   url: string
   chrom: string
   start: number
@@ -41,12 +32,31 @@ interface BigWigReader {
   getFeaturesAsArrays?(chrom: string, start: number, end: number): Promise<CoverageArrays>
 }
 
-const readers = new Map<string, BigWigReader>()
+interface BedFeature {
+  start: number
+  end: number
+  rest?: string
+}
 
-function open(url: string): BigWigReader {
+/** What crosses back for a feature: its span, and one string of everything else */
+interface RawFeature {
+  start: number
+  end: number
+  rest: string
+}
+
+interface BigBedReader {
+  getFeatures(chrom: string, start: number, end: number): Promise<BedFeature[]>
+}
+
+const readers = new Map<string, BigWigReader | BigBedReader>()
+
+function open(url: string, kind: ReadRequest["kind"]) {
   let held = readers.get(url)
   if (!held) {
-    held = new BigWig({ url }) as unknown as BigWigReader
+    held = (kind === "features" ? new BigBed({ url }) : new BigWig({ url })) as unknown as
+      | BigWigReader
+      | BigBedReader
     readers.set(url, held)
   }
   return held
@@ -66,8 +76,8 @@ function toArrays(features: BigWigFeature[]): CoverageArrays {
 
 // Records are always read at their stored resolution, never through the file's reduced views,
 // which report signal across stretches a track holds none of
-async function read(request: ReadRequest): Promise<CoverageArrays> {
-  const reader = open(request.url)
+async function readCoverage(request: ReadRequest): Promise<CoverageArrays> {
+  const reader = open(request.url, "coverage") as BigWigReader
   const { chrom, start, end } = request
   if (reader.getFeaturesAsArrays) {
     const got = await reader.getFeaturesAsArrays(chrom, start, end)
@@ -76,6 +86,17 @@ async function read(request: ReadRequest): Promise<CoverageArrays> {
     return { starts: got.starts.slice(), ends: got.ends.slice(), scores: got.scores.slice() }
   }
   return toArrays(await reader.getFeatures(chrom, start, end))
+}
+
+async function readFeatures(request: ReadRequest): Promise<RawFeature[]> {
+  const reader = open(request.url, "features") as BigBedReader
+  const got = await reader.getFeatures(request.chrom, request.start, request.end)
+  // Send only the fields needed for drawing
+  return got.map((feature) => ({
+    start: feature.start,
+    end: feature.end,
+    rest: feature.rest ?? "",
+  }))
 }
 
 // The project compiles against the DOM lib, where `self` is a Window and postMessage takes an
@@ -88,7 +109,13 @@ const ctx = self as unknown as {
 
 ctx.onmessage = (event) => {
   const request = event.data
-  read(request)
+  if (request.kind === "features") {
+    readFeatures(request)
+      .then((features) => ctx.postMessage({ id: request.id, features }))
+      .catch((error: unknown) => ctx.postMessage({ id: request.id, error: String(error) }))
+    return
+  }
+  readCoverage(request)
     .then((arrays) => {
       // A read that answered with nothing still answered, and the other side tells the two apart
       ctx.postMessage({ id: request.id, ...arrays }, [

@@ -19,7 +19,7 @@
  * and let go with it.
  */
 
-import type { CoverageArrays } from "@/api/bigwig"
+import type { CoverageArrays } from "@/api/bbi"
 
 /** Walk the records in groups of `stride`, breaking wherever the track leaves a gap. */
 function eachGroup(

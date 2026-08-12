@@ -4,7 +4,7 @@
 
 /** Draw coverage tracks on a canvas */
 
-import type { CoverageArrays } from "@/api/bigwig"
+import type { CoverageArrays } from "@/api/bbi"
 import { COVERAGE_RECORDS_PER_PX } from "./constants"
 import { coverageAtStride } from "./coverageSummary"
 import type { Scale, Viewport } from "./scale"

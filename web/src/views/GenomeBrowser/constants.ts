@@ -32,6 +32,8 @@ export const LABEL_GAP_PX = 6
 export const EXON_H = 13
 export const UTR_H = 7
 export const ARROW_H = 9
+// Below this an arrowhead reads as a blob rather than a direction, so the gene is a plain line
+export const MIN_ARROW_PX = 3
 // Bases per chevron along an intron, in pixels
 export const CHEVRON_SPACING = 46
 
@@ -40,6 +42,16 @@ export const MIN_FEATURE_PX = 1.5
 
 // Autoscale leaves a little air above the tallest bar so the peak is not clipped
 export const Y_HEADROOM = 1.08
+
+// Past this the whole exon structure of a transcript is a pixel or two of chain, and a
+// chromosome holds tens of thousands of them, so the track draws one row per gene instead
+export const TRANSCRIPT_MAX_SPAN = 4_000_000
+
+// Past this a study holds more variants than a drag can repaint, so the lane reads the
+// overview the build wrote beside it. The suffix is the one build_browser.py named
+export const GWAS_FULL_MAX_SPAN = 4_000_000
+export const GWAS_OVERVIEW_SUFFIX = ".overview"
+export const GWAS_OVERVIEW_BIN = 10_000
 
 export const ZOOM_STEP = 2
 // Zooming further than this shows individual bases, which no track here resolves

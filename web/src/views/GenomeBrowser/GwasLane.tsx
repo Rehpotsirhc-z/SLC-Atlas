@@ -5,7 +5,7 @@
 import { memo, useCallback, useMemo, useRef } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import type { GwasPoint, GwasStudy } from "@/types/browser"
-import { EDGE_PAD, GWAS_LANE_HEIGHT, LANE_GAP } from "./constants"
+import { EDGE_PAD, GWAS_LANE_HEIGHT, GWAS_OVERVIEW_BIN, LANE_GAP } from "./constants"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
 import { drawGwas, gwasCeiling, gwasNear, type GwasInk } from "./drawGwas"
 import { frameScale, type Scale, type Viewport } from "./scale"
@@ -18,6 +18,8 @@ interface Props {
   study: GwasStudy
   points: GwasPoint[]
   covered: boolean
+  /** The view is too wide for every variant, so what is drawn is the overview */
+  thinned: boolean
   loading: boolean
   width: number
   gutter: number
@@ -42,6 +44,7 @@ function GwasLane({
   study,
   points,
   covered,
+  thinned,
   loading,
   width,
   gutter,
@@ -151,6 +154,14 @@ function GwasLane({
         >
           −log₁₀p ≤ <Box component="span" ref={ceilingRef} />
         </Typography>
+        {thinned && (
+          <Typography
+            component="span"
+            sx={{ fontSize: 11, color: "text.disabled", lineHeight: 1.2 }}
+          >
+            {`summary: significant + strongest per ${GWAS_OVERVIEW_BIN / 1000} kb`}
+          </Typography>
+        )}
       </Box>
       <Box
         ref={plotRef}

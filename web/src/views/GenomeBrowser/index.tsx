@@ -4,7 +4,7 @@
 
 import { useCallback, useMemo, useRef } from "react"
 import { Box, Divider, Paper, Typography, useMediaQuery, useTheme } from "@mui/material"
-import { EMPTY_COVERAGE } from "@/api/bigwig"
+import { EMPTY_COVERAGE } from "@/api/bbi"
 import { useCapability } from "@/api/hooks/useCapabilities"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
@@ -72,11 +72,11 @@ export default function GenomeBrowser() {
       }
     })
     const transcripts =
-      state.mode === "transcripts"
+      state.drawn === "transcripts"
         ? layoutTranscripts(state.models.transcripts, state.models.gap, MAX_GENE_ROWS)
         : null
     const genes =
-      state.mode === "genes"
+      state.drawn === "genes"
         ? layoutGenes(collapseToGenes(state.models.transcripts), state.models.gap, MAX_GENE_ROWS)
         : null
     return buildBrowserFigureSvg({
@@ -249,6 +249,7 @@ export default function GenomeBrowser() {
                       study={state.study}
                       points={state.gwasPoints}
                       covered={state.studyCovers}
+                      thinned={state.gwasThinned}
                       loading={state.gwasLoading}
                       width={plotWidth}
                       gutter={gutter}
@@ -273,7 +274,7 @@ export default function GenomeBrowser() {
                 >
                   <GeneTrack
                     transcripts={state.models.transcripts}
-                    mode={state.mode}
+                    mode={state.drawn}
                     gap={state.models.gap}
                     empty={state.models.empty}
                     width={plotWidth}

@@ -80,12 +80,18 @@ export interface Region {
   strand: string | null
   window_start: number
   window_end: number
-  // Bounds covered by the local track slices
+  // How far the view may travel from this gene, which is as much genome as the build kept
   pan_start: number
   pan_end: number
   flank: number
   clipped: boolean
-  transcripts: TranscriptModel[]
+}
+
+/** One bigBed row: where it is, and one tab-separated string of everything else */
+export interface RawFeature {
+  start: number
+  end: number
+  rest: string
 }
 
 export interface GwasPoint {

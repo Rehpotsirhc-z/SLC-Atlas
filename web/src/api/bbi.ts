@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Read bigWig coverage directly from byte-range requests */
+/** Read coverage and features directly from byte-range requests */
 
 import type { CoverageTrack } from "@/types/browser"
 
@@ -41,16 +41,27 @@ export function trackUrl(track: CoverageTrack, strand: "plus" | "minus" | null):
   return track.file ? coverageUrl(track.file) : track.url || null
 }
 
+/** One bigBed feature: where it is, and one tab-separated string of everything else */
+export interface RawFeature {
+  start: number
+  end: number
+  rest: string
+}
+
+export const modelsUrl = () => "/api/browser/models.bb"
+export const gwasUrl = (studyId: string) => `/api/browser/gwas/${studyId}.bb`
+
 interface Reply {
   id: number
   starts?: Int32Array
   ends?: Int32Array
   scores?: Float32Array
+  features?: RawFeature[]
   error?: string
 }
 
 interface Waiting {
-  resolve: (arrays: CoverageArrays) => void
+  resolve: (answer: CoverageArrays | RawFeature[]) => void
   reject: (error: Error) => void
 }
 
@@ -74,33 +85,42 @@ function abandon(dead: Worker, reason: string): void {
  */
 function reader(): Worker {
   if (worker) return worker
-  const started = new Worker(new URL("./bigwig.worker.ts", import.meta.url), { type: "module" })
+  const started = new Worker(new URL("./bbi.worker.ts", import.meta.url), { type: "module" })
   started.onmessage = (event: MessageEvent<Reply>) => {
-    const { id, starts, ends, scores, error } = event.data
+    const { id, starts, ends, scores, features, error } = event.data
     const held = waiting.get(id)
     if (!held) return
     waiting.delete(id)
-    if (error !== undefined || !starts || !ends || !scores) {
-      held.reject(new Error(error ?? "coverage read failed"))
+    if (error !== undefined) {
+      held.reject(new Error(error))
+      return
+    }
+    if (features) {
+      held.resolve(features)
+      return
+    }
+    if (!starts || !ends || !scores) {
+      held.reject(new Error("read failed"))
       return
     }
     held.resolve(heldArrays(starts, ends, scores))
   }
-  started.onerror = () => abandon(started, "Coverage reader failed to start")
-  started.onmessageerror = () => abandon(started, "Coverage reader sent an unreadable reply")
+  started.onerror = () => abandon(started, "The reader failed to start")
+  started.onmessageerror = () => abandon(started, "The reader sent an unreadable reply")
   worker = started
   return started
 }
 
-export function readCoverage(
+function ask<T>(
+  kind: "coverage" | "features",
   url: string,
   chrom: string,
   start: number,
   end: number,
   signal: AbortSignal | undefined,
-): Promise<CoverageArrays> {
+): Promise<T> {
   const id = nextId++
-  return new Promise<CoverageArrays>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     // Abort events do not fire retroactively
     if (signal?.aborted) {
       reject(new DOMException("aborted", "AbortError"))
@@ -114,15 +134,32 @@ export function readCoverage(
     signal?.addEventListener("abort", drop, { once: true })
     const settled = () => signal?.removeEventListener("abort", drop)
     waiting.set(id, {
-      resolve: (arrays) => {
+      resolve: (answer) => {
         settled()
-        resolve(arrays)
+        resolve(answer as T)
       },
       reject: (error) => {
         settled()
         reject(error)
       },
     })
-    reader().postMessage({ id, url, chrom, start, end })
+    reader().postMessage({ id, kind, url, chrom, start, end })
   })
 }
+
+export const readCoverage = (
+  url: string,
+  chrom: string,
+  start: number,
+  end: number,
+  signal: AbortSignal | undefined,
+): Promise<CoverageArrays> => ask("coverage", url, chrom, start, end, signal)
+
+/** The features of one bigBed over a stretch, whatever kind of thing they turn out to be. */
+export const readFeatures = (
+  url: string,
+  chrom: string,
+  start: number,
+  end: number,
+  signal: AbortSignal | undefined,
+): Promise<RawFeature[]> => ask("features", url, chrom, start, end, signal)

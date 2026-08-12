@@ -30,7 +30,7 @@
 
 import { useMemo, useRef } from "react"
 import { useQueries } from "@tanstack/react-query"
-import { EMPTY_COVERAGE, readCoverage, trackUrl, type CoverageArrays } from "@/api/bigwig"
+import { EMPTY_COVERAGE, readCoverage, trackUrl, type CoverageArrays } from "@/api/bbi"
 import type { CoverageTrack } from "@/types/browser"
 import { COVERAGE_BLOCK_MARGIN_MAX, COVERAGE_BLOCK_MIN } from "./constants"
 import type { Viewport } from "./scale"

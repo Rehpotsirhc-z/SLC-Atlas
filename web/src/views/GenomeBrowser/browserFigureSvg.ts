@@ -4,7 +4,7 @@
 
 /** Export the genome browser as SVG */
 
-import type { CoverageArrays } from "@/api/bigwig"
+import type { CoverageArrays } from "@/api/bbi"
 import { monoFontFamily, svgSansFontFamily } from "@/theme/fonts"
 import type { CoverageTrack, GwasPoint, GwasStudy, TranscriptModel } from "@/types/browser"
 import { esc } from "@/components/heatmap/figureSvg"

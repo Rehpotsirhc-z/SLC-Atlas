@@ -11,13 +11,14 @@ import type { CoverageTrack, Region } from "@/types/browser"
 import type { Gene } from "@/types/gene"
 import { DEFAULT_PREFS, type BrowserPrefs } from "./BrowserSettings"
 import type { GeneTrackMode } from "./GeneTrack"
+import { TRANSCRIPT_MAX_SPAN } from "./constants"
 import { chromNames } from "./chromNames"
 import { peakInView } from "./drawCoverage"
 import type { Viewport } from "./scale"
 import { trackColors } from "./trackColor"
 import { useBrowserView } from "./useBrowserView"
 import { useCoverageBlock, useCoverageData } from "./useCoverageData"
-import { useGeneModels, useNearbyGenes, useVisibleGwas } from "./useWindowData"
+import { useGeneModels, useVisibleGwas } from "./useFeatureData"
 
 const NO_TRACKS: CoverageTrack[] = []
 const NO_GENES: Gene[] = []
@@ -75,9 +76,12 @@ export function useGenomeBrowserState() {
   const block = useCoverageBlock(view.view, region?.chrom, chromSize)
   const coverage = useCoverageData(tracks, region?.chrom, block)
 
-  const nearby = useNearbyGenes(genes, region?.chrom_ensembl, view.view)
-  const models = useGeneModels(nearby)
-  const gwas = useVisibleGwas(nearby, study?.study_id ?? null)
+  const models = useGeneModels(region?.chrom, block)
+  // A view too wide to tell one exon from another draws gene bodies whatever the toolbar says,
+  // since a chromosome carries tens of thousands of transcripts and none of them would read
+  const drawn: GeneTrackMode =
+    mode === "transcripts" && view.view.end - view.view.start > TRANSCRIPT_MAX_SPAN ? "genes" : mode
+  const gwas = useVisibleGwas(region?.chrom, block, view.view, study?.study_id ?? null)
 
   // Only the shared mode needs every lane measured together, and it is worked out where the
   // view has settled rather than inside a frame
@@ -158,6 +162,7 @@ export function useGenomeBrowserState() {
     studyCovers,
     gwasPoints: gwas.points,
     gwasLoading: gwas.loading,
+    gwasThinned: gwas.thinned,
     models,
     allTracks,
     tracks,
@@ -169,6 +174,7 @@ export function useGenomeBrowserState() {
     updatePrefs,
     yMaxFor,
     mode,
+    drawn,
     setMode,
     settingsOpen,
     setSettingsOpen,

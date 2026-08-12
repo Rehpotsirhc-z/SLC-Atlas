@@ -13,6 +13,7 @@ import {
   GENE_ROW_H,
   LABEL_GAP_PX,
   LABEL_MIN_PX,
+  MIN_ARROW_PX,
   UTR_H,
 } from "./constants"
 import type { GeneSpan, TrackLayout } from "./geneLayout"
@@ -185,15 +186,20 @@ export function drawGenes({ ctx, scale, height, top, layout, ink }: GeneFrame) {
     ctx.lineTo(right, Math.round(y) + 0.5)
     ctx.stroke()
 
-    // The head sits at the end the gene reads towards, which is the whole point of this mode
-    const tip = forward ? right : left
-    const back = forward ? tip - ARROW_H : tip + ARROW_H
-    ctx.beginPath()
-    ctx.moveTo(tip, y)
-    ctx.lineTo(back, y - ARROW_H / 2)
-    ctx.lineTo(back, y + ARROW_H / 2)
-    ctx.closePath()
-    ctx.fill()
+    // The head sits at the end the gene reads towards, which is the whole point of this mode,
+    // and is never longer than the gene it points along: a chromosome of genes each narrower
+    // than one head would otherwise draw as nothing but heads
+    const head = Math.min(ARROW_H, right - left)
+    if (head >= MIN_ARROW_PX) {
+      const tip = forward ? right : left
+      const back = forward ? tip - head : tip + head
+      ctx.beginPath()
+      ctx.moveTo(tip, y)
+      ctx.lineTo(back, y - head / 2)
+      ctx.lineTo(back, y + head / 2)
+      ctx.closePath()
+      ctx.fill()
+    }
 
     labelBefore(ctx, item.label, left, y, item.is_atlas_gene, ink, takenTo[row] ?? -Infinity)
     takenTo[row] = right
