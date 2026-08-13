@@ -34,8 +34,8 @@ export const LABEL_GAP_PX = 6
 export const EXON_H = 13
 export const UTR_H = 7
 export const ARROW_H = 9
-// Below this an arrowhead reads as a blob rather than a direction, so the gene is a plain line
-export const MIN_ARROW_PX = 3
+// Minimum legible arrowhead height
+export const ARROW_MIN_H = 5
 // Bases per chevron along an intron, in pixels
 export const CHEVRON_SPACING = 46
 

@@ -20,6 +20,7 @@ import {
   Y_HEADROOM,
 } from "./constants"
 import { columnPeaks } from "./drawCoverage"
+import { arrowHead } from "./drawGenes"
 import { gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
 import type { GeneSpan, TrackLayout } from "./geneLayout"
 import { scaleFor, ticksFor, type Viewport } from "./scale"
@@ -191,10 +192,23 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       const span = transcript ? null : (item as GeneSpan)
       const color = span?.is_atlas_gene === true ? input.ink.highlight : input.colorOf(item.biotype)
 
-      marks.push(
-        `<line x1="${left.toFixed(1)}" y1="${cy}" x2="${right.toFixed(1)}" y2="${cy}" stroke="${color}" stroke-width="${transcript ? 1 : 1.5}"/>`,
-      )
+      if (span) {
+        const { tip, back, half } = arrowHead(left, right, span.strand !== "-")
+        const stemFrom = span.strand !== "-" ? left : back
+        const stemTo = span.strand !== "-" ? back : right
+        if (stemTo > stemFrom) {
+          marks.push(
+            `<line x1="${stemFrom.toFixed(1)}" y1="${cy}" x2="${stemTo.toFixed(1)}" y2="${cy}" stroke="${color}"/>`,
+          )
+        }
+        marks.push(
+          `<polygon points="${tip.toFixed(1)},${cy} ${back.toFixed(1)},${(cy - half).toFixed(1)} ${back.toFixed(1)},${(cy + half).toFixed(1)}" fill="${color}"/>`,
+        )
+      }
       if (transcript) {
+        marks.push(
+          `<line x1="${left.toFixed(1)}" y1="${cy}" x2="${right.toFixed(1)}" y2="${cy}" stroke="${color}"/>`,
+        )
         for (const exon of transcript.exons) {
           const coding =
             transcript.cds_start !== null && transcript.cds_end !== null

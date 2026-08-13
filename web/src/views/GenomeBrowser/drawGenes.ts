@@ -7,13 +7,13 @@
 import type { TranscriptModel } from "@/types/browser"
 import {
   ARROW_H,
+  ARROW_MIN_H,
   CANVAS_LABEL_PX,
   CHEVRON_SPACING,
   EXON_H,
   GENE_ROW_H,
   LABEL_GAP_PX,
   LABEL_MIN_PX,
-  MIN_ARROW_PX,
   UTR_H,
 } from "./constants"
 import type { GeneSpan, TrackLayout } from "./geneLayout"
@@ -28,7 +28,24 @@ export interface GeneInk {
   widths: Map<string, number>
 }
 
-const rowCentre = (row: number, top: number) => top + row * GENE_ROW_H + GENE_ROW_H / 2
+// Align row centers to half pixels for crisp one-pixel strokes
+const rowCentre = (row: number, top: number) =>
+  Math.floor(top + row * GENE_ROW_H + GENE_ROW_H / 2) + 0.5
+
+export interface ArrowHead {
+  tip: number
+  back: number
+  half: number
+}
+
+// Keep arrowheads odd-sized and let narrow genes overhang away from their labels
+export function arrowHead(left: number, right: number, forward: boolean): ArrowHead {
+  const room = Math.round(right - left)
+  const size = Math.min(ARROW_H, Math.max(ARROW_MIN_H, room))
+  const head = size % 2 === 0 ? size - 1 : size
+  const tip = Math.round(forward ? Math.max(right, left + head) : left)
+  return { tip, back: forward ? tip - head : tip + head, half: head / 2 }
+}
 
 /** One path for a whole intron's worth of arrows, a stroke apiece being most of what they cost. */
 function chevrons(
@@ -114,8 +131,8 @@ export function drawTranscripts({ ctx, scale, height, top, layout, ink }: Transc
 
     ctx.strokeStyle = color
     ctx.beginPath()
-    ctx.moveTo(left, Math.round(y) + 0.5)
-    ctx.lineTo(right, Math.round(y) + 0.5)
+    ctx.moveTo(left, y)
+    ctx.lineTo(right, y)
     ctx.stroke()
     chevrons(ctx, Math.max(left, 0), Math.min(right, scale.width), y, item.strand !== "-")
 
@@ -167,7 +184,7 @@ export interface GeneFrame {
 
 export function drawGenes({ ctx, scale, height, top, layout, ink }: GeneFrame) {
   ctx.clearRect(0, 0, scale.width, height)
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = 1
   const takenTo: number[] = []
 
   for (const { item, row } of layout.items) {
@@ -181,25 +198,22 @@ export function drawGenes({ ctx, scale, height, top, layout, ink }: GeneFrame) {
 
     ctx.strokeStyle = color
     ctx.fillStyle = color
-    ctx.beginPath()
-    ctx.moveTo(left, Math.round(y) + 0.5)
-    ctx.lineTo(right, Math.round(y) + 0.5)
-    ctx.stroke()
-
-    // The head sits at the end the gene reads towards, which is the whole point of this mode,
-    // and is never longer than the gene it points along: a chromosome of genes each narrower
-    // than one head would otherwise draw as nothing but heads
-    const head = Math.min(ARROW_H, right - left)
-    if (head >= MIN_ARROW_PX) {
-      const tip = forward ? right : left
-      const back = forward ? tip - head : tip + head
+    const { tip, back, half } = arrowHead(left, right, forward)
+    const stemFrom = forward ? left : back
+    const stemTo = forward ? back : right
+    if (stemTo > stemFrom) {
       ctx.beginPath()
-      ctx.moveTo(tip, y)
-      ctx.lineTo(back, y - head / 2)
-      ctx.lineTo(back, y + head / 2)
-      ctx.closePath()
-      ctx.fill()
+      ctx.moveTo(stemFrom, y)
+      ctx.lineTo(stemTo, y)
+      ctx.stroke()
     }
+
+    ctx.beginPath()
+    ctx.moveTo(tip, y)
+    ctx.lineTo(back, y - half)
+    ctx.lineTo(back, y + half)
+    ctx.closePath()
+    ctx.fill()
 
     labelBefore(ctx, item.label, left, y, item.is_atlas_gene, ink, takenTo[row] ?? -Infinity)
     takenTo[row] = right
