@@ -30,6 +30,8 @@ class CoverageTrack(BaseModel):
     minus_url: str | None = None
     bin: int = 0
     bytes: int = 0
+    # Minimum bases per column for trusted summaries, or 0 when summaries are unavailable
+    reduction: int = 0
     chroms: list[str] = []
 
 

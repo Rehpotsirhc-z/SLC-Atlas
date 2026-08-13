@@ -27,6 +27,8 @@ export interface CoverageTrack {
   minus_url: string | null
   bin: number
   bytes: number
+  /** Bases per column past which this track's own summaries may be drawn, 0 where they may not be */
+  reduction: number
   chroms: string[]
 }
 

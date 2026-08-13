@@ -24,7 +24,6 @@ import { EDGE_PAD, GUTTER_W, GUTTER_W_SM, MAX_GENE_ROWS, RULER_H } from "./const
 import { collapseToGenes, layoutGenes, layoutTranscripts } from "./geneLayout"
 import type { LaneData } from "./useCoverageData"
 import { useGenomeBrowserState } from "./useGenomeBrowserState"
-import { useLaneVisibility } from "./useLaneVisibility"
 import { usePanGestures } from "./usePanGestures"
 
 const SETTINGS_SX = { top: 8, right: 8, zIndex: 6 } as const
@@ -47,8 +46,7 @@ export default function GenomeBrowser() {
 
   const gutter = isSmall ? GUTTER_W_SM : GUTTER_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
-  const state = useGenomeBrowserState()
-  const watchLane = useLaneVisibility(frameRef)
+  const state = useGenomeBrowserState(frameRef, plotWidth)
 
   const gestures = usePanGestures({
     view: state.view,
@@ -225,7 +223,7 @@ export default function GenomeBrowser() {
                         subscribe={state.view.subscribe}
                         liveView={state.view.liveView}
                         moving={state.view.moving}
-                        watch={watchLane}
+                        watch={state.watchLane}
                       />
                     ))}
                   </Box>
@@ -258,7 +256,7 @@ export default function GenomeBrowser() {
                       subscribe={state.view.subscribe}
                       liveView={state.view.liveView}
                       moving={state.view.moving}
-                      watch={watchLane}
+                      watch={state.watchLane}
                     />
                   </Box>
                 )}

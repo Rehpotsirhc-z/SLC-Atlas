@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState, type RefObject } from "react"
 import { useTheme } from "@mui/material"
 import { useGenes } from "@/api/hooks/useGenes"
 import { useRegion, useTrackManifest } from "@/api/hooks/useBrowser"
 import { useUIStore } from "@/store/uiStore"
-import type { CoverageTrack, Region } from "@/types/browser"
+import type { Chrom, CoverageTrack, Region } from "@/types/browser"
 import type { Gene } from "@/types/gene"
 import { DEFAULT_PREFS, type BrowserPrefs } from "./BrowserSettings"
 import type { GeneTrackMode } from "./GeneTrack"
@@ -17,14 +17,17 @@ import { peakInView } from "./drawCoverage"
 import type { Viewport } from "./scale"
 import { trackColors } from "./trackColor"
 import { useBrowserView } from "./useBrowserView"
-import { useCoverageBlock, useCoverageData } from "./useCoverageData"
+import { summaryStep, useCoverageBlock, useCoverageData } from "./useCoverageData"
 import { useGeneModels, useVisibleGwas } from "./useFeatureData"
+import { useLaneVisibility } from "./useLaneVisibility"
+import { useWarmReaders } from "./useWarmReaders"
 
 const NO_TRACKS: CoverageTrack[] = []
+const NO_CHROMS: Chrom[] = []
 const NO_GENES: Gene[] = []
 const NOWHERE: Viewport = { start: 0, end: 1 }
 
-export function useGenomeBrowserState() {
+export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, plotWidth: number) {
   const { palette } = useTheme()
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -48,7 +51,13 @@ export function useGenomeBrowserState() {
     [allTracks, prefs.hidden],
   )
 
-  const names = useMemo(() => chromNames(manifestQuery.data?.chroms ?? []), [manifestQuery.data])
+  const chroms = manifestQuery.data?.chroms ?? NO_CHROMS
+  const names = useMemo(() => chromNames(chroms), [chroms])
+
+  // Which lanes are on screen, which is both what gets repainted and whose bytes are read first
+  const lanes = useLaneVisibility(frameRef)
+
+  useWarmReaders(tracks, chroms, study?.study_id ?? null)
 
   const colors = useMemo(
     () =>
@@ -74,14 +83,22 @@ export function useGenomeBrowserState() {
   const view = useBrowserView(initial, bounds)
 
   const block = useCoverageBlock(view.view, region?.chrom, chromSize)
-  const coverage = useCoverageData(tracks, region?.chrom, block)
+  // What one column of the view covers, which decides whether a track is read whole or summarised
+  const step = summaryStep(view.view, plotWidth)
+  const coverage = useCoverageData(tracks, region?.chrom, block, lanes.isVisible, step)
 
   const models = useGeneModels(region?.chrom, block)
   // A view too wide to tell one exon from another draws gene bodies whatever the toolbar says,
   // since a chromosome carries tens of thousands of transcripts and none of them would read
   const drawn: GeneTrackMode =
     mode === "transcripts" && view.view.end - view.view.start > TRANSCRIPT_MAX_SPAN ? "genes" : mode
-  const gwas = useVisibleGwas(region?.chrom, block, view.view, study?.study_id ?? null)
+  const gwas = useVisibleGwas(
+    region?.chrom,
+    block,
+    view.view,
+    study?.study_id ?? null,
+    lanes.isVisible,
+  )
 
   // Only the shared mode needs every lane measured together, and it is worked out where the
   // view has settled rather than inside a frame
@@ -169,6 +186,7 @@ export function useGenomeBrowserState() {
     groups,
     colors,
     coverage,
+    watchLane: lanes.watch,
     view,
     prefs,
     updatePrefs,

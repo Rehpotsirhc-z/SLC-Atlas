@@ -43,6 +43,7 @@ TRACK_SCHEMA = {
     "minus_url": pl.Utf8,
     "bin": pl.Int64,
     "bytes": pl.Int64,
+    "reduction": pl.Int64,
     "chroms": pl.List(pl.Utf8),
 }
 
@@ -69,6 +70,7 @@ SOURCES_SCHEMA = {
     "license_spdx": pl.Utf8,
     "url": pl.Utf8,
 }
+
 
 def read_tsv(path: Path) -> list[dict]:
     if not path.exists():
@@ -164,6 +166,24 @@ def variant_rows(variants: pl.DataFrame, sizes: dict[str, int]):
         yield bigbed.variant_row(*row)
 
 
+def _reduction(path: Path) -> int:
+    """Return the minimum safe summary resolution, or 0 when no summary is safe."""
+    from ..lib.bigwig import open_track, sound_reduction
+
+    try:
+        return sound_reduction(open_track(str(path)))
+    except Exception:
+        # Fall back to exact records when the summary pyramid cannot be verified
+        return 0
+
+
+def _shared_reduction(held: int | None, found: int) -> int:
+    """Return the minimum safe resolution shared by both lanes."""
+    if held is None:
+        return found
+    return 0 if 0 in (held, found) else max(held, found)
+
+
 def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
     """Combine coverage files into drawable tracks."""
     from ..fetch.slice_coverage import track_filename
@@ -192,6 +212,8 @@ def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
                 "minus_url": None,
                 "bin": int(row.get("bin") or 0),
                 "bytes": 0,
+                # None distinguishes an unchecked lane from a rejected summary pyramid
+                "reduction": None,
                 "chroms": [],
             },
         )
@@ -201,10 +223,15 @@ def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
         track["stranded"] = track["stranded"] or bool(strand)
         track["local"] = track["local"] and present
         track["chroms"] = sorted(set(track["chroms"]) | set(row.get("chroms", "").split(",")))
+        # Remote tracks use exact records because this build phase performs no network access
+        found = _reduction(coverage_dir / name) if present else 0
+        track["reduction"] = _shared_reduction(track["reduction"], found)
         if present:
             track["bytes"] += (coverage_dir / name).stat().st_size
 
     drawable = [t for t in tracks.values() if _reachable(t)]
+    for track in drawable:
+        track["reduction"] = track["reduction"] or 0
     return pl.DataFrame(drawable, schema=TRACK_SCHEMA).sort("group", "label")
 
 
@@ -216,7 +243,6 @@ def _reachable(track: dict) -> bool:
         else (("file", "url"),)
     )
     return all(track[name] or track[url] for name, url in lanes)
-
 
 
 def source_frame(source_dir: Path, coverage: list[dict], studies: list[dict]) -> pl.DataFrame:
@@ -241,7 +267,9 @@ def source_frame(source_dir: Path, coverage: list[dict], studies: list[dict]) ->
         }
         for study in studies
     ]
-    return pl.DataFrame(rows, schema=SOURCES_SCHEMA) if rows else pl.DataFrame(schema=SOURCES_SCHEMA)
+    return (
+        pl.DataFrame(rows, schema=SOURCES_SCHEMA) if rows else pl.DataFrame(schema=SOURCES_SCHEMA)
+    )
 
 
 def study_frame(studies: list[dict]) -> pl.DataFrame:
@@ -259,4 +287,3 @@ def study_frame(studies: list[dict]) -> pl.DataFrame:
         for s in studies
     ]
     return pl.DataFrame(rows, schema=STUDY_SCHEMA)
-

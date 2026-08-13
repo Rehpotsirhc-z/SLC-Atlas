@@ -12,7 +12,7 @@ import { frameScale } from "./scale"
 import type { LaneData } from "./useCoverageData"
 import { useLaneCanvas } from "./useLaneCanvas"
 import { useHoverFrame } from "./useHoverFrame"
-import type { LaneWatch } from "./useLaneVisibility"
+import type { LaneVisibility, LaneWatch } from "./useLaneVisibility"
 import type { Painter } from "./useBrowserView"
 import type { Viewport } from "./scale"
 
@@ -28,7 +28,7 @@ interface Props {
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
   moving: () => boolean
-  watch?: LaneWatch
+  watch?: LaneVisibility["watch"]
 }
 
 interface Hovered {
@@ -122,7 +122,12 @@ function TrackLane({
     [buffers, data, height, ink, grid, yMax, moving],
   )
 
-  const canvasRef = useLaneCanvas(subscribe, liveView, width, height, paint, watch)
+  const watchThis = useMemo<LaneWatch | undefined>(
+    () => (watch ? (el, onVisible) => watch(el, track.track_id, onVisible) : undefined),
+    [watch, track.track_id],
+  )
+
+  const canvasRef = useLaneCanvas(subscribe, liveView, width, height, paint, watchThis)
   const plotRef = useRef<HTMLDivElement>(null)
 
   const read = useCallback(

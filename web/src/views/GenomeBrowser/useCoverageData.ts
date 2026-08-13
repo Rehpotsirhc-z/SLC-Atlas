@@ -3,36 +3,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Coverage for whatever is on screen, read straight out of the bigWigs by byte range.
+ * Read visible coverage from bigWigs in reusable blocks.
  *
- * A slice holds every window the family has on that chromosome, not just the gene that was
- * searched for, so the view is free to travel the whole chromosome and will find the other
- * loci when it passes over them. Reads are taken a block at a time rather than a screen at a
- * time, and a block is held for as long as the view sits inside it: records come back at their
- * stored resolution whatever the block spans, so bytes already held answer a zoom or a pan
- * exactly as a fresh read would, and re-keying every lane would throw its data away to learn
- * nothing. Only a view that leaves the block asks for another.
- *
- * What a lane last read is kept for as long as it is on screen, and drawn until its successor
- * arrives. Bytes that have been asked for are not a reason to show nothing: the coordinates
- * are absolute, so held records land where they belong under a moved view, and the lane
- * sharpens when the read lands instead of blinking out and back.
- *
- * Records are always read at their stored resolution, never through the file's reduced views.
- * Those views were measured to report signal across stretches that hold none: reading
- * chr9:49-84 Mb of a sliced track returns nothing at all at full resolution and 13,673
- * summary records at a reduced one, every one carrying the same value with its minimum equal
- * to its maximum. Whatever produces them, drawing them invents coverage where a track has
- * none, which is the one mistake this view must not make. Full resolution is affordable here
- * precisely because a slice is sparse: a whole chromosome of one is a few tens of thousands
- * of records, since the pipeline kept only the windows around the family's genes.
+ * Blocks keep nearby pans in memory, while resolution remains part of each query key. Visible
+ * lanes are prioritized, and previous results remain on screen until replacements arrive. At
+ * wide views, tracks use only summary resolutions verified by the build pipeline.
  */
 
 import { useMemo, useRef } from "react"
 import { useQueries } from "@tanstack/react-query"
-import { EMPTY_COVERAGE, readCoverage, trackUrl, type CoverageArrays } from "@/api/bbi"
+import {
+  EMPTY_COVERAGE,
+  READ_OFFSCREEN,
+  READ_VISIBLE,
+  readCoverage,
+  trackUrl,
+  type CoverageArrays,
+} from "@/api/bbi"
 import type { CoverageTrack } from "@/types/browser"
-import { COVERAGE_BLOCK_MARGIN_MAX, COVERAGE_BLOCK_MIN } from "./constants"
+import { COVERAGE_BLOCK_MARGIN_MAX, COVERAGE_BLOCK_MIN, SUMMARY_MAX_COLUMNS } from "./constants"
 import type { Viewport } from "./scale"
 
 export interface LaneData {
@@ -64,12 +53,7 @@ export interface CoverageBlock {
   end: number
 }
 
-/**
- * The stretch a lane is read in: the view, plus a screen and a half either side while that is
- * affordable and a fixed margin past the point where it is not, rounded up to a power of two no
- * smaller than the floor and snapped to a quarter of itself so the same locus asks for the same
- * bytes twice.
- */
+/** Return a stable read block containing the view and a bounded pan margin. */
 export function coverageBlock(view: Viewport, chromSize: number): CoverageBlock {
   const span = Math.max(view.end - view.start, 1)
   const margin = Math.min(span * 1.5, COVERAGE_BLOCK_MARGIN_MAX)
@@ -87,11 +71,7 @@ export function coverageBlock(view: Viewport, chromSize: number): CoverageBlock 
   return { start, end: Math.round(start + size) }
 }
 
-/**
- * The block every lane is read in, kept for as long as the view sits inside its bytes. The block
- * decides how much is held, never at what resolution, so a view the held bytes already cover has
- * nothing to gain from a block of its own.
- */
+/** Keep the current block until the view moves outside it. */
 export function useCoverageBlock(
   view: Viewport,
   chrom: string | undefined,
@@ -117,31 +97,61 @@ interface Request {
   trackId: string
   strand: "plus" | "minus" | null
   url: string
+  /** Bases a summary record should stand for, or 0 to read every stored record */
+  step: number
+}
+
+/** Return a stable power-of-two summary resolution no coarser than one screen column. */
+export function summaryStep(view: Viewport, width: number): number {
+  const perColumn = (view.end - view.start) / Math.max(width, 1)
+  return 2 ** Math.floor(Math.log2(Math.max(perColumn, 1)))
 }
 
 export function useCoverageData(
   tracks: CoverageTrack[],
   chrom: string | undefined,
   block: CoverageBlock | null,
+  isVisible: (trackId: string) => boolean,
+  step: number,
 ) {
   const requests = useMemo<Request[]>(() => {
     if (!chrom) return []
     const out: Request[] = []
     for (const track of tracks) {
       if (track.chroms.length > 0 && !track.chroms.includes(chrom)) continue
+      // Never finer than the width the build vouched for, so the reader cannot answer from a level
+      // it was not checked at, and never so much coarser that the lane turns into steps
+      const floor = track.reduction
+      const summary = floor > 0 && floor <= step * SUMMARY_MAX_COLUMNS ? Math.max(step, floor) : 0
       for (const strand of track.stranded ? (["plus", "minus"] as const) : [null]) {
         const url = trackUrl(track, strand)
-        if (url) out.push({ trackId: track.track_id, strand, url })
+        if (url) out.push({ trackId: track.track_id, strand, url, step: summary })
       }
     }
     return out
-  }, [tracks, chrom])
+  }, [tracks, chrom, step])
 
   const results = useQueries({
     queries: requests.map((request) => ({
-      queryKey: ["browser", "coverage", request.url, chrom, block?.start ?? 0, block?.end ?? 0],
+      queryKey: [
+        "browser",
+        "coverage",
+        request.url,
+        chrom,
+        block?.start ?? 0,
+        block?.end ?? 0,
+        request.step,
+      ],
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        readCoverage(request.url, chrom as string, block!.start, block!.end, signal),
+        readCoverage({
+          url: request.url,
+          chrom: chrom as string,
+          start: block!.start,
+          end: block!.end,
+          signal,
+          priority: () => (isVisible(request.trackId) ? READ_VISIBLE : READ_OFFSCREEN),
+          basesPerSpan: request.step || undefined,
+        }),
       enabled: chrom != null && block != null && block.end > block.start,
       staleTime: Infinity,
       gcTime: 5 * 60 * 1000,

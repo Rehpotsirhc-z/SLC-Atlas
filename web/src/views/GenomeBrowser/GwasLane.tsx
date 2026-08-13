@@ -5,13 +5,13 @@
 import { memo, useCallback, useMemo, useRef } from "react"
 import { Box, Typography, useTheme } from "@mui/material"
 import type { GwasPoint, GwasStudy } from "@/types/browser"
-import { EDGE_PAD, GWAS_LANE_HEIGHT, GWAS_OVERVIEW_BIN, LANE_GAP } from "./constants"
+import { EDGE_PAD, GWAS_LANE_HEIGHT, GWAS_LANE_KEY, GWAS_OVERVIEW_BIN, LANE_GAP } from "./constants"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
 import { drawGwas, gwasCeiling, gwasNear, type GwasInk } from "./drawGwas"
 import { frameScale, type Scale, type Viewport } from "./scale"
 import { useHoverFrame } from "./useHoverFrame"
 import { useLaneCanvas } from "./useLaneCanvas"
-import type { LaneWatch } from "./useLaneVisibility"
+import type { LaneVisibility, LaneWatch } from "./useLaneVisibility"
 import type { Painter } from "./useBrowserView"
 
 interface Props {
@@ -28,7 +28,7 @@ interface Props {
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
   moving: () => boolean
-  watch?: LaneWatch
+  watch?: LaneVisibility["watch"]
 }
 
 interface Hovered {
@@ -101,7 +101,12 @@ function GwasLane({
     [points, ink, grid, showSignificance, moving],
   )
 
-  const canvasRef = useLaneCanvas(subscribe, liveView, width, GWAS_LANE_HEIGHT, paint, watch)
+  const watchThis = useMemo<LaneWatch | undefined>(
+    () => (watch ? (el, onVisible) => watch(el, GWAS_LANE_KEY, onVisible) : undefined),
+    [watch],
+  )
+
+  const canvasRef = useLaneCanvas(subscribe, liveView, width, GWAS_LANE_HEIGHT, paint, watchThis)
 
   const read = useCallback(
     (clientX: number, clientY: number): Hovered | null => {
@@ -159,7 +164,7 @@ function GwasLane({
             component="span"
             sx={{ fontSize: 11, color: "text.disabled", lineHeight: 1.2 }}
           >
-            {`summary: significant + strongest per ${GWAS_OVERVIEW_BIN / 1000} kb`}
+            {`Summary: significant variants and strongest per ${GWAS_OVERVIEW_BIN / 1000} kb`}
           </Typography>
         )}
       </Box>

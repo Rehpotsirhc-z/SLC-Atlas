@@ -69,6 +69,70 @@ let worker: Worker | null = null
 const waiting = new Map<number, Waiting>()
 let nextId = 0
 
+/** Where a read sits in the queue: what the eye is on, then the rest of the stack, then warming */
+export const READ_VISIBLE = 0
+export const READ_OFFSCREEN = 1
+export const READ_WARM = 2
+
+/**
+ * How many reads may be in flight at once. A read is a chain of range requests that can only go one
+ * after another, the header naming where the index is and the index naming where the data is, and
+ * an origin answers six connections at a time, so two dozen lanes asking together leaves a lane's
+ * second request queued behind everyone else's first. Held to a few, the lanes on screen finish in
+ * the time the whole stack used to take, and the rest follow while nobody is looking at them.
+ */
+const MAX_READS = 8
+
+/** A read that has not been sent yet, and how much it is wanted */
+interface Queued {
+  priority: () => number
+  send: () => void
+}
+
+const queue: Queued[] = []
+let running = 0
+let pumping = false
+
+/**
+ * A block is asked for by every lane at once, so the queue is left to fill before any of it is sent:
+ * sending on arrival would spend the free slots on whichever lane React reached first, which is the
+ * top of the stack rather than the part of it being looked at.
+ */
+function schedulePump(): void {
+  if (pumping) return
+  pumping = true
+  queueMicrotask(() => {
+    pumping = false
+    pump()
+  })
+}
+
+/**
+ * Send what the free slots can take, most wanted first. Priority is asked for at the moment a slot
+ * frees rather than when the read was made, so a lane scrolled into view is served as one.
+ */
+function pump(): void {
+  while (running < MAX_READS && queue.length > 0) {
+    let pick = 0
+    for (let i = 1; i < queue.length; i++) {
+      if (queue[i].priority() < queue[pick].priority()) pick = i
+    }
+    const [job] = queue.splice(pick, 1)
+    running += 1
+    job.send()
+  }
+}
+
+function finished(): void {
+  running -= 1
+  pump()
+}
+
+/** Files whose header and index have been asked for, so warming never repeats a read */
+const opened = new Set<string>()
+
+const offscreen = () => READ_OFFSCREEN
+
 /** Reject pending reads and recreate a worker that fails unexpectedly. */
 function abandon(dead: Worker, reason: string): void {
   // Ignore late errors from a worker that has already been replaced
@@ -111,55 +175,79 @@ function reader(): Worker {
   return started
 }
 
-function ask<T>(
-  kind: "coverage" | "features",
-  url: string,
-  chrom: string,
-  start: number,
-  end: number,
-  signal: AbortSignal | undefined,
-): Promise<T> {
+export interface Read {
+  url: string
+  chrom: string
+  start: number
+  end: number
+  signal?: AbortSignal
+  /** How badly this read is wanted, asked for again each time a slot frees */
+  priority?: () => number
+  /** Set to read the file's own summaries at this many bases a column instead of every record */
+  basesPerSpan?: number
+}
+
+function ask<T>(kind: "coverage" | "features", read: Read): Promise<T> {
+  const { url, chrom, start, end, signal, basesPerSpan } = read
+  const priority = read.priority ?? offscreen
   const id = nextId++
+  opened.add(url)
   return new Promise<T>((resolve, reject) => {
     // Abort events do not fire retroactively
     if (signal?.aborted) {
       reject(new DOMException("aborted", "AbortError"))
       return
     }
+    // Held while the read waits its turn, and dropped once it has been sent
+    let job: Queued | null = null
     // Drop stale results without terminating a useful in-flight read
     const drop = () => {
-      waiting.delete(id)
+      const at = job ? queue.indexOf(job) : -1
+      if (at >= 0) queue.splice(at, 1)
+      else if (waiting.delete(id)) finished()
       reject(new DOMException("aborted", "AbortError"))
     }
     signal?.addEventListener("abort", drop, { once: true })
     const settled = () => signal?.removeEventListener("abort", drop)
-    waiting.set(id, {
-      resolve: (answer) => {
-        settled()
-        resolve(answer as T)
+    job = {
+      priority,
+      send: () => {
+        job = null
+        waiting.set(id, {
+          resolve: (answer) => {
+            settled()
+            finished()
+            resolve(answer as T)
+          },
+          reject: (error) => {
+            settled()
+            finished()
+            reject(error)
+          },
+        })
+        reader().postMessage({ id, kind, url, chrom, start, end, basesPerSpan })
       },
-      reject: (error) => {
-        settled()
-        reject(error)
-      },
-    })
-    reader().postMessage({ id, kind, url, chrom, start, end })
+    }
+    queue.push(job)
+    schedulePump()
   })
 }
 
-export const readCoverage = (
-  url: string,
-  chrom: string,
-  start: number,
-  end: number,
-  signal: AbortSignal | undefined,
-): Promise<CoverageArrays> => ask("coverage", url, chrom, start, end, signal)
+export const readCoverage = (read: Read): Promise<CoverageArrays> => ask("coverage", read)
 
 /** The features of one bigBed over a stretch, whatever kind of thing they turn out to be. */
-export const readFeatures = (
-  url: string,
-  chrom: string,
-  start: number,
-  end: number,
-  signal: AbortSignal | undefined,
-): Promise<RawFeature[]> => ask("features", url, chrom, start, end, signal)
+export const readFeatures = (read: Read): Promise<RawFeature[]> => ask("features", read)
+
+/**
+ * Open a file before a locus is asked of it. Four of the five range requests a first read makes are
+ * spent finding out where the data is rather than reading any, and that walk is the same wherever
+ * the view lands, so it is worth making while the view is still deciding. One base at the start of a
+ * chromosome pulls the header, the chromosome list and the root of the index, and no data block.
+ */
+function warm(kind: "coverage" | "features", url: string, chrom: string): void {
+  if (opened.has(url)) return
+  ask(kind, { url, chrom, start: 0, end: 1, priority: () => READ_WARM }).catch(() => {})
+}
+
+export const warmCoverage = (url: string, chrom: string) => warm("coverage", url, chrom)
+export const warmFeatures = (url: string, chrom: string) => warm("features", url, chrom)

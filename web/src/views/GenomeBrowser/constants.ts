@@ -16,6 +16,8 @@ export const LANE_HEIGHT_MIN = 32
 export const LANE_HEIGHT_MAX = 160
 
 export const GWAS_LANE_HEIGHT = 112
+// What the GWAS lane is called in the visibility registry, the one lane whose name is not a track id
+export const GWAS_LANE_KEY = "gwas"
 export const GWAS_POINT_R = 2.5
 // The conventional genome-wide significance threshold
 export const GWAS_SIGNIFICANCE_P = 5e-8
@@ -79,6 +81,12 @@ export const COVERAGE_BLOCK_MIN = 1 << 20
 export const COVERAGE_BLOCK_MARGIN_MAX = 1 << 24
 // Records a column may be drawn from before the lane is read at a coarser stride
 export const COVERAGE_RECORDS_PER_PX = 4
+
+// How many columns one summary record may stand for before the lane goes back to reading records.
+// A track's summaries start at whatever the file's coarsest author chose, so the choice at a given
+// zoom is not summaries or detail, it is a profile a few columns blockier than the screen or the
+// tens of thousands of records that would be drawn into those same columns anyway
+export const SUMMARY_MAX_COLUMNS = 4
 
 // A lane is painted this far outside the frame. A lane scrolled back in repaints itself where
 // the view got to, so this is only cover for the frame that reveal lands on

@@ -13,6 +13,8 @@ interface ReadRequest {
   chrom: string
   start: number
   end: number
+  /** Set to read the file's own summaries at this many bases a column instead of every record */
+  basesPerSpan?: number
 }
 
 interface CoverageArrays {
@@ -25,10 +27,17 @@ interface BigWigFeature {
   start: number
   end: number
   score?: number
+  /** A summary record carries the peak of everything it stands for */
+  maxScore?: number
 }
 
 interface BigWigReader {
-  getFeatures(chrom: string, start: number, end: number): Promise<BigWigFeature[]>
+  getFeatures(
+    chrom: string,
+    start: number,
+    end: number,
+    opts?: { basesPerSpan: number },
+  ): Promise<BigWigFeature[]>
   getFeaturesAsArrays?(chrom: string, start: number, end: number): Promise<CoverageArrays>
 }
 
@@ -69,16 +78,21 @@ function toArrays(features: BigWigFeature[]): CoverageArrays {
   for (let i = 0; i < features.length; i++) {
     starts[i] = features[i].start
     ends[i] = features[i].end
-    scores[i] = features[i].score ?? 0
+    // A summary stands in for a stretch, and what a lane draws of a stretch is its peak
+    scores[i] = features[i].maxScore ?? features[i].score ?? 0
   }
   return { starts, ends, scores }
 }
 
-// Records are always read at their stored resolution, never through the file's reduced views,
-// which report signal across stretches a track holds none of
+// A view wider than the build vouched for is drawn from the file's own summaries: a few hundred
+// records where the stored ones run to millions. The array reader has no summary path of its own,
+// and at that many records it does not need one
 async function readCoverage(request: ReadRequest): Promise<CoverageArrays> {
   const reader = open(request.url, "coverage") as BigWigReader
-  const { chrom, start, end } = request
+  const { chrom, start, end, basesPerSpan } = request
+  if (basesPerSpan) {
+    return toArrays(await reader.getFeatures(chrom, start, end, { basesPerSpan }))
+  }
   if (reader.getFeaturesAsArrays) {
     const got = await reader.getFeaturesAsArrays(chrom, start, end)
     // The three come back as views into one buffer the reader owns and may reuse, which can be
