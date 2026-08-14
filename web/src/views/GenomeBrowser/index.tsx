@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useMemo, useRef } from "react"
-import { Box, Divider, Paper, Typography, useMediaQuery, useTheme } from "@mui/material"
+import { Box, Divider, Paper, Popper, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { EMPTY_COVERAGE } from "@/api/bbi"
 import { useCapability } from "@/api/hooks/useCapabilities"
 import ViewHeader from "@/components/view/ViewHeader"
@@ -20,13 +20,22 @@ import LocusHeading, { locusText } from "./LocusHeading"
 import Ruler from "./Ruler"
 import TrackLane from "./TrackLane"
 import { buildBrowserFigureSvg, type FigureLane } from "./browserFigureSvg"
-import { EDGE_PAD, GUTTER_W, GUTTER_W_SM, MAX_GENE_ROWS, RULER_H } from "./constants"
+import {
+  EDGE_PAD,
+  GENE_TRACK_MAX_SHARE,
+  GENE_TRACK_MIN_H,
+  GUTTER_W,
+  GUTTER_W_SM,
+  MAX_GENE_ROWS,
+} from "./constants"
 import { collapseToGenes, layoutGenes, layoutTranscripts } from "./geneLayout"
 import type { LaneData } from "./useCoverageData"
 import { useGenomeBrowserState } from "./useGenomeBrowserState"
 import { usePanGestures } from "./usePanGestures"
+import { useSpaceBelow } from "./useSpaceBelow"
 
-const SETTINGS_SX = { top: 8, right: 8, zIndex: 6 } as const
+// Leave half a gutter between the settings button and its panel
+const SETTINGS_GAP = EDGE_PAD / 2
 
 // Keep the loading placeholder stable across renders
 const UNREAD: LaneData = {
@@ -41,17 +50,24 @@ export default function GenomeBrowser() {
   const available = useCapability("browser")
   const { palette } = useTheme()
   const isSmall = useMediaQuery(useTheme().breakpoints.down("sm"))
+  // Measure lane widths from the scroller and gestures from the full plot
   const [frameRef, { w: frameWidth }] = useElementSize<HTMLDivElement>()
+  // Measure the shared plot area independently of its children
+  const [plotAreaRef, { h: plotAreaHeight }] = useElementSize<HTMLDivElement>()
+  const plotRef = useRef<HTMLDivElement>(null)
   const selectionRef = useRef<HTMLDivElement>(null)
   const settingsRef = useRef<HTMLButtonElement>(null)
+  // Keep the settings panel within the browser card
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const gutter = isSmall ? GUTTER_W_SM : GUTTER_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
+  const geneTrackMax = Math.max(GENE_TRACK_MIN_H, plotAreaHeight * GENE_TRACK_MAX_SHARE)
   const state = useGenomeBrowserState(frameRef, plotWidth)
 
   const gestures = usePanGestures({
     view: state.view,
-    plotRef: frameRef,
+    plotRef,
     selectionRef,
     width: plotWidth,
     gutter,
@@ -107,6 +123,18 @@ export default function GenomeBrowser() {
 
   const { exportSvg, exportPng } = useMemo(() => figureExportHandlers(buildFigure), [buildFigure])
 
+  // Fit the settings panel into the space below its button
+  const settingsRoom = useSpaceBelow(
+    settingsRef,
+    cardRef,
+    EDGE_PAD + SETTINGS_GAP,
+    state.settingsOpen,
+  )
+  const settingsSx = useMemo(
+    () => ({ position: "static", mt: `${SETTINGS_GAP}px`, maxHeight: settingsRoom || undefined }),
+    [settingsRoom],
+  )
+
   const exportItems = useMemo(
     () => [
       { label: "Genome browser SVG", onClick: () => exportSvg(downloadName("genome_browser.svg")) },
@@ -133,6 +161,7 @@ export default function GenomeBrowser() {
         subtitle="Coverage tracks, trait associations, and gene models on one genomic axis"
       />
       <Paper
+        ref={cardRef}
         variant="outlined"
         sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
       >
@@ -160,13 +189,12 @@ export default function GenomeBrowser() {
           >
             {state.region ? (
               <Box
-                ref={frameRef}
+                ref={plotRef}
                 tabIndex={0}
                 sx={{
                   height: "100%",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
                   outline: "none",
                   cursor: "grab",
                   // A pan is not a text selection, and on touch it is not the browser's to claim
@@ -176,14 +204,7 @@ export default function GenomeBrowser() {
                 }}
                 {...gestures}
               >
-                <Box
-                  sx={{
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 3,
-                    bgcolor: "background.paper",
-                  }}
-                >
+                <Box sx={{ flexShrink: 0, bgcolor: "background.paper" }}>
                   <LocusHeading
                     chrom={state.region.chrom}
                     symbol={state.region.symbol}
@@ -197,107 +218,123 @@ export default function GenomeBrowser() {
                   />
                 </Box>
 
-                {state.groups.map((group) => (
-                  <Box key={group.name} sx={{ mt: 1 }}>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.7,
-                        color: "primary.main",
-                        pl: `${EDGE_PAD}px`,
-                        pb: 0.5,
-                      }}
-                    >
-                      {group.name}
-                    </Typography>
-                    {group.members.map((track) => (
-                      <TrackLane
-                        key={track.track_id}
-                        track={track}
-                        data={state.coverage.get(track.track_id) ?? UNREAD}
-                        color={state.colors.get(track.label) ?? palette.primary.main}
-                        height={state.prefs.laneHeight}
-                        width={plotWidth}
-                        gutter={gutter}
-                        grid={state.prefs.showGrid}
-                        yMax={state.yMaxFor()}
-                        subscribe={state.view.subscribe}
-                        liveView={state.view.liveView}
-                        moving={state.view.moving}
-                        watch={state.watchLane}
-                      />
-                    ))}
-                  </Box>
-                ))}
-
-                {state.prefs.showGwas && state.study && (
-                  <Box sx={{ mt: 1 }}>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.7,
-                        color: "primary.main",
-                        pl: `${EDGE_PAD}px`,
-                        pb: 0.5,
-                      }}
-                    >
-                      GWAS
-                    </Typography>
-                    <GwasLane
-                      study={state.study}
-                      points={state.gwasPoints}
-                      covered={state.studyCovers}
-                      thinned={state.gwasThinned}
-                      loading={state.gwasLoading}
-                      width={plotWidth}
-                      gutter={gutter}
-                      grid={state.prefs.showGrid}
-                      showSignificance={state.prefs.showSignificance}
-                      subscribe={state.view.subscribe}
-                      liveView={state.view.liveView}
-                      moving={state.view.moving}
-                      watch={state.watchLane}
-                    />
-                  </Box>
-                )}
-
                 <Box
+                  ref={plotAreaRef}
                   sx={{
-                    position: "sticky",
-                    bottom: 0,
-                    zIndex: 3,
-                    bgcolor: "background.paper",
-                    mt: 1,
+                    position: "relative",
+                    flex: 1,
+                    minHeight: 0,
+                    display: "flex",
+                    flexDirection: "column",
                   }}
                 >
-                  <GeneTrack
-                    transcripts={state.models.transcripts}
-                    mode={state.drawn}
-                    gap={state.modelGap}
-                    empty={state.models.empty}
-                    width={plotWidth}
-                    gutter={gutter}
-                    view={state.view.view}
-                    subscribe={state.view.subscribe}
-                    liveView={state.view.liveView}
+                  <Box
+                    ref={frameRef}
+                    sx={{
+                      flex: 1,
+                      minHeight: 0,
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      // Reserve scrollbar space so lanes and gene rows stay aligned
+                      scrollbarGutter: "stable",
+                    }}
+                  >
+                    {state.groups.map((group) => (
+                      <Box key={group.name} sx={{ mt: 1 }}>
+                        <Typography
+                          sx={{
+                            fontSize: 12,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.7,
+                            color: "primary.main",
+                            pl: `${EDGE_PAD}px`,
+                            pb: 0.5,
+                          }}
+                        >
+                          {group.name}
+                        </Typography>
+                        {group.members.map((track) => (
+                          <TrackLane
+                            key={track.track_id}
+                            track={track}
+                            data={state.coverage.get(track.track_id) ?? UNREAD}
+                            color={state.colors.get(track.label) ?? palette.primary.main}
+                            height={state.prefs.laneHeight}
+                            width={plotWidth}
+                            gutter={gutter}
+                            grid={state.prefs.showGrid}
+                            yMax={state.yMaxFor()}
+                            subscribe={state.view.subscribe}
+                            liveView={state.view.liveView}
+                            moving={state.view.moving}
+                            watch={state.watchLane}
+                          />
+                        ))}
+                      </Box>
+                    ))}
+
+                    {state.prefs.showGwas && state.study && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography
+                          sx={{
+                            fontSize: 12,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.7,
+                            color: "primary.main",
+                            pl: `${EDGE_PAD}px`,
+                            pb: 0.5,
+                          }}
+                        >
+                          GWAS
+                        </Typography>
+                        <GwasLane
+                          study={state.study}
+                          points={state.gwasPoints}
+                          covered={state.studyCovers}
+                          thinned={state.gwasThinned}
+                          loading={state.gwasLoading}
+                          width={plotWidth}
+                          gutter={gutter}
+                          grid={state.prefs.showGrid}
+                          showSignificance={state.prefs.showSignificance}
+                          subscribe={state.view.subscribe}
+                          liveView={state.view.liveView}
+                          moving={state.view.moving}
+                          watch={state.watchLane}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+
+                  <Box sx={{ flexShrink: 0, mt: 1, bgcolor: "background.paper" }}>
+                    <GeneTrack
+                      transcripts={state.models.transcripts}
+                      mode={state.drawn}
+                      gap={state.modelGap}
+                      empty={state.models.empty}
+                      width={plotWidth}
+                      gutter={gutter}
+                      maxHeight={geneTrackMax}
+                      view={state.view.view}
+                      subscribe={state.view.subscribe}
+                      liveView={state.view.liveView}
+                    />
+                  </Box>
+
+                  <Box
+                    ref={selectionRef}
+                    sx={{
+                      display: "none",
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      bgcolor: "secondary.main",
+                      opacity: 0.18,
+                      pointerEvents: "none",
+                      zIndex: 4,
+                    }}
                   />
                 </Box>
-
-                <Box
-                  ref={selectionRef}
-                  sx={{
-                    display: "none",
-                    position: "absolute",
-                    top: RULER_H,
-                    bottom: 0,
-                    bgcolor: "secondary.main",
-                    opacity: 0.18,
-                    pointerEvents: "none",
-                    zIndex: 4,
-                  }}
-                />
               </Box>
             ) : (
               <Box
@@ -321,14 +358,29 @@ export default function GenomeBrowser() {
             )}
 
             {state.settingsOpen && (
-              <BrowserSettings
-                prefs={state.prefs}
-                onChange={state.updatePrefs}
-                onClose={state.closeSettings}
-                anchorRef={settingsRef}
-                tracks={state.allTracks}
-                sx={SETTINGS_SX}
-              />
+              <Popper
+                open
+                anchorEl={settingsRef.current}
+                placement="bottom-start"
+                modifiers={[
+                  // Keep the panel below its button and shift it inside the card when space is tight
+                  { name: "flip", enabled: false },
+                  {
+                    name: "preventOverflow",
+                    options: { boundary: cardRef.current, padding: EDGE_PAD },
+                  },
+                ]}
+                sx={{ zIndex: (theme) => theme.zIndex.modal }}
+              >
+                <BrowserSettings
+                  prefs={state.prefs}
+                  onChange={state.updatePrefs}
+                  onClose={state.closeSettings}
+                  anchorRef={settingsRef}
+                  tracks={state.allTracks}
+                  sx={settingsSx}
+                />
+              </Popper>
             )}
           </ViewStatus>
         </Box>

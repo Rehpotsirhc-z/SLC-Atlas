@@ -38,6 +38,8 @@ interface Props {
   empty: boolean
   width: number
   gutter: number
+  // Maximum height available to the gene track
+  maxHeight: number
   // Visible region used to size the track
   view: Viewport
   subscribe: (paint: Painter) => () => void
@@ -64,6 +66,7 @@ function GeneTrack({
   empty,
   width,
   gutter,
+  maxHeight,
   view,
   subscribe,
   liveView,
@@ -84,7 +87,7 @@ function GeneTrack({
   // The canvas is as tall as the models need; the lane it sits in is capped and scrolls, so a
   // gene with more transcripts than fit is still all there rather than drawn past the edge
   const contentHeight = Math.max(GENE_TRACK_MIN_H, rows * GENE_ROW_H + GENE_TRACK_PAD * 2)
-  const laneHeight = Math.min(GENE_TRACK_MAX_H, contentHeight)
+  const laneHeight = Math.min(GENE_TRACK_MAX_H, maxHeight, contentHeight)
 
   const ink = useMemo<GeneInk>(
     () => ({
@@ -144,7 +147,6 @@ function GeneTrack({
         alignItems: "stretch",
         borderTop: 1,
         borderColor: "divider",
-        pr: `${EDGE_PAD}px`,
         pb: 1,
       }}
     >
@@ -175,6 +177,11 @@ function GeneTrack({
           height: laneHeight,
           overflowY: "auto",
           overflowX: "hidden",
+          // Keep gene rows aligned with the lanes while placing the scrollbar at the frame edge
+          pr: `${EDGE_PAD}px`,
+          scrollbarGutter: "stable",
+          // Keep scrolling within the gene track
+          overscrollBehavior: "contain",
         }}
         onPointerMove={onPointerMove}
         onPointerLeave={clear}

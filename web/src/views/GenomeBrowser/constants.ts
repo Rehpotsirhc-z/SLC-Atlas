@@ -28,6 +28,8 @@ export const MODEL_GAP_PX = 48
 export const GENE_TRACK_PAD = 8
 export const GENE_TRACK_MIN_H = 74
 export const GENE_TRACK_MAX_H = 264
+// Limit how much of the plot the pinned gene track can occupy
+export const GENE_TRACK_MAX_SHARE = 0.45
 export const MAX_GENE_ROWS = 40
 // Room a label needs before it is worth drawing at all
 export const LABEL_MIN_PX = 38

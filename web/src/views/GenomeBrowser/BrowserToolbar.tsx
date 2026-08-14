@@ -111,7 +111,7 @@ export default function BrowserToolbar({
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title="Display settings">
+              <Tooltip title={settingsOpen ? "" : "Display settings"}>
                 <span>
                   <IconButton
                     ref={settingsRef}

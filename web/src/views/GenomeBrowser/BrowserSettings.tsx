@@ -82,7 +82,6 @@ function BrowserSettings({ prefs, onChange, onClose, anchorRef, tracks, sx }: Pr
         width: SETTINGS_W,
         p: 1.5,
         gap: 1,
-        maxHeight: "78%",
         overflow: "auto",
         ...glowFlashSx,
         ...sx,
