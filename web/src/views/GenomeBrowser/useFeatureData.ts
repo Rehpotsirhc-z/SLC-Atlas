@@ -18,7 +18,6 @@ const NO_POINTS: GwasPoint[] = []
 
 export interface GeneModels {
   transcripts: TranscriptModel[]
-  gap: number
   loading: boolean
   /** No models are available in the loaded block */
   empty: boolean
@@ -44,17 +43,8 @@ export function useGeneModels(chrom: string | undefined, block: CoverageBlock | 
 
   return useMemo(() => {
     const transcripts = query.data ?? NO_TRANSCRIPTS
-    let low = Infinity
-    let high = -Infinity
-    for (const model of transcripts) {
-      if (model.start < low) low = model.start
-      if (model.end > high) high = model.end
-    }
-    // Taken from what was loaded rather than from the view, so rows do not repack on zoom
-    const gap = transcripts.length ? Math.round((high - low) * 0.01) : 0
     return {
       transcripts,
-      gap,
       loading: query.isPending,
       empty: !query.isPending && transcripts.length === 0,
     }

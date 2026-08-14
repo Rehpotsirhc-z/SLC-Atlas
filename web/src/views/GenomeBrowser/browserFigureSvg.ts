@@ -22,7 +22,7 @@ import {
 import { columnPeaks } from "./drawCoverage"
 import { arrowHead } from "./drawGenes"
 import { gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
-import type { GeneSpan, TrackLayout } from "./geneLayout"
+import { rowsInView, type GeneSpan, type TrackLayout } from "./geneLayout"
 import { scaleFor, ticksFor, type Viewport } from "./scale"
 
 const MARGIN = 20
@@ -180,7 +180,7 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
 
   const track = input.transcripts ?? input.genes
   if (track) {
-    const height = Math.max(track.rows, 1) * GENE_ROW_H + GENE_TRACK_PAD * 2
+    const height = Math.max(rowsInView(track, input.view), 1) * GENE_ROW_H + GENE_TRACK_PAD * 2
     const marks: string[] = []
     const takenTo: number[] = []
     for (const { item, row } of track.items) {

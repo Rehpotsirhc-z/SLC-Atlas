@@ -2,9 +2,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Assign stable rows to gene and transcript models */
+// Arrange gene and transcript models into rows
 
 import type { TranscriptModel } from "@/types/browser"
+import { MODEL_GAP_PX } from "./constants"
+import type { Viewport } from "./scale"
+
+// Base the gap on the visible scale rather than the larger loaded block
+// Round the scale to powers of two so small zoom changes keep the same layout
+export function rowGap(view: Viewport, width: number): number {
+  const perPixel = (view.end - view.start) / Math.max(width, 1)
+  return 2 ** Math.floor(Math.log2(Math.max(perPixel, 1))) * MODEL_GAP_PX
+}
 
 export interface GeneSpan {
   gene_id: string
@@ -23,20 +32,16 @@ export interface Placed<T> {
 }
 
 export interface TrackLayout<T> {
-  rows: number
   items: Placed<T>[]
   hidden: number
 }
 
-interface Spanning {
+export interface Spanning {
   start: number
   end: number
 }
 
-/**
- * Greedy first-fit: the standard packing, and deterministic, unlike scattering rows at
- * random and rejecting collisions.
- */
+// Place each model in the first available row
 function pack<T extends Spanning>(items: T[], gap: number, maxRows: number): TrackLayout<T> {
   const ordered = [...items].sort((a, b) => a.start - b.start || a.end - b.end)
   const lastEnd: number[] = []
@@ -53,7 +58,7 @@ function pack<T extends Spanning>(items: T[], gap: number, maxRows: number): Tra
     lastEnd[row] = item.end
     placed.push({ item, row })
   }
-  return { rows: lastEnd.length, items: placed, hidden }
+  return { items: placed, hidden }
 }
 
 export function layoutTranscripts(
@@ -64,7 +69,7 @@ export function layoutTranscripts(
   return pack(transcripts, gap, maxRows)
 }
 
-/** One entry per gene, spanning every transcript it has, for the compact mode. */
+// Combine each gene's transcripts into one span for compact mode
 export function collapseToGenes(transcripts: TranscriptModel[]): GeneSpan[] {
   const byGene = new Map<string, GeneSpan>()
   for (const model of transcripts) {
@@ -99,7 +104,18 @@ export function layoutGenes(
   return pack(spans, gap, maxRows)
 }
 
-/** What sits under the cursor, given a row and a base. */
+// Count rows occupied by models that overlap the visible region
+export function rowsInView(layout: TrackLayout<Spanning>, view: Viewport): number {
+  let deepest = -1
+  for (const { item, row } of layout.items) {
+    if (item.start > view.end) break
+    if (item.end < view.start) continue
+    if (row > deepest) deepest = row
+  }
+  return deepest + 1
+}
+
+// Find the item under the cursor in the given row
 export function itemAt<T extends Spanning>(
   layout: TrackLayout<T>,
   row: number,

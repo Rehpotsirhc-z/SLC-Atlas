@@ -71,11 +71,11 @@ export default function GenomeBrowser() {
     })
     const transcripts =
       state.drawn === "transcripts"
-        ? layoutTranscripts(state.models.transcripts, state.models.gap, MAX_GENE_ROWS)
+        ? layoutTranscripts(state.models.transcripts, state.modelGap, MAX_GENE_ROWS)
         : null
     const genes =
       state.drawn === "genes"
-        ? layoutGenes(collapseToGenes(state.models.transcripts), state.models.gap, MAX_GENE_ROWS)
+        ? layoutGenes(collapseToGenes(state.models.transcripts), state.modelGap, MAX_GENE_ROWS)
         : null
     return buildBrowserFigureSvg({
       view: state.view.view,
@@ -273,10 +273,11 @@ export default function GenomeBrowser() {
                   <GeneTrack
                     transcripts={state.models.transcripts}
                     mode={state.drawn}
-                    gap={state.models.gap}
+                    gap={state.modelGap}
                     empty={state.models.empty}
                     width={plotWidth}
                     gutter={gutter}
+                    view={state.view.view}
                     subscribe={state.view.subscribe}
                     liveView={state.view.liveView}
                   />

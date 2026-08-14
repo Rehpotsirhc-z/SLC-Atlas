@@ -14,6 +14,7 @@ import type { GeneTrackMode } from "./GeneTrack"
 import { TRANSCRIPT_MAX_SPAN } from "./constants"
 import { chromNames } from "./chromNames"
 import { peakInView } from "./drawCoverage"
+import { rowGap } from "./geneLayout"
 import type { Viewport } from "./scale"
 import { trackColors } from "./trackColor"
 import { useBrowserView } from "./useBrowserView"
@@ -88,6 +89,8 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   const coverage = useCoverageData(tracks, region?.chrom, block, lanes.isVisible, step)
 
   const models = useGeneModels(region?.chrom, block)
+  // Keep row spacing stable while panning at the same zoom level
+  const modelGap = rowGap(view.view, plotWidth)
   // A view too wide to tell one exon from another draws gene bodies whatever the toolbar says,
   // since a chromosome carries tens of thousands of transcripts and none of them would read
   const drawn: GeneTrackMode =
@@ -181,6 +184,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     gwasLoading: gwas.loading,
     gwasThinned: gwas.thinned,
     models,
+    modelGap,
     allTracks,
     tracks,
     groups,

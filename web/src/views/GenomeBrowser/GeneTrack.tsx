@@ -21,6 +21,7 @@ import {
   itemAt,
   layoutGenes,
   layoutTranscripts,
+  rowsInView,
   type GeneSpan,
 } from "./geneLayout"
 import { frameScale, type Scale, type Viewport } from "./scale"
@@ -37,6 +38,8 @@ interface Props {
   empty: boolean
   width: number
   gutter: number
+  // Visible region used to size the track
+  view: Viewport
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
 }
@@ -54,7 +57,17 @@ interface Hovered {
 // The model is what the tooltip shows, so moving across one of them is nothing
 const sameHover = (a: Hovered | null, b: Hovered | null) => a?.item === b?.item
 
-function GeneTrack({ transcripts, mode, gap, empty, width, gutter, subscribe, liveView }: Props) {
+function GeneTrack({
+  transcripts,
+  mode,
+  gap,
+  empty,
+  width,
+  gutter,
+  view,
+  subscribe,
+  liveView,
+}: Props) {
   const { palette, custom } = useTheme()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -66,9 +79,11 @@ function GeneTrack({ transcripts, mode, gap, empty, width, gutter, subscribe, li
     [transcripts, mode, gap],
   )
 
+  // Size the track for visible models rather than every model in the loaded block
+  const rows = useMemo(() => rowsInView(layout, view), [layout, view])
   // The canvas is as tall as the models need; the lane it sits in is capped and scrolls, so a
   // gene with more transcripts than fit is still all there rather than drawn past the edge
-  const contentHeight = Math.max(GENE_TRACK_MIN_H, layout.rows * GENE_ROW_H + GENE_TRACK_PAD * 2)
+  const contentHeight = Math.max(GENE_TRACK_MIN_H, rows * GENE_ROW_H + GENE_TRACK_PAD * 2)
   const laneHeight = Math.min(GENE_TRACK_MAX_H, contentHeight)
 
   const ink = useMemo<GeneInk>(

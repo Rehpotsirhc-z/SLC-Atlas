@@ -23,6 +23,8 @@ export const GWAS_POINT_R = 2.5
 export const GWAS_SIGNIFICANCE_P = 5e-8
 
 export const GENE_ROW_H = 19
+// Leave enough room between models to display their labels
+export const MODEL_GAP_PX = 48
 export const GENE_TRACK_PAD = 8
 export const GENE_TRACK_MIN_H = 74
 export const GENE_TRACK_MAX_H = 264
