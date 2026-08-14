@@ -93,7 +93,7 @@ def _binned(reader, chrom: str, start: int, end: int, bin_size: int):
 def read(reader, spans: dict[str, list[tuple[int, int]]], bin_size: int):
     """Yield ``(chrom, start, end, value)`` over the spans, binned when asked.
 
-    Equal neighbouring bins are emitted as one interval, which is most of why a binned copy
+    Equal neighboring bins are emitted as one interval, which is most of why a binned copy
     is so much smaller than the intervals it was reduced from, and why a stretch a track
     holds nothing over costs a genome-wide copy almost nothing.
     """
@@ -150,7 +150,7 @@ def _span_agrees(reader, span: int, sizes: dict[str, int], ceiling: float) -> bo
     One-sided on purpose: a summary that reports less than the records hold is a lossy reading,
     which is what a summary is, while one that reports more is coverage that does not exist. The
     exact reading is dilated by a column either way first, because a summary record is aligned to
-    its own level rather than to the columns asked for and may carry a neighbour's peak into one.
+    its own level rather than to the columns asked for and may carry a neighbor's peak into one.
     """
     bins = max(REDUCTION_MIN_BINS, min(REDUCTION_BINS, REDUCTION_MAX_WINDOW // span))
     windows = _check_windows(sizes, (bins + 2) * span)

@@ -10,7 +10,7 @@ import { doomColors } from "@/theme"
 import TopologyWallGroup from "./TopologyWallGroup"
 import TopologyWallHeader from "./TopologyWallHeader"
 import type { WallInk } from "./TopologyGlyph"
-import { summariseWall, type Wall, type WallGene } from "./topologyWall"
+import { summarizeWall, type Wall, type WallGene } from "./topologyWall"
 
 interface Props {
   wall: Wall
@@ -57,7 +57,7 @@ export default function TopologyWall({ wall, familyFilter, hidden, onSelectGene 
     [wall],
   )
 
-  const summary = useMemo(() => summariseWall(wall, familyFilter), [wall, familyFilter])
+  const summary = useMemo(() => summarizeWall(wall, familyFilter), [wall, familyFilter])
 
   const handleMove = useCallback(
     (e: MouseEvent) => {

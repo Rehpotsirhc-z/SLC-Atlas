@@ -39,7 +39,7 @@ interface Hovered {
   y: number
 }
 
-// Compared on what the tooltip says rather than on where the pointer is, so travelling along a
+// Compared on what the tooltip says rather than on where the pointer is, so traveling along a
 // stretch the track reads the same across costs no renders at all
 const sameHover = (a: Hovered | null, b: Hovered | null) =>
   a?.base === b?.base && a?.plus === b?.plus && a?.minus === b?.minus
@@ -82,7 +82,7 @@ function TrackLane({
     () => ({
       plus: color,
       // The minus strand reads as the same track seen the other way, so it keeps the hue
-      // and gives up some weight rather than taking a colour of its own
+      // and gives up some weight rather than taking a color of its own
       minus: palette.mode === "dark" ? `${color}99` : `${color}77`,
       axis: palette.divider,
       grid: palette.action.hover,

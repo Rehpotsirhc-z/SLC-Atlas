@@ -9,8 +9,8 @@ The structure view is optional. When there is no source/structure/ directory thi
 writes nothing and finishes without an error, and the API then tells the frontend that the
 structure view is not available.
 
-Each source is written to a file of its own so that the sources stay separate by licence,
-which lets anyone who redistributes the dataset leave one of them out without the licence
+Each source is written to a file of its own so that the sources stay separate by license,
+which lets anyone who redistributes the dataset leave one of them out without the license
 of the others being affected.
 """
 
@@ -364,7 +364,7 @@ def run(source_dir: Path, out_dir: Path) -> None:
     features = read_tsv(structure_source, "features.tsv", FEATURE_SCHEMA)
     report_missing(
         "feature_type value",
-        "in features.tsv that the figure does not recognise and will ignore",
+        "in features.tsv that the figure does not recognize and will ignore",
         sorted(set(features["feature_type"].drop_nulls()) - FEATURE_TYPES),
     )
     experimental = experimental_entries(

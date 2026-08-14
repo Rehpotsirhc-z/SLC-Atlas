@@ -204,7 +204,7 @@ const RegionsDiagram = memo(function RegionsDiagram({
         })}
 
         {layout.sites.map((site) => {
-          const colour = ligandColorAt(site.ligandIndex, palette.mode)
+          const color = ligandColorAt(site.ligandIndex, palette.mode)
           return (
             <g
               key={site.key}
@@ -220,7 +220,7 @@ const RegionsDiagram = memo(function RegionsDiagram({
                 y1={site.y}
                 x2={site.connectorTo}
                 y2={site.y}
-                stroke={colour}
+                stroke={color}
                 strokeWidth={1}
                 strokeDasharray="2 2"
               />
@@ -232,7 +232,7 @@ const RegionsDiagram = memo(function RegionsDiagram({
                   width={bar.width}
                   height={TRACK.siteBarHeight}
                   rx={1}
-                  fill={colour}
+                  fill={color}
                 />
               ))}
               <rect

@@ -7,7 +7,7 @@
 import type { Chrom } from "@/types/browser"
 
 /** Fold the spellings of one chromosome onto a single key. */
-export function normaliseChrom(name: string): string {
+export function normalizeChrom(name: string): string {
   const bare = name.trim().toLowerCase().replace(/^chr/, "")
   if (bare === "mt" || bare === "mito" || bare === "mtdna") return "m"
   return bare
@@ -23,11 +23,11 @@ export interface ChromNames {
 export function chromNames(chroms: Chrom[]): ChromNames {
   const byKey = new Map<string, Chrom>()
   for (const chrom of chroms) {
-    byKey.set(normaliseChrom(chrom.chrom), chrom)
-    byKey.set(normaliseChrom(chrom.ensembl), chrom)
+    byKey.set(normalizeChrom(chrom.chrom), chrom)
+    byKey.set(normalizeChrom(chrom.ensembl), chrom)
   }
   return {
-    track: (name) => byKey.get(normaliseChrom(name))?.chrom ?? null,
-    ensembl: (name) => byKey.get(normaliseChrom(name))?.ensembl ?? null,
+    track: (name) => byKey.get(normalizeChrom(name))?.chrom ?? null,
+    ensembl: (name) => byKey.get(normalizeChrom(name))?.ensembl ?? null,
   }
 }

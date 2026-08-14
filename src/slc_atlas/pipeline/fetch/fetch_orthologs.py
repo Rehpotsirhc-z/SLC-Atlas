@@ -48,6 +48,8 @@ def read_species(path: Path) -> list[str]:
 
 def fetch_gene(gene_id: str, species: list[str]) -> list[dict]:
     targets = "".join(f";target_species={s}" for s in species)
+    # Ensembl's own value for this parameter
+    # cspell:ignore orthologues
     url = (
         f"{REST}/homology/id/human/{gene_id}"
         f"?type=orthologues;format=full;aligned=0;sequence=none;compara=vertebrates"

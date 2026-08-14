@@ -8,7 +8,7 @@ A genome-wide study runs to hundreds of megabytes. Sliced to the windows around 
 genes that is a few percent of it; unsliced it is the study entire, which is worth keeping
 because the view can travel to any locus a study has a point at.
 
-A study named by its GWAS Catalog accession is downloaded in its harmonised form, whose
+A study named by its GWAS Catalog accession is downloaded in its harmonized form, whose
 columns are already named the same way for every study. A study given as a path is read
 where it lies, under whichever of the usual column names it happens to use.
 """
@@ -30,7 +30,7 @@ from ..lib.reporting import count, report_missing
 
 CATALOG = "https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics"
 ACCESSION = re.compile(r"^GCST\d+$")
-HARMONISED = re.compile(r'href="([^"]+\.h\.tsv\.gz)"')
+HARMONIZED = re.compile(r'href="([^"]+\.h\.tsv\.gz)"')
 
 # File suffixes accepted for local summary statistics
 READABLE = {".tsv", ".txt", ".csv", ".gz", ".parquet"}
@@ -79,15 +79,17 @@ def accession_range(accession: str) -> str:
 
 
 def catalog_url(accession: str) -> str:
+    # The Catalog spells its own directory this way
+    # cspell:ignore harmonised
     listing = f"{CATALOG}/{accession_range(accession)}/{accession}/harmonised/"
     try:
         html = urlopen(listing, timeout=120).read().decode("utf-8", "replace")
     except Exception as error:
-        raise SystemExit(f"GWAS Catalog has no harmonised statistics for {accession}: {error}")
-    names = sorted(set(HARMONISED.findall(html)))
+        raise SystemExit(f"GWAS Catalog has no harmonized statistics for {accession}: {error}")
+    names = sorted(set(HARMONIZED.findall(html)))
     if not names:
         raise SystemExit(
-            f"GWAS Catalog lists no harmonised file for {accession} at {listing}. "
+            f"GWAS Catalog lists no harmonized file for {accession} at {listing}. "
             f"Download the statistics yourself and give the path instead."
         )
     return listing + names[0]
@@ -218,8 +220,8 @@ def membership(spans: dict[str, list[tuple[int, int]]]):
 
 def speller(chroms_path: Path):
     """Map whatever a study calls a chromosome onto the spelling the browser stores."""
-    known = {chrom_names.normalise(c.name): c.name for c in chrom_names.read_chroms(chroms_path)}
-    return lambda name: known.get(chrom_names.normalise(name or ""))
+    known = {chrom_names.normalize(c.name): c.name for c in chrom_names.read_chroms(chroms_path)}
+    return lambda name: known.get(chrom_names.normalize(name or ""))
 
 
 def acquire(source: str, cache_dir: Path, study_id: str) -> tuple[Path, str]:

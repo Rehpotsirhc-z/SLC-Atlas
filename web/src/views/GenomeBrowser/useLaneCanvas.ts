@@ -77,7 +77,7 @@ export function useLaneCanvas(
     }
   }, [subscribe, watch, liveView, width, height, dpr])
 
-  // New data, new colours or a theme flip have to land without waiting for the next gesture,
+  // New data, new colors or a theme flip have to land without waiting for the next gesture,
   // and at the position the user is looking at rather than the one React last committed
   useEffect(() => {
     const canvas = canvasRef.current

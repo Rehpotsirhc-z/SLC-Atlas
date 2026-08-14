@@ -7,7 +7,7 @@ import type { ThemeMode } from "@/theme"
 /**
  * A hue per cell type, spread evenly around the wheel.
  *
- * Keyed on the label rather than on the track, so the same cell type keeps its colour in
+ * Keyed on the label rather than on the track, so the same cell type keeps its color in
  * every assay it appears in and a reader can follow one across the groups. The named palette
  * is not used here because a dataset can carry more cell types than it has names.
  */

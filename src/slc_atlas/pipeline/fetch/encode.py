@@ -28,7 +28,7 @@ FILE = re.compile(r"^ENCFF[0-9A-Z]{6}$")
 OUTPUT_TYPES = ("fold change over control", "signal p-value", "read-depth normalized signal")
 
 ASSEMBLY = "GRCh38"
-LICENCE = "LicenseRef-ENCODE-terms"
+LICENSE = "LicenseRef-ENCODE-terms"
 
 
 def is_accession(text: str) -> bool:

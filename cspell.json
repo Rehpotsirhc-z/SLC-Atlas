@@ -1,0 +1,25 @@
+{
+  "version": "0.2",
+  "language": "en-US",
+  "dictionaryDefinitions": [
+    {
+      "name": "atlas",
+      "path": "./.cspell/atlas-words.txt",
+      "description": "Domain and dependency vocabulary this project is entitled to",
+      "addWords": false
+    }
+  ],
+  "dictionaries": ["atlas"],
+  "ignorePaths": [
+    "node_modules/**",
+    "**/node_modules/**",
+    "web/dist/**",
+    "web/public/**",
+    "data/**",
+    ".venv/**",
+    "**/*.svg",
+    "**/*.lock",
+    "**/package-lock.json",
+    "web/src/views/Expression/Anatomograms/anatomogram/**"
+  ]
+}

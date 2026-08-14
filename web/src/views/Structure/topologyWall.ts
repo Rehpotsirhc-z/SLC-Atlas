@@ -41,7 +41,7 @@ export interface WallSummary {
   category: string | null
 }
 
-export function summariseWall(wall: Wall, family: string | null): WallSummary {
+export function summarizeWall(wall: Wall, family: string | null): WallSummary {
   let count = 0
   let category: string | null = null
   for (const group of wall.groups) {

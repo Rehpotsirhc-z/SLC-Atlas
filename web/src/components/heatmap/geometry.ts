@@ -9,7 +9,7 @@ export interface CellRect {
   h: number
 }
 
-// 1px short in each axis so neighbouring cells stay separated by the backdrop
+// 1px short in each axis so neighboring cells stay separated by the backdrop
 export function cellRect(
   row: number,
   col: number,

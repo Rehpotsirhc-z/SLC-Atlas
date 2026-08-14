@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// AlphaFold's pLDDT bands, most to least confident, in its own wording and its own colours,
+// AlphaFold's pLDDT bands, most to least confident, in its own wording and its own colors,
 // which are what Mol* paints the 3D model with
 export const PLDDT_BANDS = [
   { min: 90, color: "#0053d6", short: "very high", range: ">90", label: "very high confidence" },

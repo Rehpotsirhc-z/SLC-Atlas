@@ -39,7 +39,7 @@ def list_structures(source: DataSource = Depends(get_source)):
 @router.get(
     "/structure/sources.json",
     response_model=list[DataSourceRecord],
-    summary="Where the structure data came from, and under what licence",
+    summary="Where the structure data came from, and under what license",
 )
 def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_data_sources()).to_dicts()

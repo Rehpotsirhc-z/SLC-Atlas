@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * The GWAS lane: one mark per variant at its own significance, coloured by which way the
+ * The GWAS lane: one mark per variant at its own significance, colored by which way the
  * effect goes. A p-value that underflowed to zero arrives as a null and is drawn in a band
  * above the scale, since placing it at the largest float the language has would stretch the
  * axis until every real variant sat on the floor.
@@ -106,7 +106,7 @@ export function drawGwas({
     ctx.restore()
   }
 
-  // One path per colour rather than one per variant: a window can hold thousands of them, and
+  // One path per color rather than one per variant: a window can hold thousands of them, and
   // each fill of its own is a state change the lane pays for on every frame of a drag
   const raised = new Path2D()
   const lowered = new Path2D()

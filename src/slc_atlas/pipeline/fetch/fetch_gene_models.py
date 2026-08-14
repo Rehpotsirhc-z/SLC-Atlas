@@ -7,7 +7,7 @@
 The gene tables carry one span per gene, which is enough to place a gene on an axis but not
 to draw it. This step gets the exons, the introns between them, and the coding part of each
 transcript, for every transcript in whatever stretch of genome the browser keeps, not only
-the family's own genes: a gene is read in the company of its neighbours, and unsliced that
+the family's own genes: a gene is read in the company of its neighbors, and unsliced that
 company is every gene there is.
 
 GENCODE is the default because it is the same annotation Ensembl serves, so the models line
@@ -35,7 +35,7 @@ ENSEMBL_ASSEMBLY = (
 # has done since Ensembl 88. Older pairings were irregular, so --gencode-release overrides
 GENCODE_BEHIND_ENSEMBL = 66
 
-LICENCE = "CC-BY-4.0"
+LICENSE = "CC-BY-4.0"
 
 
 def gencode_release(ensembl_release: int, override: str) -> str:
@@ -101,7 +101,7 @@ def write_provenance(path: Path, *, version: str, url: str, assembly_name: str, 
             version,
             assembly_name,
             date.today().isoformat(),
-            LICENCE if url else "",
+            LICENSE if url else "",
             url,
             flank,
         )

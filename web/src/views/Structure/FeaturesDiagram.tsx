@@ -181,7 +181,7 @@ const FeaturesDiagram = memo(function FeaturesDiagram({
         })}
 
         {layout.sites.map((site) => {
-          const colour = ligandColorAt(site.ligandIndex, palette.mode)
+          const color = ligandColorAt(site.ligandIndex, palette.mode)
           return (
             <g
               key={site.key}
@@ -197,7 +197,7 @@ const FeaturesDiagram = memo(function FeaturesDiagram({
                 y1={site.y}
                 x2={site.connectorTo}
                 y2={site.y}
-                stroke={colour}
+                stroke={color}
                 strokeWidth={1}
                 strokeDasharray="2 2"
               />
@@ -209,7 +209,7 @@ const FeaturesDiagram = memo(function FeaturesDiagram({
                   width={bar.width}
                   height={TRACK.siteBarHeight}
                   rx={1}
-                  fill={colour}
+                  fill={color}
                 />
               ))}
               <rect

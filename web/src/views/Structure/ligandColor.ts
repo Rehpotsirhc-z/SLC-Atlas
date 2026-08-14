@@ -8,7 +8,7 @@ import { doomColors, type ThemeMode } from "@/theme"
 // yellow and orange
 const LIGAND_HUES = ["magenta", "green", "violet", "red", "teal", "darkCyan"] as const
 
-// Assigned by list position rather than hashed, so no gene in the family repeats a colour
+// Assigned by list position rather than hashed, so no gene in the family repeats a color
 export function ligandColorAt(index: number, mode: ThemeMode): string {
   return doomColors[mode][LIGAND_HUES[index % LIGAND_HUES.length]]
 }

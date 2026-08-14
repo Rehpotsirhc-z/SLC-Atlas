@@ -48,7 +48,7 @@ const UNREAD: LaneData = {
 
 export default function GenomeBrowser() {
   const available = useCapability("browser")
-  const { palette } = useTheme()
+  const { palette, custom } = useTheme()
   const isSmall = useMediaQuery(useTheme().breakpoints.down("sm"))
   // Measure lane widths from the scroller and gestures from the full plot
   const [frameRef, { w: frameWidth }] = useElementSize<HTMLDivElement>()
@@ -349,7 +349,11 @@ export default function GenomeBrowser() {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  Search for a gene to see its genomic neighbourhood.
+                  Search for a gene or a place written{" "}
+                  <Box component="span" sx={{ fontFamily: custom.monoFontFamily }}>
+                    chr:start-end
+                  </Box>{" "}
+                  to see its genomic neighborhood.
                 </Typography>
                 <Typography variant="caption" color="text.disabled">
                   Drag to pan · ⌘/Ctrl + scroll to zoom · shift-drag to select a range

@@ -10,6 +10,7 @@ path = [
   "web/tsconfig.app.json",
   "web/tsconfig.node.json",
   "web/index.html",
+  "cspell.json",
   "zellij-layout.kdl",
   ".gitattributes",
   ".devcontainer/README.org",

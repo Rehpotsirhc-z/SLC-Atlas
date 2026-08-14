@@ -7,7 +7,7 @@
 Every API response is asked for from the app itself and saved under the same URL the
 frontend already requests, so that an ordinary file server behaves the same way the
 running app does. Every route of the frontend gets a page of its own for the same reason,
-so that a host which cannot redirect an unrecognised path still answers a link into the
+so that a host which cannot redirect an unrecognized path still answers a link into the
 middle of the app.
 
 Exporting again over an existing directory writes only the files that have really changed

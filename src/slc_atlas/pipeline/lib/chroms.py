@@ -26,7 +26,7 @@ PRIMARY = "primary"
 UNPLACED = "unplaced"
 ALT = "alt"
 
-# Anything a source calls the mitochondrion, keyed to the one name we normalise to
+# Anything a source calls the mitochondrion, keyed to the one name we normalize to
 _MITO_ALIASES = {"MT", "MITO", "MTDNA", "CHRM"}
 
 _HEADER = ("chrom", "size", "role")
@@ -39,7 +39,7 @@ class Chrom:
     role: str
 
 
-def normalise(name: str) -> str:
+def normalize(name: str) -> str:
     """Reduce a chromosome name to the key both spellings share."""
     key = name.strip().upper()
     if key.startswith("CHR"):
@@ -56,7 +56,7 @@ def role(name: str) -> str:
     region that the primary already carries, so drawing both would show the same signal
     twice under two names.
     """
-    key = normalise(name)
+    key = normalize(name)
     if key in AUTOSOMES or key in SEX or key in MITOCHONDRIA:
         return PRIMARY
     if "_" in key or key.startswith(("GL", "KI", "JH", "KZ", "ML", "KN", "KQ")):
@@ -74,10 +74,10 @@ def alias_map(track_names, gene_names) -> tuple[dict[str, str], list[str]]:
     Returns the mapping and the gene-table names that no track spells any way at all, which
     the caller reports rather than guessing at.
     """
-    by_key = {normalise(name): name for name in track_names}
+    by_key = {normalize(name): name for name in track_names}
     mapping, missing = {}, []
     for name in gene_names:
-        match = by_key.get(normalise(name))
+        match = by_key.get(normalize(name))
         if match is None:
             missing.append(name)
         else:

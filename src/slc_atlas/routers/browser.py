@@ -36,7 +36,7 @@ def get_manifest(source: DataSource = Depends(get_source)):
 @router.get(
     "/browser/sources.json",
     response_model=list[DataSourceRecord],
-    summary="Where the browser data came from, and under what licence",
+    summary="Where the browser data came from, and under what license",
 )
 def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_browser_sources()).to_dicts()

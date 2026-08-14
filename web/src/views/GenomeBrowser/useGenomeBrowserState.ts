@@ -75,7 +75,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   )
   const chromSize = region ? (region.chrom_size ?? region.pan_end) : 0
   // The whole chromosome, not the gene's own window: a slice carries every window the family
-  // has on it, so travelling out of one locus and into the next is a pan rather than a search
+  // has on it, so traveling out of one locus and into the next is a pan rather than a search
   const bounds = useMemo<Viewport>(
     () => (region ? { start: 0, end: chromSize } : NOWHERE),
     [region, chromSize],
@@ -84,7 +84,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   const view = useBrowserView(initial, bounds)
 
   const block = useCoverageBlock(view.view, region?.chrom, chromSize)
-  // What one column of the view covers, which decides whether a track is read whole or summarised
+  // What one column of the view covers, which decides whether a track is read whole or summarized
   const step = summaryStep(view.view, plotWidth)
   const coverage = useCoverageData(tracks, region?.chrom, block, lanes.isVisible, step)
 
