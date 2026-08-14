@@ -7,19 +7,13 @@ import CloseIcon from "@mui/icons-material/Close"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import TableRowsIcon from "@mui/icons-material/TableRows"
 import { Box, Button, Divider, IconButton, Paper, Typography, useTheme } from "@mui/material"
-import { keyframes } from "@mui/system"
 import ResizeHandles from "@/components/ResizeHandles"
-import { capBoxSx, capButtonSx } from "@/theme"
+import { capBoxSx, capButtonSx, glowFlash } from "@/theme"
 import type { Gene } from "@/types/gene"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
 import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
-
-const glowFlash = keyframes`
-  0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
-  100% { outline: 2px solid rgba(144, 202, 249, 0); }
-`
 
 export const DEFAULT_POS: PanelPos = { x: 29, y: 325 }
 export const MIN_W = 280

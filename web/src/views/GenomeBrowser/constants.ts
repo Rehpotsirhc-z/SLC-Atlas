@@ -108,3 +108,5 @@ export const CANVAS_FONT_PX = 12
 export const CANVAS_LABEL_PX = 12
 
 export const SETTINGS_W = 284
+// Align settings fields along the same right edge
+export const SETTINGS_FIELD_W = 110

@@ -58,3 +58,7 @@ export const dividerFor = (mode: ThemeMode) =>
 
 export const secondaryTextFor = (mode: ThemeMode) =>
   mode === "dark" ? doomColors.dark.base6 : darken(doomColors.light.base4, 0.15)
+
+// One step below secondary, so lesser text reads as lesser
+export const disabledTextFor = (mode: ThemeMode) =>
+  mode === "dark" ? doomColors.dark.base5 : doomColors.light.base4

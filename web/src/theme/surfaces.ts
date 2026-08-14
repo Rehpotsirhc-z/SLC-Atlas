@@ -3,6 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { alpha, emphasize, type Theme } from "@mui/material/styles"
+import { keyframes } from "@mui/system"
+
+export const glowFlash = keyframes`
+  0%   { outline: 2px solid rgba(144, 202, 249, 0.9); }
+  100% { outline: 2px solid rgba(144, 202, 249, 0); }
+`
+
+export const glowFlashSx = { animation: `${glowFlash} 0.8s ease-out` } as const
 
 export const floatSurfaceBg = (theme: Theme) => alpha(theme.palette.background.paper, 0.9)
 

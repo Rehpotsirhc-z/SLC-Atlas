@@ -2,22 +2,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { memo } from "react"
+import { memo, useRef, type RefObject } from "react"
+import CloseIcon from "@mui/icons-material/Close"
 import {
   Box,
   Checkbox,
   Divider,
   FormControlLabel,
+  IconButton,
   MenuItem,
   Select,
   Slider,
   Switch,
-  TextField,
   Typography,
 } from "@mui/material"
 import FloatingSurface from "@/components/view/FloatingSurface"
+import { glowFlashSx } from "@/theme"
 import type { CoverageTrack } from "@/types/browser"
-import { LANE_HEIGHT_DEFAULT, LANE_HEIGHT_MAX, LANE_HEIGHT_MIN, SETTINGS_W } from "./constants"
+import FixedMaxField from "./FixedMaxField"
+import { usePanelDismiss } from "./usePanelDismiss"
+import {
+  LANE_HEIGHT_DEFAULT,
+  LANE_HEIGHT_MAX,
+  LANE_HEIGHT_MIN,
+  SETTINGS_FIELD_W,
+  SETTINGS_W,
+} from "./constants"
 
 export type YScaleMode = "auto" | "shared" | "fixed"
 
@@ -44,13 +54,19 @@ export const DEFAULT_PREFS: BrowserPrefs = {
 interface Props {
   prefs: BrowserPrefs
   onChange: (next: Partial<BrowserPrefs>) => void
+  onClose: () => void
+  // Button excluded from outside-click dismissal
+  anchorRef: RefObject<HTMLElement | null>
   tracks: CoverageTrack[]
   sx?: object
 }
 
 const rowSx = { fontSize: 13, m: 0, "& .MuiFormControlLabel-label": { fontSize: 13 } }
 
-function BrowserSettings({ prefs, onChange, tracks, sx }: Props) {
+function BrowserSettings({ prefs, onChange, onClose, anchorRef, tracks, sx }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  usePanelDismiss({ panelRef, anchorRef, onClose })
+
   const groups = [...new Set(tracks.map((track) => track.group))]
   const toggle = (trackId: string) =>
     onChange({
@@ -61,11 +77,30 @@ function BrowserSettings({ prefs, onChange, tracks, sx }: Props) {
 
   return (
     <FloatingSurface
-      sx={{ width: SETTINGS_W, p: 1.5, gap: 1, maxHeight: "78%", overflow: "auto", ...sx }}
+      ref={panelRef}
+      sx={{
+        width: SETTINGS_W,
+        p: 1.5,
+        gap: 1,
+        maxHeight: "78%",
+        overflow: "auto",
+        ...glowFlashSx,
+        ...sx,
+      }}
     >
-      <Typography variant="overline" color="primary" sx={{ lineHeight: 1 }}>
-        Display
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Typography variant="overline" color="primary" sx={{ lineHeight: 1 }}>
+          Display
+        </Typography>
+        <IconButton
+          size="small"
+          aria-label="Close display settings"
+          onClick={onClose}
+          sx={{ p: 0.25, my: -0.5, mr: -0.5, color: "text.secondary" }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
 
       <Box>
         <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
@@ -89,7 +124,7 @@ function BrowserSettings({ prefs, onChange, tracks, sx }: Props) {
           size="small"
           value={prefs.yScale}
           onChange={(event) => onChange({ yScale: event.target.value as YScaleMode })}
-          sx={{ fontSize: 13, minWidth: 110 }}
+          sx={{ fontSize: 13, minWidth: SETTINGS_FIELD_W }}
         >
           <MenuItem value="auto">per track</MenuItem>
           <MenuItem value="shared">shared</MenuItem>
@@ -97,14 +132,7 @@ function BrowserSettings({ prefs, onChange, tracks, sx }: Props) {
         </Select>
       </Box>
       {prefs.yScale === "fixed" && (
-        <TextField
-          size="small"
-          type="number"
-          label="Maximum"
-          value={prefs.yFixed}
-          onChange={(event) => onChange({ yFixed: Number(event.target.value) || 1 })}
-          sx={{ "& input": { fontSize: 13 } }}
-        />
+        <FixedMaxField value={prefs.yFixed} onChange={(yFixed) => onChange({ yFixed })} />
       )}
 
       <FormControlLabel

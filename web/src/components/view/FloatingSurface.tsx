@@ -2,20 +2,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ReactNode } from "react"
+import type { ReactNode, Ref } from "react"
 import { Paper, useTheme } from "@mui/material"
 import type { SxProps, Theme } from "@mui/material/styles"
 import { floatSurfaceBg } from "@/theme"
 
 interface Props {
   sx?: SxProps<Theme>
+  ref?: Ref<HTMLDivElement>
   children: ReactNode
 }
 
-export default function FloatingSurface({ sx, children }: Props) {
+export default function FloatingSurface({ sx, ref, children }: Props) {
   const theme = useTheme()
   return (
     <Paper
+      ref={ref}
       elevation={4}
       sx={[
         {

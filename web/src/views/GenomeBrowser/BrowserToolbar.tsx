@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import type { RefObject } from "react"
 import SettingsIcon from "@mui/icons-material/Tune"
 import ZoomInIcon from "@mui/icons-material/ZoomIn"
 import ZoomOutIcon from "@mui/icons-material/ZoomOut"
@@ -24,11 +25,11 @@ interface Props {
   onZoom: (factor: number) => void
   settingsOpen: boolean
   onToggleSettings: () => void
-  /** Text displayed in the shared toolbar counter */
+  settingsRef: RefObject<HTMLButtonElement | null>
   counterText: string
   onResetView: () => void
   exportItems: ExportItem[]
-  disabled: boolean
+  hasRegion: boolean
 }
 
 const MODES: { value: GeneTrackMode; label: string }[] = [
@@ -45,10 +46,11 @@ export default function BrowserToolbar({
   onZoom,
   settingsOpen,
   onToggleSettings,
+  settingsRef,
   counterText,
   onResetView,
   exportItems,
-  disabled,
+  hasRegion,
 }: Props) {
   const { tbState, toolbarRef, probeRefs } = useToolbarFit({ counterText, toggleCount: 2 })
   const wrapped = tbState === "wrapped"
@@ -59,7 +61,6 @@ export default function BrowserToolbar({
       exclusive
       value={mode}
       onChange={(_event, next) => next && onModeChange(next)}
-      disabled={disabled}
     >
       {MODES.map((option) => (
         <ToggleButton key={option.value} value={option.value} sx={{ minWidth: wrapped ? 0 : 96 }}>
@@ -92,7 +93,7 @@ export default function BrowserToolbar({
                     size="small"
                     aria-label="Zoom out"
                     onClick={() => onZoom(0.5)}
-                    disabled={disabled}
+                    disabled={!hasRegion}
                   >
                     <ZoomOutIcon fontSize="small" />
                   </IconButton>
@@ -104,7 +105,7 @@ export default function BrowserToolbar({
                     size="small"
                     aria-label="Zoom in"
                     onClick={() => onZoom(2)}
-                    disabled={disabled}
+                    disabled={!hasRegion}
                   >
                     <ZoomInIcon fontSize="small" />
                   </IconButton>
@@ -113,10 +114,10 @@ export default function BrowserToolbar({
               <Tooltip title="Display settings">
                 <span>
                   <IconButton
+                    ref={settingsRef}
                     size="small"
                     aria-label="Display settings"
                     onClick={onToggleSettings}
-                    disabled={disabled}
                     color={settingsOpen ? "secondary" : "default"}
                   >
                     <SettingsIcon fontSize="small" />

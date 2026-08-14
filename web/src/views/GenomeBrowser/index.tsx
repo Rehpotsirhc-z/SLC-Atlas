@@ -43,6 +43,7 @@ export default function GenomeBrowser() {
   const isSmall = useMediaQuery(useTheme().breakpoints.down("sm"))
   const [frameRef, { w: frameWidth }] = useElementSize<HTMLDivElement>()
   const selectionRef = useRef<HTMLDivElement>(null)
+  const settingsRef = useRef<HTMLButtonElement>(null)
 
   const gutter = isSmall ? GUTTER_W_SM : GUTTER_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
@@ -143,11 +144,12 @@ export default function GenomeBrowser() {
           onGoToLocus={state.goToLocus}
           onZoom={(factor) => state.view.zoomBy(factor)}
           settingsOpen={state.settingsOpen}
-          onToggleSettings={() => state.setSettingsOpen(!state.settingsOpen)}
+          onToggleSettings={state.toggleSettings}
+          settingsRef={settingsRef}
           counterText=""
           onResetView={state.view.reset}
           exportItems={exportItems}
-          disabled={!state.region}
+          hasRegion={state.region != null}
         />
         <Divider />
         <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
@@ -322,6 +324,8 @@ export default function GenomeBrowser() {
               <BrowserSettings
                 prefs={state.prefs}
                 onChange={state.updatePrefs}
+                onClose={state.closeSettings}
+                anchorRef={settingsRef}
                 tracks={state.allTracks}
                 sx={SETTINGS_SX}
               />

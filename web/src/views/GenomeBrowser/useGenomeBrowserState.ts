@@ -171,6 +171,9 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     [],
   )
 
+  const toggleSettings = useCallback(() => setSettingsOpen((open) => !open), [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+
   const studyCovers = study && region ? study.chroms.includes(region.chrom) : false
 
   return {
@@ -199,7 +202,8 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     drawn,
     setMode,
     settingsOpen,
-    setSettingsOpen,
+    toggleSettings,
+    closeSettings,
     goToLocus,
     loading: manifestQuery.isPending || (selectedGeneId != null && regionQuery.isPending),
     error: manifestQuery.error ?? regionQuery.error,

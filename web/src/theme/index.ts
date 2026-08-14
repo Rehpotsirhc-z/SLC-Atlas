@@ -6,11 +6,23 @@ import { createTheme, type Theme, type ThemeOptions } from "@mui/material/styles
 import type {} from "@mui/x-tree-view/themeAugmentation"
 import { componentOverrides } from "./components"
 import { monoFontFamily, monoFontSize, sansFontFamily } from "./fonts"
-import { doomColors, secondaryTextFor, type ThemeMode } from "./palette"
+import {
+  disabledTextFor,
+  dividerFor,
+  doomColors,
+  secondaryTextFor,
+  type ThemeMode,
+} from "./palette"
 
 export { doomColors, type ThemeMode } from "./palette"
 export { monoFontFamily, monoFontSize, sansFontFamily } from "./fonts"
-export { floatSurfaceBg, floatSurfaceBgHover, tooltipSurfaceSx } from "./surfaces"
+export {
+  floatSurfaceBg,
+  floatSurfaceBgHover,
+  glowFlash,
+  glowFlashSx,
+  tooltipSurfaceSx,
+} from "./surfaces"
 export { capBoxSx, capButtonSx, capLineSx } from "./capBox"
 
 declare module "@mui/material/styles" {
@@ -37,8 +49,13 @@ function buildTheme(mode: ThemeMode): Theme {
       success: { main: c.green },
       info: { main: c.teal },
       background: { default: c.bgAlt, paper: c.bg },
-      text: { primary: c.fg, secondary: secondaryTextFor(mode) },
-      divider: mode === "dark" ? c.base4 : c.base3,
+      text: {
+        primary: c.fg,
+        secondary: secondaryTextFor(mode),
+        disabled: disabledTextFor(mode),
+      },
+      divider: dividerFor(mode),
+      action: { active: secondaryTextFor(mode), disabled: dividerFor(mode) },
     },
     typography: {
       fontFamily: sansFontFamily,
