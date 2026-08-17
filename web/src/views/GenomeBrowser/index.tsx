@@ -4,7 +4,7 @@
 
 import { useCallback, useMemo, useRef } from "react"
 import { Box, Divider, Paper, Popper, Typography, useMediaQuery, useTheme } from "@mui/material"
-import { EMPTY_COVERAGE } from "@/api/bbi"
+import { EMPTY_COVERAGE, EMPTY_VARIANTS, type VariantBlock } from "@/api/bbi"
 import { useCapability } from "@/api/hooks/useCapabilities"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
@@ -15,7 +15,7 @@ import { useElementSize } from "@/utils/useElementSize"
 import BrowserSettings from "./BrowserSettings"
 import BrowserToolbar from "./BrowserToolbar"
 import GeneTrack from "./GeneTrack"
-import GwasLane from "./GwasLane"
+import GwasTrack from "./GwasTrack"
 import LaneGroup from "./LaneGroup"
 import LocusHeading, { locusText } from "./LocusHeading"
 import Ruler from "./Ruler"
@@ -61,6 +61,7 @@ export default function GenomeBrowser() {
   const settingsRef = useRef<HTMLButtonElement>(null)
   // Keep the settings panel within the browser card
   const cardRef = useRef<HTMLDivElement>(null)
+  const gwasBlockRef = useRef<VariantBlock | null>(null)
 
   const gutter = (isSmall ? GUTTER_W_SM : GUTTER_W) + AXIS_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
@@ -105,7 +106,7 @@ export default function GenomeBrowser() {
       laneHeight: state.prefs.laneHeight,
       yMax: state.yMaxFor(),
       study: state.prefs.showGwas ? (state.study ?? null) : null,
-      gwasBlock: state.gwasBlock,
+      gwasBlock: gwasBlockRef.current ?? EMPTY_VARIANTS,
       showGwas: state.prefs.showGwas,
       showGrid: state.prefs.showGrid,
       showSignificance: state.prefs.showSignificance,
@@ -273,21 +274,19 @@ export default function GenomeBrowser() {
 
                     {state.prefs.showGwas && state.study && (
                       <LaneGroup>
-                        <GwasLane
+                        <GwasTrack
                           study={state.study}
-                          block={state.gwasBlock}
+                          view={state.view}
                           chrom={state.region?.chrom ?? ""}
+                          chromSize={state.chromSize}
                           covered={state.studyCovers}
-                          bin={state.gwasBin}
-                          loading={state.gwasLoading}
                           width={plotWidth}
                           gutter={gutter}
                           grid={state.prefs.showGrid}
                           showSignificance={state.prefs.showSignificance}
-                          subscribe={state.view.subscribe}
-                          liveView={state.view.liveView}
-                          moving={state.view.moving}
+                          isVisible={state.laneIsVisible}
                           watch={state.watchLane}
+                          blockRef={gwasBlockRef}
                         />
                       </LaneGroup>
                     )}
