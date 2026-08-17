@@ -52,6 +52,16 @@ export interface TrackManifest {
   studies: GwasStudy[]
 }
 
+export interface BrowserGene {
+  gene_id: string
+  symbol: string
+  name: string | null
+  chrom: string
+  is_atlas: boolean
+  window_start: number
+  window_end: number
+}
+
 export interface Exon {
   start: number
   end: number

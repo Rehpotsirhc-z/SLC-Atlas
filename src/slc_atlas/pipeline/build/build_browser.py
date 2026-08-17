@@ -13,6 +13,7 @@ from ..lib import bed12, bigbed, chroms as chrom_names, console, pyramid, window
 from ..lib.reporting import count, report_missing
 from .browser_tables import (
     CHROM_SCHEMA,
+    gene_index,
     read_tsv,
     source_frame,
     study_frame,
@@ -144,7 +145,9 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
 
     check_flank(browser, flank_min, flank_max)
     transcripts = bed12.read_bed12(models_path)
-    genes = pl.read_csv(source_dir / "genes.tsv", separator="\t", columns=["id", "start", "end"])
+    genes = pl.read_csv(
+        source_dir / "genes.tsv", separator="\t", columns=["id", "symbol", "name", "start", "end"]
+    )
     check_assembly(genes, transcripts)
 
     placed, unplaced = windows.load(
@@ -189,10 +192,16 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
 
     sizes = {c.name: c.size for c in chrom_table if c.role == chrom_names.PRIMARY}
     parquet.write(window_df, out / "windows.parquet")
+    atlas_ids = set(genes["id"].to_list())
     written = bigbed.write(
         out / "models.bb",
         sizes,
-        transcript_rows(transcripts, sizes, set(genes["id"].to_list())),
+        transcript_rows(transcripts, sizes, atlas_ids),
+    )
+    family = {row[0]: (row[1], row[2]) for row in genes.select("id", "symbol", "name").rows()}
+    parquet.write(
+        gene_index(transcripts, sizes, atlas_ids, family, flank_min=flank_min, flank_max=flank_max),
+        out / "genes.parquet",
     )
     kept_variants, study_levels = write_gwas(variants, studies, sizes, out / "gwas")
     tracks = track_frame(coverage, coverage_out)

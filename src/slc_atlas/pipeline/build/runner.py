@@ -94,6 +94,7 @@ def _steps(paths: PipelinePaths, options: BuildOptions) -> dict[str, Step]:
             outputs=(
                 browser_out / "windows.parquet",
                 browser_out / "models.bb",
+                browser_out / "genes.parquet",
                 browser_out / "tracks.parquet",
                 browser_out / "chroms.parquet",
                 browser_out / "studies.parquet",

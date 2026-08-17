@@ -55,6 +55,16 @@ class TrackManifest(BaseModel):
     studies: list[GwasStudy]
 
 
+class BrowserGene(BaseModel):
+    gene_id: str
+    symbol: str
+    name: str | None = None
+    chrom: str
+    is_atlas: bool
+    window_start: int
+    window_end: int
+
+
 class Region(BaseModel):
     gene_id: str
     symbol: str | None = None

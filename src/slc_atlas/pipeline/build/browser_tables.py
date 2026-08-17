@@ -50,6 +50,16 @@ TRACK_SCHEMA = {
 
 CHROM_SCHEMA = {"chrom": pl.Utf8, "ensembl": pl.Utf8, "size": pl.Int64, "role": pl.Utf8}
 
+BROWSER_GENE_SCHEMA = {
+    "gene_id": pl.Utf8,
+    "symbol": pl.Utf8,
+    "name": pl.Utf8,
+    "chrom": pl.Utf8,
+    "is_atlas": pl.Boolean,
+    "window_start": pl.Int64,
+    "window_end": pl.Int64,
+}
+
 
 STUDY_SCHEMA = {
     "study_id": pl.Utf8,
@@ -134,6 +144,54 @@ def transcript_rows(transcripts, sizes: dict[str, int], atlas_ids: set[str]):
         )
 
 
+def gene_index(
+    transcripts,
+    sizes: dict[str, int],
+    atlas_ids: set[str],
+    family: dict[str, tuple[str, str | None]],
+    *,
+    flank_min: int,
+    flank_max: int,
+) -> pl.DataFrame:
+    """Build the browser's searchable gene index."""
+    seen: dict[str, dict] = {}
+    for t in transcripts:
+        if t.chrom not in sizes:
+            continue
+        gene_id = bed12.versionless(t.gene_id)
+        held = seen.get(gene_id)
+        if held is None:
+            seen[gene_id] = {
+                "chrom": t.chrom,
+                "start": t.start,
+                "end": t.end,
+                "name": t.gene_name or gene_id,
+            }
+        else:
+            held["start"] = min(held["start"], t.start)
+            held["end"] = max(held["end"], t.end)
+
+    rows = []
+    for gene_id, g in seen.items():
+        size = sizes[g["chrom"]]
+        half = windows.flank_for(g["end"] - g["start"], flank_min, flank_max, windows.MIN_WIDTH)
+        symbol, name = family.get(gene_id, (g["name"], None))
+        rows.append(
+            {
+                "gene_id": gene_id,
+                "symbol": symbol or g["name"],
+                "name": name,
+                "chrom": g["chrom"],
+                "is_atlas": gene_id in atlas_ids,
+                "window_start": max(0, g["start"] - half),
+                "window_end": min(size, g["end"] + half),
+            }
+        )
+
+    rows.sort(key=lambda r: (not r["is_atlas"], r["symbol"].lower()))
+    return pl.DataFrame(rows, schema=BROWSER_GENE_SCHEMA)
+
+
 def variant_frame(variants: pl.DataFrame, sizes: dict[str, int]) -> pl.DataFrame:
     """Return a study's variants in bigBed column order."""
     return (
@@ -144,8 +202,7 @@ def variant_frame(variants: pl.DataFrame, sizes: dict[str, int]) -> pl.DataFrame
             .then(-pl.col("p_value").log10())
             .otherwise(None)
             .cast(pl.Float32)
-        )
-        .select("chrom", "position", "snp_id", "p_value", "neg_log10_p", "beta")
+        ).select("chrom", "position", "snp_id", "p_value", "neg_log10_p", "beta")
     )
 
 

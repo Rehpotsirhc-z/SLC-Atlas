@@ -4,11 +4,9 @@
 
 import { useCallback, useEffect, useMemo, useState, type RefObject } from "react"
 import { useTheme } from "@mui/material"
-import { useGenes } from "@/api/hooks/useGenes"
-import { useRegion, useTrackManifest } from "@/api/hooks/useBrowser"
+import { useBrowserGenes, useRegion, useTrackManifest } from "@/api/hooks/useBrowser"
 import { useUIStore } from "@/store/uiStore"
-import type { Chrom, CoverageTrack, Region } from "@/types/browser"
-import type { Gene } from "@/types/gene"
+import type { BrowserGene, Chrom, CoverageTrack, Region } from "@/types/browser"
 import { DEFAULT_PREFS, type BrowserPrefs } from "./BrowserSettings"
 import type { GeneTrackMode } from "./GeneTrack"
 import { TRANSCRIPT_MAX_SPAN, Y_HEADROOM } from "./constants"
@@ -25,7 +23,7 @@ import { useWarmReaders } from "./useWarmReaders"
 
 const NO_TRACKS: CoverageTrack[] = []
 const NO_CHROMS: Chrom[] = []
-const NO_GENES: Gene[] = []
+const NO_BROWSER_GENES: BrowserGene[] = []
 const NOWHERE: Viewport = { start: 0, end: 1 }
 
 export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, plotWidth: number) {
@@ -38,22 +36,53 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [pendingLocus, setPendingLocus] = useState<(Viewport & { chrom: string }) | null>(null)
 
-  const genesQuery = useGenes()
   const manifestQuery = useTrackManifest()
-  const regionQuery = useRegion(selectedGeneId)
+  const browserGenesQuery = useBrowserGenes()
 
-  const region: Region | undefined = regionQuery.data
+  const browserGenes = browserGenesQuery.data ?? NO_BROWSER_GENES
   const study = manifestQuery.data?.studies[0]
-  const genes = genesQuery.data ?? NO_GENES
+  const chroms = manifestQuery.data?.chroms ?? NO_CHROMS
+  const names = useMemo(() => chromNames(chroms), [chroms])
+
+  const [regionGeneId, setRegionGeneId] = useState<string | null>(selectedGeneId)
+  useEffect(() => {
+    if (selectedGeneId) setRegionGeneId(selectedGeneId)
+  }, [selectedGeneId])
+
+  const regionGene = useMemo(
+    () => browserGenes.find((gene) => gene.gene_id === regionGeneId) ?? null,
+    [browserGenes, regionGeneId],
+  )
+  const isNeighbor = regionGene != null && !regionGene.is_atlas
+  const regionQuery = useRegion(isNeighbor ? null : regionGeneId)
+
+  const region: Region | undefined = useMemo(() => {
+    if (!isNeighbor || !regionGene) return regionQuery.data
+    const chrom = chroms.find((c) => c.chrom === regionGene.chrom)
+    if (!chrom) return undefined
+    return {
+      gene_id: regionGene.gene_id,
+      symbol: regionGene.symbol,
+      chrom: regionGene.chrom,
+      chrom_ensembl: chrom.ensembl,
+      chrom_size: chrom.size,
+      gene_start: regionGene.window_start,
+      gene_end: regionGene.window_end,
+      strand: null,
+      window_start: regionGene.window_start,
+      window_end: regionGene.window_end,
+      pan_start: 0,
+      pan_end: chrom.size,
+      flank: 0,
+      clipped: false,
+    }
+  }, [isNeighbor, regionGene, regionQuery.data, chroms])
 
   const allTracks = manifestQuery.data?.tracks ?? NO_TRACKS
   const tracks = useMemo(
     () => allTracks.filter((track) => !prefs.hidden.includes(track.track_id)),
     [allTracks, prefs.hidden],
   )
-
-  const chroms = manifestQuery.data?.chroms ?? NO_CHROMS
-  const names = useMemo(() => chromNames(chroms), [chroms])
 
   // Which lanes are on screen, which is both what gets repainted and whose bytes are read first
   const lanes = useLaneVisibility(frameRef)
@@ -123,11 +152,16 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     return [...byGroup.entries()].map(([name, members]) => ({ name, members }))
   }, [tracks])
 
-  /**
-   * A coordinate on the chromosome already in view is just a move. One elsewhere needs a gene
-   * on that chromosome first, because the chromosome's length and its windows come with a
-   * region, and the view lands on the coordinate once that arrives.
-   */
+  const selectRegionGene = useCallback(
+    (geneId: string) => {
+      const gene = browserGenes.find((candidate) => candidate.gene_id === geneId)
+      // Update the browser even when the cross-view family selection is unchanged
+      setRegionGeneId(geneId)
+      if (!gene || gene.is_atlas) setSelectedGeneId(geneId)
+    },
+    [browserGenes, setSelectedGeneId],
+  )
+
   const goToLocus = useCallback(
     (locus: { chrom: string; start: number; end: number }) => {
       const track = names.track(locus.chrom)
@@ -136,20 +170,19 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
         view.goTo({ start: locus.start, end: locus.end })
         return
       }
-      const ensembl = names.ensembl(locus.chrom)
-      const onChrom = genes.filter((gene) => gene.chromosome === ensembl)
-      if (onChrom.length === 0) return
       const middle = (locus.start + locus.end) / 2
-      const nearest = onChrom.reduce((best, gene) =>
-        Math.abs((gene.start + gene.end) / 2 - middle) <
-        Math.abs((best.start + best.end) / 2 - middle)
-          ? gene
-          : best,
-      )
-      setSelectedGeneId(nearest.id)
+      let nearest: BrowserGene | null = null
+      let best = Infinity
+      for (const gene of browserGenes) {
+        if (gene.chrom !== track) continue
+        const distance = Math.abs((gene.window_start + gene.window_end) / 2 - middle)
+        if (distance < best) [best, nearest] = [distance, gene]
+      }
+      if (!nearest) return
+      selectRegionGene(nearest.gene_id)
       setPendingLocus({ ...locus, chrom: track })
     },
-    [region, view, genes, names, setSelectedGeneId],
+    [region, view, browserGenes, names, selectRegionGene],
   )
 
   useEffect(() => {
@@ -169,7 +202,8 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   const studyCovers = study && region ? study.chroms.includes(region.chrom) : false
 
   return {
-    genes,
+    searchGenes: browserGenes,
+    selectRegionGene,
     selectedGeneId,
     setSelectedGeneId,
     region,
@@ -196,7 +230,10 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     toggleSettings,
     closeSettings,
     goToLocus,
-    loading: manifestQuery.isPending || (selectedGeneId != null && regionQuery.isPending),
-    error: manifestQuery.error ?? regionQuery.error,
+    loading:
+      manifestQuery.isPending ||
+      browserGenesQuery.isPending ||
+      (!isNeighbor && regionGeneId != null && regionQuery.isPending),
+    error: manifestQuery.error ?? regionQuery.error ?? browserGenesQuery.error,
   }
 }

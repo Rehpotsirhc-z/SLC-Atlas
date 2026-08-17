@@ -14,6 +14,7 @@ SOURCES_FILE = "structure/sources.parquet"
 
 MODELS_FILE = "browser/models.bb"
 WINDOWS_FILE = "browser/windows.parquet"
+BROWSER_GENES_FILE = "browser/genes.parquet"
 TRACKS_FILE = "browser/tracks.parquet"
 CHROMS_FILE = "browser/chroms.parquet"
 GWAS_DIR = "browser/gwas"
@@ -173,6 +174,11 @@ class ParquetSource:
             return None
         window = windows.filter(pl.col("gene_id") == gene_id).collect()
         return window.to_dicts()[0] if not window.is_empty() else None
+
+    def get_browser_genes(self) -> list[dict] | None:
+        """Return every gene available to the browser."""
+        lf = self._scan_optional(BROWSER_GENES_FILE)
+        return lf.collect().to_dicts() if lf is not None else None
 
     def models_path(self) -> Path | None:
         path = self._dir / MODELS_FILE

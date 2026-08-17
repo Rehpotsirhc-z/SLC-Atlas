@@ -4,13 +4,20 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "../client"
-import type { Region, TrackManifest } from "@/types/browser"
+import type { BrowserGene, Region, TrackManifest } from "@/types/browser"
 import type { DataSourceRecord } from "@/types/structure"
 
 export const useTrackManifest = () =>
   useQuery({
     queryKey: ["browser", "tracks"],
     queryFn: () => api.get<TrackManifest>("/browser/tracks.json"),
+    staleTime: Infinity,
+  })
+
+export const useBrowserGenes = () =>
+  useQuery({
+    queryKey: ["browser", "genes"],
+    queryFn: () => api.get<BrowserGene[]>("/browser/genes.json"),
     staleTime: Infinity,
   })
 

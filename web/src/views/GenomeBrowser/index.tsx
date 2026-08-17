@@ -173,10 +173,10 @@ export default function GenomeBrowser() {
         sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
       >
         <BrowserToolbar
-          genes={state.genes}
+          genes={state.searchGenes}
           mode={state.mode}
           onModeChange={state.setMode}
-          onSelectGene={state.setSelectedGeneId}
+          onSelectGene={state.selectRegionGene}
           onGoToLocus={state.goToLocus}
           onZoom={(factor) => state.view.zoomBy(factor)}
           settingsOpen={state.settingsOpen}

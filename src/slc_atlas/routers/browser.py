@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..data.source import DataSource
 from ..deps import get_source
-from ..models.browser import Region, TrackManifest
+from ..models.browser import BrowserGene, Region, TrackManifest
 from ..models.structure import DataSourceRecord
 from ..responses import byte_range_file
 
@@ -40,6 +40,15 @@ def get_manifest(source: DataSource = Depends(get_source)):
 )
 def list_sources(source: DataSource = Depends(get_source)):
     return require(source.get_browser_sources()).to_dicts()
+
+
+@router.get(
+    "/browser/genes.json",
+    response_model=list[BrowserGene],
+    summary="Genes available for browser search and navigation",
+)
+def list_browser_genes(source: DataSource = Depends(get_source)):
+    return require(source.get_browser_genes())
 
 
 # Keep this route before gene routes so filenames are not interpreted as gene IDs

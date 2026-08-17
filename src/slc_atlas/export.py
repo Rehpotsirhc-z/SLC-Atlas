@@ -138,7 +138,11 @@ def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
                 f"/api/structure/{gid}/experimental.json",
             ]
     if capabilities.get("browser"):
-        urls += ["/api/browser/tracks.json", "/api/browser/sources.json"]
+        urls += [
+            "/api/browser/tracks.json",
+            "/api/browser/sources.json",
+            "/api/browser/genes.json",
+        ]
         urls += [f"/api/browser/{gid}/region.json" for gid in gene_ids]
     return urls
 

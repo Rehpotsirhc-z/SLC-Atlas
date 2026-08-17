@@ -9,11 +9,14 @@ import SearchIcon from "@mui/icons-material/Search"
 import { Autocomplete, InputAdornment, TextField, Typography } from "@mui/material"
 import { acInputSx, StyledPopper } from "@/components/autocomplete/styles"
 import { VirtualListbox } from "@/components/autocomplete/VirtualListbox"
-import type { Gene } from "@/types/gene"
+import type { BrowserGene } from "@/types/browser"
 
 // Accept common colon, space, hyphen, and en dash coordinate formats
 const LOCUS = /^(chr)?([0-9a-z]{1,5})[:\s]+([\d,]+)[-–\s]+([\d,]+)$/i
 const POINT = /^(chr)?([0-9a-z]{1,5})[:\s]+([\d,]+)$/i
+
+const INITIAL_OPTIONS = 1000
+const QUERY_OPTIONS = 100
 
 export interface Locus {
   chrom: string
@@ -46,7 +49,7 @@ export function parseLocus(text: string, span: number): Locus | null {
 }
 
 interface Props {
-  genes: Gene[]
+  genes: BrowserGene[]
   onSelectGene: (geneId: string) => void
   onGoToLocus: (locus: Locus) => void
   width?: number | string
@@ -61,7 +64,7 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
     () =>
       genes.map((gene) => ({
         gene,
-        lc: `${gene.symbol}\u0000${gene.id}\u0000${gene.name}\u0000${gene.alias ?? ""}`.toLowerCase(),
+        lc: `${gene.symbol}\u0000${gene.gene_id}\u0000${gene.name ?? ""}`.toLowerCase(),
         lcSymbol: gene.symbol.toLowerCase(),
       })),
     [genes],
@@ -70,18 +73,29 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
   const options = useMemo(() => {
     const showAll = committed !== null && text === committed
     const query = showAll ? "" : text.trim().toLowerCase()
-    if (!query) return genes.slice(0, 100)
-    return index
-      .filter((entry) => entry.lc.includes(query))
-      .sort((a, b) => {
-        const exact = Number(b.lcSymbol === query) - Number(a.lcSymbol === query)
-        if (exact) return exact
-        const prefix = Number(b.lcSymbol.startsWith(query)) - Number(a.lcSymbol.startsWith(query))
-        if (prefix) return prefix
-        return a.lcSymbol.localeCompare(b.lcSymbol, undefined, { numeric: true })
-      })
-      .map((entry) => entry.gene)
-      .slice(0, 200)
+    // Preserve source order so family genes appear first
+    if (!query) return genes.slice(0, INITIAL_OPTIONS)
+    // Rank exact and prefix matches without sorting the full index
+    const exact = []
+    const prefix = []
+    const contains = []
+    for (const entry of index) {
+      if (entry.lcSymbol === query) exact.push(entry)
+      else if (entry.lcSymbol.startsWith(query)) prefix.push(entry)
+      else if (entry.lc.includes(query)) contains.push(entry)
+    }
+    const bySymbol = (a: (typeof index)[number], b: (typeof index)[number]) =>
+      a.lcSymbol.localeCompare(b.lcSymbol, undefined, { numeric: true })
+    const out = []
+    for (const bucket of [exact, prefix, contains]) {
+      if (out.length >= QUERY_OPTIONS) break
+      bucket.sort(bySymbol)
+      for (const entry of bucket) {
+        out.push(entry.gene)
+        if (out.length >= QUERY_OPTIONS) break
+      }
+    }
+    return out
   }, [text, index, genes, committed])
 
   const submit = useCallback(
@@ -91,10 +105,10 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
       const named = genes.find(
         (gene) =>
           gene.symbol.toLowerCase() === query.toLowerCase() ||
-          gene.id.toLowerCase() === query.toLowerCase(),
+          gene.gene_id.toLowerCase() === query.toLowerCase(),
       )
       if (named) {
-        onSelectGene(named.id)
+        onSelectGene(named.gene_id)
         setText(named.symbol)
         setCommitted(named.symbol)
         return
@@ -109,7 +123,7 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
   )
 
   return (
-    <Autocomplete<Gene, false, false, true>
+    <Autocomplete<BrowserGene, false, false, true>
       freeSolo
       size="small"
       sx={{ width, "& .MuiAutocomplete-clearIndicator": { color: "text.secondary" } }}
@@ -122,7 +136,7 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
       }}
       onChange={(_event, next) => {
         if (next && typeof next !== "string") {
-          onSelectGene(next.id)
+          onSelectGene(next.gene_id)
           setCommitted(next.symbol)
           setText(next.symbol)
         } else if (next === null) {
@@ -146,11 +160,12 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
               boxSizing: "border-box",
             }}
           >
-            <div>
+            <div style={{ minWidth: 0, width: "100%" }}>
               <Typography
                 component="div"
                 variant="body2"
                 fontWeight={600}
+                noWrap
                 sx={{ m: 0, lineHeight: 1.2, fontSize: "0.9rem" }}
               >
                 {option.symbol}
@@ -159,9 +174,10 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
                 component="div"
                 variant="caption"
                 color="text.secondary"
+                noWrap
                 sx={{ m: 0, lineHeight: 1.2, fontSize: "0.8125rem" }}
               >
-                {option.name}
+                {option.name ?? option.chrom}
               </Typography>
             </div>
           </li>
