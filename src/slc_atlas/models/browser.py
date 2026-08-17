@@ -45,6 +45,8 @@ class GwasStudy(BaseModel):
     n_variants: int = 0
     # Chromosomes represented by the study, used to distinguish unavailable data from no hits
     chroms: list[str] = []
+    # GWAS pyramid bin sizes in bases per column, finest first
+    levels: list[int] = []
 
 
 class TrackManifest(BaseModel):

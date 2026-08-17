@@ -10,7 +10,7 @@
  * field order is named here rather than counted out at each use.
  */
 
-import type { Exon, GwasPoint, RawFeature, TranscriptModel } from "@/types/browser"
+import type { Exon, RawFeature, TranscriptModel } from "@/types/browser"
 
 const enum Model {
   Name,
@@ -29,13 +29,6 @@ const enum Model {
   IsAtlasGene,
 }
 
-const enum Variant {
-  SnpId,
-  PValue,
-  NegLog10P,
-  Beta,
-}
-
 const numbers = (packed: string): number[] =>
   packed
     .split(",")
@@ -51,9 +44,6 @@ function exons(start: number, sizes: string, starts: string): Exon[] {
 }
 
 const maybe = (value: string | undefined): string | null => (value ? value : null)
-
-const number = (value: string | undefined): number | null =>
-  value === undefined || value === "" ? null : Number(value)
 
 export function parseTranscript(chrom: string, feature: RawFeature): TranscriptModel {
   const fields = feature.rest.split("\t")
@@ -75,18 +65,5 @@ export function parseTranscript(chrom: string, feature: RawFeature): TranscriptM
     cds_end: coding ? cdsEnd : null,
     exons: exons(feature.start, fields[Model.BlockSizes] ?? "", fields[Model.BlockStarts] ?? ""),
     is_atlas_gene: fields[Model.IsAtlasGene] === "1",
-  }
-}
-
-export function parseVariant(feature: RawFeature): GwasPoint {
-  const fields = feature.rest.split("\t")
-  const snp = fields[Variant.SnpId]
-  return {
-    snp_id: snp && snp !== "." ? snp : null,
-    position: feature.start,
-    p_value: number(fields[Variant.PValue]),
-    // Empty marks a p-value that underflowed to zero, which is drawn above the scale
-    neg_log10_p: number(fields[Variant.NegLog10P]),
-    beta: number(fields[Variant.Beta]),
   }
 }

@@ -42,6 +42,8 @@ export interface GwasStudy {
   n_variants: number
   // Distinguishes chromosomes without study data from those without significant hits
   chroms: string[]
+  // GWAS pyramid bin sizes in bases per column, finest first
+  levels: number[]
 }
 
 export interface TrackManifest {
@@ -94,13 +96,4 @@ export interface RawFeature {
   start: number
   end: number
   rest: string
-}
-
-export interface GwasPoint {
-  snp_id: string | null
-  position: number
-  p_value: number | null
-  // Null marks a p-value that underflowed to zero
-  neg_log10_p: number | null
-  beta: number | null
 }

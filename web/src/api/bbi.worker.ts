@@ -8,13 +8,26 @@ import { BigBed, BigWig } from "@gmod/bbi"
 
 interface ReadRequest {
   id: number
-  kind: "coverage" | "features"
+  kind: "coverage" | "features" | "variants"
   url: string
   chrom: string
   start: number
   end: number
   /** Set to read the file's own summaries at this many bases a column instead of every record */
   basesPerSpan?: number
+}
+
+// Columnar GWAS variants transferred to the main thread
+interface VariantArrays {
+  positions: Int32Array
+  // −log10(p); NaN when the p-value underflows
+  values: Float32Array
+  // Effect sizes; NaN when unavailable
+  betas: Float32Array
+  // Concatenated rsIDs
+  names: string
+  // Offsets into names, including the final bound
+  nameAt: Int32Array
 }
 
 interface CoverageArrays {
@@ -64,8 +77,7 @@ function open(url: string, kind: ReadRequest["kind"]) {
   let held = readers.get(url)
   if (!held) {
     held = (kind === "features" ? new BigBed({ url }) : new BigWig({ url })) as unknown as
-      | BigWigReader
-      | BigBedReader
+      BigWigReader | BigBedReader
     readers.set(url, held)
   }
   return held
@@ -102,6 +114,42 @@ async function readCoverage(request: ReadRequest): Promise<CoverageArrays> {
   return toArrays(await reader.getFeatures(chrom, start, end))
 }
 
+// Read GWAS variants into transferable columnar arrays
+// Fields follow VARIANT_FIELDS: snp_id, p_value, neg_log10_p, beta
+// The p-value is omitted because neg_log10_p preserves values below the Float32 range
+async function readVariants(request: ReadRequest): Promise<VariantArrays> {
+  const reader = open(request.url, "features") as BigBedReader
+  const got = await reader.getFeatures(request.chrom, request.start, request.end)
+  const count = got.length
+  const positions = new Int32Array(count)
+  const values = new Float32Array(count)
+  const betas = new Float32Array(count)
+  const nameAt = new Int32Array(count + 1)
+  const names: string[] = new Array(count)
+  let at = 0
+  for (let i = 0; i < count; i++) {
+    const feature = got[i]
+    const rest = feature.rest ?? ""
+    // Parse in place to avoid temporary strings for every variant
+    const a = rest.indexOf("\t")
+    const b = rest.indexOf("\t", a + 1)
+    const c = rest.indexOf("\t", b + 1)
+    const snp = a < 0 ? "" : rest.slice(0, a)
+    const name = snp === "." ? "" : snp
+    positions[i] = feature.start
+    // Missing values represent p-values that underflowed to zero
+    const value = b < 0 ? "" : rest.slice(b + 1, c < 0 ? rest.length : c)
+    values[i] = value === "" ? NaN : +value
+    const beta = c < 0 ? "" : rest.slice(c + 1)
+    betas[i] = beta === "" ? NaN : +beta
+    names[i] = name
+    nameAt[i] = at
+    at += name.length
+  }
+  nameAt[count] = at
+  return { positions, values, betas, names: names.join(""), nameAt }
+}
+
 async function readFeatures(request: ReadRequest): Promise<RawFeature[]> {
   const reader = open(request.url, "features") as BigBedReader
   const got = await reader.getFeatures(request.chrom, request.start, request.end)
@@ -123,6 +171,19 @@ const ctx = self as unknown as {
 
 ctx.onmessage = (event) => {
   const request = event.data
+  if (request.kind === "variants") {
+    readVariants(request)
+      .then((block) => {
+        ctx.postMessage({ id: request.id, ...block }, [
+          block.positions.buffer,
+          block.values.buffer,
+          block.betas.buffer,
+          block.nameAt.buffer,
+        ])
+      })
+      .catch((error: unknown) => ctx.postMessage({ id: request.id, error: String(error) }))
+    return
+  }
   if (request.kind === "features") {
     readFeatures(request)
       .then((features) => ctx.postMessage({ id: request.id, features }))

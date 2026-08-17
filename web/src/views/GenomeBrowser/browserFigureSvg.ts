@@ -6,7 +6,8 @@
 
 import type { CoverageArrays } from "@/api/bbi"
 import { monoFontFamily, svgSansFontFamily } from "@/theme/fonts"
-import type { CoverageTrack, GwasPoint, GwasStudy, TranscriptModel } from "@/types/browser"
+import type { VariantBlock } from "@/api/bbi"
+import type { CoverageTrack, GwasStudy, TranscriptModel } from "@/types/browser"
 import { esc } from "@/components/heatmap/figureSvg"
 import {
   AXIS_TICK_PX,
@@ -25,7 +26,7 @@ import {
 } from "./constants"
 import { columnPeaks } from "./drawCoverage"
 import { arrowHead } from "./drawGenes"
-import { GWAS_PLOT_TOP, gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
+import { firstFrom, GWAS_PLOT_TOP, gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
 import { countInView, type GeneSpan, type TrackLayout } from "./geneLayout"
 import { scaleFor, ticksFor, type Viewport } from "./scale"
 import { formatSignal, yTicks } from "./yAxis"
@@ -71,7 +72,7 @@ export interface FigureInput {
   laneHeight: number
   yMax: number | null
   study: GwasStudy | null
-  gwasPoints: GwasPoint[]
+  gwasBlock: VariantBlock
   showGwas: boolean
   showGrid: boolean
   showSignificance: boolean
@@ -241,23 +242,27 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
 
   if (input.showGwas && input.study) {
     if (openName) y += GROUP_GAP
-    const max = gwasCeiling(input.gwasPoints, scale.start, scale.end)
+    const max = gwasCeiling(input.gwasBlock, scale.start, scale.end)
     const overflowY = GWAS_POINT_R + 1
     const toY = (value: number) =>
       GWAS_LANE_HEIGHT - (value / max) * (GWAS_LANE_HEIGHT - GWAS_PLOT_TOP)
-    const dots = input.gwasPoints
-      .filter((point) => point.position >= scale.start && point.position < scale.end)
-      .map((point) => {
-        const cy = point.neg_log10_p === null ? overflowY : toY(point.neg_log10_p)
-        const fill =
-          point.beta === null
-            ? input.ink.muted
-            : point.beta > 0
-              ? input.ink.raised
-              : input.ink.lowered
-        return `<circle cx="${scale.toX(point.position).toFixed(1)}" cy="${cy.toFixed(1)}" r="${GWAS_POINT_R}" fill="${fill}"/>`
-      })
-      .join("")
+    const { positions, values, betas } = input.gwasBlock
+    const marks: string[] = []
+    for (let i = firstFrom(input.gwasBlock, scale.start); i < positions.length; i++) {
+      if (positions[i] >= scale.end) break
+      const value = values[i]
+      const cy = Number.isNaN(value) ? overflowY : toY(value)
+      const beta = betas[i]
+      const fill = Number.isNaN(beta)
+        ? input.ink.muted
+        : beta > 0
+          ? input.ink.raised
+          : input.ink.lowered
+      marks.push(
+        `<circle cx="${scale.toX(positions[i]).toFixed(1)}" cy="${cy.toFixed(1)}" r="${GWAS_POINT_R}" fill="${fill}"/>`,
+      )
+    }
+    const dots = marks.join("")
     const rule =
       input.showSignificance && SIGNIFICANCE_Y <= max
         ? `<line x1="0" y1="${toY(SIGNIFICANCE_Y).toFixed(1)}" x2="${PLOT_W}" y2="${toY(SIGNIFICANCE_Y).toFixed(1)}" stroke="${input.ink.significance}" stroke-dasharray="4 3"/>`

@@ -105,7 +105,7 @@ export default function GenomeBrowser() {
       laneHeight: state.prefs.laneHeight,
       yMax: state.yMaxFor(),
       study: state.prefs.showGwas ? (state.study ?? null) : null,
-      gwasPoints: state.gwasPoints,
+      gwasBlock: state.gwasBlock,
       showGwas: state.prefs.showGwas,
       showGrid: state.prefs.showGrid,
       showSignificance: state.prefs.showSignificance,
@@ -275,10 +275,10 @@ export default function GenomeBrowser() {
                       <LaneGroup>
                         <GwasLane
                           study={state.study}
-                          points={state.gwasPoints}
+                          block={state.gwasBlock}
                           chrom={state.region?.chrom ?? ""}
                           covered={state.studyCovers}
-                          thinned={state.gwasThinned}
+                          bin={state.gwasBin}
                           loading={state.gwasLoading}
                           width={plotWidth}
                           gutter={gutter}

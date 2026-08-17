@@ -60,6 +60,8 @@ STUDY_SCHEMA = {
     "license_spdx": pl.Utf8,
     "n_variants": pl.Int64,
     "chroms": pl.List(pl.Utf8),
+    # GWAS pyramid bin sizes in bases per column, finest first
+    "levels": pl.List(pl.Int64),
 }
 
 SOURCES_SCHEMA = {
@@ -132,26 +134,9 @@ def transcript_rows(transcripts, sizes: dict[str, int], atlas_ids: set[str]):
         )
 
 
-def overview(variants: pl.DataFrame, bin_size: int, cut: float) -> pl.DataFrame:
-    """Keep significant variants and the strongest variant in each genomic bin."""
-    if variants.is_empty():
-        return variants
-    strongest = (
-        variants.with_columns(bin=pl.col("position") // bin_size)
-        .sort("p_value")
-        .group_by("chrom", "bin")
-        .head(1)
-        # Grouping reorders the columns, and stacking two frames goes by position
-        .select(variants.columns)
-    )
-    return pl.concat([variants.filter(pl.col("p_value") < cut), strongest]).unique(
-        subset=["chrom", "position", "snp_id"]
-    )
-
-
-def variant_rows(variants: pl.DataFrame, sizes: dict[str, int]):
-    """One study's variants as bigBed rows, ordered and carrying their own statistics."""
-    frame = (
+def variant_frame(variants: pl.DataFrame, sizes: dict[str, int]) -> pl.DataFrame:
+    """Return a study's variants in bigBed column order."""
+    return (
         variants.filter(pl.col("chrom").is_in(list(sizes)))
         # Keep underflowed p-values off the numeric scale
         .with_columns(
@@ -161,10 +146,20 @@ def variant_rows(variants: pl.DataFrame, sizes: dict[str, int]):
             .cast(pl.Float32)
         )
         .select("chrom", "position", "snp_id", "p_value", "neg_log10_p", "beta")
-        .sort("chrom", "position")
     )
-    for row in frame.iter_rows():
-        yield bigbed.variant_row(*row)
+
+
+def variant_rows(frame: pl.DataFrame, levels: list[dict], chroms: dict[str, int]):
+    """Yield full-resolution and pyramid variants in bigBed order."""
+    frames = [frame] + [level["frame"] for level in levels]
+    for name in sorted(chroms):
+        for source in frames:
+            own = source.filter(pl.col("chrom") == name)
+            if own.is_empty():
+                continue
+            for row in own.sort("position").iter_rows():
+                yield bigbed.variant_row(*row)
+            break
 
 
 def _reduction(path: Path) -> int:
@@ -283,7 +278,9 @@ def source_frame(source_dir: Path, coverage: list[dict], studies: list[dict]) ->
     )
 
 
-def study_frame(studies: list[dict]) -> pl.DataFrame:
+def study_frame(studies: list[dict], written: dict[str, list[int]] | None = None) -> pl.DataFrame:
+    """Combine fetched study metadata with generated pyramid levels."""
+    built = written or {}
     rows = [
         {
             "study_id": s["study_id"],
@@ -294,6 +291,7 @@ def study_frame(studies: list[dict]) -> pl.DataFrame:
             "license_spdx": s.get("license_spdx", ""),
             "n_variants": int(s.get("n_variants") or 0),
             "chroms": [c for c in (s.get("chroms") or "").split(",") if c],
+            "levels": built.get(s["study_id"], []),
         }
         for s in studies
     ]

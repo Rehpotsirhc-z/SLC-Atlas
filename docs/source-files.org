@@ -211,7 +211,7 @@ Large binary assets remain in their native formats:
 | ~source/structure/models/~ | ~app/structure/models/~ | Copied and served locally |
 | ~source/browser/coverage/~ | ~app/browser/coverage/~ | Copied and served with byte-range support |
 | ~source/browser/transcripts.bed~ | ~app/browser/models.bb~ | bigBed read by byte range for the region in view |
-| ~source/browser/gwas.parquet~ | ~app/browser/gwas/{study}.bb~ | One bigBed per study, plus a smaller ~.overview.bb~ for wide views |
+| ~source/browser/gwas.parquet~ | ~app/browser/gwas/{study}.bb~ | One bigBed per study, with full-resolution variants and pyramid levels for wider views |
 
 The static exporter copies these binary trees directly and renders the remaining
 API responses as JSON.

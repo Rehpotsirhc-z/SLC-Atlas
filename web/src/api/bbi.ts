@@ -51,17 +51,65 @@ export interface RawFeature {
 export const modelsUrl = () => "/api/browser/models.bb"
 export const gwasUrl = (studyId: string) => `/api/browser/gwas/${studyId}.bb`
 
+// Columnar GWAS variants ready for rendering
+export interface VariantBlock {
+  positions: Int32Array
+  // −log10(p); NaN when the p-value underflows
+  values: Float32Array
+  // Effect sizes; NaN when unavailable
+  betas: Float32Array
+  names: string
+  nameAt: Int32Array
+}
+
+// Store typed arrays as non-enumerable properties to keep React profiling inexpensive
+function heldBlock(
+  positions: Int32Array,
+  values: Float32Array,
+  betas: Float32Array,
+  names: string,
+  nameAt: Int32Array,
+): VariantBlock {
+  return Object.defineProperties({} as VariantBlock, {
+    positions: { value: positions },
+    values: { value: values },
+    betas: { value: betas },
+    names: { value: names },
+    nameAt: { value: nameAt },
+  })
+}
+
+export const EMPTY_VARIANTS: VariantBlock = heldBlock(
+  new Int32Array(0),
+  new Float32Array(0),
+  new Float32Array(0),
+  "",
+  new Int32Array(1),
+)
+
+// Return an rsID only when requested
+export const variantName = (block: VariantBlock, index: number): string | null => {
+  const from = block.nameAt[index]
+  const to = block.nameAt[index + 1]
+  return to > from ? block.names.slice(from, to) : null
+}
+
 interface Reply {
   id: number
   starts?: Int32Array
   ends?: Int32Array
   scores?: Float32Array
   features?: RawFeature[]
+  positions?: Int32Array
+  values?: Float32Array
+  betas?: Float32Array
+  names?: string
+  nameAt?: Int32Array
   error?: string
 }
 
 interface Waiting {
-  resolve: (answer: CoverageArrays | RawFeature[]) => void
+  resolve: (answer: CoverageArrays | RawFeature[] | VariantBlock) => void
   reject: (error: Error) => void
 }
 
@@ -151,12 +199,17 @@ function reader(): Worker {
   if (worker) return worker
   const started = new Worker(new URL("./bbi.worker.ts", import.meta.url), { type: "module" })
   started.onmessage = (event: MessageEvent<Reply>) => {
-    const { id, starts, ends, scores, features, error } = event.data
+    const { id, starts, ends, scores, features, positions, values, betas, names, nameAt, error } =
+      event.data
     const held = waiting.get(id)
     if (!held) return
     waiting.delete(id)
     if (error !== undefined) {
       held.reject(new Error(error))
+      return
+    }
+    if (positions && values && betas && nameAt) {
+      held.resolve(heldBlock(positions, values, betas, names ?? "", nameAt))
       return
     }
     if (features) {
@@ -187,7 +240,7 @@ export interface Read {
   basesPerSpan?: number
 }
 
-function ask<T>(kind: "coverage" | "features", read: Read): Promise<T> {
+function ask<T>(kind: "coverage" | "features" | "variants", read: Read): Promise<T> {
   const { url, chrom, start, end, signal, basesPerSpan } = read
   const priority = read.priority ?? offscreen
   const id = nextId++
@@ -237,6 +290,9 @@ export const readCoverage = (read: Read): Promise<CoverageArrays> => ask("covera
 
 /** The features of one bigBed over a stretch, whatever kind of thing they turn out to be. */
 export const readFeatures = (read: Read): Promise<RawFeature[]> => ask("features", read)
+
+// Read columnar GWAS variants for a genomic interval
+export const readVariants = (read: Read): Promise<VariantBlock> => ask("variants", read)
 
 /**
  * Open a file before a locus is asked of it. Four of the five range requests a first read makes are

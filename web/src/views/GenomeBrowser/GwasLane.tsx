@@ -4,8 +4,9 @@
 
 import { memo, useCallback, useMemo, useRef } from "react"
 import { Box, useTheme } from "@mui/material"
-import type { GwasPoint, GwasStudy } from "@/types/browser"
-import { EDGE_PAD, GWAS_LANE_HEIGHT, GWAS_LANE_KEY, GWAS_OVERVIEW_BIN, LANE_GAP } from "./constants"
+import { variantName, type VariantBlock } from "@/api/bbi"
+import type { GwasStudy } from "@/types/browser"
+import { EDGE_PAD, GWAS_LANE_HEIGHT, GWAS_LANE_KEY, LANE_GAP } from "./constants"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
 import LaneAxis, { type AxisHandle } from "./LaneAxis"
 import LaneFrame from "./LaneFrame"
@@ -19,11 +20,11 @@ import type { Painter } from "./useBrowserView"
 
 interface Props {
   study: GwasStudy
-  points: GwasPoint[]
+  block: VariantBlock
   chrom: string
   covered: boolean
-  /** The view is too wide for every variant, so what is drawn is the overview */
-  thinned: boolean
+  /** Bases per mark of the copy being drawn, or 0 when every variant is */
+  bin: number
   loading: boolean
   width: number
   gutter: number
@@ -36,20 +37,25 @@ interface Props {
 }
 
 interface Hovered {
-  point: GwasPoint
+  /** Where in the block the variant sits; its fields are read off the block on demand */
+  at: number
+  snp: string | null
+  position: number
+  value: number
+  beta: number
   x: number
   y: number
 }
 
 // The variant is what the tooltip shows, so moving between pixels over the same one is nothing
-const sameHover = (a: Hovered | null, b: Hovered | null) => a?.point === b?.point
+const sameHover = (a: Hovered | null, b: Hovered | null) => a?.at === b?.at
 
 function GwasLane({
   study,
-  points,
+  block,
   chrom,
   covered,
-  thinned,
+  bin,
   loading,
   width,
   gutter,
@@ -82,14 +88,14 @@ function GwasLane({
       // ceiling recomputed every frame slides every variant up and down under the drag, and it
       // is a scan of the window on top of the one that draws it
       if (!moving() || shownMax.current === 0) {
-        shownMax.current = gwasCeiling(points, scale.start, scale.end)
+        shownMax.current = gwasCeiling(block, scale.start, scale.end)
       }
       const max = shownMax.current
       drawGwas({
         ctx,
         scale,
         height: GWAS_LANE_HEIGHT,
-        points,
+        block,
         max,
         ink,
         grid,
@@ -97,7 +103,7 @@ function GwasLane({
       })
       axisRef.current?.draw(max, false, GWAS_LANE_HEIGHT - GWAS_PLOT_TOP)
     },
-    [points, ink, grid, showSignificance, moving],
+    [block, ink, grid, showSignificance, moving],
   )
 
   const watchThis = useMemo<LaneWatch | undefined>(
@@ -111,17 +117,26 @@ function GwasLane({
     (clientX: number, clientY: number): Hovered | null => {
       const box = plotRef.current?.getBoundingClientRect()
       if (!box) return null
-      const found = gwasNear(
-        points,
+      const at = gwasNear(
+        block,
         frameScale(liveView(), width),
         clientX - box.left,
         clientY - box.top,
         GWAS_LANE_HEIGHT,
         shownMax.current,
       )
-      return found ? { point: found, x: clientX, y: clientY } : null
+      if (at < 0) return null
+      return {
+        at,
+        snp: variantName(block, at),
+        position: block.positions[at],
+        value: block.values[at],
+        beta: block.betas[at],
+        x: clientX,
+        y: clientY,
+      }
     },
-    [points, liveView, width],
+    [block, liveView, width],
   )
 
   const { hovered: hover, onMove, clear } = useHoverFrame(read, sameHover)
@@ -143,12 +158,12 @@ function GwasLane({
         name={study.trait}
         group="GWAS"
         title={
-          thinned
-            ? `${study.trait}. Summary: significant variants and the strongest per ${GWAS_OVERVIEW_BIN / 1000} kb`
+          bin > 0
+            ? `${study.trait}. Reduced: one mark per ${Math.round(bin / 1000)} kb, the width of a column here`
             : study.trait
         }
       >
-        −log10(p){thinned ? " · summary" : ""}
+        −log10(p){bin > 0 ? " · reduced" : ""}
       </LaneGutter>
       <LaneAxis height={GWAS_LANE_HEIGHT} handleRef={axisRef} />
       <Box
@@ -184,22 +199,20 @@ function GwasLane({
       </Box>
       {hover && (
         <BrowserTooltip x={hover.x} y={hover.y}>
-          <TipTitle>{hover.point.snp_id || "unnamed variant"}</TipTitle>
+          <TipTitle>{hover.snp || "unnamed variant"}</TipTitle>
           <TipLine>{study.trait}</TipLine>
-          <TipLine>{formatPoint(chrom, hover.point.position)}</TipLine>
+          <TipLine>{formatPoint(chrom, hover.position)}</TipLine>
           <TipLine>
-            {hover.point.p_value === null || hover.point.p_value === 0
+            {Number.isNaN(hover.value)
               ? "p is smaller than the browser can represent"
-              : `p = ${hover.point.p_value.toExponential(2)}`}
+              : `p = ${(10 ** -hover.value).toExponential(2)}`}
           </TipLine>
-          {hover.point.neg_log10_p !== null && (
-            <TipLine>{`−log10(p) = ${hover.point.neg_log10_p.toFixed(2)}`}</TipLine>
+          {!Number.isNaN(hover.value) && (
+            <TipLine>{`−log10(p) = ${hover.value.toFixed(2)}`}</TipLine>
           )}
-          {hover.point.beta !== null && (
+          {!Number.isNaN(hover.beta) && (
             <TipLine>
-              {`\u03b2 = ${hover.point.beta.toFixed(4)} (${
-                hover.point.beta > 0 ? "raises" : "lowers"
-              } the trait)`}
+              {`\u03b2 = ${hover.beta.toFixed(4)} (${hover.beta > 0 ? "raises" : "lowers"} the trait)`}
             </TipLine>
           )}
         </BrowserTooltip>

@@ -21,7 +21,12 @@ import {
   type CoverageArrays,
 } from "@/api/bbi"
 import type { CoverageTrack } from "@/types/browser"
-import { COVERAGE_BLOCK_MARGIN_MAX, COVERAGE_BLOCK_MIN, SUMMARY_MAX_COLUMNS } from "./constants"
+import {
+  BLOCK_MARGIN_SPANS,
+  COVERAGE_BLOCK_MARGIN_MAX,
+  COVERAGE_BLOCK_MIN,
+  SUMMARY_MAX_COLUMNS,
+} from "./constants"
 import type { Viewport } from "./scale"
 
 export interface LaneData {
@@ -53,10 +58,14 @@ export interface CoverageBlock {
   end: number
 }
 
-/** Return a stable read block containing the view and a bounded pan margin. */
-export function coverageBlock(view: Viewport, chromSize: number): CoverageBlock {
+// Return a stable read block with a bounded pan margin
+export function coverageBlock(
+  view: Viewport,
+  chromSize: number,
+  marginSpans = BLOCK_MARGIN_SPANS,
+): CoverageBlock {
   const span = Math.max(view.end - view.start, 1)
-  const margin = Math.min(span * 1.5, COVERAGE_BLOCK_MARGIN_MAX)
+  const margin = Math.min(span * marginSpans, COVERAGE_BLOCK_MARGIN_MAX)
   const size = Math.min(
     chromSize,
     Math.max(COVERAGE_BLOCK_MIN, 2 ** Math.ceil(Math.log2(span + margin * 2))),
@@ -76,6 +85,7 @@ export function useCoverageBlock(
   view: Viewport,
   chrom: string | undefined,
   chromSize: number,
+  marginSpans = BLOCK_MARGIN_SPANS,
 ): CoverageBlock | null {
   const held = useRef<{ chrom: string; block: CoverageBlock } | null>(null)
   if (!chrom || chromSize <= 0) return null
@@ -88,7 +98,7 @@ export function useCoverageBlock(
   ) {
     return kept.block
   }
-  const block = coverageBlock(view, chromSize)
+  const block = coverageBlock(view, chromSize, marginSpans)
   held.current = { chrom, block }
   return block
 }

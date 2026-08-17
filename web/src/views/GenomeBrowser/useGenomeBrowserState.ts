@@ -11,7 +11,7 @@ import type { Chrom, CoverageTrack, Region } from "@/types/browser"
 import type { Gene } from "@/types/gene"
 import { DEFAULT_PREFS, type BrowserPrefs } from "./BrowserSettings"
 import type { GeneTrackMode } from "./GeneTrack"
-import { TRANSCRIPT_MAX_SPAN, Y_HEADROOM } from "./constants"
+import { GWAS_BLOCK_MARGIN_SPANS, TRANSCRIPT_MAX_SPAN, Y_HEADROOM } from "./constants"
 import { chromNames } from "./chromNames"
 import { peakInView } from "./drawCoverage"
 import { rowGap } from "./geneLayout"
@@ -95,13 +95,9 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   // since a chromosome carries tens of thousands of transcripts and none of them would read
   const drawn: GeneTrackMode =
     mode === "transcripts" && view.view.end - view.view.start > TRANSCRIPT_MAX_SPAN ? "genes" : mode
-  const gwas = useVisibleGwas(
-    region?.chrom,
-    block,
-    view.view,
-    study?.study_id ?? null,
-    lanes.isVisible,
-  )
+  // The point lane keeps its own, closer block: see GWAS_BLOCK_MARGIN_SPANS
+  const gwasBlock = useCoverageBlock(view.view, region?.chrom, chromSize, GWAS_BLOCK_MARGIN_SPANS)
+  const gwas = useVisibleGwas(region?.chrom, gwasBlock, step, study, lanes.isVisible)
 
   // Only the shared mode needs every lane measured together, and it is worked out where the
   // view has settled rather than inside a frame
@@ -183,9 +179,9 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     region,
     study,
     studyCovers,
-    gwasPoints: gwas.points,
+    gwasBlock: gwas.block,
     gwasLoading: gwas.loading,
-    gwasThinned: gwas.thinned,
+    gwasBin: gwas.bin,
     models,
     modelGap,
     allTracks,

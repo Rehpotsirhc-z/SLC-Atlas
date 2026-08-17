@@ -4,17 +4,26 @@
 
 /** Load gene models and GWAS variants for the current genomic block. */
 
-import { useMemo } from "react"
+import { useMemo, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { READ_OFFSCREEN, READ_VISIBLE, gwasUrl, modelsUrl, readFeatures } from "@/api/bbi"
-import { parseTranscript, parseVariant } from "@/api/features"
-import type { GwasPoint, TranscriptModel } from "@/types/browser"
-import { GWAS_FULL_MAX_SPAN, GWAS_LANE_KEY, GWAS_OVERVIEW_SUFFIX } from "./constants"
-import type { Viewport } from "./scale"
+import {
+  EMPTY_VARIANTS,
+  READ_OFFSCREEN,
+  READ_VISIBLE,
+  gwasUrl,
+  modelsUrl,
+  readFeatures,
+  readVariants,
+  type VariantBlock,
+} from "@/api/bbi"
+import { parseTranscript } from "@/api/features"
+import type { GwasStudy, TranscriptModel } from "@/types/browser"
+import { GWAS_LANE_KEY } from "./constants"
+import { levelChrom, pickLevel } from "./gwasLevels"
 import type { CoverageBlock } from "./useCoverageData"
 
 const NO_TRANSCRIPTS: TranscriptModel[] = []
-const NO_POINTS: GwasPoint[] = []
+const NO_VARIANTS = EMPTY_VARIANTS
 
 export interface GeneModels {
   transcripts: TranscriptModel[]
@@ -51,35 +60,42 @@ export function useGeneModels(chrom: string | undefined, block: CoverageBlock | 
   }, [query.data, query.isPending])
 }
 
-/** Load full or summarized GWAS variants depending on the visible span. */
+// Load GWAS variants at the finest useful resolution
 export function useVisibleGwas(
   chrom: string | undefined,
   block: CoverageBlock | null,
-  view: Viewport,
-  studyId: string | null,
+  step: number,
+  study: GwasStudy | undefined,
   isVisible: (key: string) => boolean,
 ) {
-  const thinned = view.end - view.start > GWAS_FULL_MAX_SPAN
-  const file = studyId == null ? null : thinned ? `${studyId}${GWAS_OVERVIEW_SUFFIX}` : studyId
+  const studyId = study?.study_id ?? null
+  const bin = pickLevel(step, study?.levels ?? [])
+  const source = chrom == null ? null : levelChrom(chrom, bin)
 
   const query = useQuery({
-    queryKey: ["browser", "gwas", file, chrom, block?.start, block?.end],
+    queryKey: ["browser", "gwas", studyId, source, block?.start, block?.end],
     queryFn: ({ signal }) =>
-      readFeatures({
-        url: gwasUrl(file as string),
-        chrom: chrom as string,
+      readVariants({
+        url: gwasUrl(studyId as string),
+        chrom: source as string,
         start: block!.start,
         end: block!.end,
         signal,
         priority: () => (isVisible(GWAS_LANE_KEY) ? READ_VISIBLE : READ_OFFSCREEN),
-      }).then((rows) => rows.map(parseVariant)),
-    enabled: chrom != null && block != null && file != null,
+      }),
+    enabled: source != null && block != null && studyId != null,
     staleTime: Infinity,
     placeholderData: (previous) => previous,
   })
 
+  // Keep the previous level visible while the next loads, but never across chromosomes
+  const held = useRef<{ chrom: string; block: VariantBlock } | null>(null)
+  if (query.data && chrom != null) held.current = { chrom, block: query.data }
+  const kept = held.current
+  const carried = kept && kept.chrom === chrom ? kept.block : NO_VARIANTS
+
   return useMemo(
-    () => ({ points: query.data ?? NO_POINTS, loading: query.isPending, thinned }),
-    [query.data, query.isPending, thinned],
+    () => ({ block: query.data ?? carried, loading: query.isPending, bin }),
+    [query.data, carried, query.isPending, bin],
   )
 }

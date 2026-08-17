@@ -9,7 +9,7 @@
  * axis until every real variant sat on the floor.
  */
 
-import type { GwasPoint } from "@/types/browser"
+import type { VariantBlock } from "@/api/bbi"
 import { GWAS_POINT_R, GWAS_SIGNIFICANCE_P } from "./constants"
 import type { Scale } from "./scale"
 import { yTicks } from "./yAxis"
@@ -31,7 +31,7 @@ export interface GwasFrame {
   ctx: CanvasRenderingContext2D
   scale: Scale
   height: number
-  points: GwasPoint[]
+  block: VariantBlock
   max: number
   ink: GwasInk
   grid: boolean
@@ -43,26 +43,28 @@ export interface GwasFrame {
  * covering a whole chromosome is still read from where the view starts rather than from its
  * first variant.
  */
-export function firstFrom(points: GwasPoint[], base: number): number {
+export function firstFrom(block: VariantBlock, base: number): number {
+  const positions = block.positions
   let lo = 0
-  let hi = points.length
+  let hi = positions.length
   while (lo < hi) {
     const mid = (lo + hi) >> 1
-    if (points[mid].position < base) lo = mid + 1
+    if (positions[mid] < base) lo = mid + 1
     else hi = mid
   }
   return lo
 }
 
 /** Height the axis needs, kept at the significance line so the rule is always meaningful. */
-export function gwasCeiling(points: GwasPoint[], from: number, to: number): number {
+export function gwasCeiling(block: VariantBlock, from: number, to: number): number {
+  const { positions, values } = block
   let peak = 0
   let underflowed = false
-  for (let i = firstFrom(points, from); i < points.length; i++) {
-    const point = points[i]
-    if (point.position >= to) break
-    if (point.neg_log10_p === null) underflowed = true
-    else if (point.neg_log10_p > peak) peak = point.neg_log10_p
+  for (let i = firstFrom(block, from); i < positions.length; i++) {
+    if (positions[i] >= to) break
+    const value = values[i]
+    if (Number.isNaN(value)) underflowed = true
+    else if (value > peak) peak = value
   }
   if (underflowed) peak = Math.max(peak, SIGNIFICANCE_Y)
   return Math.max(peak, 2)
@@ -72,7 +74,7 @@ export function drawGwas({
   ctx,
   scale,
   height,
-  points,
+  block,
   max,
   ink,
   grid,
@@ -113,12 +115,14 @@ export function drawGwas({
   const raised = new Path2D()
   const lowered = new Path2D()
   const neutral = new Path2D()
-  for (let i = firstFrom(points, scale.start); i < points.length; i++) {
-    const point = points[i]
-    if (point.position >= scale.end) break
-    const x = scale.toX(point.position)
-    const y = point.neg_log10_p === null ? overflowY : toY(point.neg_log10_p)
-    const path = point.beta === null ? neutral : point.beta > 0 ? raised : lowered
+  const { positions, values, betas } = block
+  for (let i = firstFrom(block, scale.start); i < positions.length; i++) {
+    if (positions[i] >= scale.end) break
+    const x = scale.toX(positions[i])
+    const value = values[i]
+    const y = Number.isNaN(value) ? overflowY : toY(value)
+    const beta = betas[i]
+    const path = Number.isNaN(beta) ? neutral : beta > 0 ? raised : lowered
     path.moveTo(x + GWAS_POINT_R, y)
     path.arc(x, y, GWAS_POINT_R, 0, Math.PI * 2)
   }
@@ -130,34 +134,32 @@ export function drawGwas({
   ctx.fill(lowered)
 }
 
-/** The variant nearest a pixel, for the tooltip. */
+// Return the nearest visible variant index, or -1
 export function gwasNear(
-  points: GwasPoint[],
+  block: VariantBlock,
   scale: Scale,
   x: number,
   y: number,
   height: number,
   max: number,
-): GwasPoint | null {
+): number {
   const overflowY = GWAS_POINT_R + 1
   const plotTop = overflowY * 2
   const ceiling = max > 0 ? max : 1
   const reach = GWAS_POINT_R * 3
-  let best: GwasPoint | null = null
+  const { positions, values } = block
+  let best = -1
   let bestDistance = reach * reach
-  for (let i = firstFrom(points, scale.start); i < points.length; i++) {
-    const point = points[i]
-    if (point.position >= scale.end) break
-    const dx = scale.toX(point.position) - x
+  for (let i = firstFrom(block, scale.start); i < positions.length; i++) {
+    if (positions[i] >= scale.end) break
+    const dx = scale.toX(positions[i]) - x
     if (dx * dx > bestDistance) continue
-    const py =
-      point.neg_log10_p === null
-        ? overflowY
-        : height - (point.neg_log10_p / ceiling) * (height - plotTop)
+    const value = values[i]
+    const py = Number.isNaN(value) ? overflowY : height - (value / ceiling) * (height - plotTop)
     const distance = dx * dx + (py - y) * (py - y)
     if (distance <= bestDistance) {
       bestDistance = distance
-      best = point
+      best = i
     }
   }
   return best

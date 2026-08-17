@@ -9,16 +9,16 @@ from pathlib import Path
 import polars as pl
 
 from ..lib import parquet
-from ..lib import bed12, bigbed, chroms as chrom_names, console, windows
+from ..lib import bed12, bigbed, chroms as chrom_names, console, pyramid, windows
 from ..lib.reporting import count, report_missing
 from .browser_tables import (
     CHROM_SCHEMA,
-    overview,
     read_tsv,
     source_frame,
     study_frame,
     track_frame,
     transcript_rows,
+    variant_frame,
     variant_rows,
     window_frame,
 )
@@ -32,11 +32,6 @@ OVERLAP = 0.5
 
 # Marker used instead of flank sizes for a whole-genome fetch
 WHOLE_GENOME = "genome"
-
-# Wide views use significant variants plus the strongest variant in each bin
-OVERVIEW_SUFFIX = ".overview"
-OVERVIEW_BIN = 10_000
-OVERVIEW_P = 1e-2
 
 
 def check_assembly(genes: pl.DataFrame, transcripts) -> None:
@@ -81,12 +76,16 @@ def check_assembly(genes: pl.DataFrame, transcripts) -> None:
 
 def write_gwas(
     variants: pl.DataFrame, studies: list[dict], sizes: dict[str, int], out_dir: Path
-) -> int:
-    """Write full and overview bigBed files for each GWAS study."""
+) -> tuple[int, dict[str, list[int]]]:
+    """Write each GWAS study and its pyramid levels to bigBed.
+
+    Return the variant count and pyramid bin sizes for each study.
+    """
     if not studies:
-        return 0
+        return 0, {}
     out_dir.mkdir(parents=True, exist_ok=True)
     kept = 0
+    built: dict[str, list[int]] = {}
     for study in studies:
         study_id = study["study_id"]
         own = (
@@ -94,13 +93,26 @@ def write_gwas(
             if "study_id" in variants.columns
             else variants
         )
-        kept += bigbed.write(out_dir / f"{study_id}.bb", sizes, variant_rows(own, sizes))
-        bigbed.write(
-            out_dir / f"{study_id}{OVERVIEW_SUFFIX}.bb",
-            sizes,
-            variant_rows(overview(own, OVERVIEW_BIN, OVERVIEW_P), sizes),
+        frame = variant_frame(own, sizes)
+        chroms, levels = pyramid.build(frame, sizes)
+        written = bigbed.write(
+            out_dir / f"{study_id}.bb", chroms, variant_rows(frame, levels, chroms)
         )
-    return kept
+        kept += frame.height
+        built[study_id] = [level["bin"] for level in levels]
+        console.detail(
+            f"{study_id}: {frame.height:,} variants"
+            + "".join(f", {level['rows']:,} at {level['bin']:,}b" for level in levels)
+            + f" ({written:,} rows)",
+            indent=2,
+        )
+
+    report_missing(
+        "GWAS file",
+        f"in {out_dir} that belong to no study and are no longer read",
+        sorted(p.name for p in out_dir.glob("*.bb") if p.stem not in built),
+    )
+    return kept, built
 
 
 def fetched_whole_genome(source_dir: Path) -> bool:
@@ -182,10 +194,10 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
         sizes,
         transcript_rows(transcripts, sizes, set(genes["id"].to_list())),
     )
-    kept_variants = write_gwas(variants, studies, sizes, out / "gwas")
+    kept_variants, study_levels = write_gwas(variants, studies, sizes, out / "gwas")
     tracks = track_frame(coverage, coverage_out)
     parquet.write(tracks, out / "tracks.parquet")
-    parquet.write(study_frame(studies), out / "studies.parquet")
+    parquet.write(study_frame(studies, study_levels), out / "studies.parquet")
     parquet.write(source_frame(browser, coverage, studies), out / "sources.parquet")
     parquet.write(
         pl.DataFrame(

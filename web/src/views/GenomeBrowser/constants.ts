@@ -60,12 +60,6 @@ export const Y_HEADROOM = 1.08
 // chromosome holds tens of thousands of them, so the track draws one row per gene instead
 export const TRANSCRIPT_MAX_SPAN = 4_000_000
 
-// Past this a study holds more variants than a drag can repaint, so the lane reads the
-// overview the build wrote beside it. The suffix is the one build_browser.py named
-export const GWAS_FULL_MAX_SPAN = 4_000_000
-export const GWAS_OVERVIEW_SUFFIX = ".overview"
-export const GWAS_OVERVIEW_BIN = 10_000
-
 export const ZOOM_STEP = 2
 // Zooming further than this shows individual bases, which no track here resolves
 export const MIN_VIEW_BP = 50
@@ -90,6 +84,10 @@ export const COVERAGE_BLOCK_MIN = 1 << 20
 // The furthest a block reaches past the view. Margin is what makes a pan free, but a block is
 // parsed whole, and a chromosome of every track at once is a couple of million records
 export const COVERAGE_BLOCK_MARGIN_MAX = 1 << 24
+// Coverage-block margin as a multiple of the visible span
+export const BLOCK_MARGIN_SPANS = 1.5
+// Use a smaller margin for point-dense GWAS data
+export const GWAS_BLOCK_MARGIN_SPANS = 0.25
 // Records a column may be drawn from before the lane is read at a coarser stride
 export const COVERAGE_RECORDS_PER_PX = 4
 
