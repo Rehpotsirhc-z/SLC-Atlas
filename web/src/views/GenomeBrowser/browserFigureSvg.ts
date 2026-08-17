@@ -9,29 +9,36 @@ import { monoFontFamily, svgSansFontFamily } from "@/theme/fonts"
 import type { CoverageTrack, GwasPoint, GwasStudy, TranscriptModel } from "@/types/browser"
 import { esc } from "@/components/heatmap/figureSvg"
 import {
+  AXIS_TICK_PX,
+  AXIS_W,
   EXON_H,
   GENE_ROW_H,
   GENE_TRACK_PAD,
   GWAS_LANE_HEIGHT,
+  GROUP_GAP,
   GWAS_POINT_R,
   LANE_GAP,
+  MINUS_ALPHA,
   RULER_H,
   UTR_H,
   Y_HEADROOM,
 } from "./constants"
 import { columnPeaks } from "./drawCoverage"
 import { arrowHead } from "./drawGenes"
-import { gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
-import { rowsInView, type GeneSpan, type TrackLayout } from "./geneLayout"
+import { GWAS_PLOT_TOP, gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
+import { countInView, type GeneSpan, type TrackLayout } from "./geneLayout"
 import { scaleFor, ticksFor, type Viewport } from "./scale"
+import { formatSignal, yTicks } from "./yAxis"
 
 const MARGIN = 20
-const GUTTER = 168
+const LABEL_W = 168
+const GUTTER = LABEL_W + AXIS_W
 const PLOT_W = 980
 const TICK_GAP_PX = 92
 const TITLE_PX = 16
 const LABEL_PX = 12
 const SUB_PX = 10.5
+const AXIS_LABEL_PX = 10
 
 const svgMonoFontFamily = monoFontFamily.replace(/"/g, "&quot;")
 
@@ -40,12 +47,15 @@ export interface FigureLane {
   color: string
   plus: CoverageArrays
   minus: CoverageArrays | null
+  absent: boolean
 }
 
 export interface FigureInk {
   text: string
   muted: string
   axis: string
+  zero: string
+  plot: string
   background: string
   raised: string
   lowered: string
@@ -63,11 +73,33 @@ export interface FigureInput {
   study: GwasStudy | null
   gwasPoints: GwasPoint[]
   showGwas: boolean
+  showGrid: boolean
   showSignificance: boolean
   transcripts: TrackLayout<TranscriptModel> | null
   genes: TrackLayout<GeneSpan> | null
   colorOf: (biotype: string | null) => string
   ink: FigureInk
+}
+
+function gridMarks(
+  max: number,
+  baseline: number,
+  reach: number,
+  stranded: boolean,
+  color: string,
+): string {
+  return yTicks(max, reach)
+    .map((value) => {
+      const offset = (value / max) * reach
+      const rows = stranded ? [baseline - offset, baseline + offset] : [baseline - offset]
+      return rows
+        .map(
+          (at) =>
+            `<line x1="0" y1="${at.toFixed(1)}" x2="${PLOT_W}" y2="${at.toFixed(1)}" stroke="${color}" stroke-opacity="0.25"/>`,
+        )
+        .join("")
+    })
+    .join("")
 }
 
 function areaPath(peaks: Float32Array, baseline: number, reach: number, max: number, sign: 1 | -1) {
@@ -90,11 +122,18 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
   let y = 0
   let clipSeq = 0
 
-  const label = (text: string, top: number, sub: string) =>
-    `<text x="${GUTTER - 10}" y="${top + 12}" text-anchor="end" font-size="${LABEL_PX}" fill="${input.ink.text}">${esc(text)}</text>` +
-    `<text x="${GUTTER - 10}" y="${top + 26}" text-anchor="end" font-size="${SUB_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(sub)}</text>`
+  const label = (text: string, top: number, ...subs: string[]) =>
+    `<text x="${LABEL_W - 10}" y="${top + 12}" text-anchor="end" font-size="${LABEL_PX}" fill="${input.ink.text}">${esc(text)}</text>` +
+    subs
+      .map(
+        (sub, index) =>
+          `<text x="${LABEL_W - 10}" y="${top + 26 + index * 13}" text-anchor="end" font-size="${SUB_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(sub)}</text>`,
+      )
+      .join("")
 
-  /** A lane's drawing, held inside its own box the way its canvas holds it. */
+  const groupName = (name: string, top: number) =>
+    `<text x="${LABEL_W - 10}" y="${top - 3}" text-anchor="end" font-size="${SUB_PX}" letter-spacing="0.7" fill="${input.ink.muted}">${esc(name.toUpperCase())}</text>`
+
   const lane = (top: number, height: number, content: string) => {
     const id = `browser-clip-${clipSeq++}`
     clips.push(
@@ -102,6 +141,44 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
     )
     return `<g transform="translate(${GUTTER} ${top})" clip-path="url(#${id})">${content}</g>`
   }
+
+  const surface = (height: number) =>
+    `<rect x="0" y="0" width="${PLOT_W}" height="${height}" fill="${input.ink.plot}"/>`
+
+  const axis = (top: number, height: number, max: number, stranded: boolean, span?: number) => {
+    const baseline = stranded ? height / 2 : height
+    const reach = span ?? (stranded ? height / 2 : height)
+    const marks: { at: number; text: string }[] = [{ at: baseline, text: "0" }]
+    for (const value of yTicks(max, reach)) {
+      const offset = (value / max) * reach
+      const written = formatSignal(value)
+      marks.push({ at: baseline - offset, text: stranded ? `+${written}` : written })
+      if (stranded) marks.push({ at: baseline + offset, text: `−${written}` })
+    }
+    return (
+      `<line x1="${GUTTER - 0.5}" y1="${top}" x2="${GUTTER - 0.5}" y2="${top + height}" stroke="${input.ink.axis}"/>` +
+      marks
+        .map(({ at, text }) => {
+          const mark = top + at
+          const written = Math.min(
+            Math.max(mark, top + AXIS_LABEL_PX / 2),
+            top + height - AXIS_LABEL_PX / 2,
+          )
+          return (
+            `<line x1="${GUTTER - AXIS_TICK_PX}" y1="${mark.toFixed(1)}" x2="${GUTTER}" y2="${mark.toFixed(1)}" stroke="${input.ink.axis}"/>` +
+            `<text x="${GUTTER - AXIS_TICK_PX - 3}" y="${(written + AXIS_LABEL_PX / 3).toFixed(1)}" text-anchor="end" font-size="${AXIS_LABEL_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(text)}</text>`
+          )
+        })
+        .join("")
+    )
+  }
+
+  const plotFrame = (top: number, height: number, skipTop = false) =>
+    (skipTop
+      ? ""
+      : `<line x1="${GUTTER}" y1="${top - 0.5}" x2="${GUTTER + PLOT_W}" y2="${top - 0.5}" stroke="${input.ink.axis}"/>`) +
+    `<line x1="${GUTTER}" y1="${top + height + 0.5}" x2="${GUTTER + PLOT_W}" y2="${top + height + 0.5}" stroke="${input.ink.axis}"/>` +
+    `<line x1="${GUTTER + PLOT_W + 0.5}" y1="${top - 0.5}" x2="${GUTTER + PLOT_W + 0.5}" y2="${top + height + 0.5}" stroke="${input.ink.axis}"/>`
 
   body.push(
     lane(
@@ -117,9 +194,18 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
           .join(""),
     ),
   )
-  y += RULER_H + 8
+  y += RULER_H
+
+  let openName = ""
+  let firstOfAll = true
 
   for (const item of input.lanes) {
+    const opensGroup = openName !== item.track.group
+    if (opensGroup) {
+      if (openName) y += GROUP_GAP
+      openName = item.track.group
+    }
+
     const height = input.laneHeight
     const stranded = item.minus !== null
     const baseline = stranded ? height / 2 : height
@@ -131,25 +217,34 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
     const ceiling = input.yMax ?? (seen > 0 ? seen * Y_HEADROOM : 1)
 
     body.push(
-      label(item.track.label, y, `${stranded ? "±" : ""}${ceiling.toFixed(2)}`) +
+      (opensGroup ? groupName(openName, y) : "") +
+        label(item.track.label, y, ...(item.absent ? [] : [`peak signal ${formatSignal(seen)}`])) +
+        axis(y, height, ceiling, stranded) +
         lane(
           y,
           height,
-          `<path d="${areaPath(plusBuffer, baseline, reach, ceiling, 1)}" fill="${item.color}"/>` +
+          surface(height) +
+            (input.showGrid ? gridMarks(ceiling, baseline, reach, stranded, input.ink.axis) : "") +
+            `<path d="${areaPath(plusBuffer, baseline, reach, ceiling, 1)}" fill="${item.color}"/>` +
             (item.minus
-              ? `<path d="${areaPath(minusBuffer, baseline, reach, ceiling, -1)}" fill="${item.color}" fill-opacity="0.6"/>`
+              ? `<path d="${areaPath(minusBuffer, baseline, reach, ceiling, -1)}" fill="${item.color}" fill-opacity="${MINUS_ALPHA}"/>`
               : "") +
-            `<line x1="0" y1="${baseline}" x2="${PLOT_W}" y2="${baseline}" stroke="${input.ink.axis}"/>`,
-        ),
+            (stranded
+              ? `<line x1="0" y1="${baseline}" x2="${PLOT_W}" y2="${baseline}" stroke="${input.ink.zero}"/>`
+              : ""),
+        ) +
+        plotFrame(y, height, firstOfAll),
     )
+    firstOfAll = false
     y += height + LANE_GAP
   }
 
   if (input.showGwas && input.study) {
+    if (openName) y += GROUP_GAP
     const max = gwasCeiling(input.gwasPoints, scale.start, scale.end)
     const overflowY = GWAS_POINT_R + 1
-    const plotTop = overflowY * 2
-    const toY = (value: number) => GWAS_LANE_HEIGHT - (value / max) * (GWAS_LANE_HEIGHT - plotTop)
+    const toY = (value: number) =>
+      GWAS_LANE_HEIGHT - (value / max) * (GWAS_LANE_HEIGHT - GWAS_PLOT_TOP)
     const dots = input.gwasPoints
       .filter((point) => point.position >= scale.start && point.position < scale.end)
       .map((point) => {
@@ -168,19 +263,19 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
         ? `<line x1="0" y1="${toY(SIGNIFICANCE_Y).toFixed(1)}" x2="${PLOT_W}" y2="${toY(SIGNIFICANCE_Y).toFixed(1)}" stroke="${input.ink.significance}" stroke-dasharray="4 3"/>`
         : ""
     body.push(
-      label(input.study.trait, y, `-log10p <= ${max.toFixed(1)}`) +
-        lane(
-          y,
-          GWAS_LANE_HEIGHT,
-          `${rule}${dots}<line x1="0" y1="${GWAS_LANE_HEIGHT - 0.5}" x2="${PLOT_W}" y2="${GWAS_LANE_HEIGHT - 0.5}" stroke="${input.ink.axis}"/>`,
-        ),
+      groupName("GWAS", y) +
+        label(input.study.trait, y, "−log10(p)") +
+        axis(y, GWAS_LANE_HEIGHT, max, false, GWAS_LANE_HEIGHT - GWAS_PLOT_TOP) +
+        lane(y, GWAS_LANE_HEIGHT, `${surface(GWAS_LANE_HEIGHT)}${rule}${dots}`) +
+        plotFrame(y, GWAS_LANE_HEIGHT),
     )
     y += GWAS_LANE_HEIGHT + LANE_GAP
   }
 
   const track = input.transcripts ?? input.genes
   if (track) {
-    const height = Math.max(rowsInView(track, input.view), 1) * GENE_ROW_H + GENE_TRACK_PAD * 2
+    const counts = countInView(track, input.view)
+    const height = Math.max(counts.rows, 1) * GENE_ROW_H + GENE_TRACK_PAD * 2
     const marks: string[] = []
     const takenTo: number[] = []
     for (const { item, row } of track.items) {
@@ -245,7 +340,10 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       }
       takenTo[row] = right
     }
-    body.push(label("Genes", y, `${track.items.length}`) + lane(y, height, marks.join("")))
+    const kind = input.transcripts ? "transcripts" : "genes"
+    const subs = [`${counts.drawn} ${kind}`]
+    if (counts.hidden > 0) subs.push(`${counts.hidden} not rendered`)
+    body.push(label("Genes", y, ...subs) + lane(y, height, marks.join("")))
     y += height
   }
 
