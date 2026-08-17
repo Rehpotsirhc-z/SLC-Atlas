@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --force",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "spellcheck": "cspell --no-progress --config ../cspell.json \"src/**/*.{ts,tsx}\" \"../src/**/*.py\""
+    "spellcheck": "cspell --no-progress --config ../cspell.json \"src/**/*.{ts,tsx}\" \"../src/**/*.py\"",
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -32,6 +33,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/react-window": "^1.8.8",

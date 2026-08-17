@@ -37,7 +37,11 @@ const webManifest = (config: AtlasConfig) =>
     display: "standalone",
     background_color: doomColors.light.bg,
     theme_color: doomColors.light.blue,
-    icons: [],
+    icons: [
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
   })
 
 export default defineConfig(({ mode }) => {

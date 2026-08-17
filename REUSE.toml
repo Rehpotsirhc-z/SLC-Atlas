@@ -17,7 +17,8 @@ path = [
   "README.org",
   "docs/source-files.org",
   "src/slc_atlas/pipeline/templates/**",
-  "web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.org"
+  "web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.org",
+  "web/public/ATTRIBUTION.org"
 ]
 SPDX-FileCopyrightText = "2026 Dong Lab, Yale School of Medicine <https://donglab.org>"
 SPDX-License-Identifier = "CC0-1.0"
@@ -25,4 +26,19 @@ SPDX-License-Identifier = "CC0-1.0"
 [[annotations]]
 path = "web/src/views/Expression/Anatomograms/anatomogram/*.svg"
 SPDX-FileCopyrightText = "EMBL-EBI (Expression Atlas anatomogram)"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = [
+  "web/public/favicon.svg",
+  "web/public/favicon.ico",
+  "web/public/apple-touch-icon.png",
+  "web/public/icon-192.png",
+  "web/public/icon-512.png",
+  "web/public/icon-maskable-512.png"
+]
+SPDX-FileCopyrightText = [
+  "2026 Dong Lab, Yale School of Medicine <https://donglab.org>",
+  "2024 Fonticons, Inc. (Font Awesome Free 6.7.2 DNA icon)"
+]
 SPDX-License-Identifier = "CC-BY-4.0"

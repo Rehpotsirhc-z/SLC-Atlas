@@ -1,0 +1,18 @@
+#+title: Icon Artwork
+
+The application icons are adapted from the Anvil Pinhead icon and the Font Awesome DNA icon.
+The adapted artwork is used in =favicon.svg=, =favicon.ico=, =apple-touch-icon.png=,
+=icon-192.png=, =icon-512.png=, and =icon-maskable-512.png=.
+
+- Sources :: [[https://commons.wikimedia.org/wiki/File:Anvil_Pinhead_icon.svg]] and
+  [[https://fontawesome.com/icons/dna]]
+- Source versions :: Pinhead 12.0.0 and Font Awesome Free 6.7.2
+- Original works :: ~anvil~ from Pinhead and ~dna~ from Font Awesome Free
+- Authors :: Quincy Morgan and Temaki contributors; and Fonticons, Inc.
+- Licenses :: [[https://creativecommons.org/publicdomain/zero/1.0/][CC0 1.0 Universal]] and
+  [[https://creativecommons.org/licenses/by/4.0/][Creative Commons Attribution 4.0 International]]
+
+* Changes from the originals
+The anvil was divided horizontally, and the DNA icon was clipped and placed between the two
+halves. The resulting shapes were combined into one path, reframed for each icon format, and
+recolored to match the application theme.
