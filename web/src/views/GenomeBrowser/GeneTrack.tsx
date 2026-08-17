@@ -3,11 +3,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo, useCallback, useMemo, useRef } from "react"
-import { Box, Typography, useTheme } from "@mui/material"
+import { Box, Tooltip, Typography, useTheme } from "@mui/material"
 import type { TranscriptModel } from "@/types/browser"
 import { biotypeColor } from "@/utils/biotypeColor"
+import { formatRange } from "@/utils/format"
 import BrowserTooltip, { strandLabel, TipLine, TipTitle } from "./BrowserTooltip"
 import {
+  AXIS_W,
   GENE_ROW_H,
   GENE_TRACK_MAX_H,
   GENE_TRACK_MIN_H,
@@ -18,10 +20,10 @@ import {
 import { drawGenes, drawTranscripts, type GeneInk } from "./drawGenes"
 import {
   collapseToGenes,
+  countInView,
   itemAt,
   layoutGenes,
   layoutTranscripts,
-  rowsInView,
   type GeneSpan,
 } from "./geneLayout"
 import { frameScale, type Scale, type Viewport } from "./scale"
@@ -30,6 +32,12 @@ import { useLaneCanvas } from "./useLaneCanvas"
 import type { Painter } from "./useBrowserView"
 
 export type GeneTrackMode = "transcripts" | "genes"
+
+function countTitle(mode: GeneTrackMode, drawn: number, hidden: number): string {
+  const kind = mode === "transcripts" ? "transcript models" : "genes"
+  const shown = `${drawn} ${kind} in view`
+  return hidden > 0 ? `${shown}; ${hidden} additional ${kind} hidden` : shown
+}
 
 interface Props {
   transcripts: TranscriptModel[]
@@ -82,11 +90,10 @@ function GeneTrack({
     [transcripts, mode, gap],
   )
 
-  // Size the track for visible models rather than every model in the loaded block
-  const rows = useMemo(() => rowsInView(layout, view), [layout, view])
+  const counts = useMemo(() => countInView(layout, view), [layout, view])
   // The canvas is as tall as the models need; the lane it sits in is capped and scrolls, so a
   // gene with more transcripts than fit is still all there rather than drawn past the edge
-  const contentHeight = Math.max(GENE_TRACK_MIN_H, rows * GENE_ROW_H + GENE_TRACK_PAD * 2)
+  const contentHeight = Math.max(GENE_TRACK_MIN_H, counts.rows * GENE_ROW_H + GENE_TRACK_PAD * 2)
   const laneHeight = Math.min(GENE_TRACK_MAX_H, maxHeight, contentHeight)
 
   const ink = useMemo<GeneInk>(
@@ -147,6 +154,7 @@ function GeneTrack({
         alignItems: "stretch",
         borderTop: 1,
         borderColor: "divider",
+        pt: 1,
         pb: 1,
       }}
     >
@@ -155,18 +163,40 @@ function GeneTrack({
           width: gutter,
           flexShrink: 0,
           pl: `${EDGE_PAD}px`,
-          pr: 1,
+          pr: `${AXIS_W}px`,
           pt: 1,
           overflow: "hidden",
         }}
       >
-        <Typography sx={{ fontSize: 13, lineHeight: 1.3 }}>Genes</Typography>
+        <Tooltip title={countTitle(mode, counts.drawn, counts.hidden)}>
+          <Typography sx={{ fontSize: 13, lineHeight: 1.3, width: "fit-content" }}>
+            Genes
+          </Typography>
+        </Tooltip>
         <Typography
-          sx={{ fontSize: 11.5, fontFamily: custom.monoFontFamily, color: "text.secondary" }}
+          noWrap
+          sx={{
+            fontSize: 11.5,
+            lineHeight: 1.4,
+            fontFamily: custom.monoFontFamily,
+            color: "text.secondary",
+          }}
         >
-          {mode === "transcripts" ? `${layout.items.length} tx` : `${layout.items.length} genes`}
-          {layout.hidden > 0 ? ` +${layout.hidden}` : ""}
+          {`${counts.drawn} ${mode === "transcripts" ? "transcripts" : "genes"}`}
         </Typography>
+        {counts.hidden > 0 && (
+          <Typography
+            noWrap
+            sx={{
+              fontSize: 11.5,
+              lineHeight: 1.4,
+              fontFamily: custom.monoFontFamily,
+              color: "text.disabled",
+            }}
+          >
+            {`${counts.hidden} hidden`}
+          </Typography>
+        )}
       </Box>
       <Box
         ref={scrollRef}
@@ -223,7 +253,7 @@ function GeneTrack({
             )}`}
           </TipLine>
           <TipLine>
-            {`${hover.item.start.toLocaleString()}\u2013${hover.item.end.toLocaleString()} · ${
+            {`${formatRange(hover.item.start, hover.item.end)} · ${
               isTranscript(hover.item)
                 ? `${hover.item.exons.length} exons`
                 : `${(hover.item as GeneSpan).transcripts} transcripts`

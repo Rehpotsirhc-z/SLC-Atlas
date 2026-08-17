@@ -2,14 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Arrange gene and transcript models into rows
-
 import type { TranscriptModel } from "@/types/browser"
 import { MODEL_GAP_PX } from "./constants"
 import type { Viewport } from "./scale"
 
-// Base the gap on the visible scale rather than the larger loaded block
-// Round the scale to powers of two so small zoom changes keep the same layout
 export function rowGap(view: Viewport, width: number): number {
   const perPixel = (view.end - view.start) / Math.max(width, 1)
   return 2 ** Math.floor(Math.log2(Math.max(perPixel, 1))) * MODEL_GAP_PX
@@ -33,7 +29,7 @@ export interface Placed<T> {
 
 export interface TrackLayout<T> {
   items: Placed<T>[]
-  hidden: number
+  dropped: T[]
 }
 
 export interface Spanning {
@@ -41,24 +37,23 @@ export interface Spanning {
   end: number
 }
 
-// Place each model in the first available row
 function pack<T extends Spanning>(items: T[], gap: number, maxRows: number): TrackLayout<T> {
   const ordered = [...items].sort((a, b) => a.start - b.start || a.end - b.end)
   const lastEnd: number[] = []
   const placed: Placed<T>[] = []
-  let hidden = 0
+  const dropped: T[] = []
 
   for (const item of ordered) {
     let row = lastEnd.findIndex((end) => item.start >= end + gap)
     if (row === -1) row = lastEnd.length
     if (row >= maxRows) {
-      hidden += 1
+      dropped.push(item)
       continue
     }
     lastEnd[row] = item.end
     placed.push({ item, row })
   }
-  return { items: placed, hidden }
+  return { items: placed, dropped }
 }
 
 export function layoutTranscripts(
@@ -69,7 +64,6 @@ export function layoutTranscripts(
   return pack(transcripts, gap, maxRows)
 }
 
-// Combine each gene's transcripts into one span for compact mode
 export function collapseToGenes(transcripts: TranscriptModel[]): GeneSpan[] {
   const byGene = new Map<string, GeneSpan>()
   for (const model of transcripts) {
@@ -104,18 +98,31 @@ export function layoutGenes(
   return pack(spans, gap, maxRows)
 }
 
-// Count rows occupied by models that overlap the visible region
-export function rowsInView(layout: TrackLayout<Spanning>, view: Viewport): number {
+export interface ViewCounts {
+  rows: number
+  drawn: number
+  hidden: number
+}
+
+/** Count visible and omitted models in the current viewport. */
+export function countInView(layout: TrackLayout<Spanning>, view: Viewport): ViewCounts {
   let deepest = -1
+  let drawn = 0
   for (const { item, row } of layout.items) {
     if (item.start > view.end) break
     if (item.end < view.start) continue
     if (row > deepest) deepest = row
+    drawn += 1
   }
-  return deepest + 1
+  let hidden = 0
+  for (const item of layout.dropped) {
+    if (item.start > view.end) break
+    if (item.end < view.start) continue
+    hidden += 1
+  }
+  return { rows: deepest + 1, drawn, hidden }
 }
 
-// Find the item under the cursor in the given row
 export function itemAt<T extends Spanning>(
   layout: TrackLayout<T>,
   row: number,
