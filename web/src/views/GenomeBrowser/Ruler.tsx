@@ -24,7 +24,7 @@ function Ruler({ width, gutter, subscribe, liveView }: Props) {
 
   const ink = useMemo(
     () => ({
-      line: palette.divider,
+      line: palette.text.disabled,
       text: palette.text.secondary,
       font: `${CANVAS_FONT_PX}px ${custom.monoFontFamily}`,
     }),

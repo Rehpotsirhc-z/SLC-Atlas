@@ -19,7 +19,9 @@ export function trackColors(labels: string[], mode: ThemeMode): Map<string, stri
   const out = new Map<string, string>()
   distinct.forEach((label, index) => {
     const hue = Math.round((index * 360) / Math.max(distinct.length, 1))
-    out.set(label, `hsl(${hue} ${SATURATION}% ${LIGHTNESS[mode]}%)`)
+    // Commas rather than the modern spacing: alpha() splits hsl on commas, and a color it
+    // cannot read comes back with undefined channels that canvas then ignores outright
+    out.set(label, `hsl(${hue}, ${SATURATION}%, ${LIGHTNESS[mode]}%)`)
   })
   return out
 }

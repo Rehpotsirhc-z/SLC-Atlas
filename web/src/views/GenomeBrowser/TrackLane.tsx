@@ -3,12 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo, useCallback, useMemo, useRef } from "react"
-import { Box, Tooltip, Typography, useTheme } from "@mui/material"
+import { alpha, Box, useTheme } from "@mui/material"
 import type { CoverageTrack } from "@/types/browser"
-import { EDGE_PAD, LANE_GAP, Y_HEADROOM } from "./constants"
-import { columnPeaks, drawCoverage, valueAt, type CoverageInk } from "./drawCoverage"
+import { AXIS_W, EDGE_PAD, GUTTER_W, LANE_GAP, MINUS_ALPHA, Y_HEADROOM } from "./constants"
+import { binAt, columnPeaks, drawCoverage, type Bin, type CoverageInk } from "./drawCoverage"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
-import { frameScale } from "./scale"
+import LaneAxis, { type AxisHandle } from "./LaneAxis"
+import LaneFrame from "./LaneFrame"
+import LaneGutter from "./LaneGutter"
+import { formatSignal } from "./yAxis"
+import { formatLocus, formatPoint, formatSpan, frameScale } from "./scale"
 import type { LaneData } from "./useCoverageData"
 import { useLaneCanvas } from "./useLaneCanvas"
 import { useHoverFrame } from "./useHoverFrame"
@@ -19,6 +23,9 @@ import type { Viewport } from "./scale"
 interface Props {
   track: CoverageTrack
   data: LaneData
+  chrom: string
+  group?: string
+  flush?: boolean
   color: string
   height: number
   width: number
@@ -33,27 +40,35 @@ interface Props {
 
 interface Hovered {
   base: number
-  plus: number | null
-  minus: number | null
+  plus: Bin | null
+  minus: Bin | null
   x: number
   y: number
 }
 
-// Compared on what the tooltip says rather than on where the pointer is, so traveling along a
-// stretch the track reads the same across costs no renders at all
-const sameHover = (a: Hovered | null, b: Hovered | null) =>
-  a?.base === b?.base && a?.plus === b?.plus && a?.minus === b?.minus
+const sameBin = (a: Bin | null, b: Bin | null) => a?.start === b?.start && a?.value === b?.value
+const sameHover = (a: Hovered | null, b: Hovered | null) => {
+  if (!a || !b) return a === b
+  if (!a.plus && !a.minus && !b.plus && !b.minus) return a.base === b.base
+  return sameBin(a.plus, b.plus) && sameBin(a.minus, b.minus)
+}
 
-function formatSignal(value: number): string {
-  if (value >= 1000) return value.toExponential(1)
-  if (value >= 10) return value.toFixed(0)
-  if (value >= 1) return value.toFixed(1)
-  return value.toFixed(2)
+const readingOf = (bin: Bin | null) =>
+  bin === null ? "nothing recorded here" : `coverage = ${formatSignal(bin.value)}`
+
+const binLabel = (chrom: string, hover: Hovered) => {
+  const bin = hover.plus ?? hover.minus
+  return bin
+    ? `${formatLocus(chrom, bin.start, bin.end)} · ${formatSpan(bin.end - bin.start)}`
+    : formatPoint(chrom, hover.base)
 }
 
 function TrackLane({
   track,
   data,
+  chrom,
+  group,
+  flush,
   color,
   height,
   width,
@@ -66,9 +81,13 @@ function TrackLane({
   watch,
 }: Props) {
   const { palette, custom } = useTheme()
-  const ceilingRef = useRef<HTMLSpanElement>(null)
+  const axisRef = useRef<AxisHandle | null>(null)
+  const peakRef = useRef<HTMLSpanElement>(null)
   const shownMax = useRef(0)
+  const shownPeak = useRef(0)
   const shownText = useRef("")
+
+  const peakWord = gutter - AXIS_W >= GUTTER_W ? "peak signal" : "peak"
 
   const buffers = useMemo(
     () => ({
@@ -81,10 +100,8 @@ function TrackLane({
   const ink = useMemo<CoverageInk>(
     () => ({
       plus: color,
-      // The minus strand reads as the same track seen the other way, so it keeps the hue
-      // and gives up some weight rather than taking a color of its own
-      minus: palette.mode === "dark" ? `${color}99` : `${color}77`,
-      axis: palette.divider,
+      minus: alpha(color, MINUS_ALPHA),
+      zero: palette.divider,
       grid: palette.action.hover,
     }),
     [color, palette],
@@ -95,10 +112,9 @@ function TrackLane({
       const peakPlus = columnPeaks(buffers.plus, data.plus, scale)
       const peakMinus = data.minus ? columnPeaks(buffers.minus, data.minus, scale) : 0
       const seen = Math.max(peakPlus, peakMinus)
-      // Held through the gesture: a lane rescaled every frame slides its own signal up and down
-      // while the eye is trying to read it along the chromosome
       if (!moving() || shownMax.current === 0) {
         shownMax.current = seen > 0 ? seen * Y_HEADROOM : 1
+        shownPeak.current = seen
       }
       const ceiling = yMax ?? shownMax.current
       drawCoverage({
@@ -111,15 +127,14 @@ function TrackLane({
         ink,
         grid,
       })
-      // Written straight to the node: autoscaling live through React state would render the
-      // whole stack on every frame of a drag
-      const text = formatSignal(ceiling)
-      if (ceilingRef.current && shownText.current !== text) {
-        ceilingRef.current.textContent = text
+      axisRef.current?.draw(ceiling, data.minus !== null)
+      const text = data.absent ? "\u00a0" : `${peakWord} ${formatSignal(shownPeak.current)}`
+      if (peakRef.current && shownText.current !== text) {
+        peakRef.current.textContent = text
         shownText.current = text
       }
     },
-    [buffers, data, height, ink, grid, yMax, moving],
+    [buffers, data, height, ink, grid, yMax, moving, peakWord],
   )
 
   const watchThis = useMemo<LaneWatch | undefined>(
@@ -138,8 +153,8 @@ function TrackLane({
       const base = Math.floor(scale.toBase(clientX - box.left))
       return {
         base,
-        plus: valueAt(data.plus, base),
-        minus: data.minus ? valueAt(data.minus, base) : null,
+        plus: binAt(data.plus, base),
+        minus: data.minus ? binAt(data.minus, base) : null,
         x: clientX,
         y: clientY,
       }
@@ -160,49 +175,33 @@ function TrackLane({
 
   return (
     <Box sx={{ display: "flex", alignItems: "stretch", mb: `${LANE_GAP}px`, pr: `${EDGE_PAD}px` }}>
-      <Box
-        sx={{
-          width: gutter,
-          flexShrink: 0,
-          pl: `${EDGE_PAD}px`,
-          pr: 1,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-        }}
+      <LaneGutter
+        gutter={gutter}
+        height={height}
+        name={track.label}
+        group={group}
+        title={data.absent ? `${track.label} has no data on this chromosome` : track.label}
+        dimmed={data.absent}
       >
-        <Tooltip
-          title={data.absent ? `${track.label} has no data on this chromosome` : track.label}
-        >
-          <Typography
-            noWrap
-            sx={{
-              fontSize: 13,
-              lineHeight: 1.3,
-              color: data.absent ? "text.disabled" : "text.primary",
-            }}
-          >
-            {track.label}
-          </Typography>
-        </Tooltip>
-        <Typography
-          component="span"
-          sx={{ fontSize: 11.5, fontFamily: custom.monoFontFamily, color: "text.secondary" }}
-        >
-          {track.stranded ? "±" : ""}
-          <Box component="span" ref={ceilingRef} />
-        </Typography>
-      </Box>
+        <Box component="span" ref={peakRef} />
+      </LaneGutter>
+      <LaneAxis height={height} handleRef={axisRef} />
       <Box
         ref={plotRef}
-        sx={{ position: "relative", flex: 1, minWidth: 0, height }}
+        sx={{
+          position: "relative",
+          flex: 1,
+          minWidth: 0,
+          height,
+          bgcolor: custom.plotSurface,
+        }}
         onPointerMove={onPointerMove}
         onPointerLeave={clearHover}
       >
         <canvas ref={canvasRef} style={{ display: "block", width, height }} />
+        <LaneFrame flush={flush} />
         {data.absent && (
-          <Typography
+          <Box
             sx={{
               position: "absolute",
               inset: 0,
@@ -214,23 +213,23 @@ function TrackLane({
               pointerEvents: "none",
             }}
           >
-            not covered by this track
-          </Typography>
+            No data for this chromosome
+          </Box>
         )}
       </Box>
       {hover && (
         <BrowserTooltip x={hover.x} y={hover.y}>
           <TipTitle>{track.label}</TipTitle>
-          <TipLine>{`${hover.base.toLocaleString()} · ${track.group}`}</TipLine>
+          <TipLine>{track.group}</TipLine>
+          <TipLine>{binLabel(chrom, hover)}</TipLine>
           {track.stranded ? (
             <>
-              <TipLine>{`+ ${hover.plus === null ? "no signal" : formatSignal(hover.plus)}`}</TipLine>
-              <TipLine>{`− ${hover.minus === null ? "no signal" : formatSignal(hover.minus)}`}</TipLine>
+              <TipLine>{`forward strand · ${readingOf(hover.plus)}`}</TipLine>
+              <TipLine>{`reverse strand · ${readingOf(hover.minus)}`}</TipLine>
             </>
           ) : (
-            <TipLine>{hover.plus === null ? "no signal here" : formatSignal(hover.plus)}</TipLine>
+            <TipLine>{readingOf(hover.plus)}</TipLine>
           )}
-          {track.bin > 0 && <TipLine>{`binned to ${track.bin} bp`}</TipLine>}
         </BrowserTooltip>
       )}
     </Box>

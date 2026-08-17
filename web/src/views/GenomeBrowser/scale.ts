@@ -4,6 +4,7 @@
 
 /** Convert between genomic coordinates and screen positions */
 
+import { formatRange } from "@/utils/format"
 import { MIN_FEATURE_PX, MIN_VIEW_BP } from "./constants"
 
 export interface Viewport {
@@ -125,7 +126,12 @@ function round(value: number, step: number): string {
 
 /** The locus as a person would type it back into the search box. */
 export function formatLocus(chrom: string, start: number, end: number): string {
-  return `${chrom}:${start.toLocaleString()}-${end.toLocaleString()}`
+  return `${chrom}:${formatRange(start, end)}`
+}
+
+/** Format one genomic position. */
+export function formatPoint(chrom: string, base: number): string {
+  return `${chrom}:${Math.round(base).toLocaleString()}`
 }
 
 export function formatSpan(bases: number): string {

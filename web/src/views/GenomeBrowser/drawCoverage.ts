@@ -8,11 +8,12 @@ import type { CoverageArrays } from "@/api/bbi"
 import { COVERAGE_RECORDS_PER_PX } from "./constants"
 import { coverageAtStride } from "./coverageSummary"
 import type { Scale, Viewport } from "./scale"
+import { yTicks } from "./yAxis"
 
 export interface CoverageInk {
   plus: string
   minus: string
-  axis: string
+  zero: string
   grid: string
 }
 
@@ -90,11 +91,18 @@ export function peakInView(data: CoverageArrays, view: Viewport): number {
 }
 
 /** The value the track carries at one base, or null where it carries none. */
-export function valueAt(data: CoverageArrays, base: number): number | null {
+export interface Bin {
+  start: number
+  end: number
+  value: number
+}
+
+/** Return the record covering a base, or null where no interval was recorded. */
+export function binAt(data: CoverageArrays, base: number): Bin | null {
   const { starts, ends, scores } = data
   const index = firstFrom(starts, ends, base)
   if (index >= starts.length || starts[index] > base) return null
-  return scores[index]
+  return { start: starts[index], end: ends[index], value: scores[index] }
 }
 
 /**
@@ -150,12 +158,15 @@ export function drawCoverage({ ctx, scale, height, plus, minus, max, ink, grid }
   if (grid) {
     ctx.strokeStyle = ink.grid
     ctx.lineWidth = 1
-    for (const share of stranded ? [0.25, 0.75] : [0.5]) {
-      const y = Math.round(height * share) + 0.5
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(scale.width, y)
-      ctx.stroke()
+    for (const value of yTicks(ceiling, reach)) {
+      const offset = (value / ceiling) * reach
+      for (const y of stranded ? [baseline - offset, baseline + offset] : [baseline - offset]) {
+        const at = Math.round(y) + 0.5
+        ctx.beginPath()
+        ctx.moveTo(0, at)
+        ctx.lineTo(scale.width, at)
+        ctx.stroke()
+      }
     }
   }
 
@@ -166,11 +177,13 @@ export function drawCoverage({ ctx, scale, height, plus, minus, max, ink, grid }
     fillColumns(ctx, minus, baseline, reach, ceiling, -1)
   }
 
-  ctx.strokeStyle = ink.axis
-  ctx.lineWidth = 1
-  const rule = Math.round(baseline) + (stranded ? 0.5 : -0.5)
-  ctx.beginPath()
-  ctx.moveTo(0, rule)
-  ctx.lineTo(scale.width, rule)
-  ctx.stroke()
+  if (stranded) {
+    ctx.strokeStyle = ink.zero
+    ctx.lineWidth = 1
+    const rule = Math.round(baseline) + 0.5
+    ctx.beginPath()
+    ctx.moveTo(0, rule)
+    ctx.lineTo(scale.width, rule)
+    ctx.stroke()
+  }
 }

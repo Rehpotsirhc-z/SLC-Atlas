@@ -2,21 +2,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// The app's standard gutter, theme.spacing(2), so the panel reads like every other view
 export const EDGE_PAD = 16
 
 export const GUTTER_W = 168
 export const GUTTER_W_SM = 118
 
+export const AXIS_W = 54
+export const AXIS_FONT_PX = 10
+export const AXIS_TICK_PX = 4
+
+export const Y_TICK_GAP_PX = 26
+export const Y_TICK_MAX = 4
+
+export const MINUS_ALPHA = 0.6
+
 export const RULER_H = 38
-export const LANE_GAP = 2
+export const LANE_GAP = 7
+export const GROUP_GAP = 8
 
 export const LANE_HEIGHT_DEFAULT = 64
 export const LANE_HEIGHT_MIN = 32
 export const LANE_HEIGHT_MAX = 160
 
 export const GWAS_LANE_HEIGHT = 112
-// What the GWAS lane is called in the visibility registry, the one lane whose name is not a track id
 export const GWAS_LANE_KEY = "gwas"
 export const GWAS_POINT_R = 2.5
 // The conventional genome-wide significance threshold
@@ -46,7 +54,6 @@ export const CHEVRON_SPACING = 46
 // A feature narrower than this would vanish, so it is drawn at this width instead
 export const MIN_FEATURE_PX = 1.5
 
-// Autoscale leaves a little air above the tallest bar so the peak is not clipped
 export const Y_HEADROOM = 1.08
 
 // Past this the whole exon structure of a transcript is a pixel or two of chain, and a

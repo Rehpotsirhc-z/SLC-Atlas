@@ -10,6 +10,7 @@ import {
   disabledTextFor,
   dividerFor,
   doomColors,
+  plotSurfaceFor,
   secondaryTextFor,
   type ThemeMode,
 } from "./palette"
@@ -27,10 +28,10 @@ export { capBoxSx, capButtonSx, capLineSx } from "./capBox"
 
 declare module "@mui/material/styles" {
   interface Theme {
-    custom: { monoFontFamily: string; monoFontSize: string }
+    custom: { monoFontFamily: string; monoFontSize: string; plotSurface: string }
   }
   interface ThemeOptions {
-    custom?: { monoFontFamily: string; monoFontSize: string }
+    custom?: { monoFontFamily: string; monoFontSize: string; plotSurface: string }
   }
 }
 
@@ -67,7 +68,7 @@ function buildTheme(mode: ThemeMode): Theme {
       h5: headingWeight,
       h6: headingWeight,
     },
-    custom: { monoFontFamily, monoFontSize },
+    custom: { monoFontFamily, monoFontSize, plotSurface: plotSurfaceFor(mode) },
     components: componentOverrides(c, mode),
   }
 

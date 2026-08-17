@@ -11,7 +11,7 @@ import type { Chrom, CoverageTrack, Region } from "@/types/browser"
 import type { Gene } from "@/types/gene"
 import { DEFAULT_PREFS, type BrowserPrefs } from "./BrowserSettings"
 import type { GeneTrackMode } from "./GeneTrack"
-import { TRANSCRIPT_MAX_SPAN } from "./constants"
+import { TRANSCRIPT_MAX_SPAN, Y_HEADROOM } from "./constants"
 import { chromNames } from "./chromNames"
 import { peakInView } from "./drawCoverage"
 import { rowGap } from "./geneLayout"
@@ -112,7 +112,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
       peak = Math.max(peak, peakInView(lane.plus, view.view))
       if (lane.minus) peak = Math.max(peak, peakInView(lane.minus, view.view))
     }
-    return peak > 0 ? peak * 1.08 : 1
+    return peak > 0 ? peak * Y_HEADROOM : 1
   }, [prefs.yScale, coverage, view.view])
 
   const yMaxFor = useCallback((): number | null => {

@@ -12,14 +12,17 @@
 import type { GwasPoint } from "@/types/browser"
 import { GWAS_POINT_R, GWAS_SIGNIFICANCE_P } from "./constants"
 import type { Scale } from "./scale"
+import { yTicks } from "./yAxis"
 
 export const SIGNIFICANCE_Y = -Math.log10(GWAS_SIGNIFICANCE_P)
+
+// Reserve the top row for p-values too small to represent
+export const GWAS_PLOT_TOP = (GWAS_POINT_R + 1) * 2
 
 export interface GwasInk {
   raised: string
   lowered: string
   neutral: string
-  axis: string
   grid: string
   significance: string
 }
@@ -76,21 +79,20 @@ export function drawGwas({
   showSignificance,
 }: GwasFrame) {
   ctx.clearRect(0, 0, scale.width, height)
-  // The top sliver is reserved for variants whose p-value underflowed, so a real point never
-  // shares a row with one that has no measurable value
   const overflowY = GWAS_POINT_R + 1
-  const plotTop = overflowY * 2
   const ceiling = max > 0 ? max : 1
-  const toY = (value: number) => height - (value / ceiling) * (height - plotTop)
+  const toY = (value: number) => height - (value / ceiling) * (height - GWAS_PLOT_TOP)
 
   if (grid) {
     ctx.strokeStyle = ink.grid
     ctx.lineWidth = 1
-    const y = Math.round(toY(ceiling / 2)) + 0.5
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(scale.width, y)
-    ctx.stroke()
+    for (const value of yTicks(ceiling, height - GWAS_PLOT_TOP)) {
+      const y = Math.round(toY(value)) + 0.5
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(scale.width, y)
+      ctx.stroke()
+    }
   }
 
   if (showSignificance && SIGNIFICANCE_Y <= ceiling) {
@@ -126,13 +128,6 @@ export function drawGwas({
   ctx.fill(raised)
   ctx.fillStyle = ink.lowered
   ctx.fill(lowered)
-
-  ctx.strokeStyle = ink.axis
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(0, height - 0.5)
-  ctx.lineTo(scale.width, height - 0.5)
-  ctx.stroke()
 }
 
 /** The variant nearest a pixel, for the tooltip. */

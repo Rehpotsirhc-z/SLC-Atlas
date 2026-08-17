@@ -16,11 +16,13 @@ import BrowserSettings from "./BrowserSettings"
 import BrowserToolbar from "./BrowserToolbar"
 import GeneTrack from "./GeneTrack"
 import GwasLane from "./GwasLane"
+import LaneGroup from "./LaneGroup"
 import LocusHeading, { locusText } from "./LocusHeading"
 import Ruler from "./Ruler"
 import TrackLane from "./TrackLane"
 import { buildBrowserFigureSvg, type FigureLane } from "./browserFigureSvg"
 import {
+  AXIS_W,
   EDGE_PAD,
   GENE_TRACK_MAX_SHARE,
   GENE_TRACK_MIN_H,
@@ -60,7 +62,7 @@ export default function GenomeBrowser() {
   // Keep the settings panel within the browser card
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const gutter = isSmall ? GUTTER_W_SM : GUTTER_W
+  const gutter = (isSmall ? GUTTER_W_SM : GUTTER_W) + AXIS_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
   const geneTrackMax = Math.max(GENE_TRACK_MIN_H, plotAreaHeight * GENE_TRACK_MAX_SHARE)
   const state = useGenomeBrowserState(frameRef, plotWidth)
@@ -84,6 +86,7 @@ export default function GenomeBrowser() {
         color: state.colors.get(track.label) ?? palette.primary.main,
         plus: lane?.plus ?? EMPTY_COVERAGE,
         minus: lane?.minus ?? null,
+        absent: lane?.absent ?? UNREAD.absent,
       }
     })
     const transcripts =
@@ -104,6 +107,7 @@ export default function GenomeBrowser() {
       study: state.prefs.showGwas ? (state.study ?? null) : null,
       gwasPoints: state.gwasPoints,
       showGwas: state.prefs.showGwas,
+      showGrid: state.prefs.showGrid,
       showSignificance: state.prefs.showSignificance,
       transcripts,
       genes,
@@ -111,7 +115,9 @@ export default function GenomeBrowser() {
       ink: {
         text: palette.text.primary,
         muted: palette.text.secondary,
-        axis: palette.divider,
+        axis: palette.text.disabled,
+        zero: palette.divider,
+        plot: custom.plotSurface,
         background: palette.background.paper,
         raised: palette.error.main,
         lowered: palette.primary.main,
@@ -119,7 +125,7 @@ export default function GenomeBrowser() {
         highlight: palette.secondary.main,
       },
     })
-  }, [state, palette])
+  }, [state, palette, custom])
 
   const { exportSvg, exportPng } = useMemo(() => figureExportHandlers(buildFigure), [buildFigure])
 
@@ -237,27 +243,19 @@ export default function GenomeBrowser() {
                       overflowX: "hidden",
                       // Reserve scrollbar space so lanes and gene rows stay aligned
                       scrollbarGutter: "stable",
+                      "& > *:first-of-type": { mt: 0 },
                     }}
                   >
-                    {state.groups.map((group) => (
-                      <Box key={group.name} sx={{ mt: 1 }}>
-                        <Typography
-                          sx={{
-                            fontSize: 12,
-                            textTransform: "uppercase",
-                            letterSpacing: 0.7,
-                            color: "primary.main",
-                            pl: `${EDGE_PAD}px`,
-                            pb: 0.5,
-                          }}
-                        >
-                          {group.name}
-                        </Typography>
-                        {group.members.map((track) => (
+                    {state.groups.map((group, groupIndex) => (
+                      <LaneGroup key={group.name}>
+                        {group.members.map((track, trackIndex) => (
                           <TrackLane
                             key={track.track_id}
                             track={track}
                             data={state.coverage.get(track.track_id) ?? UNREAD}
+                            chrom={state.region?.chrom ?? ""}
+                            group={trackIndex === 0 ? group.name : undefined}
+                            flush={groupIndex === 0 && trackIndex === 0}
                             color={state.colors.get(track.label) ?? palette.primary.main}
                             height={state.prefs.laneHeight}
                             width={plotWidth}
@@ -270,26 +268,15 @@ export default function GenomeBrowser() {
                             watch={state.watchLane}
                           />
                         ))}
-                      </Box>
+                      </LaneGroup>
                     ))}
 
                     {state.prefs.showGwas && state.study && (
-                      <Box sx={{ mt: 1 }}>
-                        <Typography
-                          sx={{
-                            fontSize: 12,
-                            textTransform: "uppercase",
-                            letterSpacing: 0.7,
-                            color: "primary.main",
-                            pl: `${EDGE_PAD}px`,
-                            pb: 0.5,
-                          }}
-                        >
-                          GWAS
-                        </Typography>
+                      <LaneGroup>
                         <GwasLane
                           study={state.study}
                           points={state.gwasPoints}
+                          chrom={state.region?.chrom ?? ""}
                           covered={state.studyCovers}
                           thinned={state.gwasThinned}
                           loading={state.gwasLoading}
@@ -302,7 +289,7 @@ export default function GenomeBrowser() {
                           moving={state.view.moving}
                           watch={state.watchLane}
                         />
-                      </Box>
+                      </LaneGroup>
                     )}
                   </Box>
 

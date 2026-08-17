@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo, useCallback, useMemo, useRef } from "react"
-import { Box, Typography, useTheme } from "@mui/material"
+import { Box, useTheme } from "@mui/material"
 import type { GwasPoint, GwasStudy } from "@/types/browser"
 import { EDGE_PAD, GWAS_LANE_HEIGHT, GWAS_LANE_KEY, GWAS_OVERVIEW_BIN, LANE_GAP } from "./constants"
 import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
-import { drawGwas, gwasCeiling, gwasNear, type GwasInk } from "./drawGwas"
-import { frameScale, type Scale, type Viewport } from "./scale"
+import LaneAxis, { type AxisHandle } from "./LaneAxis"
+import LaneFrame from "./LaneFrame"
+import LaneGutter from "./LaneGutter"
+import { drawGwas, GWAS_PLOT_TOP, gwasCeiling, gwasNear, type GwasInk } from "./drawGwas"
+import { formatPoint, frameScale, type Scale, type Viewport } from "./scale"
 import { useHoverFrame } from "./useHoverFrame"
 import { useLaneCanvas } from "./useLaneCanvas"
 import type { LaneVisibility, LaneWatch } from "./useLaneVisibility"
@@ -17,6 +20,7 @@ import type { Painter } from "./useBrowserView"
 interface Props {
   study: GwasStudy
   points: GwasPoint[]
+  chrom: string
   covered: boolean
   /** The view is too wide for every variant, so what is drawn is the overview */
   thinned: boolean
@@ -43,6 +47,7 @@ const sameHover = (a: Hovered | null, b: Hovered | null) => a?.point === b?.poin
 function GwasLane({
   study,
   points,
+  chrom,
   covered,
   thinned,
   loading,
@@ -57,16 +62,14 @@ function GwasLane({
 }: Props) {
   const { palette, custom } = useTheme()
   const plotRef = useRef<HTMLDivElement>(null)
-  const ceilingRef = useRef<HTMLSpanElement>(null)
+  const axisRef = useRef<AxisHandle | null>(null)
   const shownMax = useRef(0)
-  const shownText = useRef("")
 
   const ink = useMemo<GwasInk>(
     () => ({
       raised: palette.error.main,
       lowered: palette.primary.main,
       neutral: palette.text.disabled,
-      axis: palette.divider,
       grid: palette.action.hover,
       significance: palette.warning.main,
     }),
@@ -92,11 +95,7 @@ function GwasLane({
         grid,
         showSignificance,
       })
-      const text = max.toFixed(1)
-      if (ceilingRef.current && shownText.current !== text) {
-        ceilingRef.current.textContent = text
-        shownText.current = text
-      }
+      axisRef.current?.draw(max, false, GWAS_LANE_HEIGHT - GWAS_PLOT_TOP)
     },
     [points, ink, grid, showSignificance, moving],
   )
@@ -138,45 +137,36 @@ function GwasLane({
 
   return (
     <Box sx={{ display: "flex", alignItems: "stretch", mb: `${LANE_GAP}px`, pr: `${EDGE_PAD}px` }}>
-      <Box
-        sx={{
-          width: gutter,
-          flexShrink: 0,
-          pl: `${EDGE_PAD}px`,
-          pr: 1,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-        }}
+      <LaneGutter
+        gutter={gutter}
+        height={GWAS_LANE_HEIGHT}
+        name={study.trait}
+        group="GWAS"
+        title={
+          thinned
+            ? `${study.trait}. Summary: significant variants and the strongest per ${GWAS_OVERVIEW_BIN / 1000} kb`
+            : study.trait
+        }
       >
-        <Typography noWrap sx={{ fontSize: 13, lineHeight: 1.3 }}>
-          {study.trait}
-        </Typography>
-        <Typography
-          component="span"
-          sx={{ fontSize: 11.5, fontFamily: custom.monoFontFamily, color: "text.secondary" }}
-        >
-          −log₁₀p ≤ <Box component="span" ref={ceilingRef} />
-        </Typography>
-        {thinned && (
-          <Typography
-            component="span"
-            sx={{ fontSize: 11, color: "text.disabled", lineHeight: 1.2 }}
-          >
-            {`Summary: significant variants and strongest per ${GWAS_OVERVIEW_BIN / 1000} kb`}
-          </Typography>
-        )}
-      </Box>
+        −log10(p){thinned ? " · summary" : ""}
+      </LaneGutter>
+      <LaneAxis height={GWAS_LANE_HEIGHT} handleRef={axisRef} />
       <Box
         ref={plotRef}
-        sx={{ position: "relative", flex: 1, minWidth: 0, height: GWAS_LANE_HEIGHT }}
+        sx={{
+          position: "relative",
+          flex: 1,
+          minWidth: 0,
+          height: GWAS_LANE_HEIGHT,
+          bgcolor: custom.plotSurface,
+        }}
         onPointerMove={onPointerMove}
         onPointerLeave={clear}
       >
         <canvas ref={canvasRef} style={{ display: "block", width, height: GWAS_LANE_HEIGHT }} />
+        <LaneFrame />
         {!covered && (
-          <Typography
+          <Box
             sx={{
               position: "absolute",
               inset: 0,
@@ -188,19 +178,23 @@ function GwasLane({
               pointerEvents: "none",
             }}
           >
-            {loading ? "loading…" : "this chromosome is not covered by the study"}
-          </Typography>
+            {loading ? "Loading…" : "No study data for this chromosome"}
+          </Box>
         )}
       </Box>
       {hover && (
         <BrowserTooltip x={hover.x} y={hover.y}>
           <TipTitle>{hover.point.snp_id || "unnamed variant"}</TipTitle>
-          <TipLine>{`${hover.point.position.toLocaleString()} · ${study.trait}`}</TipLine>
+          <TipLine>{study.trait}</TipLine>
+          <TipLine>{formatPoint(chrom, hover.point.position)}</TipLine>
           <TipLine>
             {hover.point.p_value === null || hover.point.p_value === 0
-              ? "p below the smallest value a double can hold"
+              ? "p is smaller than the browser can represent"
               : `p = ${hover.point.p_value.toExponential(2)}`}
           </TipLine>
+          {hover.point.neg_log10_p !== null && (
+            <TipLine>{`−log10(p) = ${hover.point.neg_log10_p.toFixed(2)}`}</TipLine>
+          )}
           {hover.point.beta !== null && (
             <TipLine>
               {`\u03b2 = ${hover.point.beta.toFixed(4)} (${

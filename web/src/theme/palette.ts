@@ -62,3 +62,6 @@ export const secondaryTextFor = (mode: ThemeMode) =>
 // One step below secondary, so lesser text reads as lesser
 export const disabledTextFor = (mode: ThemeMode) =>
   mode === "dark" ? doomColors.dark.base5 : doomColors.light.base4
+
+export const plotSurfaceFor = (mode: ThemeMode) =>
+  mode === "dark" ? doomColors.dark.bgAlt : darken(doomColors.light.bg, 0.02)
