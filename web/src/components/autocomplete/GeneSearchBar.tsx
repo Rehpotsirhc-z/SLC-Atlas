@@ -40,13 +40,16 @@ export default function GeneSearchBar({
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const selectGene = onSelect ?? setSelectedGeneId
   const [inputValue, setInputValue] = useState(value)
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
 
   const index = useMemo(() => buildIndex(genes), [genes])
 
   const debouncedOnChange = useMemo(() => debounce(onChange, 150), [onChange])
 
   const options = useMemo(() => {
-    const q = inputValue.trim().toLowerCase()
+    // Show all options when reopening an unchanged selection
+    const showAll = selectedSymbol !== null && inputValue === selectedSymbol
+    const q = showAll ? "" : inputValue.trim().toLowerCase()
     if (!q) return genes.slice(0, 100)
     return index
       .filter(
@@ -69,12 +72,13 @@ export default function GeneSearchBar({
       })
       .map((item) => item.gene)
       .slice(0, 200)
-  }, [inputValue, index, genes])
+  }, [inputValue, index, genes, selectedSymbol])
 
   const handleInputChange = useCallback(
-    (_event: React.SyntheticEvent, newInput: string) => {
+    (_event: React.SyntheticEvent, newInput: string, reason: string) => {
       setInputValue(newInput)
       setSelectedGeneId(null)
+      if (reason === "input") setSelectedSymbol(null)
       if (!newInput) {
         debouncedOnChange.clear()
         onChange("")
@@ -89,9 +93,11 @@ export default function GeneSearchBar({
     (_event: React.SyntheticEvent, newValue: Gene | string | null) => {
       if (newValue && typeof newValue !== "string") {
         selectGene(newValue.id)
+        setSelectedSymbol(newValue.symbol)
         setInputValue(newValue.symbol)
         onChange(newValue.symbol)
       } else if (newValue === null) {
+        setSelectedSymbol(null)
         onChange("")
       }
     },

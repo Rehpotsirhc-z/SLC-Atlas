@@ -54,6 +54,8 @@ interface Props {
 
 export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 320 }: Props) {
   const [text, setText] = useState("")
+  // Preserve accepted input so reopening shows the full gene list
+  const [committed, setCommitted] = useState<string | null>(null)
 
   const index = useMemo(
     () =>
@@ -66,7 +68,8 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
   )
 
   const options = useMemo(() => {
-    const query = text.trim().toLowerCase()
+    const showAll = committed !== null && text === committed
+    const query = showAll ? "" : text.trim().toLowerCase()
     if (!query) return genes.slice(0, 100)
     return index
       .filter((entry) => entry.lc.includes(query))
@@ -79,7 +82,7 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
       })
       .map((entry) => entry.gene)
       .slice(0, 200)
-  }, [text, index, genes])
+  }, [text, index, genes, committed])
 
   const submit = useCallback(
     (raw: string) => {
@@ -92,10 +95,15 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
       )
       if (named) {
         onSelectGene(named.id)
+        setText(named.symbol)
+        setCommitted(named.symbol)
         return
       }
       const locus = parseLocus(query, 100_000)
-      if (locus) onGoToLocus(locus)
+      if (locus) {
+        onGoToLocus(locus)
+        setCommitted(raw)
+      }
     },
     [genes, onSelectGene, onGoToLocus],
   )
@@ -108,11 +116,17 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
       disableListWrap
       options={options}
       inputValue={text}
-      onInputChange={(_event, next) => setText(next)}
+      onInputChange={(_event, next, reason) => {
+        setText(next)
+        if (reason === "input") setCommitted(null)
+      }}
       onChange={(_event, next) => {
         if (next && typeof next !== "string") {
           onSelectGene(next.id)
+          setCommitted(next.symbol)
           setText(next.symbol)
+        } else if (next === null) {
+          setCommitted(null)
         } else if (typeof next === "string") {
           submit(next)
         }
