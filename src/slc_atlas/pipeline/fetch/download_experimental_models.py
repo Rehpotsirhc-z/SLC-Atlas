@@ -16,11 +16,11 @@ The viewer can stream the same files from RCSB while the app is running, so keep
 copies is a choice about how the app is deployed and never one the app depends on.
 """
 
-import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import console, progress
 
 from ..lib.http import fetch_bytes
 from ..lib.reporting import count, report_missing
@@ -32,16 +32,20 @@ WORKERS = 6
 def download(job: tuple[str, Path]) -> str | None:
     url, path = job
     try:
-        path.write_bytes(fetch_bytes(url))
+        # Straight to the final name would leave a truncated model that later
+        # runs keep, since they skip whatever already exists
+        part = path.with_suffix(path.suffix + ".part")
+        part.write_bytes(fetch_bytes(url))
+        part.replace(path)
     except Exception as exc:
-        print(f"  Failed {path.name}: {exc}", file=sys.stderr)
+        console.warn(f"{path.name}: {exc}", indent=2)
         return path.stem
     return None
 
 
 def run(experimental_path: Path, models_dir: Path) -> None:
     if not experimental_path.exists():
-        print(f"No {experimental_path}; nothing to mirror", file=sys.stderr)
+        console.detail(f"No {experimental_path}; nothing to mirror")
         return
 
     experimental = pl.read_csv(
@@ -61,16 +65,14 @@ def run(experimental_path: Path, models_dir: Path) -> None:
             jobs.append((COORDINATE_URL.format(pdb_id=pdb_id), path))
 
     on_disk = len(pdb_ids) - len(jobs)
-    print(
-        f"{count('entry/entries', on_disk)} already present; downloading {len(jobs)}",
-        file=sys.stderr,
-    )
+    console.detail(f"{count('entry/entries', on_disk)} already present; downloading {len(jobs)}")
 
     if jobs:
-        with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-            failed = [stem for stem in pool.map(download, jobs) if stem]
+        with console.pool(WORKERS) as pool:
+            counted = progress.each(pool.map(download, jobs), len(jobs), "entries", "files")
+            failed = [stem for stem in counted if stem]
         report_missing("experimental entry/experimental entries", "that failed to download", failed)
 
     mirrored = list(models_dir.glob("*.bcif"))
     total = sum(p.stat().st_size for p in mirrored)
-    print(f"{len(mirrored)} entries, {total / 1024**2:.1f} MiB in {models_dir}", file=sys.stderr)
+    console.detail(f"{len(mirrored)} entries, {total / 1024**2:.1f} MiB in {models_dir}")

@@ -12,9 +12,9 @@ means trying the next one rather than failing the whole run.
 """
 
 import csv
-import sys
 from pathlib import Path
 
+from ..lib import console
 from ..lib.http import post_form
 from ..lib.reporting import report_missing
 
@@ -64,7 +64,7 @@ def fetch_biomart(ids: list[str]) -> str:
             failures.append(f"{url}: not a BioMart result")
             continue
         if url != BIOMART_MIRRORS[0]:
-            print(f"BioMart served by {url}", file=sys.stderr)
+            console.detail(f"BioMart served by {url}")
         return tsv
     raise RuntimeError("no BioMart mirror answered:\n  " + "\n  ".join(failures))
 

@@ -21,6 +21,14 @@ to run a step again. If you replace a source file yourself, skip the fetch
 step that normally creates it or keep the replacement in place when running
 selected steps.
 
+~--step~ also runs ~fetch_hgnc~, which creates the curation files used by the other
+steps. If those files already exist, the step reads them without replacing them.
+
+If a step fails, only its dependent steps are skipped. The remaining work continues,
+and the command ends with a summary and a non-zero exit status. Run the same command
+again to reuse completed work and retry the rest. Set ~ATLAS_TRACEBACK=1~ to include
+tracebacks for unexpected errors.
+
 ~atlas build~ reads only from ~source/~ and writes to ~app/~. Files in ~cache/~ and
 ~curation/~ are not served directly.
 

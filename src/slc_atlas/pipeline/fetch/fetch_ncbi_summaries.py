@@ -8,11 +8,11 @@ The summaries come from the esummary endpoint of the NCBI E-utilities API.
 """
 
 import csv
-import time
 from pathlib import Path
 
 from ..lib.http import get_json
-from ..lib.reporting import report_missing
+from ..lib import interrupt, progress
+from ..lib.reporting import FAILURE, attempt, report_missing
 
 ESUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 BATCH_SIZE = 200
@@ -26,21 +26,35 @@ def read_ncbi_ids(path: str) -> list[str]:
 
 
 def fetch_batch(ids: list[str]) -> dict:
-    return get_json(f"{ESUMMARY_URL}?db=gene&id={','.join(ids)}&retmode=json")["result"]
+    payload = get_json(f"{ESUMMARY_URL}?db=gene&id={','.join(ids)}&retmode=json")
+    # An error payload carries no result at all, which is not a reason to end the step
+    return (payload or {}).get("result", {})
 
 
 def fetch_all(ids: list[str]) -> dict[str, str]:
     summaries: dict[str, str] = {}
-    for i in range(0, len(ids), BATCH_SIZE):
-        batch = ids[i : i + BATCH_SIZE]
-        result = fetch_batch(batch)
-        for uid in result.get("uids", []):
-            summaries[uid] = result[uid].get("summary", "")
-        if i + BATCH_SIZE < len(ids):
-            time.sleep(REQUEST_INTERVAL)
+    refused: list[str] = []
+    with progress.bar("gene summaries", total=len(ids), noun="genes") as bar:
+        for i in range(0, len(ids), BATCH_SIZE):
+            batch = ids[i : i + BATCH_SIZE]
+            result = attempt(f"{batch[0]}..{batch[-1]}", lambda: fetch_batch(batch), refused) or {}
+            for uid in result.get("uids", []):
+                summaries[uid] = result[uid].get("summary", "")
+            bar.advance(len(batch))
+            if i + BATCH_SIZE < len(ids):
+                interrupt.pause(REQUEST_INTERVAL)
 
     report_missing(
-        "NCBI gene id", "with no summary at NCBI", [i for i in ids if i not in summaries]
+        "batch/batches",
+        "of genes NCBI would not answer for, so those genes have no summary",
+        refused,
+        severity=FAILURE,
+    )
+    report_missing(
+        "NCBI gene id",
+        "with no summary at NCBI",
+        [i for i in ids if i not in summaries],
+        checked=len(ids),
     )
     return summaries
 

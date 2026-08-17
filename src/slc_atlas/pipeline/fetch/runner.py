@@ -4,19 +4,22 @@
 
 """Run the fetch phase, which acquires a gene family and writes the source files.
 
-The stages run one after another, and the steps within a stage run in parallel. A step is
-left out entirely when every view that would use its output has been skipped. A step whose
-output files are already on disk is left alone as well, so naming it with --step is the
-only way to make it run a second time.
+The stages run one after another and the steps within a stage run in parallel. A step is
+left out entirely when every view that would use its output has been skipped, and a step
+whose output files are already on disk is left alone, so naming it with --step is the only
+way to make it run a second time.
+
+A step that fails stops only the steps that read what it was meant to write. Every step
+states the files it reads, so the runner can tell a step whose producer just failed from one
+whose input nobody was ever asked to fetch, and the run gets as far as it can either way.
 """
 
-from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from pathlib import Path
 
 from ...config import COMMAND_NAME
-from ..lib import windows
-from ..lib.orchestration import Step, preflight, run_stage
+from ..lib import console, interrupt, progress
+from ..lib.orchestration import Ledger, Step, kept, preflight, run_stage, summarize
 from ..lib.paths import PipelinePaths
 from . import (
     annotate_genes,
@@ -39,116 +42,17 @@ from . import (
     fetch_uniprot_sequences,
     gtex,
     hgnc,
+    plan,
     slice_coverage,
     subset_expression,
 )
-from .browser_curation import GWAS_FILE, TRACKS_FILE
+from .browser_curation import GWAS_FILE, TRACKS_FILE, gwas_text, tracks_text
 
-STAGES = [
-    ["fetch_hgnc"],
-    ["annotate_genes"],
-    ["fetch_ensembl_genes", "fetch_ncbi_summaries"],
-    ["assemble_genes"],
-    ["subset_expression", "fetch_sequences", "fetch_gene_models"],
-    ["fetch_orthologs", "fetch_species_tree", "fetch_coverage", "fetch_gwas"],
-    ["fetch_uniprot_map", "slice_coverage"],
-    ["fetch_uniprot_sequences"],
-    ["fetch_protein_features", "fetch_structures"],
-    ["download_models", "download_experimental_models", "fetch_confidence"],
-]
-
-STEP_NAMES = tuple(step for stage in STAGES for step in stage)
-
-CONSUMED_BY = {
-    "subset_expression": {"clustering", "expression"},
-    "fetch_sequences": {"clustering", "structure"},
-    "fetch_orthologs": {"conservation"},
-    "fetch_species_tree": {"conservation"},
-    "fetch_gene_models": {"browser"},
-    "fetch_coverage": {"browser"},
-    "fetch_gwas": {"browser"},
-    "slice_coverage": {"browser"},
-    "fetch_uniprot_map": {"structure"},
-    "fetch_protein_features": {"structure"},
-    "fetch_structures": {"structure"},
-    "fetch_uniprot_sequences": {"structure"},
-    "download_models": {"structure"},
-    "download_experimental_models": {"structure"},
-    "fetch_confidence": {"structure"},
-}
-
-GATED_ON_FLAG = {
-    "download_models": "download_predicted",
-    "download_experimental_models": "download_experimental",
-    "slice_coverage": "local_coverage",
-}
-
-LABELS = {
-    "fetch_hgnc": "Downloading the gene list from HGNC",
-    "annotate_genes": "Matching genes to their families",
-    "fetch_ensembl_genes": "Fetching gene coordinates from Ensembl",
-    "fetch_ncbi_summaries": "Fetching gene summaries from NCBI",
-    "assemble_genes": "Writing the gene and transcript tables",
-    "subset_expression": "Taking this family's genes out of the GTEx matrix",
-    "fetch_sequences": "Fetching the canonical coding and protein sequences",
-    "fetch_orthologs": "Fetching orthologs from Ensembl Compara",
-    "fetch_species_tree": "Building the species tree",
-    "fetch_gene_models": "Fetching the transcript models",
-    "fetch_coverage": "Resolving the coverage tracks",
-    "fetch_gwas": "Reading the GWAS studies",
-    "slice_coverage": "Writing the local copies of the coverage tracks",
-    "fetch_uniprot_map": "Working out which UniProt entry each gene maps to",
-    "fetch_uniprot_sequences": "Fetching the UniProt canonical sequences",
-    "fetch_protein_features": "Fetching membrane topology and binding sites",
-    "fetch_structures": "Finding the predicted and experimental structures",
-    "fetch_confidence": "Fetching the per-residue confidence scores",
-    "download_models": "Mirroring the predicted models",
-    "download_experimental_models": "Mirroring the experimental structures",
-}
-
-KEPT = "Already available (delete its files to fetch it again)"
-
-DONE = (
-    "Fetch complete. Your editable source files are in {source}.\nReview or replace any "
-    "of them, then run `{command} build` to build the atlas.\nRunning fetch again keeps "
-    "existing files and downloads only what is missing."
-)
+# Where --step looks to check a name it was given
+STEP_NAMES = plan.STEP_NAMES
 
 
-@dataclass(frozen=True)
-class FetchOptions:
-    source: str = ""
-    gtex_version: str = "v11"
-    gtex_file: Path | None = None
-    ensembl_release: int = 116
-    tree_source: str = "ensembl_compara"
-    promote_prefix: str = ""
-    download_predicted: bool = False
-    download_experimental: bool = False
-    gene_models_file: Path | None = None
-    gencode_release: str = ""
-    browser_tracks: tuple[Path, ...] = ()
-    browser_gwas: tuple[Path, ...] = ()
-    browser_flank_min: int = windows.FLANK_MIN
-    browser_flank_max: int = windows.FLANK_MAX
-    browser_bin: int = 25
-    browser_max_bytes: int = 500_000_000
-    browser_whole_genome: bool = False
-    local_coverage: bool = False
-    no_review: bool = False
-    skipped_views: frozenset[str] = frozenset()
-    only_steps: tuple[str, ...] = ()
-
-
-def _selected(options: FetchOptions) -> set[str]:
-    if options.only_steps:
-        return set(options.only_steps)
-    skip = {step for step, views in CONSUMED_BY.items() if views <= options.skipped_views}
-    skip |= {step for step, flag in GATED_ON_FLAG.items() if not getattr(options, flag)}
-    return set(STEP_NAMES) - skip
-
-
-def _acquire(options: FetchOptions, paths: PipelinePaths) -> bool:
+def _acquire(options: plan.FetchOptions, paths: PipelinePaths) -> bool:
     """Return True when curation files have just been seeded and the user should be given a
     chance to edit them before the rest of the fetch runs."""
     hgnc_path = hgnc.acquire(options.source, paths.cache / "hgnc_family.txt")
@@ -160,20 +64,39 @@ def _acquire(options: FetchOptions, paths: PipelinePaths) -> bool:
         tracks_dirs=options.browser_tracks,
         gwas_dirs=options.browser_gwas,
     )
+    written = {path.name for path in seeded}
+    _warn_ignored(options, paths, written)
     if not seeded or options.no_review or options.only_steps:
         return False
-    print("\n=== Review the new curation files ===")
+    console.heading("Review the new curation files")
     for path in seeded:
-        print(f"Created {path}")
-    print(
-        "\nThese files control dataset-specific names, exclusions, species, protein mappings,\n"
-        "and browser tracks. Edit them now or keep the suggested values.\n"
-        "Use --no-review to continue automatically when creating another dataset."
-    )
+        console.success(f"Created {path}")
+    console.paragraph(plan.REVIEW)
     return True
 
 
-def _expression(options: FetchOptions, paths: PipelinePaths) -> None:
+def _warn_ignored(options: plan.FetchOptions, paths: PipelinePaths, written: set[str]) -> None:
+    """Say so when a seeding flag was given for a curation file that already existed.
+
+    Nothing here rewrites the file, so the rows it would have written are printed instead
+    and the user can paste in the ones they want.
+    """
+    for flag, name, dirs, build in (
+        ("--browser-tracks", TRACKS_FILE, options.browser_tracks, tracks_text),
+        ("--browser-gwas", GWAS_FILE, options.browser_gwas, gwas_text),
+    ):
+        if not dirs or name in written:
+            continue
+        path = paths.curation_dir / name
+        sources = ", ".join(str(d) for d in dirs)
+        console.blank()
+        console.paragraph(plan.SEEDED_ALREADY.format(flag=flag, path=path, sources=sources), "warn")
+        for line in build(dirs).splitlines():
+            if line.strip() and not line.startswith("#"):
+                console.detail(line, indent=2)
+
+
+def _expression(options: plan.FetchOptions, paths: PipelinePaths) -> None:
     tpm = options.gtex_file or gtex.ensure_tpm(paths.cache, options.gtex_version)
     subset_expression.run(
         paths.source / "genes.tsv",
@@ -184,9 +107,10 @@ def _expression(options: FetchOptions, paths: PipelinePaths) -> None:
     )
 
 
-def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
+def _browser_steps(options: plan.FetchOptions, paths: PipelinePaths) -> list[Step]:
     browser, genes = paths.browser_source, paths.source / "genes.tsv"
     chroms, coverage = browser / "chroms.tsv", browser / "coverage.tsv"
+    tracks_file, gwas_file = paths.curation_dir / TRACKS_FILE, paths.curation_dir / GWAS_FILE
     flank = {"flank_min": options.browser_flank_min, "flank_max": options.browser_flank_max}
     extent = {**flank, "whole_genome": options.browser_whole_genome}
     return [
@@ -201,12 +125,13 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 models_file=options.gene_models_file,
                 **extent,
             ),
-            outputs=(browser / "transcripts.bed", chroms),
+            inputs=(genes,),
+            outputs=(browser / "transcripts.bed", chroms, browser / "gene_models.tsv"),
         ),
         Step(
             "fetch_coverage",
             lambda: fetch_coverage.run(
-                paths.curation_dir / TRACKS_FILE,
+                tracks_file,
                 genes,
                 chroms,
                 coverage,
@@ -215,21 +140,15 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 **extent,
             ),
             requires=("pybigtools",),
+            inputs=(tracks_file, genes, chroms),
             outputs=(coverage,),
         ),
         Step(
             "fetch_gwas",
-            lambda: fetch_gwas.run(
-                paths.curation_dir / GWAS_FILE,
-                genes,
-                chroms,
-                paths.cache,
-                browser,
-                **extent,
-            ),
+            lambda: fetch_gwas.run(gwas_file, genes, chroms, paths.cache, browser, **extent),
+            inputs=(gwas_file, genes, chroms),
             outputs=(browser / "gwas.parquet", browser / "gwas_studies.tsv"),
         ),
-        # Decides file by file, so its directory is never complete
         Step(
             "slice_coverage",
             lambda: slice_coverage.run(
@@ -241,38 +160,49 @@ def _browser_steps(options: FetchOptions, paths: PipelinePaths) -> list[Step]:
                 **extent,
             ),
             requires=("pybigtools",),
+            inputs=(coverage, genes, chroms),
+            outputs=(paths.coverage_dir,),
+            # Decides file by file, so its directory is never complete
+            skip_when_present=False,
         ),
     ]
 
 
-def _steps(options: FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
+def _steps(options: plan.FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
     cache, source, structure = paths.cache, paths.source, paths.structure_source
     curation_dir = paths.curation_dir
+    hgnc_table = cache / "hgnc_family.txt"
     annotation = cache / "annotation.tsv"
     ensembl_genes = cache / "ensembl_genes.tsv"
     summaries = cache / "ncbi_gene_summaries.tsv"
+    families = curation_dir / "families.tsv"
+    exclusions = curation_dir / "exclusions.txt"
+    symbol_overrides = curation_dir / "symbol_overrides.tsv"
+    uniprot_overrides = curation_dir / "uniprot_overrides.tsv"
     genes = source / "genes.tsv"
     protein = source / "protein.fasta"
     species = curation_dir / "species.tsv"
     uniprot_map = structure / "uniprot_map.tsv"
+    sequences = structure / "sequences.tsv"
     structures = structure / "structures.tsv"
     experimental = structure / "experimental.tsv"
     steps = [
         Step(
             "annotate_genes",
-            lambda: annotate_genes.run(
-                cache / "hgnc_family.txt", curation_dir / "families.tsv", annotation
-            ),
+            lambda: annotate_genes.run(hgnc_table, families, annotation),
+            inputs=(hgnc_table, families),
             outputs=(annotation,),
         ),
         Step(
             "fetch_ensembl_genes",
             lambda: fetch_ensembl_genes.run(annotation, ensembl_genes),
+            inputs=(annotation,),
             outputs=(ensembl_genes,),
         ),
         Step(
             "fetch_ncbi_summaries",
             lambda: fetch_ncbi_summaries.run(annotation, summaries),
+            inputs=(annotation,),
             outputs=(summaries,),
         ),
         Step(
@@ -281,27 +211,33 @@ def _steps(options: FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
                 annotation,
                 ensembl_genes,
                 summaries,
-                curation_dir / "exclusions.txt",
-                curation_dir / "symbol_overrides.tsv",
+                exclusions,
+                symbol_overrides,
                 genes,
                 source / "transcripts.tsv",
             ),
+            inputs=(annotation, ensembl_genes, summaries),
             outputs=(genes, source / "transcripts.tsv"),
         ),
         Step(
             "subset_expression",
             lambda: _expression(options, paths),
+            inputs=(genes,),
             outputs=(source / "expression.parquet", source / "sample_tissue.tsv"),
         ),
         Step(
             "fetch_sequences",
             lambda: fetch_sequences.run(genes, source / "cds.fasta", protein),
+            inputs=(genes,),
             outputs=(source / "cds.fasta", protein),
         ),
         Step(
             "fetch_orthologs",
-            lambda: fetch_orthologs.run(genes, species, source / "orthologs.tsv"),
+            lambda: fetch_orthologs.run(genes, species, source / "orthologs.tsv", cache),
+            inputs=(genes, species),
             outputs=(source / "orthologs.tsv",),
+            # Resumes from its cache, so it always looks for the genes it has yet to fetch
+            skip_when_present=False,
         ),
         Step(
             "fetch_species_tree",
@@ -314,88 +250,113 @@ def _steps(options: FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
                 curation_dir=curation_dir,
             ),
             requires=("Bio",),
+            inputs=(species,),
             outputs=(source / "species_tree.nwk", source / "species.tsv"),
         ),
         Step(
             "fetch_uniprot_map",
             lambda: fetch_uniprot_map.run(
-                genes,
-                protein,
-                annotation,
-                curation_dir / "uniprot_overrides.tsv",
-                uniprot_map,
+                genes, protein, annotation, uniprot_overrides, uniprot_map
             ),
+            inputs=(genes,),
             outputs=(uniprot_map,),
         ),
         Step(
             "fetch_uniprot_sequences",
-            lambda: fetch_uniprot_sequences.run(uniprot_map, structure / "sequences.tsv"),
-            outputs=(structure / "sequences.tsv",),
+            lambda: fetch_uniprot_sequences.run(uniprot_map, sequences),
+            inputs=(uniprot_map,),
+            outputs=(sequences,),
         ),
         Step(
             "fetch_protein_features",
             lambda: fetch_protein_features.run(uniprot_map, structure / "features.tsv"),
+            inputs=(uniprot_map,),
             outputs=(structure / "features.tsv",),
         ),
         Step(
             "fetch_structures",
-            lambda: fetch_structures.run(
-                uniprot_map, structure / "sequences.tsv", structures, experimental
-            ),
+            lambda: fetch_structures.run(uniprot_map, sequences, structures, experimental),
+            inputs=(uniprot_map, sequences),
             outputs=(structures, experimental),
         ),
         Step(
             "fetch_confidence",
             lambda: fetch_confidence.run(structures, structure / "confidence.parquet"),
+            inputs=(structures,),
             outputs=(structure / "confidence.parquet",),
         ),
         # The two download steps decide file by file, so their directory is never complete
-        Step("download_models", lambda: download_models.run(structures, paths.models_dir)),
+        Step(
+            "download_models",
+            lambda: download_models.run(structures, paths.models_dir),
+            inputs=(structures,),
+            outputs=(paths.models_dir,),
+            skip_when_present=False,
+        ),
         Step(
             "download_experimental_models",
             lambda: download_experimental_models.run(experimental, paths.models_dir / "pdb"),
+            inputs=(experimental,),
+            outputs=(paths.models_dir / "pdb",),
+            skip_when_present=False,
         ),
         *_browser_steps(options, paths),
     ]
     return {step.name: step for step in steps}
 
 
-def _kept(step: Step, forced: frozenset[str]) -> bool:
-    """Return True when all of the step's output files already exist and --step did not
-    name it, in which case the step does not need to run."""
-    return bool(step.outputs) and step.name not in forced and all(p.exists() for p in step.outputs)
+def _curation_outputs(paths: PipelinePaths) -> tuple[Path, ...]:
+    names = (
+        "families.tsv",
+        "exclusions.txt",
+        "symbol_overrides.tsv",
+        "species.tsv",
+        "uniprot_overrides.tsv",
+        TRACKS_FILE,
+        GWAS_FILE,
+    )
+    return (paths.cache / "hgnc_family.txt", *(paths.curation_dir / name for name in names))
 
 
-def _pending(steps: Sequence[Step], forced: frozenset[str]) -> list[Step]:
-    pending = []
-    for step in steps:
-        if _kept(step, forced):
-            print(f"\n=== {step.heading} === {KEPT}", flush=True)
-        else:
-            pending.append(step)
-    return pending
-
-
-def run(options: FetchOptions, paths: PipelinePaths) -> bool:
-    """Return True when the run stopped so that the curation files could be edited."""
+def run(options: plan.FetchOptions, paths: PipelinePaths) -> tuple[bool, bool]:
+    """Return whether the run halted for curation review, and whether anything went wrong."""
     halted = False
 
     def fetch_hgnc() -> None:
         nonlocal halted
         halted = _acquire(options, paths)
 
-    steps = {"fetch_hgnc": Step("fetch_hgnc", fetch_hgnc)} | _steps(options, paths)
-    steps = {name: replace(step, label=LABELS[name]) for name, step in steps.items()}
-    selected = _selected(options)
+    seeding = Step(
+        "fetch_hgnc",
+        fetch_hgnc,
+        outputs=_curation_outputs(paths),
+        # Cheap when everything is already there, and it is what writes the curated files
+        skip_when_present=False,
+    )
+    steps = {"fetch_hgnc": seeding} | _steps(options, paths)
+    steps = {name: replace(step, label=plan.LABELS[name]) for name, step in steps.items()}
+    chosen = plan.selected(options)
     forced = frozenset(options.only_steps)
     preflight(
-        [steps[name] for name in STEP_NAMES if name in selected and not _kept(steps[name], forced)]
+        [
+            steps[name]
+            for name in plan.STEP_NAMES
+            if name in chosen and not kept(steps[name], forced)
+        ]
     )
 
-    for stage in STAGES:
-        run_stage(_pending([steps[name] for name in stage if name in selected], forced))
-        if halted:
-            return True
+    ledger = Ledger()
+    with interrupt.handler(), progress.display():
+        for stage in plan.STAGES:
+            run_stage([steps[name] for name in stage if name in chosen], ledger, forced)
+            if halted:
+                return True, False
 
-    print("\n" + DONE.format(source=paths.source, command=COMMAND_NAME))
-    return False
+    summarize(ledger, "Fetch", f"{COMMAND_NAME} fetch")
+    console.blank()
+    message = plan.INCOMPLETE if ledger.unusable else plan.DONE
+    console.paragraph(
+        message.format(source=paths.source, command=COMMAND_NAME),
+        "warn" if ledger.unusable else "success",
+    )
+    return False, ledger.unusable

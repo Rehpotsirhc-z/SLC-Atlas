@@ -4,12 +4,12 @@
 
 """Validate browser source data and build the Genome Browser tables."""
 
-import sys
 from pathlib import Path
 
 import polars as pl
 
-from ..lib import bed12, bigbed, chroms as chrom_names, windows
+from ..lib import parquet
+from ..lib import bed12, bigbed, chroms as chrom_names, console, windows
 from ..lib.reporting import count, report_missing
 from .browser_tables import (
     CHROM_SCHEMA,
@@ -127,10 +127,7 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
     browser = source_dir / "browser"
     models_path, chroms_path = browser / "transcripts.bed", browser / "chroms.tsv"
     if not models_path.exists() or not chroms_path.exists():
-        print(
-            f"No gene models in {browser}, so the Genome Browser view is left out",
-            file=sys.stderr,
-        )
+        console.detail(f"No gene models in {browser}, so the Genome Browser view is left out")
         return
 
     check_flank(browser, flank_min, flank_max)
@@ -179,36 +176,39 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
     ensembl_of = {track: source for source, track in spelling.items()}
 
     sizes = {c.name: c.size for c in chrom_table if c.role == chrom_names.PRIMARY}
-    window_df.write_parquet(out / "windows.parquet")
+    parquet.write(window_df, out / "windows.parquet")
     written = bigbed.write(
         out / "models.bb",
         sizes,
         transcript_rows(transcripts, sizes, set(genes["id"].to_list())),
     )
     kept_variants = write_gwas(variants, studies, sizes, out / "gwas")
-    track_frame(coverage, coverage_out).write_parquet(out / "tracks.parquet")
-    study_frame(studies).write_parquet(out / "studies.parquet")
-    source_frame(browser, coverage, studies).write_parquet(out / "sources.parquet")
-    pl.DataFrame(
-        [
-            {
-                "chrom": c.name,
-                "ensembl": ensembl_of.get(c.name, c.name),
-                "size": c.size,
-                "role": c.role,
-            }
-            for c in chrom_table
-        ],
-        schema=CHROM_SCHEMA,
-    ).write_parquet(out / "chroms.parquet")
+    tracks = track_frame(coverage, coverage_out)
+    parquet.write(tracks, out / "tracks.parquet")
+    parquet.write(study_frame(studies), out / "studies.parquet")
+    parquet.write(source_frame(browser, coverage, studies), out / "sources.parquet")
+    parquet.write(
+        pl.DataFrame(
+            [
+                {
+                    "chrom": c.name,
+                    "ensembl": ensembl_of.get(c.name, c.name),
+                    "size": c.size,
+                    "role": c.role,
+                }
+                for c in chrom_table
+            ],
+            schema=CHROM_SCHEMA,
+        ),
+        out / "chroms.parquet",
+    )
 
-    print(
-        f"{count('gene', window_df.height)} over "
+    console.detail(f"{count('gene', window_df.height)} over "
         f"{windows.covered_bases(merged) / 1e6:.0f} Mb"
         f"{' (the whole genome)' if whole_genome else ' of windows'}, "
         f"{count('transcript model', written)}, "
-        f"{count('coverage track', len(coverage))} ({mirrored} copied here, {copied} new), "
+        # Stranded tracks have one lane per strand
+        f"{count('coverage track', tracks.height)} from {count('lane', len(coverage))} "
+        f"({mirrored} copied here, {copied} new), "
         f"{count('GWAS study/GWAS studies', len(studies))} "
-        f"holding {count('variant', kept_variants)}",
-        file=sys.stderr,
-    )
+        f"holding {count('variant', kept_variants)}")

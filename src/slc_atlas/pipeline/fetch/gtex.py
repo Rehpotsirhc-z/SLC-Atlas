@@ -15,6 +15,7 @@ from pathlib import Path
 
 import polars as pl
 
+from ..lib import console, progress
 from ..lib.http import download
 
 BASE = "https://storage.googleapis.com/adult-gtex"
@@ -45,7 +46,9 @@ def _ensure(url: str, cache_dir: Path) -> Path:
     to download it again."""
     path = cache_dir / url.rsplit("/", 1)[-1]
     if not path.exists():
-        download(url, path)
+        console.detail(f"Downloading {path.name}")
+        with progress.bytes_bar(path.name) as on_bytes:
+            download(url, path, on_bytes)
     return path
 
 
@@ -53,11 +56,16 @@ def subset_gct(gct_path: Path, gene_ids: list[str]) -> pl.DataFrame:
     """Return a frame with a gene_id column and one column per sample, keeping the samples
     in the order the GCT file lists them."""
     wanted = set(gene_ids)
+    # A few gigabytes read a line at a time, which is minutes of nothing without a count
     with gzip.open(gct_path, "rt", encoding="utf-8") as handle:
         for _ in range(PREAMBLE_LINES):
             handle.readline()
         kept = [handle.readline()]
-        kept.extend(line for line in handle if line.split("\t", 1)[0].split(".")[0] in wanted)
+        with progress.bar(f"scanning {gct_path.name}", noun="rows") as scan:
+            for line in handle:
+                scan.advance()
+                if line.split("\t", 1)[0].split(".")[0] in wanted:
+                    kept.append(line)
 
     df = pl.read_csv(io.StringIO("".join(kept)), separator="\t").drop("Description")
     samples = [column for column in df.columns if column != "Name"]

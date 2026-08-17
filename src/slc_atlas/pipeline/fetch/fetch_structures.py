@@ -20,14 +20,14 @@ false, so no unplaceable score is ever fetched, and the app stands the figure
 down from indexing the 3D viewer.
 """
 
-import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import polars as pl
 
+from ..lib import console, progress
+
 from ..lib.http import get_json
-from ..lib.reporting import report_missing
+from ..lib.reporting import FAILURE, attempt, report_missing
 
 BEACONS = "https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons/api/v2/uniprot/summary"
 ALPHAFOLD = "https://alphafold.ebi.ac.uk/api/prediction"
@@ -214,10 +214,27 @@ def run(
     gene_map = pl.read_csv(map_path, separator="\t").drop_nulls("uniprot_accession")
     canonical = read_canonical(sequences_path)
     accessions = sorted(set(gene_map["uniprot_accession"].to_list()))
-    print(f"{len(accessions)} accessions; querying 3D-Beacons and AlphaFold DB...", file=sys.stderr)
+    console.detail(f"Querying 3D-Beacons and AlphaFold DB for {len(accessions)} accessions")
 
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        payloads = dict(zip(accessions, pool.map(fetch_accession, accessions)))
+    refused: list[str] = []
+    empty = {"structures": [], "predictions": []}
+    with progress.bar("structures", total=len(accessions), noun="accessions") as bar:
+        with console.pool(WORKERS) as pool:
+            fetched = pool.map(
+                lambda acc: attempt(acc, lambda: fetch_accession(acc), refused) or empty,
+                accessions,
+            )
+            payloads = {}
+            for accession, payload in zip(accessions, fetched):
+                payloads[accession] = payload
+                bar.advance()
+    report_missing(
+        "accession",
+        "that 3D-Beacons or AlphaFold would not answer for, so they have no structures here",
+        refused,
+        severity=FAILURE,
+        checked=len(accessions),
+    )
 
     structure_rows, experimental = [], []
     for gene in gene_map.iter_rows(named=True):
@@ -261,12 +278,10 @@ def run(
 
     n_with_experimental = len({r["gene_id"] for r in experimental})
     n_alphafill = sum(1 for r in structure_rows if r["alphafill_url"])
-    print(
-        f"wrote {len(structure_rows)} models ({n_alphafill} with AlphaFill) -> {structures_path}",
-        file=sys.stderr,
+    console.success(
+        f"wrote {len(structure_rows)} models ({n_alphafill} with AlphaFill) -> {structures_path}"
     )
-    print(
+    console.success(
         f"wrote {len(experimental)} experimental entries for {n_with_experimental} genes "
-        f"-> {experimental_path}",
-        file=sys.stderr,
+        f"-> {experimental_path}"
     )

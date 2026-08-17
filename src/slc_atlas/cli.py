@@ -14,7 +14,6 @@ from .pipeline.cli import add_parsers
 
 def _add_settings_flags(parser: argparse.ArgumentParser) -> None:
     for name, field in Settings.model_fields.items():
-        # Hide path defaults since they depend on where the package is installed
         shown = "" if isinstance(field.default, Path) or field.default == "" else field.default
         env = f"ATLAS_{name.upper()}"
         parser.add_argument(
@@ -30,7 +29,6 @@ def _apply_settings_flags(args: argparse.Namespace) -> None:
         value = getattr(args, name, None)
         if value is not None:
             os.environ[f"ATLAS_{name.upper()}"] = str(value)
-    # Apply command-line settings before loading the application
     refresh()
 
 
@@ -63,12 +61,20 @@ def main() -> int:
     parser.add_argument("--version", action="version", version=f"{PRODUCT_NAME} {PRODUCT_VERSION}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    serve = sub.add_parser("serve", help="serve a built atlas on a local server")
+    serve = sub.add_parser(
+        "serve",
+        help="serve a built atlas on a local server",
+        description="Serve the API and built frontend from a local web server.",
+    )
     _add_settings_flags(serve)
     serve.set_defaults(func=_serve)
 
-    export = sub.add_parser("export", help="export a complete atlas for static hosting")
-    export.add_argument("out_dir", type=Path)
+    export = sub.add_parser(
+        "export",
+        help="export a complete atlas for static hosting",
+        description="Write a self-contained static site for deployment to any file server.",
+    )
+    export.add_argument("out_dir", type=Path, help="directory that will receive the static site")
     _add_settings_flags(export)
     export.set_defaults(func=_export)
 
@@ -76,7 +82,22 @@ def main() -> int:
 
     args = parser.parse_args()
     _apply_settings_flags(args)
-    return args.func(args)
+    from .pipeline.lib import console, interrupt
+
+    interrupt.claim()
+
+    try:
+        return args.func(args)
+    except (KeyboardInterrupt, interrupt.Stopped):
+        console.blank()
+        if interrupt.pending_writes():
+            console.warn("Stopping after the current table writes finish.")
+        else:
+            console.warn("Stopping.")
+        console.detail("Press Ctrl-C again to leave without waiting")
+        interrupt.settle()
+        console.warn("Stopped. Completed work is on disk and will be reused next time.")
+        interrupt.leave(130, wait=False)
 
 
 if __name__ == "__main__":

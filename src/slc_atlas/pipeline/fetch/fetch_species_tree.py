@@ -16,9 +16,9 @@ them shows it before anything else reads the tree.
 
 import csv
 import io
-import sys
 from pathlib import Path
 
+from ..lib import console
 from ..lib.reporting import report_missing
 from .species_tree_sources import PROVIDERS
 
@@ -63,7 +63,7 @@ def run(
         raise SystemExit(f"Unknown source {source!r} (valid: {', '.join(PROVIDERS)})")
 
     species = read_species(species_path)
-    print(f"[{source}] building tree for {len(species)} species", file=sys.stderr)
+    console.detail(f"Building a tree for {len(species)} species from {source}")
     newick = PROVIDERS[source](species, ensembl_release=ensembl_release, curation_dir=curation_dir)
     tree_out.parent.mkdir(parents=True, exist_ok=True)
     tree_out.write_text(newick)
@@ -71,9 +71,9 @@ def run(
 
     tree = Phylo.read(io.StringIO(newick), "newick")
     leaves = tree.get_terminals()
-    print(f"\n{len(leaves)} leaves written -> {tree_out}", file=sys.stderr)
+    console.detail(f"\n{len(leaves)} leaves written -> {tree_out}")
     for leaf in leaves[:5]:
-        print(f"  {leaf.name}: branch_length={leaf.branch_length}", file=sys.stderr)
+        console.detail(f"  {leaf.name}: branch_length={leaf.branch_length}")
     got = {leaf.name for leaf in leaves}
     report_missing(
         "species/species", "not in the tree", sorted({s["ensembl_name"] for s in species} - got)

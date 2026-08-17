@@ -15,6 +15,7 @@ import shutil
 import time
 from pathlib import Path
 
+from ..lib import console, interrupt, progress
 from ..lib.http import download, fetch_text, get_json
 from ..lib.reporting import report_missing
 
@@ -93,7 +94,7 @@ def fetch_group_json(group_id: int) -> dict:
     global _last_group_call
     pause = REQUEST_INTERVAL - (time.monotonic() - _last_group_call)
     if pause > 0:
-        time.sleep(pause)
+        interrupt.pause(pause)
     _last_group_call = time.monotonic()
     return get_json(GROUP_URL.format(id=group_id))
 
@@ -176,7 +177,9 @@ def _group_row(row: dict, group_name: str) -> list[str]:
 def _resolve_list(path: Path, cache_dir: Path) -> list[list[str]]:
     complete_set = cache_dir / COMPLETE_SET_NAME
     if not complete_set.exists():
-        download(COMPLETE_SET_URL, complete_set)
+        console.detail(f"Downloading {COMPLETE_SET_NAME}")
+        with progress.bytes_bar(COMPLETE_SET_NAME) as on_bytes:
+            download(COMPLETE_SET_URL, complete_set, on_bytes)
 
     exact, fallbacks = _index(complete_set)
     rows: list[list[str]] = []

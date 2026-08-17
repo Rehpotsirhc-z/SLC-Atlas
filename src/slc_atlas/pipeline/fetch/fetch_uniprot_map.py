@@ -17,12 +17,11 @@ rather than approved symbols, so joining on the symbol would quietly lose those 
 
 import csv
 import json
-import sys
-import time
 from pathlib import Path
 
 import polars as pl
 
+from ..lib import console, interrupt, progress
 from ..lib.http import fetch_text, get_json, post_form
 from ..lib.reporting import count, report_missing
 
@@ -96,14 +95,20 @@ def run_mapping(from_db: str, ids: list[str]) -> dict[str, list[str]]:
             {"from": from_db, "to": "UniProtKB-Swiss-Prot", "ids": ",".join(chunk)},
         )
         job_id = json.loads(job)["jobId"]
-        for _ in range(MAX_POLLS):
-            # UniProt sometimes answers a valid poll with a bare 400, so treat it as not ready
-            status = get_json(f"{REST}/idmapping/status/{job_id}", absent=(400,))
-            if status is not None and status.get("jobStatus") in (None, "FINISHED"):
-                break
-            time.sleep(POLL_SECONDS)
-        else:
-            raise RuntimeError(f"UniProt mapping job {job_id} never finished")
+        # UniProt runs the mapping as a job, so this waits minutes with nothing else to say
+        with progress.bar(f"waiting for UniProt job {job_id}", total=MAX_POLLS, noun="polls") as p:
+            for _ in range(MAX_POLLS):
+                # UniProt sometimes answers a valid poll with a bare 400, so treat it as pending
+                status = get_json(f"{REST}/idmapping/status/{job_id}", absent=(400,))
+                if status is not None and status.get("jobStatus") in (None, "FINISHED"):
+                    break
+                p.advance()
+                interrupt.pause(POLL_SECONDS)
+            else:
+                raise RuntimeError(
+                    f"UniProt mapping job {job_id} was still not finished after "
+                    f"{MAX_POLLS * POLL_SECONDS} seconds"
+                )
 
         body = fetch_text(f"{REST}/idmapping/results/{job_id}?format=tsv&size=500")
         for line in body.splitlines()[1:]:
@@ -170,7 +175,7 @@ def resolve(genes: pl.DataFrame, hgnc_ids: dict[str, str], overrides: dict[str, 
         for gene_id, hgnc in hgnc_ids.items():
             if by_hgnc.get(hgnc):
                 routes[gene_id] = (by_hgnc[hgnc], "hgnc")
-        print(f"HGNC route mapped {len(routes)}/{len(gene_ids)} genes", file=sys.stderr)
+        console.detail(f"HGNC route mapped {len(routes)}/{len(gene_ids)} genes")
 
     unmapped = [g for g in gene_ids if g not in routes]
     if unmapped:
@@ -179,12 +184,12 @@ def resolve(genes: pl.DataFrame, hgnc_ids: dict[str, str], overrides: dict[str, 
         for gene_id in unmapped:
             if by_ensembl.get(gene_id):
                 routes[gene_id] = (by_ensembl[gene_id], "ensembl")
-        print(f"Ensembl route added {len(routes) - before} genes", file=sys.stderr)
+        console.detail(f"Ensembl route added {len(routes) - before} genes")
 
     for gene_id, accession in overrides.items():
         routes[gene_id] = ([accession], "override")
     if overrides:
-        print(f"{count('override', len(overrides))} applied", file=sys.stderr)
+        console.detail(f"{count('override', len(overrides))} applied")
 
     return routes
 
@@ -259,4 +264,4 @@ def run(
 
     counts = pl.DataFrame(rows)["seq_agreement"].value_counts().sort("seq_agreement")
     summary = ", ".join(f"{r['seq_agreement']}={r['count']}" for r in counts.iter_rows(named=True))
-    print(f"Wrote {len(rows)} rows ({summary}) -> {out_path}", file=sys.stderr)
+    console.success(f"Wrote {len(rows)} rows ({summary}) -> {out_path}")

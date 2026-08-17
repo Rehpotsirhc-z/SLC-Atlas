@@ -10,10 +10,11 @@ SAMPID, SMTS and SMTSD sample attribute columns are renamed to sample_id, tissue
 tissue_detail.
 """
 
-import sys
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import console
 
 from ..lib.reporting import report_missing
 
@@ -49,7 +50,7 @@ def run(
 
         tpm = gtex.subset_gct(gtex_path, gene_ids)
 
-    print(f"{tpm.height}/{len(gene_ids)} genes found in GTEx", file=sys.stderr)
+    console.detail(f"{tpm.height}/{len(gene_ids)} genes found in GTEx")
     report_missing(
         "gene", "not in the GTEx matrix", sorted(set(gene_ids) - set(tpm["gene_id"].to_list()))
     )
@@ -60,6 +61,6 @@ def run(
     sample_cols = set(tpm.columns) - {"gene_id"}
     tissue = tissue.filter(pl.col("sample_id").is_in(list(sample_cols)))
     n_brain = tissue.filter(pl.col("tissue") == "Brain").height
-    print(f"{tissue.height} samples mapped to tissue ({n_brain} brain)", file=sys.stderr)
+    console.detail(f"{tissue.height} samples mapped to tissue ({n_brain} brain)")
     tissue_out.parent.mkdir(parents=True, exist_ok=True)
     tissue.write_csv(tissue_out, separator="\t")

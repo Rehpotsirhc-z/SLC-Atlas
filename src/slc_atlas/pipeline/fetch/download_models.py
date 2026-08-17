@@ -14,11 +14,11 @@ instead. It works out the current URL as it loads each one, because the URL stor
 names a particular AlphaFold release and stops working when a new one comes out.
 """
 
-import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import console, progress
 
 from ..lib.http import fetch_bytes
 from ..lib.reporting import count, report_missing
@@ -33,9 +33,13 @@ def model_filename(accession: str, model_format: str | None) -> str:
 def download(job: tuple[str, Path]) -> str | None:
     url, path = job
     try:
-        path.write_bytes(fetch_bytes(url))
+        # Straight to the final name would leave a truncated model that later
+        # runs keep, since they skip whatever already exists
+        part = path.with_suffix(path.suffix + ".part")
+        part.write_bytes(fetch_bytes(url))
+        part.replace(path)
     except Exception as exc:
-        print(f"  Failed {path.name}: {exc}", file=sys.stderr)
+        console.warn(f"{path.name}: {exc}", indent=2)
         return path.stem
     return None
 
@@ -51,13 +55,14 @@ def run(structures_path: Path, models_dir: Path) -> None:
             jobs.append((row["model_url"], path))
 
     on_disk = len(structures.unique(subset="uniprot_accession")) - len(jobs)
-    print(f"{count('model', on_disk)} already present; downloading {len(jobs)}", file=sys.stderr)
+    console.detail(f"{count('model', on_disk)} already present; downloading {len(jobs)}")
 
     if jobs:
-        with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-            failed = [stem for stem in pool.map(download, jobs) if stem]
+        with console.pool(WORKERS) as pool:
+            counted = progress.each(pool.map(download, jobs), len(jobs), "models", "files")
+            failed = [stem for stem in counted if stem]
         report_missing("model", "that failed to download", failed)
 
     mirrored = list(models_dir.glob("*.*cif"))
     total = sum(p.stat().st_size for p in mirrored)
-    print(f"{len(mirrored)} models, {total / 1024**2:.1f} MiB in {models_dir}", file=sys.stderr)
+    console.detail(f"{len(mirrored)} models, {total / 1024**2:.1f} MiB in {models_dir}")

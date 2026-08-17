@@ -9,17 +9,20 @@ in the form that the average-linkage clustering expects.
 """
 
 import subprocess
-import sys
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import console, progress
+from ..lib.reporting import NOTE, report_missing
 
 
 def run_mafft(mafft: str, in_fasta: Path, out_fasta: Path) -> None:
     # MAFFT's --auto chooses iterative refinement, which takes many minutes on the coding
     # sequences, and FFT-NS-2 is accurate enough for a distance tree across one family
-    print(f"  MAFFT (FFT-NS-2) aligning {in_fasta.name}...", file=sys.stderr)
-    with open(out_fasta, "w", encoding="utf-8") as out:
+    console.detail(f"MAFFT (FFT-NS-2) aligning {in_fasta.name}", indent=2)
+    # MAFFT is quiet and can run for minutes, so the spinner is the only sign it is alive
+    with progress.bar(f"MAFFT {in_fasta.name}"), open(out_fasta, "w", encoding="utf-8") as out:
         subprocess.run(
             [
                 mafft,
@@ -62,7 +65,7 @@ def codon_align(protein_aln: Path, cds_fasta: Path, out_fasta: Path) -> None:
     codons that code for the same residue. The coding sequence is the one belonging to the
     canonical transcript, so each residue that is not a gap corresponds to the next codon.
     """
-    print(f"  Codon-aligning {cds_fasta.name} via {protein_aln.name}...", file=sys.stderr)
+    console.detail(f"Codon-aligning {cds_fasta.name} via {protein_aln.name}", indent=2)
     aln = read_fasta(protein_aln)
     cds = read_fasta(cds_fasta)
     with open(out_fasta, "w", encoding="utf-8") as out:
@@ -114,8 +117,13 @@ def corr_distance(tpm: pl.DataFrame, sample_cols: list[str]):
     ids = tpm["gene_id"].to_list()
     keep = mat.std(axis=1) > 0
     if not keep.all():
-        dropped = [g for g, k in zip(ids, keep) if not k]
-        print(f"  Dropping {len(dropped)} zero-variance genes: {dropped[:5]}...", file=sys.stderr)
+        report_missing(
+            "gene",
+            "with the same value in every sample, so nothing can be correlated against them",
+            [g for g, k in zip(ids, keep) if not k],
+            severity=NOTE,
+            checked=len(ids),
+        )
     mat = mat[keep]
     ids = [g for g, k in zip(ids, keep) if k]
     ranks = rankdata(mat, axis=1)  # Spearman is Pearson applied to the ranks

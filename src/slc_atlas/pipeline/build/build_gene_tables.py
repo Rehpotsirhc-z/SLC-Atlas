@@ -6,10 +6,12 @@
 serves, giving every column the type it should have.
 """
 
-import sys
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import parquet
+from ..lib import console
 
 from ..lib.source_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
 
@@ -17,7 +19,7 @@ from ..lib.source_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
 def convert(in_path: Path, out_path: Path, schema: dict) -> int:
     df = pl.read_csv(in_path, separator="\t", schema=schema)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    df.write_parquet(out_path)
+    parquet.write(df, out_path)
     return df.height
 
 
@@ -27,5 +29,5 @@ def run(source_dir: Path, out_dir: Path) -> None:
 
     n_genes = convert(source_dir / "genes.tsv", genes_out, GENE_SCHEMA)
     n_transcripts = convert(source_dir / "transcripts.tsv", transcripts_out, TRANSCRIPT_SCHEMA)
-    print(f"Wrote {n_genes} genes -> {genes_out}", file=sys.stderr)
-    print(f"Wrote {n_transcripts} transcripts -> {transcripts_out}", file=sys.stderr)
+    console.success(f"Wrote {n_genes} genes -> {genes_out}")
+    console.success(f"Wrote {n_transcripts} transcripts -> {transcripts_out}")

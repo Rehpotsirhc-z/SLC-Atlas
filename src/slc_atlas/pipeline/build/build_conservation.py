@@ -13,10 +13,14 @@ of the species tree are the same set of species.
 """
 
 import csv
-import sys
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import parquet
+from ..lib import console
+
+from ..lib.reporting import report_missing
 
 REFERENCE_SPECIES = "homo_sapiens"
 
@@ -172,17 +176,24 @@ def run(source_dir: Path, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     matrix = build_matrix(genes_path, species, orthologs)
-    pl.DataFrame(matrix, schema=CONSERVATION_SCHEMA).write_parquet(conservation_out)
+    parquet.write(pl.DataFrame(matrix, schema=CONSERVATION_SCHEMA), conservation_out)
     n_genes = len({r["gene_id"] for r in matrix})
-    print(
-        f"wrote {len(matrix)} rows, {n_genes} genes across {len(species)} species "
-        f"-> {conservation_out}",
-        file=sys.stderr,
+    with_any = {
+        r["gene_id"]
+        for r in matrix
+        if r["ortholog_count"] and r["species"] != REFERENCE_SPECIES
+    }
+    report_missing(
+        "gene",
+        "with no ortholog in any species, drawn as an empty row",
+        sorted({r["gene_id"] for r in matrix} - with_any),
+        checked=n_genes,
+        clean="every gene has an ortholog in at least one species",
     )
+    console.success(f"Wrote {len(matrix)} rows, {n_genes} genes across {len(species)} species "
+        f"-> {conservation_out}")
 
     tree_rows = build_species_tree(tree_path, species)
-    pl.DataFrame(tree_rows, schema=SPECIES_TREE_SCHEMA).write_parquet(species_tree_out)
+    parquet.write(pl.DataFrame(tree_rows, schema=SPECIES_TREE_SCHEMA), species_tree_out)
     n_leaves = sum(1 for r in tree_rows if r["species"])
-    print(
-        f"wrote {len(tree_rows)} nodes ({n_leaves} leaves) -> {species_tree_out}", file=sys.stderr
-    )
+    console.success(f"Wrote {len(tree_rows)} nodes ({n_leaves} leaves) -> {species_tree_out}")

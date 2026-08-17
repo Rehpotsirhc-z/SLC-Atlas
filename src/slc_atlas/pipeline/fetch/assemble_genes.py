@@ -16,7 +16,7 @@ from pathlib import Path
 
 import polars as pl
 
-from ..lib.reporting import report_missing
+from ..lib.reporting import NOTE, report_missing
 from ..lib.source_schema import GENE_SCHEMA, TRANSCRIPT_SCHEMA
 from . import curation
 
@@ -71,9 +71,12 @@ def build_tables(
     genes = []
     transcripts = []
     skipped = []
+    excluded = []
+    promoted = []
 
     for row in rows:
         if row["Approved symbol"] in exclusions:
+            excluded.append(row["Approved symbol"])
             continue
         ensembl_id = row["Ensembl gene ID"]
         egene = ensembl_genes.get(ensembl_id)
@@ -87,6 +90,7 @@ def build_tables(
 
         display = overrides.get(ensembl_id)
         if display:
+            promoted.append(f"{approved} shown as {display}")
             symbol = display
             remaining = [a for a in alias_parts if a != display]
             alias_out = ", ".join([approved] + remaining) or None
@@ -126,6 +130,8 @@ def build_tables(
             )
 
     report_missing("gene", "skipped, with no result from Ensembl", skipped)
+    report_missing("gene", "left out by exclusions.txt", excluded, severity=NOTE, checked=len(rows))
+    report_missing("gene", "shown under an alias by symbol_overrides.tsv", promoted, severity=NOTE)
     return genes, transcripts
 
 

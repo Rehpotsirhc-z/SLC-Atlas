@@ -14,15 +14,16 @@ which lets anyone who redistributes the dataset leave one of them out without th
 of the others being affected.
 """
 
-import sys
 from datetime import date, datetime
 from pathlib import Path
 
 import polars as pl
 
+from ..lib import console, parquet
 from ..lib.parquet import write_gene_keyed
 from ..lib.reporting import count, report_missing
 from ..lib.structures import rank_experimental
+from . import structure_checks
 from .model_files import copy_models, stale_models
 
 SOURCES = [
@@ -125,6 +126,8 @@ def read_tsv(source_dir: Path, name: str, schema: dict | None = None) -> pl.Data
     path = source_dir / name
     if not path.exists():
         return pl.DataFrame(schema=schema) if schema else pl.DataFrame()
+    if schema:
+        structure_checks.check_columns(path, schema)
     return pl.read_csv(path, separator="\t", schema=schema, infer_schema_length=10000)
 
 
@@ -254,46 +257,7 @@ def build_structure(
         .rename({"model_url": "model_source_url"})
     )
     present = {p.name for p in models_dir.glob("*.*cif")}
-    return drop_stale(df.with_columns(pl.col("model_file").is_in(present).alias("model_available")))
-
-
-# Per-residue columns and the accession each was fetched for
-PER_RESIDUE = [("plddt", "plddt_accession"), ("sequence", "sequence_accession")]
-
-
-def drop_stale(df: pl.DataFrame) -> pl.DataFrame:
-    """Drop any per-residue column that was fetched for a different accession.
-
-    The gene to UniProt mapping is regenerated on every fetch, while the confidence scores
-    and the canonical sequence are numbered against whichever accession was current when
-    they were fetched. When the mapping has moved on since, they describe a different
-    protein and there is no way to line them up, so the figure is given nothing rather than
-    something that does not belong to the gene.
-
-    Scores that are numbered against the right accession but the wrong sequence version
-    never get this far. fetch_structures records a confidence URL only for a model whose
-    sequence is the canonical one, so an unplaceable score is never fetched at all.
-    """
-    for column, accession in PER_RESIDUE:
-        stale = pl.col(accession).is_null() | (pl.col(accession) != pl.col("uniprot_accession"))
-        report_missing(
-            "gene",
-            f"whose {column} was fetched for a different accession, so the {column} was dropped",
-            df.filter(pl.col(column).is_not_null() & stale)
-            .select(
-                pl.format(
-                    "{} {}: fetched for {}, currently {}",
-                    "symbol",
-                    "gene_id",
-                    accession,
-                    "uniprot_accession",
-                )
-            )
-            .to_series()
-            .to_list(),
-        )
-        df = df.with_columns(pl.when(stale).then(None).otherwise(pl.col(column)).alias(column))
-    return df.drop(accession for _, accession in PER_RESIDUE)
+    return structure_checks.drop_stale(df.with_columns(pl.col("model_file").is_in(present).alias("model_available")))
 
 
 def build_sources(source_dir: Path, structures: pl.DataFrame) -> pl.DataFrame:
@@ -323,7 +287,7 @@ def run(source_dir: Path, out_dir: Path) -> None:
     structure_out = out_dir / "structure"
 
     if not structure_source.exists():
-        print(f"No {structure_source}; skipping the structure view", file=sys.stderr)
+        console.detail(f"No {structure_source}; skipping the structure view")
         return
 
     gene_map = read_tsv(structure_source, "uniprot_map.tsv", UNIPROT_MAP_SCHEMA)
@@ -335,10 +299,7 @@ def run(source_dir: Path, out_dir: Path) -> None:
     )
     gene_map = gene_map.filter(pl.col("uniprot_accession").is_not_null())
     if gene_map.is_empty():
-        print(
-            f"no structure inputs under {structure_source}; skipping the structure view",
-            file=sys.stderr,
-        )
+        console.detail(f"No structure inputs under {structure_source}; skipping the Structure view")
         return
 
     structure_out.mkdir(parents=True, exist_ok=True)
@@ -356,8 +317,8 @@ def run(source_dir: Path, out_dir: Path) -> None:
     ):
         report_missing(
             f"{kind} file",
-            f"in {target} that the source no longer carries; a run without {flag} leaves "
-            "anything already mirrored in place, and it stays served until you delete it",
+            f"in {target} but absent from the source; without {flag}, these files remain "
+            "available until deleted",
             stale_models(source, target),
         )
 
@@ -375,19 +336,15 @@ def run(source_dir: Path, out_dir: Path) -> None:
     write_gene_keyed(
         structure, structure_out / "structure.parquet", "gene_id", row_group=STRUCTURE_ROW_GROUP
     )
-    features.write_parquet(structure_out / "features.parquet")
-    experimental.write_parquet(structure_out / "experimental.parquet")
-    build_sources(structure_source, structure).write_parquet(structure_out / "sources.parquet")
+    parquet.write(features, structure_out / "features.parquet")
+    parquet.write(experimental, structure_out / "experimental.parquet")
+    parquet.write(build_sources(structure_source, structure), structure_out / "sources.parquet")
+
+    structure_checks.report_models(structure, total_models)
 
     n_models = int(structure["afdb_entry_id"].is_not_null().sum())
     n_experimental = int((structure["n_experimental"] > 0).sum())
-    print(
-        f"wrote {structure.height} genes ({n_models} with a model, "
-        f"{n_experimental} with experimental structures) -> {structure_out}",
-        file=sys.stderr,
-    )
-    print(f"{total_models} model files in {models_dir} ({copied} copied)", file=sys.stderr)
-    print(
-        f"{count('experimental file', total_pdb)} mirrored ({pdb_copied} copied)",
-        file=sys.stderr,
-    )
+    console.success(f"Wrote {structure.height} genes ({n_models} with a model, "
+        f"{n_experimental} with experimental structures) -> {structure_out}")
+    console.detail(f"{total_models} model files in {models_dir} ({copied} copied)")
+    console.detail(f"{count('experimental file', total_pdb)} mirrored ({pdb_copied} copied)")

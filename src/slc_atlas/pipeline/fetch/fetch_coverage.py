@@ -2,30 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Work out where each coverage track lives and what it would cost to keep a copy of it.
-
-Nothing is copied here. Each track is resolved to an address, opened by byte range to read
-its header, and sampled over a few of the stretches that would be kept to estimate how
-large a local copy of it would be. That estimate is printed and written down, so the size of
-the site is a decision made before the copying runs rather than discovered afterwards.
-
-A track that stays remote is read by the browser straight from its origin and adds nothing
-to the site, which is only possible for a track that has an origin: a bigWig sitting on
-this machine has to be copied to be served.
-"""
+"""Resolve coverage tracks and estimate the size of local copies."""
 
 import csv
-import sys
-from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from ..lib import bigwig, chroms as chrom_names, windows
+from ..lib import bigwig, chroms as chrom_names, console, interrupt, progress, windows
 from ..lib.reporting import count, report_missing
 from . import encode
 from .browser_curation import TrackRow, pairs
 
 WORKERS = 6
+
+POLL_SECONDS = 0.2
 
 HEADER = (
     "track_id",
@@ -52,7 +43,7 @@ def resolve(source: str) -> tuple[str, str]:
         return source, source
     path = Path(source).expanduser()
     if not path.exists():
-        raise FileNotFoundError(f"no bigWig at {path}")
+        raise FileNotFoundError(f"No bigWig found at {path}")
     return str(path), ""
 
 
@@ -68,6 +59,7 @@ def probe(
     row: TrackRow,
     spans: dict[str, list[tuple[int, int]]],
     sizes: dict[str, int],
+    read_track,
     *,
     default_bin: int,
     default_local: bool,
@@ -81,25 +73,22 @@ def probe(
             f"it cannot be left where it is. Set its local column to yes, or give a URL."
         )
 
-    reader = bigwig.open_track(address)
-    header = reader.chroms()
-    present = sorted(name for name in spans if name in header)
-    sampled = {name: spans[name] for name in present}
+    size = remote_size(origin) if origin else Path(address).stat().st_size
     wanted = row.bin if row.bin is not None else default_bin
-    applied = bigwig.effective_bin(reader, sampled, wanted) if sampled else 0
+    read = read_track(
+        address,
+        spans,
+        wanted,
+        keep_local=local,
+        whole_genome=whole_genome,
+        source_bytes=size,
+    )
+    header = read["chroms"]
+    present = sorted(name for name in spans if name in header)
 
     # A bigWig records no assembly, so a chromosome of the wrong length is the only sign
     # the track was built against a different genome than the genes were
     mismatch = [name for name in present if header[name] != sizes.get(name, header[name])]
-
-    size = remote_size(origin) if origin else Path(address).stat().st_size
-    if not local:
-        kept = 0
-    elif whole_genome and not applied:
-        # An unsliced copy kept at the source's own resolution is the source file
-        kept = size
-    else:
-        kept = bigwig.estimate(reader, sampled, applied) if sampled else 0
 
     return {
         "track_id": row.track_id,
@@ -108,14 +97,34 @@ def probe(
         "strand": row.strand,
         "source": row.source,
         "origin_url": origin,
-        "bin": applied,
+        "bin": read["bin"],
         "local": "yes" if local else "no",
         "chroms": ",".join(sorted(header)),
         "size_mismatch": ",".join(mismatch),
         "source_bytes": size,
-        "local_bytes": kept,
+        "local_bytes": read["local_bytes"],
         "_absent": sorted(set(spans) - set(present)),
     }
+
+
+def _offloaded(measuring):
+    """Hand a track's reading to the subprocess pool and wait for it answerably.
+
+    The wait is a poll rather than a plain get so the thread comes back to `interrupt.check`
+    between turns. A cancellation is a BaseException, so it passes straight through the
+    per-track guard in `run` and out to the pool's own exit, which terminates the workers.
+    """
+
+    def read_track(address: str, spans: dict, bin_size: int, **flags):
+        pending = measuring.apply_async(bigwig.measure, (address, spans, bin_size), flags)
+        while True:
+            interrupt.check()
+            try:
+                return pending.get(timeout=POLL_SECONDS)
+            except multiprocessing.TimeoutError:
+                continue
+
+    return read_track
 
 
 def write_table(path: Path, rows: list[dict]) -> None:
@@ -141,25 +150,22 @@ def report(rows: list[dict], genes_by_chrom: dict[str, int]) -> None:
                 limit=6,
             )
         if row["size_mismatch"]:
-            print(
+            console.detail(
                 f"Track {row['track_id']} spells {row['size_mismatch']} at a different length "
                 f"than the gene table does, so it was built on another genome. "
-                f"The build will refuse it.",
-                file=sys.stderr,
+                f"The build will refuse it."
             )
 
     local = [r for r in rows if r["local"] == "yes"]
-    print(
-        f"{count('coverage track', len(rows))} resolved, {len(local)} to be copied locally",
-        file=sys.stderr,
+    console.detail(
+        f"{count('coverage track', len(rows))} resolved, {len(local)} to be copied locally"
     )
     if local:
         total = sum(r["local_bytes"] for r in local)
-        print(
+        console.detail(
             f"Copying them adds roughly {total / 1024**2:.0f} MiB to the site. Run the "
             f"slice_coverage step to write them, or set local to no to leave them at "
-            f"their origin.",
-            file=sys.stderr,
+            f"their origin."
         )
 
 
@@ -179,7 +185,7 @@ def run(
 
     rows = read_browser_tracks(tracks_path)
     if not rows:
-        print(f"No coverage tracks named in {tracks_path}", file=sys.stderr)
+        console.detail(f"No coverage tracks named in {tracks_path}")
         write_table(out_path, [])
         return
 
@@ -198,23 +204,36 @@ def run(
 
     jobs = [row for by_strand in pairs(rows).values() for _, row in sorted(by_strand.items())]
 
-    def attempt(row: TrackRow):
-        try:
-            return probe(
-                row,
-                spans,
-                sizes,
-                default_bin=default_bin,
-                default_local=default_local,
-                whole_genome=whole_genome,
-            )
-        except SystemExit:
-            raise
-        except Exception as error:
-            return f"{row.track_id} ({row.source}): {error}"
+    # spawn rather than fork: by now the run is several steps' worth of threads deep, and a
+    # fork would carry whatever locks they happen to hold into a child with no thread left
+    # alive to release them
+    context = multiprocessing.get_context("spawn")
+    # Terminating on the way out is why this is a Pool: the workers are doing network reads
+    # that nothing else can interrupt, and a canceled run must not leave them behind
+    with (
+        context.Pool(processes=max(1, min(WORKERS, len(jobs)))) as measuring,
+        interrupt.closing(measuring.terminate),
+    ):
+        read_track = _offloaded(measuring)
 
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        results = list(pool.map(attempt, jobs))
+        def attempt(row: TrackRow):
+            try:
+                return probe(
+                    row,
+                    spans,
+                    sizes,
+                    read_track,
+                    default_bin=default_bin,
+                    default_local=default_local,
+                    whole_genome=whole_genome,
+                )
+            except SystemExit:
+                raise
+            except Exception as error:
+                return f"{row.track_id} ({row.source}): {error}"
+
+        with console.pool(WORKERS) as pool:
+            results = list(progress.each(pool.map(attempt, jobs), len(jobs), "tracks", "lanes"))
 
     resolved = [r for r in results if isinstance(r, dict)]
     report_missing(

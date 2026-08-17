@@ -8,7 +8,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
 _PACKAGED_WEB = Path(__file__).parent / "web"
-# Use the packaged frontend when installed and the local build in a checkout
 _WEB_DIR = _PACKAGED_WEB if _PACKAGED_WEB.is_dir() else _REPO_ROOT / "web" / "dist"
 _DATA_DIR = _REPO_ROOT / "data" if (_REPO_ROOT / "pyproject.toml").is_file() else Path("data")
 
@@ -51,7 +50,6 @@ class Settings(BaseSettings):
     host: str = Field(default="127.0.0.1", description="address the local server listens on")
     port: int = Field(default=8000, description="port the local server listens on")
 
-    # Let a local .env override the repository defaults
     model_config = SettingsConfigDict(
         env_prefix="ATLAS_", env_file=(_REPO_ROOT / ".env", ".env"), extra="ignore"
     )

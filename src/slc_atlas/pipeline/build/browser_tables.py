@@ -10,6 +10,7 @@ from pathlib import Path
 import polars as pl
 
 from ..lib import bed12, bigbed, windows
+from ..lib.reporting import report_missing
 
 WINDOW_SCHEMA = {
     "gene_id": pl.Utf8,
@@ -189,6 +190,11 @@ def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
     from ..fetch.slice_coverage import track_filename
 
     tracks: dict[str, dict] = {}
+    report_missing(
+        "coverage lane",
+        "built against a different genome than the gene table, so it is not drawn",
+        [r["track_id"] for r in rows if r.get("size_mismatch")],
+    )
     for row in rows:
         if row.get("size_mismatch"):
             continue
@@ -230,6 +236,11 @@ def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
             track["bytes"] += (coverage_dir / name).stat().st_size
 
     drawable = [t for t in tracks.values() if _reachable(t)]
+    report_missing(
+        "coverage track",
+        "with a lane that has neither a local file nor an address, so it is not drawn",
+        [t["track_id"] for t in tracks.values() if not _reachable(t)],
+    )
     for track in drawable:
         track["reduction"] = track["reduction"] or 0
     return pl.DataFrame(drawable, schema=TRACK_SCHEMA).sort("group", "label")

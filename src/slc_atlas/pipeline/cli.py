@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from . import prompting
+from .lib import console
 from .lib.windows import FLANK_MAX as WINDOW_FLANK_MAX, FLANK_MIN as WINDOW_FLANK_MIN
 from .options import Option, StepName, register, resolve
 
@@ -192,7 +193,8 @@ FETCH = (
     *(Option(f"skip_{view}", SKIP_HELP[view]) for view in VIEWS),
     Option(
         "step",
-        "run only this fetch step; repeat to select more than one",
+        "run only this fetch step, along with the HGNC step that seeds curation; repeat to "
+        "select more than one",
         default=(),
         metavar="NAME",
         parse=StepName("fetch"),
@@ -250,7 +252,6 @@ def _paths(chosen: Mapping[str, Any]) -> "PipelinePaths":
 
     data_dir = Path(chosen["data_dir"])
     if data_dir != settings.data_dir:
-        # Keep interactive choices consistent with the shared settings
         os.environ["ATLAS_DATA_DIR"] = str(data_dir)
         refresh()
     return PipelinePaths(data_dir, Path(chosen.get("curation_dir") or data_dir / "curation"))
@@ -276,11 +277,12 @@ def _fetch(args: argparse.Namespace) -> int:
     rerun = prompting.command_line("fetch", FETCH, chosen)
     if ask:
         prompting.echo(rerun)
-    print(f"Source: {_source_label(source)}")
+    console.detail(f"Source: {_source_label(source)}")
 
-    from .fetch.runner import FetchOptions, run
+    from .fetch.plan import FetchOptions
+    from .fetch.runner import run
 
-    halted = run(
+    halted, unusable = run(
         FetchOptions(
             source=source,
             gtex_version=chosen["gtex_version"],
@@ -307,15 +309,17 @@ def _fetch(args: argparse.Namespace) -> int:
         _paths(chosen),
     )
     if halted:
-        print(f"\nWhen the curation files are ready, continue with:\n\n  {rerun}\n")
-    return 0
+        console.blank()
+        console.detail("When the curation files are ready, continue with:")
+        console.detail(rerun, indent=2)
+    return 1 if unusable else 0
 
 
 def _build(args: argparse.Namespace) -> int:
     chosen = resolve(BUILD, args)
     from .build.runner import BuildOptions, run
 
-    run(
+    unusable = run(
         BuildOptions(
             mafft=chosen["mafft"],
             browser_flank_min=chosen["browser_flank_min"],
@@ -325,11 +329,10 @@ def _build(args: argparse.Namespace) -> int:
         ),
         _paths(chosen),
     )
-    return 0
+    return 1 if unusable else 0
 
 
 def add_parsers(sub: argparse._SubParsersAction) -> None:
-    # Reject shortened flags so misspelled view names do not pass silently
     fetch = sub.add_parser(
         "fetch",
         help="create editable source files for a gene family",

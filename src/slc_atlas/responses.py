@@ -18,7 +18,9 @@ def _unchanged(request: Request, response: FileResponse) -> bool:
     """Whether the copy the client already holds is still the file on disk."""
     tags = request.headers.get("if-none-match")
     if tags:
-        return response.headers["etag"] in [tag.strip().removeprefix("W/") for tag in tags.split(",")]
+        return response.headers["etag"] in [
+            tag.strip().removeprefix("W/") for tag in tags.split(",")
+        ]
     since = parsedate(request.headers.get("if-modified-since", ""))
     modified = parsedate(response.headers["last-modified"])
     return since is not None and modified is not None and since >= modified

@@ -10,10 +10,14 @@ takes only the samples whose tissue is the brain and averages them by the more d
 tissue each one came from.
 """
 
-import sys
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import parquet
+from ..lib import console
+
+from ..lib.reporting import report_missing
 
 EXPRESSION_SCHEMA = {
     "gene_id": pl.Utf8,
@@ -33,6 +37,26 @@ def melt_samples(expression_path: Path) -> pl.LazyFrame:
     )
 
 
+def _report_unmatched(long: pl.LazyFrame, tissue: pl.LazyFrame, genes: pl.LazyFrame) -> None:
+    """Report genes and samples that the joins will omit."""
+    measured = long.select("gene_id").unique()
+    report_missing(
+        "gene",
+        "missing from the GTEx matrix and omitted from the Expression view",
+        genes.join(measured, on="gene_id", how="anti").collect()["gene_id"].to_list(),
+        clean="every gene has a row in the GTEx matrix",
+    )
+    report_missing(
+        "sample",
+        "missing from sample_tissue.tsv and omitted from the Expression view",
+        long.select("sample_id")
+        .unique()
+        .join(tissue, on="sample_id", how="anti")
+        .collect()["sample_id"]
+        .to_list(),
+    )
+
+
 def build_expression(source_dir: Path) -> pl.DataFrame:
     long = melt_samples(source_dir / "expression.parquet")
     tissue = pl.scan_csv(source_dir / "sample_tissue.tsv", separator="\t")
@@ -42,6 +66,7 @@ def build_expression(source_dir: Path) -> pl.DataFrame:
         .rename({"id": "gene_id"})
     )
 
+    _report_unmatched(long, tissue, genes)
     long = long.join(tissue, on="sample_id", how="inner").join(genes, on="gene_id", how="inner")
 
     all_scope = (
@@ -69,14 +94,11 @@ def run(source_dir: Path, out_dir: Path) -> None:
 
     df = build_expression(source_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    df.write_parquet(expression_out)
+    parquet.write(df, expression_out)
 
     for scope in ("all", "brain"):
         scoped = df.filter(pl.col("tissue_scope") == scope)
         n_genes = scoped["gene_id"].n_unique()
         n_tissues = scoped["tissue"].n_unique()
-        print(
-            f"wrote {len(scoped)} '{scope}' rows, {n_genes} genes across {n_tissues} tissues "
-            f"-> {expression_out}",
-            file=sys.stderr,
-        )
+        console.success(f"Wrote {len(scoped)} '{scope}' rows, {n_genes} genes across {n_tissues} tissues "
+            f"-> {expression_out}")

@@ -16,7 +16,6 @@ where it lies, under whichever of the usual column names it happens to use.
 import csv
 import gzip
 import re
-import sys
 from bisect import bisect_right
 from datetime import date
 from pathlib import Path
@@ -24,7 +23,7 @@ from urllib.request import urlopen
 
 import polars as pl
 
-from ..lib import chroms as chrom_names, windows
+from ..lib import chroms as chrom_names, console, progress, windows
 from ..lib.http import download
 from ..lib.reporting import count, report_missing
 
@@ -229,8 +228,9 @@ def acquire(source: str, cache_dir: Path, study_id: str) -> tuple[Path, str]:
         url = catalog_url(source.strip())
         cached = cache_dir / f"{study_id}{''.join(Path(url).suffixes[-3:])}"
         if not cached.exists():
-            print(f"Downloading GWAS Catalog {source}", file=sys.stderr)
-            download(url, cached)
+            console.detail(f"Downloading GWAS Catalog {source}")
+            with progress.bytes_bar(cached.name) as on_bytes:
+                download(url, cached, on_bytes)
         return cached, url
     path = Path(source).expanduser()
     if not path.exists():
@@ -246,12 +246,15 @@ BATCH = 1_000_000
 def variant_frame(study_id: str, source: Path, spell, keep) -> pl.DataFrame:
     """Read one study into a table, a batch at a time."""
     batches, rows = [], []
-    for path in payload_files(source):
-        for variant in read_variants(path, spell, keep):
-            rows.append((study_id, *variant))
-            if len(rows) >= BATCH:
-                batches.append(pl.DataFrame(rows, schema=SCHEMA, orient="row"))
-                rows = []
+    # Tens of millions of rows a study, which is minutes with nothing else to report
+    with progress.bar(f"reading {study_id}", noun="variants kept") as bar:
+        for path in payload_files(source):
+            for variant in read_variants(path, spell, keep):
+                rows.append((study_id, *variant))
+                bar.advance()
+                if len(rows) >= BATCH:
+                    batches.append(pl.DataFrame(rows, schema=SCHEMA, orient="row"))
+                    rows = []
     batches.append(pl.DataFrame(rows, schema=SCHEMA, orient="row"))
     return pl.concat(batches)
 
@@ -282,7 +285,7 @@ def run(
     studies = read_browser_gwas(gwas_path)
     out_dir.mkdir(parents=True, exist_ok=True)
     if not studies:
-        print(f"No GWAS studies named in {gwas_path}", file=sys.stderr)
+        console.detail(f"No GWAS studies named in {gwas_path}")
         write_studies(out_dir / "gwas_studies.tsv", [])
         pl.DataFrame(schema=SCHEMA).write_parquet(out_dir / "gwas.parquet")
         return
@@ -324,10 +327,7 @@ def run(
                 "chroms": ",".join(sorted(frame["chrom"].unique().to_list())),
             }
         )
-        print(
-            f"{study.study_id}: {count('variant', frame.height)} kept",
-            file=sys.stderr,
-        )
+        console.detail(f"{study.study_id}: {count('variant', frame.height)} kept")
 
     report_missing("GWAS study/GWAS studies", "that could not be read", failed)
     table = pl.concat(frames) if frames else pl.DataFrame(schema=SCHEMA)

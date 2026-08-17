@@ -13,9 +13,9 @@ build function in PROVIDERS.
 """
 
 import io
-import sys
 from pathlib import Path
 
+from ..lib import console
 from ..lib.http import fetch_text
 
 TIMETREE_FILENAME = "species_tree_timetree.nwk"
@@ -27,7 +27,7 @@ def _tree_base(ensembl_release: int) -> str:
 
 
 def _download(url: str) -> str:
-    print(f"  Downloading {url}", file=sys.stderr)
+    console.detail(f"  Downloading {url}")
     return fetch_text(url)
 
 
@@ -47,7 +47,7 @@ def _match_ensembl(leaf_names: list[str], species: list[dict]) -> dict[str, str]
         prefix = parts[0].capitalize() + "_" + "_".join(parts[1:])
         cands = [n for n in leaf_names if n == prefix or n.startswith(prefix + "_")]
         if not cands:
-            print(f"  No tree leaf for {en}", file=sys.stderr)
+            console.detail(f"No tree leaf for {en}", indent=2)
             continue
         ref = [c for c in cands if "reference" in c.lower()]
         chosen[(ref or sorted(cands, key=len))[0]] = en
@@ -67,8 +67,8 @@ def _match_exact(leaf_names: list[str], species: list[dict], key: str) -> dict[s
     for sp in species:
         leaf = index.get(norm(sp.get(key, "")))
         if leaf is None:
-            print(
-                f"  no tree leaf for {sp['ensembl_name']} ({key}={sp.get(key)!r})", file=sys.stderr
+            console.detail(
+                f"No tree leaf for {sp['ensembl_name']} ({key}={sp.get(key)!r})", indent=2
             )
             continue
         chosen[leaf] = sp["ensembl_name"]

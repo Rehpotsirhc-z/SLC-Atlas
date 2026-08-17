@@ -2,30 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Read and write transcript models in GTF, GFF3, and BED formats.
-
-The browser's bottom track draws exons, introns, and the coding part of each transcript, so
-a gene model must retain exon blocks rather than a single span. GTF and GFF3 store a
-transcript across multiple exon and CDS rows. The pipeline therefore normalizes them to
-BED, which stores each transcript on one line.
-
-BED12 provides only one free-text name field. The pipeline appends three columns for the
-gene ID, biotype, and gene name. Genome browsers ignore these extra columns and can still
-open and label the file correctly.
-
-Coordinates here are 0-based and half-open throughout, which is BED's own convention and
-the convention used by every other browser file.
-"""
+"""Read and write transcript models in GTF, GFF3, and extended BED12."""
 
 import gzip
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
-# Separator used when a BED name field contains the full transcript identity
+from . import progress
+
 NAME_SEPARATOR = "___"
 
-# Columns appended to BED12 records
 EXTRA_COLUMNS = ("gene_id", "biotype", "gene_name")
 
 GTF_ATTR = re.compile(r'(\S+)\s+"([^"]*)"')
@@ -127,8 +114,11 @@ def _assemble(rows) -> list[Transcript]:
 
 
 def _feature_rows(path: Path, attrs_of, keep):
-    with _open(path) as f:
+    # An uncompressed GENCODE GTF is a gigabyte and a half of pure parsing, which is minutes
+    # of holding the interpreter with nothing to show for it
+    with _open(path) as f, progress.bar(f"reading {path.name}", noun="lines") as counting:
         for line in f:
+            counting.advance()
             if line.startswith("#"):
                 continue
             parts = line.rstrip("\n").split("\t")
@@ -168,8 +158,9 @@ def _identify(name: str, extra: list[str]) -> tuple[str, str, str, str]:
 
 def read_bed12(path: Path) -> list[Transcript]:
     out = []
-    with _open(path) as f:
+    with _open(path) as f, progress.bar(f"reading {path.name}", noun="models") as counting:
         for line in f:
+            counting.advance()
             if line.startswith(("#", "track", "browser")):
                 continue
             parts = line.rstrip("\n").split("\t")

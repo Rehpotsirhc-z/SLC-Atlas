@@ -6,11 +6,9 @@
 
 import csv
 import shutil
-import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from ..lib import bigwig, windows
+from ..lib import bigwig, console, progress, windows
 from ..lib.http import download
 from ..lib.reporting import count, report_missing
 from .fetch_coverage import resolve
@@ -54,7 +52,8 @@ def fetch_whole(address: str, target: Path) -> str:
     """Copy or download a whole track without rewriting it."""
     written = target.with_suffix(".partial.bw")
     if address.startswith(("http://", "https://")):
-        download(address, written)
+        with progress.bytes_bar(target.name) as on_bytes:
+            download(address, written, on_bytes)
     else:
         shutil.copy2(address, written)
     written.replace(target)
@@ -105,7 +104,7 @@ def run(
 ) -> None:
     rows = wanted(read_table(coverage_path))
     if not rows:
-        print("No coverage tracks are set to be copied locally", file=sys.stderr)
+        console.detail("No coverage tracks are set to be copied locally")
         return
 
     check_budget(rows, max_bytes)
@@ -124,12 +123,12 @@ def run(
         except Exception as error:
             return RuntimeError(f"{row['track_id']}: {error}")
 
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        results = list(pool.map(attempt, rows))
+    with console.pool(WORKERS) as pool:
+        results = list(progress.each(pool.map(attempt, rows), len(rows), "copying tracks", "lanes"))
 
     for result in results:
         if isinstance(result, str):
-            print(result, file=sys.stderr)
+            console.detail(result)
     report_missing(
         "coverage track",
         "that could not be copied",
@@ -137,8 +136,7 @@ def run(
     )
 
     total = sum(p.stat().st_size for p in out_dir.glob("*.bw"))
-    print(
+    console.detail(
         f"{count('coverage track', len(list(out_dir.glob('*.bw'))))} in {out_dir}, "
-        f"{total / 1024**2:.0f} MiB",
-        file=sys.stderr,
+        f"{total / 1024**2:.0f} MiB"
     )

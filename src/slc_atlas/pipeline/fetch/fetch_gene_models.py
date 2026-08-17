@@ -18,11 +18,10 @@ The chromosome table is written here too, because whichever annotation is used d
 the whole browser spells a chromosome.
 """
 
-import sys
 from datetime import date
 from pathlib import Path
 
-from ..lib import bed12, chroms, windows
+from ..lib import bed12, chroms, console, progress, windows
 from ..lib.http import download, get_json
 from ..lib.reporting import count, report_missing
 
@@ -73,8 +72,9 @@ def acquire(models_file: Path | None, cache_dir: Path, release: str) -> tuple[Pa
     url = gencode_url(release)
     cached = cache_dir / f"gencode.v{release}.annotation.gtf.gz"
     if not cached.exists():
-        print(f"Downloading GENCODE release {release}", file=sys.stderr)
-        download(url, cached)
+        console.detail(f"Downloading GENCODE release {release}")
+        with progress.bytes_bar(cached.name) as on_bytes:
+            download(url, cached, on_bytes)
     return cached, f"GENCODE {release}", url
 
 
@@ -158,9 +158,8 @@ def run(
     )
 
     genes_in_view = len({t.gene_id for t in kept})
-    print(
+    console.detail(
         f"{version}: {count('transcript', len(kept))} over {count('gene', genes_in_view)} "
         f"in {count('span', sum(len(v) for v in kept_spans.values()))} "
-        f"covering {windows.covered_bases(kept_spans) / 1e6:.0f} Mb",
-        file=sys.stderr,
+        f"covering {windows.covered_bases(kept_spans) / 1e6:.0f} Mb"
     )

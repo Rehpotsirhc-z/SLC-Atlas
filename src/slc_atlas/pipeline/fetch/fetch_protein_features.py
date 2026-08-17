@@ -16,13 +16,13 @@ UniProt gives no topological domains, and these features are then the only evide
 which way round the protein sits in the membrane.
 """
 
-import sys
 from pathlib import Path
 
 import polars as pl
 
 from ..lib.http import get_json
-from ..lib.reporting import report_missing
+from ..lib import console, progress
+from ..lib.reporting import FAILURE, attempt, report_missing
 
 REST = "https://rest.uniprot.org"
 ACCESSION_BATCH = 100  # The most accessions /uniprotkb/accessions accepts at once
@@ -58,19 +58,28 @@ SCHEMA = {f: pl.Int64 if f in ("start", "end") else pl.Utf8 for f in FIELDS}
 def fetch_features(accessions: list[str]) -> dict[str, list[dict]]:
     """Return the features of each accession, in the order they appear in the sequence."""
     out: dict[str, list[dict]] = {}
-    for i in range(0, len(accessions), ACCESSION_BATCH):
-        chunk = accessions[i : i + ACCESSION_BATCH]
-        payload = get_json(
-            f"{REST}/uniprotkb/accessions?accessions={','.join(chunk)}"
-            f"&format=json&fields=accession,ft_transmem,ft_intramem,ft_topo_dom"
-            f",ft_binding,ft_act_site,ft_signal,ft_carbohyd,ft_disulfid"
-        )
-        for entry in payload.get("results", []):
-            out[entry["primaryAccession"]] = entry.get("features", [])
-        print(
-            f"  {min(i + ACCESSION_BATCH, len(accessions))}/{len(accessions)} accessions",
-            file=sys.stderr,
-        )
+    refused: list[str] = []
+    with progress.bar("protein features", total=len(accessions), noun="accessions") as bar:
+        for i in range(0, len(accessions), ACCESSION_BATCH):
+            chunk = accessions[i : i + ACCESSION_BATCH]
+            payload = attempt(
+                f"{chunk[0]}..{chunk[-1]}",
+                lambda: get_json(
+                    f"{REST}/uniprotkb/accessions?accessions={','.join(chunk)}"
+                    f"&format=json&fields=accession,ft_transmem,ft_intramem,ft_topo_dom"
+                    f",ft_binding,ft_act_site,ft_signal,ft_carbohyd,ft_disulfid"
+                ),
+                refused,
+            )
+            for entry in (payload or {}).get("results", []):
+                out[entry["primaryAccession"]] = entry.get("features", [])
+            bar.advance(len(chunk))
+    report_missing(
+        "batch/batches",
+        "of accessions UniProt would not answer for, so those genes have no topology",
+        refused,
+        severity=FAILURE,
+    )
     return out
 
 
@@ -113,7 +122,7 @@ def feature_rows(gene_id: str, accession: str, features: list[dict]) -> list[dic
 def run(map_path: Path, out_path: Path) -> None:
     gene_map = pl.read_csv(map_path, separator="\t").drop_nulls("uniprot_accession")
     accessions = sorted(set(gene_map["uniprot_accession"].to_list()))
-    print(f"{len(accessions)} accessions for {gene_map.height} genes", file=sys.stderr)
+    console.detail(f"{len(accessions)} accessions for {gene_map.height} genes")
 
     by_accession = fetch_features(accessions)
 
@@ -134,4 +143,4 @@ def run(map_path: Path, out_path: Path) -> None:
 
     counts = pl.DataFrame(rows)["feature_type"].value_counts().sort("feature_type")
     summary = ", ".join(f"{r['feature_type']}={r['count']}" for r in counts.iter_rows(named=True))
-    print(f"Wrote {len(rows)} features ({summary}) -> {out_path}", file=sys.stderr)
+    console.success(f"Wrote {len(rows)} features ({summary}) -> {out_path}")

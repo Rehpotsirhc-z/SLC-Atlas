@@ -10,10 +10,11 @@ uniprot_map.tsv rather than being worked out again, so that this step cannot end
 different accessions from the ones the other structure files were built with.
 """
 
-import sys
 from pathlib import Path
 
 import polars as pl
+
+from ..lib import console
 
 from ..lib.reporting import report_missing
 from .fetch_uniprot_map import fetch_entries
@@ -28,7 +29,7 @@ SCHEMA = {
 def run(map_path: Path, out_path: Path) -> None:
     gene_map = pl.read_csv(map_path, separator="\t").drop_nulls("uniprot_accession")
     accessions = sorted(set(gene_map["uniprot_accession"]))
-    print(f"Fetching sequences for {len(accessions)} accessions...", file=sys.stderr)
+    console.detail(f"Fetching sequences for {len(accessions)} accessions")
     entries = fetch_entries(accessions)
 
     rows = [
@@ -49,4 +50,4 @@ def run(map_path: Path, out_path: Path) -> None:
 
     covered = sum(1 for r in rows if r["sequence"])
     residues = sum(len(r["sequence"]) for r in rows if r["sequence"])
-    print(f"Wrote {covered}/{len(rows)} genes, {residues} residues -> {out_path}", file=sys.stderr)
+    console.success(f"Wrote {covered}/{len(rows)} genes, {residues} residues -> {out_path}")

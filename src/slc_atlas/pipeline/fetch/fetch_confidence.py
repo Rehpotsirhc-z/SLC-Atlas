@@ -10,14 +10,14 @@ from 0 to 100 and is rounded to a whole number, which fits in a byte and keeps a
 genes down to a few hundred kilobytes.
 """
 
-import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import polars as pl
 
+from ..lib import console, progress
+
 from ..lib.http import get_json
-from ..lib.reporting import report_missing
+from ..lib.reporting import FAILURE, attempt, report_missing
 
 WORKERS = 6
 
@@ -41,10 +41,26 @@ def run(structures_path: Path, out_path: Path) -> None:
     by_accession = structures.unique(subset="uniprot_accession")
     urls = by_accession["confidence_url"].to_list()
     accessions = by_accession["uniprot_accession"].to_list()
-    print(f"Fetching pLDDT for {len(urls)} accessions...", file=sys.stderr)
+    console.detail(f"Fetching pLDDT for {len(urls)} accessions")
 
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        scores = dict(zip(accessions, pool.map(fetch_scores, urls)))
+    refused: list[str] = []
+    with progress.bar("confidence scores", total=len(urls), noun="accessions") as bar:
+        with console.pool(WORKERS) as pool:
+            fetched = pool.map(
+                lambda pair: attempt(pair[0], lambda: fetch_scores(pair[1]), refused),
+                zip(accessions, urls),
+            )
+            scores = {}
+            for accession, got in zip(accessions, fetched):
+                scores[accession] = got
+                bar.advance()
+    report_missing(
+        "accession",
+        "whose confidence scores AlphaFold would not give up",
+        refused,
+        severity=FAILURE,
+        checked=len(urls),
+    )
 
     rows = [
         {
@@ -66,8 +82,7 @@ def run(structures_path: Path, out_path: Path) -> None:
 
     covered = sum(1 for r in rows if r["plddt"])
     residues = sum(len(r["plddt"]) for r in rows if r["plddt"])
-    print(
+    console.success(
         f"wrote {covered}/{len(rows)} genes, {residues} residues "
-        f"({out_path.stat().st_size / 1024:.0f} KiB) -> {out_path}",
-        file=sys.stderr,
+        f"({out_path.stat().st_size / 1024:.0f} KiB) -> {out_path}"
     )

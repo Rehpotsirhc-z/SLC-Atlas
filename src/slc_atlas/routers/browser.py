@@ -59,9 +59,7 @@ def get_models(request: Request, source: DataSource = Depends(get_source)):
     return byte_range_file(path, request)
 
 
-@router.get(
-    "/browser/gwas/{study_id}.bb", summary="One study's variants, read by byte range"
-)
+@router.get("/browser/gwas/{study_id}.bb", summary="One study's variants, read by byte range")
 def get_gwas(study_id: str, request: Request, source: DataSource = Depends(get_source)):
     path = source.gwas_path(study_id)
     if path is None:

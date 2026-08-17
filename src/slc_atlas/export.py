@@ -2,18 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Write the whole app to disk as static files that any web server can serve.
-
-Every API response is asked for from the app itself and saved under the same URL the
-frontend already requests, so that an ordinary file server behaves the same way the
-running app does. Every route of the frontend gets a page of its own for the same reason,
-so that a host which cannot redirect an unrecognized path still answers a link into the
-middle of the app.
-
-Exporting again over an existing directory writes only the files that have really changed
-and deletes the ones the dataset no longer produces. A file that has not changed keeps its
-timestamp, so rsync leaves it alone and browsers go on using the copy they have.
-"""
+"""Export the app and API as files that any web server can serve."""
 
 import asyncio
 import json
@@ -31,7 +20,6 @@ from .models.expression import TissueScope
 from .shell import render
 from .site import ROUTES_FILE, read_manifest
 
-# Copy large binary assets directly because clients request them in byte ranges
 NOT_EXPORTED = {
     "/api/structure/models/{filename}",
     "/api/browser/coverage/{filename}",
@@ -45,16 +33,12 @@ COPIED_TREES = (
     (("browser", "gwas"), ("api", "browser", "gwas")),
 )
 
-# Assets copied the same way and for the same reason, but that are one file rather than a tree
 COPIED_FILES = ((("browser", "models.bb"), ("api", "browser", "models.bb")),)
 
-# How many responses to render at once
 CONCURRENCY = 8
 
-# Exported responses are stored uncompressed
 EXPORT_HEADERS = {"Accept-Encoding": "identity"}
 
-# The directories the export owns outright, and so may delete files from
 MANAGED = ("api", "assets")
 
 NOT_COPIED = {"index.html", "index.html.template", "manifest.webmanifest", ROUTES_FILE}
@@ -70,7 +54,6 @@ class ExportStats:
 
 
 def _write(path: Path, data: bytes) -> bool:
-    """Write the file only if its contents would change, and say whether it was written."""
     if path.is_file() and path.read_bytes() == data:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -79,8 +62,6 @@ def _write(path: Path, data: bytes) -> bool:
 
 
 def _copy(src: Path, dst: Path) -> bool:
-    """Copy the file only if its size or its timestamp has changed, which is the same test
-    rsync makes unless it is told otherwise."""
     if dst.is_file():
         a, b = src.stat(), dst.stat()
         if a.st_size == b.st_size and int(a.st_mtime) == int(b.st_mtime):
@@ -91,8 +72,6 @@ def _copy(src: Path, dst: Path) -> bool:
 
 
 def _prune(out_dir: Path, keep: set[Path]) -> int:
-    """Delete the files that the dataset no longer produces, looking only inside the
-    directories the export owns."""
     removed = 0
     for name in MANAGED:
         root = out_dir / name
@@ -109,26 +88,16 @@ def _prune(out_dir: Path, keep: set[Path]) -> int:
 
 
 def _routes(source: Path) -> list[str]:
-    """Return each route as the name of the directory its page goes in, leaving out the
-    root route, whose page is index.html itself."""
     return [path.strip("/") for path in json.loads(source.read_text()) if path.strip("/")]
 
 
 def _write_pages(out_dir: Path, routes: list[str], shell: bytes) -> int:
-    """Write a page for every route, so that a link into the middle of the app works
-    without the server having to be told to redirect anything.
-
-    The same page goes to 404.html, where a server points its error document. The frontend
-    reads the address it was asked for and draws its not-found page for anything that is
-    not one of these routes.
-    """
+    """Write the app shell for direct links and the static 404 fallback."""
     changed = sum(_write(out_dir / route / "index.html", shell) for route in routes)
     return changed + _write(out_dir / "404.html", shell)
 
 
 def _prune_pages(out_dir: Path, previous: list[str], routes: list[str]) -> int:
-    """Delete the pages of the routes that an earlier export wrote and this one does not
-    have any more."""
     removed = 0
     for route in set(previous) - set(routes):
         page = out_dir / route / "index.html"
@@ -180,14 +149,12 @@ def _template_regex(template: str) -> re.Pattern[str]:
 
 
 def _uncovered(urls: list[str], capabilities: dict[str, bool]) -> set[str]:
-    """Return the API routes that the export plan never asks for, so that an endpoint added
-    later cannot be left out of the export without anyone noticing."""
+    """Return API routes missing from the export plan."""
     templates = {
         path: _template_regex(path)
         for path, methods in app.openapi()["paths"].items()
         if "get" in methods and path.startswith("/api")
     }
-    # A dataset built without one of the optional views has nothing to export for it
     for view, prefix in (("structure", "/api/structure"), ("browser", "/api/browser")):
         if not capabilities.get(view):
             templates = {p: r for p, r in templates.items() if not p.startswith(prefix)}
@@ -214,7 +181,6 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
         async def write(url: str) -> None:
             async with semaphore:
                 response = await _get(client, url)
-            # A gene with no structure record answers 404 in the running app as well
             if response.status_code == 404:
                 stats.missing.append(url)
                 return
@@ -230,7 +196,6 @@ async def _dump(out_dir: Path, keep: set[Path]) -> ExportStats:
 
 
 def _copy_binaries(app_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, int, int]:
-    """Copy binary assets directly into their public URL paths."""
     files = size = changed = 0
     for source_parts, url_parts in COPIED_FILES:
         src = app_dir.joinpath(*source_parts)
@@ -270,8 +235,7 @@ def _copy_frontend(web_dir: Path, out_dir: Path, keep: set[Path]) -> tuple[int, 
 
 
 def export(out_dir: Path, web_dir: Path) -> ExportStats:
-    """Fill in the page shell, copy the built frontend, and write every API endpoint out
-    under api/."""
+    """Export the frontend, API responses, and binary assets."""
     out_dir.mkdir(parents=True, exist_ok=True)
 
     template = web_dir / "index.html.template"
@@ -287,7 +251,6 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
             f"No {ROUTES_FILE} was found at {web_dir}. Run `npm --prefix web run build`."
         )
     routes = _routes(manifest)
-    # A page may only be removed if a previous export is the one that wrote it
     served = out_dir / ROUTES_FILE
     previous = _routes(served) if served.is_file() else []
 
@@ -305,14 +268,12 @@ def export(out_dir: Path, web_dir: Path) -> ExportStats:
     if rendered_manifest is not None:
         changed += _write(webmanifest_out, rendered_manifest)
     elif webmanifest_out.is_file():
-        # Left by an export from a build that still had one
         webmanifest_out.unlink()
         stale_manifest = 1
 
     stats = asyncio.run(_dump(out_dir, keep))
     model_files, model_size, model_changes = _copy_binaries(settings.app_dir, out_dir, keep)
 
-    # The route pages and the files at the root are not in MANAGED, so _prune skips them
     pages = len(routes) + 1
     stats.files += web_files + model_files + pages + 3
     stats.bytes += web_size + model_size + len(shell) * (pages + 1) + source.stat().st_size
