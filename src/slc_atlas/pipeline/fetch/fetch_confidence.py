@@ -41,7 +41,7 @@ def run(structures_path: Path, out_path: Path) -> None:
     by_accession = structures.unique(subset="uniprot_accession")
     urls = by_accession["confidence_url"].to_list()
     accessions = by_accession["uniprot_accession"].to_list()
-    console.detail(f"Fetching pLDDT for {len(urls)} accessions")
+    console.detail(f"Fetching pLDDT scores for {len(urls)} accessions")
 
     refused: list[str] = []
     with progress.bar("confidence scores", total=len(urls), noun="accessions") as bar:
@@ -83,6 +83,6 @@ def run(structures_path: Path, out_path: Path) -> None:
     covered = sum(1 for r in rows if r["plddt"])
     residues = sum(len(r["plddt"]) for r in rows if r["plddt"])
     console.success(
-        f"wrote {covered}/{len(rows)} genes, {residues} residues "
+        f"Wrote {covered}/{len(rows)} genes, {residues} residues "
         f"({out_path.stat().st_size / 1024:.0f} KiB) -> {out_path}"
     )

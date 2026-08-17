@@ -48,7 +48,6 @@ from . import (
 )
 from .browser_curation import GWAS_FILE, TRACKS_FILE, gwas_text, tracks_text
 
-# Where --step looks to check a name it was given
 STEP_NAMES = plan.STEP_NAMES
 
 

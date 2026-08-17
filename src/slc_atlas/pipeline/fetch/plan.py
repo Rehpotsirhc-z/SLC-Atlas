@@ -62,7 +62,7 @@ LABELS = {
     "fetch_ensembl_genes": "Fetching gene coordinates from Ensembl",
     "fetch_ncbi_summaries": "Fetching gene summaries from NCBI",
     "assemble_genes": "Writing the gene and transcript tables",
-    "subset_expression": "Taking this family's genes out of the GTEx matrix",
+    "subset_expression": "Selecting the family's genes from the GTEx matrix",
     "fetch_sequences": "Fetching the canonical coding and protein sequences",
     "fetch_orthologs": "Fetching orthologs from Ensembl Compara",
     "fetch_species_tree": "Building the species tree",
@@ -70,24 +70,24 @@ LABELS = {
     "fetch_coverage": "Resolving the coverage tracks",
     "fetch_gwas": "Reading the GWAS studies",
     "slice_coverage": "Writing the local copies of the coverage tracks",
-    "fetch_uniprot_map": "Working out which UniProt entry each gene maps to",
+    "fetch_uniprot_map": "Matching genes to UniProt entries",
     "fetch_uniprot_sequences": "Fetching the UniProt canonical sequences",
     "fetch_protein_features": "Fetching membrane topology and binding sites",
-    "fetch_structures": "Finding the predicted and experimental structures",
-    "fetch_confidence": "Fetching the per-residue confidence scores",
+    "fetch_structures": "Finding available protein structures",
+    "fetch_confidence": "Fetching confidence scores for each residue",
     "download_models": "Mirroring the predicted models",
     "download_experimental_models": "Mirroring the experimental structures",
 }
 
 DONE = (
     "Fetch complete. Your editable source files are in {source}.\nReview or replace any of "
-    "them, then run `{command} build` to build the atlas.\nRunning fetch again keeps existing "
-    "files and downloads only what is missing."
+    "them, then run `{command} build` to build the atlas.\nRun fetch again to download any "
+    "missing files; files already on disk are left unchanged."
 )
 
 INCOMPLETE = (
     "Some of the dataset is missing. Everything that could be fetched is in {source}, and "
-    "running fetch again keeps it and asks only for the rest."
+    "another fetch will keep those files and retry only what is missing."
 )
 
 REVIEW = (

@@ -279,9 +279,9 @@ def run(
     n_with_experimental = len({r["gene_id"] for r in experimental})
     n_alphafill = sum(1 for r in structure_rows if r["alphafill_url"])
     console.success(
-        f"wrote {len(structure_rows)} models ({n_alphafill} with AlphaFill) -> {structures_path}"
+        f"Wrote {len(structure_rows)} models ({n_alphafill} with AlphaFill) -> {structures_path}"
     )
     console.success(
-        f"wrote {len(experimental)} experimental entries for {n_with_experimental} genes "
+        f"Wrote {len(experimental)} experimental entries for {n_with_experimental} genes "
         f"-> {experimental_path}"
     )

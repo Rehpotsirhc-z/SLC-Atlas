@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import console, deps, http, interrupt, reporting
-from .reporting import count
 
 OK = "ok"
 KEPT = "kept"
@@ -124,7 +123,9 @@ def _blockers(step: Step, spoiled: set[Path]) -> tuple[str, list[str]]:
 
 
 def _run_one(step: Step, among_others: bool = False) -> Result:
-    with console.named(step.name, among_others=among_others):
+    if among_others:
+        console.heading(step.heading)
+    with console.named(step.name, label=step.heading, among_others=among_others):
         return _attempt(step)
 
 
@@ -155,7 +156,7 @@ def run_stage(steps: Sequence[Step], ledger: Ledger, forced: frozenset[str]) -> 
     for step in steps:
         if kept(step, forced):
             console.heading(step.heading)
-            console.note("Already available (delete its files to fetch it again)")
+            console.note("Files already exist; delete them to fetch them again")
             ledger.add(Result(step, KEPT))
             continue
         status, blame = _blockers(step, spoiled)
@@ -167,11 +168,7 @@ def run_stage(steps: Sequence[Step], ledger: Ledger, forced: frozenset[str]) -> 
     if not runnable:
         return
     among_others = len(runnable) > 1
-    if among_others:
-        console.heading(f"{count('step', len(runnable))} at once")
-        for step in runnable:
-            console.detail(f"{step.name}: {step.heading}", indent=2)
-    else:
+    if not among_others:
         console.heading(runnable[0].heading)
 
     # Keep the main thread available to handle Ctrl-C
@@ -203,10 +200,12 @@ def summarize(ledger: Ledger, phase: str, command: str) -> None:
             note = f"missing {_names(note)}"
         elif result.status == BLOCKED:
             note = f"dependency failed: {_names(note)}"
-        rows.append([result.name, console.styled(result.status, LEVELS[result.status]), note])
+        rows.append(
+            [result.step.heading, console.styled(result.status, LEVELS[result.status]), note]
+        )
     console.table(["Step", "Result", "Note"], rows)
 
-    _list_findings()
+    _list_findings(ledger)
     retried = http.retry_summary()
     if retried:
         console.blank()
@@ -225,7 +224,7 @@ def _names(paths: str) -> str:
     return ", ".join(Path(p.strip()).name for p in paths.split(",") if p.strip())
 
 
-def _list_findings() -> None:
+def _list_findings(ledger: Ledger) -> None:
     headings = {
         reporting.FAILURE: ("Could not be fetched:", console.error),
         reporting.WARN: ("Warnings:", console.warn),
@@ -237,7 +236,8 @@ def _list_findings() -> None:
         console.blank()
         emit(title)
         for anomaly in found:
-            where = f"{anomaly.step}: " if anomaly.step else ""
+            result = ledger.get(anomaly.step)
+            where = f"{result.step.heading}: " if result else ""
             console.detail(f"{where}{anomaly.headline}", indent=2)
 
 

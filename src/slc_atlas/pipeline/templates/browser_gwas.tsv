@@ -5,7 +5,7 @@
 #
 # source may be either of the following:
 #   a GWAS Catalog accession   GCST009325, whose harmonised summary statistics are
-#                              downloaded and cut to this family's windows
+#                              downloaded and cut to the family's windows
 #   a path                     to a summary-statistics table or directory containing
 #                              one file per chromosome. Text files may use tabs, commas,
 #                              or spaces and may be compressed with .gz; Parquet also works

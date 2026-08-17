@@ -92,7 +92,7 @@ def write_fasta(path: Path, sequences: dict[str, str]) -> None:
 
 def run(genes_path: Path, cds_out: Path, protein_out: Path) -> None:
     gene_ids = pl.read_csv(genes_path, separator="\t", columns=["id"])["id"].to_list()
-    console.detail(f"{len(gene_ids)} genes; resolving canonical transcripts...")
+    console.detail(f"Resolving canonical transcripts for {len(gene_ids)} genes")
 
     canonical = resolve_canonical(gene_ids)
     tx_to_gene = {tx: gid for gid, tx in canonical.items()}

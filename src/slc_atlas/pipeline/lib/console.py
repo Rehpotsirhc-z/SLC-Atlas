@@ -153,10 +153,10 @@ def pool(max_workers: int) -> ThreadPoolExecutor:
 
 
 @contextmanager
-def named(step: str, *, among_others: bool = False) -> Generator[None]:
+def named(step: str, *, label: str = "", among_others: bool = False) -> Generator[None]:
     """Attribute output from the current thread to a pipeline step."""
     _sink.step = step
-    _sink.prefix = f"{step}: " if among_others else ""
+    _sink.prefix = f"{label or step}: " if among_others else ""
     try:
         yield
     finally:

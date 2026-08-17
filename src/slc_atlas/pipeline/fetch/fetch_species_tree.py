@@ -71,9 +71,7 @@ def run(
 
     tree = Phylo.read(io.StringIO(newick), "newick")
     leaves = tree.get_terminals()
-    console.detail(f"\n{len(leaves)} leaves written -> {tree_out}")
-    for leaf in leaves[:5]:
-        console.detail(f"  {leaf.name}: branch_length={leaf.branch_length}")
+    console.success(f"Wrote {len(leaves)} species -> {tree_out}")
     got = {leaf.name for leaf in leaves}
     report_missing(
         "species/species", "not in the tree", sorted({s["ensembl_name"] for s in species} - got)

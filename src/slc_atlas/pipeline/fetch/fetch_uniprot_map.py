@@ -175,22 +175,16 @@ def resolve(genes: pl.DataFrame, hgnc_ids: dict[str, str], overrides: dict[str, 
         for gene_id, hgnc in hgnc_ids.items():
             if by_hgnc.get(hgnc):
                 routes[gene_id] = (by_hgnc[hgnc], "hgnc")
-        console.detail(f"HGNC route mapped {len(routes)}/{len(gene_ids)} genes")
 
     unmapped = [g for g in gene_ids if g not in routes]
     if unmapped:
-        before = len(routes)
         by_ensembl = run_mapping("Ensembl", unmapped)
         for gene_id in unmapped:
             if by_ensembl.get(gene_id):
                 routes[gene_id] = (by_ensembl[gene_id], "ensembl")
-        console.detail(f"Ensembl route added {len(routes) - before} genes")
 
     for gene_id, accession in overrides.items():
         routes[gene_id] = ([accession], "override")
-    if overrides:
-        console.detail(f"{count('override', len(overrides))} applied")
-
     return routes
 
 

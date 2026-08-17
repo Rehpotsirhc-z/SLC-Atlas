@@ -27,7 +27,7 @@ def _tree_base(ensembl_release: int) -> str:
 
 
 def _download(url: str) -> str:
-    console.detail(f"  Downloading {url}")
+    console.detail(f"Downloading {url}", indent=2)
     return fetch_text(url)
 
 
