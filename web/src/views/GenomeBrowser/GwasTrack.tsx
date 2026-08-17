@@ -56,7 +56,7 @@ export default function GwasTrack({
       block={gwas.block}
       chrom={chrom}
       covered={covered}
-      bin={gwas.bin}
+      partial={gwas.bin > 0}
       loading={gwas.loading}
       width={width}
       gutter={gutter}

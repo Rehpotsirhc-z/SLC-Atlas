@@ -5,12 +5,12 @@
 import { memo, useCallback, useImperativeHandle, useRef } from "react"
 import { Box, useTheme } from "@mui/material"
 import { AXIS_FONT_PX, AXIS_TICK_PX, AXIS_W, Y_TICK_MAX } from "./constants"
-import { formatSignal, yTicks } from "./yAxis"
+import { axisMarks, formatSignal } from "./yAxis"
 
 const SLOTS = Y_TICK_MAX * 2 + 1
 
 export interface AxisHandle {
-  draw: (max: number, stranded: boolean, reach?: number) => void
+  draw: (max: number, stranded: boolean, reach?: number, pinned?: readonly number[]) => void
 }
 
 interface Props {
@@ -34,19 +34,23 @@ function LaneAxis({ height, handleRef }: Props) {
   }, [])
 
   const draw = useCallback(
-    (max: number, stranded: boolean, span?: number) => {
-      const key = `${max}|${stranded}|${height}|${span ?? ""}`
+    (max: number, stranded: boolean, span?: number, pinned: readonly number[] = []) => {
+      const key = `${max}|${stranded}|${height}|${span ?? ""}|${pinned.join(",")}`
       if (shown.current === key) return
       shown.current = key
 
       const baseline = stranded ? height / 2 : height
       const reach = span ?? (stranded ? height / 2 : height)
       const marks: { y: number; text: string }[] = [{ y: baseline, text: "0" }]
-      for (const value of yTicks(max, reach)) {
+      for (const { value, pinned: isPinned } of axisMarks(max, reach, pinned)) {
         const offset = (value / max) * reach
         marks.push({
           y: baseline - offset,
-          text: stranded ? `+${formatSignal(value)}` : formatSignal(value),
+          text: stranded
+            ? `+${formatSignal(value)}`
+            : isPinned
+              ? value.toFixed(2)
+              : formatSignal(value),
         })
         if (stranded) marks.push({ y: baseline + offset, text: `−${formatSignal(value)}` })
       }

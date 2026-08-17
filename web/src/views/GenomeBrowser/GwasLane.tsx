@@ -11,7 +11,14 @@ import BrowserTooltip, { TipLine, TipTitle } from "./BrowserTooltip"
 import LaneAxis, { type AxisHandle } from "./LaneAxis"
 import LaneFrame from "./LaneFrame"
 import LaneGutter from "./LaneGutter"
-import { drawGwas, GWAS_PLOT_TOP, gwasCeiling, gwasNear, type GwasInk } from "./drawGwas"
+import {
+  drawGwas,
+  GWAS_PLOT_TOP,
+  gwasCeiling,
+  gwasNear,
+  SIGNIFICANCE_Y,
+  type GwasInk,
+} from "./drawGwas"
 import { formatPoint, frameScale, type Scale, type Viewport } from "./scale"
 import { useHoverFrame } from "./useHoverFrame"
 import { useLaneCanvas } from "./useLaneCanvas"
@@ -23,8 +30,7 @@ interface Props {
   block: VariantBlock
   chrom: string
   covered: boolean
-  /** Bases per mark of the copy being drawn, or 0 when every variant is */
-  bin: number
+  partial: boolean
   loading: boolean
   width: number
   gutter: number
@@ -37,7 +43,6 @@ interface Props {
 }
 
 interface Hovered {
-  /** Where in the block the variant sits; its fields are read off the block on demand */
   at: number
   snp: string | null
   position: number
@@ -47,7 +52,6 @@ interface Hovered {
   y: number
 }
 
-// The variant is what the tooltip shows, so moving between pixels over the same one is nothing
 const sameHover = (a: Hovered | null, b: Hovered | null) => a?.at === b?.at
 
 function GwasLane({
@@ -55,7 +59,7 @@ function GwasLane({
   block,
   chrom,
   covered,
-  bin,
+  partial,
   loading,
   width,
   gutter,
@@ -84,9 +88,6 @@ function GwasLane({
 
   const paint = useCallback(
     (ctx: CanvasRenderingContext2D, scale: Scale) => {
-      // The axis is worked out where the view has settled and held through the gesture: a
-      // ceiling recomputed every frame slides every variant up and down under the drag, and it
-      // is a scan of the window on top of the one that draws it
       if (!moving() || shownMax.current === 0) {
         shownMax.current = gwasCeiling(block, scale.start, scale.end)
       }
@@ -101,7 +102,12 @@ function GwasLane({
         grid,
         showSignificance,
       })
-      axisRef.current?.draw(max, false, GWAS_LANE_HEIGHT - GWAS_PLOT_TOP)
+      axisRef.current?.draw(
+        max,
+        false,
+        GWAS_LANE_HEIGHT - GWAS_PLOT_TOP,
+        showSignificance && SIGNIFICANCE_Y <= max ? [SIGNIFICANCE_Y] : [],
+      )
     },
     [block, ink, grid, showSignificance, moving],
   )
@@ -157,13 +163,9 @@ function GwasLane({
         height={GWAS_LANE_HEIGHT}
         name={study.trait}
         group="GWAS"
-        title={
-          bin > 0
-            ? `${study.trait}. Reduced: one mark per ${Math.round(bin / 1000)} kb, the width of a column here`
-            : study.trait
-        }
+        details={<>{partial && <Box>Not all variants shown</Box>}</>}
       >
-        −log10(p){bin > 0 ? " · reduced" : ""}
+        −log10(p)
       </LaneGutter>
       <LaneAxis height={GWAS_LANE_HEIGHT} handleRef={axisRef} />
       <Box

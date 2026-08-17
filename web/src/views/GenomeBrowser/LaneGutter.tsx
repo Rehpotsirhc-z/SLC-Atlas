@@ -14,6 +14,7 @@ interface Props {
   title?: string
   dimmed?: boolean
   children?: ReactNode
+  details?: ReactNode
 }
 
 export default function LaneGutter({
@@ -24,6 +25,7 @@ export default function LaneGutter({
   title,
   dimmed,
   children,
+  details,
 }: Props) {
   const { custom } = useTheme()
   return (
@@ -75,6 +77,18 @@ export default function LaneGutter({
         >
           {children}
         </Typography>
+      )}
+      {details !== undefined && (
+        <Box
+          sx={{
+            fontSize: 11.5,
+            lineHeight: 1.4,
+            fontFamily: custom.monoFontFamily,
+            color: "text.secondary",
+          }}
+        >
+          {details}
+        </Box>
       )}
     </Box>
   )

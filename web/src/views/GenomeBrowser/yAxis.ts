@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { Y_TICK_GAP_PX, Y_TICK_MAX } from "./constants"
+import { AXIS_LABEL_GAP_PX, Y_TICK_GAP_PX, Y_TICK_MAX } from "./constants"
 
 const STEPS = [1, 2, 5]
 
@@ -33,4 +33,24 @@ export function yTicks(max: number, reach: number): number[] {
   const out: number[] = []
   for (let i = 1; i * step <= max; i++) out.push(i * step)
   return out.slice(0, allowed)
+}
+
+export interface AxisMark {
+  value: number
+  pinned: boolean
+}
+
+/** Merge automatic ticks with fixed marks without overlapping labels. */
+export function axisMarks(max: number, reach: number, pinned: readonly number[] = []): AxisMark[] {
+  if (!(max > 0) || !(reach > 0)) return []
+  const px = (value: number) => (value / max) * reach
+  const held = pinned.filter(
+    (value) => value > 0 && value <= max && px(value) >= AXIS_LABEL_GAP_PX,
+  )
+  const ticks = yTicks(max, reach).filter((value) =>
+    held.every((mark) => Math.abs(px(value) - px(mark)) >= AXIS_LABEL_GAP_PX),
+  )
+  return [...new Set([...held, ...ticks])]
+    .sort((a, b) => a - b)
+    .map((value) => ({ value, pinned: held.includes(value) }))
 }

@@ -29,7 +29,7 @@ import { arrowHead } from "./drawGenes"
 import { firstFrom, GWAS_PLOT_TOP, gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
 import { countInView, type GeneSpan, type TrackLayout } from "./geneLayout"
 import { scaleFor, ticksFor, type Viewport } from "./scale"
-import { formatSignal, yTicks } from "./yAxis"
+import { axisMarks, formatSignal, yTicks } from "./yAxis"
 
 const MARGIN = 20
 const LABEL_W = 168
@@ -146,15 +146,22 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
   const surface = (height: number) =>
     `<rect x="0" y="0" width="${PLOT_W}" height="${height}" fill="${input.ink.plot}"/>`
 
-  const axis = (top: number, height: number, max: number, stranded: boolean, span?: number) => {
+  const axis = (
+    top: number,
+    height: number,
+    max: number,
+    stranded: boolean,
+    span?: number,
+    pinned: readonly number[] = [],
+  ) => {
     const baseline = stranded ? height / 2 : height
     const reach = span ?? (stranded ? height / 2 : height)
     const marks: { at: number; text: string }[] = [{ at: baseline, text: "0" }]
-    for (const value of yTicks(max, reach)) {
+    for (const { value, pinned: isPinned } of axisMarks(max, reach, pinned)) {
       const offset = (value / max) * reach
-      const written = formatSignal(value)
-      marks.push({ at: baseline - offset, text: stranded ? `+${written}` : written })
-      if (stranded) marks.push({ at: baseline + offset, text: `−${written}` })
+      const written = isPinned ? value.toFixed(2) : formatSignal(value)
+      marks.push({ at: baseline - offset, text: stranded ? `+${formatSignal(value)}` : written })
+      if (stranded) marks.push({ at: baseline + offset, text: `−${formatSignal(value)}` })
     }
     return (
       `<line x1="${GUTTER - 0.5}" y1="${top}" x2="${GUTTER - 0.5}" y2="${top + height}" stroke="${input.ink.axis}"/>` +
@@ -270,7 +277,14 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
     body.push(
       groupName("GWAS", y) +
         label(input.study.trait, y, "−log10(p)") +
-        axis(y, GWAS_LANE_HEIGHT, max, false, GWAS_LANE_HEIGHT - GWAS_PLOT_TOP) +
+        axis(
+          y,
+          GWAS_LANE_HEIGHT,
+          max,
+          false,
+          GWAS_LANE_HEIGHT - GWAS_PLOT_TOP,
+          input.showSignificance && SIGNIFICANCE_Y <= max ? [SIGNIFICANCE_Y] : [],
+        ) +
         lane(y, GWAS_LANE_HEIGHT, `${surface(GWAS_LANE_HEIGHT)}${rule}${dots}`) +
         plotFrame(y, GWAS_LANE_HEIGHT),
     )

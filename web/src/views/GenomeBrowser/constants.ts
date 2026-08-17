@@ -10,6 +10,8 @@ export const GUTTER_W_SM = 118
 export const AXIS_W = 54
 export const AXIS_FONT_PX = 10
 export const AXIS_TICK_PX = 4
+// Minimum spacing between automatic and pinned axis labels
+export const AXIS_LABEL_GAP_PX = AXIS_FONT_PX + 3
 
 export const Y_TICK_GAP_PX = 26
 export const Y_TICK_MAX = 4
