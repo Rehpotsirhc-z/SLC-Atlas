@@ -275,8 +275,6 @@ def _fetch(args: argparse.Namespace) -> int:
     if not source:
         raise SystemExit(prompting.NO_SOURCE)
     rerun = prompting.command_line("fetch", FETCH, chosen)
-    if ask:
-        prompting.echo(rerun)
     console.detail(f"Source: {_source_label(source)}")
 
     from .fetch.plan import FetchOptions
@@ -312,6 +310,8 @@ def _fetch(args: argparse.Namespace) -> int:
         console.blank()
         console.detail("When the curation files are ready, continue with:")
         console.detail(rerun, indent=2)
+    elif ask:
+        prompting.echo(rerun)
     return 1 if unusable else 0
 
 
