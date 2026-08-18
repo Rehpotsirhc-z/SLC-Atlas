@@ -6,8 +6,8 @@
 
 The structure view plots the confidence along the residue axis, so it needs one score per
 residue rather than the four band fractions that the summary API returns. A score runs
-from 0 to 100 and is rounded to a whole number, which fits in a byte and keeps all 462
-genes down to a few hundred kilobytes.
+from 0 to 100 and is rounded to a whole number, which fits in a byte and keeps the whole
+family down to a few hundred kilobytes.
 """
 
 from pathlib import Path
