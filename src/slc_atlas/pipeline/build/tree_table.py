@@ -11,10 +11,11 @@ has no gene, and the root has no parent. Each of the builders here also returns 
 tree as Newick, which is useful for looking at directly.
 """
 
-import re
 import sys
 
 import polars as pl
+
+from ..lib.text import natural_key
 
 CLUSTERING_SCHEMA = {
     "method": pl.Utf8,
@@ -25,12 +26,6 @@ CLUSTERING_SCHEMA = {
     "symbol": pl.Utf8,
     "family": pl.Utf8,
 }
-
-
-def natural_key(s: str) -> list:
-    """Split a label into runs of letters and runs of digits, so that SLC2 sorts before
-    SLC10 rather than after it."""
-    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
 
 
 def family_grouping(gene_ids: list[str], meta: dict[str, dict]) -> tuple[list[dict], str]:

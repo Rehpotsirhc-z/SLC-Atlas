@@ -11,6 +11,7 @@ import polars as pl
 
 from ..lib import bed12, bigbed, windows
 from ..lib.reporting import report_missing
+from ..lib.text import natural_key
 
 WINDOW_SCHEMA = {
     "gene_id": pl.Utf8,
@@ -188,7 +189,7 @@ def gene_index(
             }
         )
 
-    rows.sort(key=lambda r: (not r["is_atlas"], r["symbol"].lower()))
+    rows.sort(key=lambda r: (not r["is_atlas"], natural_key(r["symbol"])))
     return pl.DataFrame(rows, schema=BROWSER_GENE_SCHEMA)
 
 
