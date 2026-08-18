@@ -7,8 +7,8 @@
 
 set -eu
 
-SITE_DIR="${ATLAS_SITE_DIR:-/srv/www}"
-DATA_DIR="${ATLAS_DATA_DIR:-/data}"
+SITE_DIR="${ATLASFORGE_SITE_DIR:-/srv/www}"
+DATA_DIR="${ATLASFORGE_DATA_DIR:-/data}"
 
 # Only the build outputs under app/ are served, the rest of the dataset is pipeline input
 if [ ! -d "$DATA_DIR/app" ]; then
@@ -16,9 +16,9 @@ if [ ! -d "$DATA_DIR/app" ]; then
     exit 1
 fi
 
-# Reads the ATLAS_ variables, so a rename needs a restart and not a rebuild
+# Reads the ATLASFORGE_ variables, so a rename needs a restart and not a rebuild
 echo "Building site in $SITE_DIR"
-atlas export "$SITE_DIR"
+atlasforge export "$SITE_DIR"
 
 # Replaces this script as PID 1 so Docker can stop the container cleanly
 exec nginx -g 'daemon off;'

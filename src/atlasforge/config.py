@@ -11,9 +11,9 @@ _PACKAGED_WEB = Path(__file__).parent / "web"
 _WEB_DIR = _PACKAGED_WEB if _PACKAGED_WEB.is_dir() else _REPO_ROOT / "web" / "dist"
 _DATA_DIR = _REPO_ROOT / "data" if (_REPO_ROOT / "pyproject.toml").is_file() else Path("data")
 
-PRODUCT_NAME = "SLC Atlas"
+PRODUCT_NAME = "AtlasForge"
 PRODUCT_VERSION = "0.1.0"
-COMMAND_NAME = "atlas"
+COMMAND_NAME = "atlasforge"
 DISTRIBUTION_NAME = __name__.rpartition(".")[0].replace("_", "-")
 
 
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         description="singular name for one member of the gene family",
     )
     download_prefix: str = Field(
-        default="atlas",
+        default="atlasforge",
         description="prefix for downloaded figures, tables, and trees",
     )
     cors_origins: str = Field(
@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, description="port the local server listens on")
 
     model_config = SettingsConfigDict(
-        env_prefix="ATLAS_", env_file=(_REPO_ROOT / ".env", ".env"), extra="ignore"
+        env_prefix="ATLASFORGE_", env_file=(_REPO_ROOT / ".env", ".env"), extra="ignore"
     )
 
     @property

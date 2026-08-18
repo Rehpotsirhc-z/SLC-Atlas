@@ -84,7 +84,9 @@ DONE = (
     "Review or replace any of them, then build the atlas with:"
 )
 
-DONE_AGAIN = "Run fetch again to download any missing files; files already on disk are left unchanged."
+DONE_AGAIN = (
+    "Run fetch again to download any missing files; files already on disk are left unchanged."
+)
 
 INCOMPLETE = (
     "Some of the dataset is missing. Everything that could be fetched is in {source}, and "

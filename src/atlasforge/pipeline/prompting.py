@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Run the optional interactive setup for `atlas fetch`"""
+"""Run the optional interactive setup for `atlasforge fetch`"""
 
 import argparse
 import shlex

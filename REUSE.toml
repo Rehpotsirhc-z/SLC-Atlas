@@ -1,5 +1,5 @@
 version = 1
-SPDX-PackageName = "SLC Atlas"
+SPDX-PackageName = "AtlasForge"
 SPDX-PackageSupplier = "Dong Lab, Yale School of Medicine <https://donglab.org>"
 
 [[annotations]]
@@ -16,7 +16,7 @@ path = [
   ".devcontainer/README.org",
   "README.org",
   "docs/source-files.org",
-  "src/slc_atlas/pipeline/templates/**",
+  "src/atlasforge/pipeline/templates/**",
   "web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.org",
   "web/public/ATTRIBUTION.org"
 ]

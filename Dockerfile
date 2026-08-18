@@ -27,7 +27,7 @@ COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-ENV ATLAS_DATA_DIR=/data
+ENV ATLASFORGE_DATA_DIR=/data
 
 VOLUME ["/data"]
 EXPOSE 80

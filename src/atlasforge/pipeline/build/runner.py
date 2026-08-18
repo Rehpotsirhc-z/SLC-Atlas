@@ -56,7 +56,7 @@ def _selected(options: BuildOptions) -> set[str]:
 
 
 def _resolve_mafft(explicit: str) -> str:
-    mafft = explicit or os.environ.get("ATLAS_MAFFT") or shutil.which("mafft")
+    mafft = explicit or os.environ.get("ATLASFORGE_MAFFT") or shutil.which("mafft")
     if not mafft:
         raise SystemExit(NO_MAFFT)
     return mafft

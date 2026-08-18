@@ -21,8 +21,8 @@ services:
       - atlas-site:/srv/www
 
     environment:
-      ATLAS_APP_NAME: SLC Gene Family Brain Transcript Atlas
-      ATLAS_APP_SHORT_NAME: SLC Atlas
-      ATLAS_APP_DESCRIPTION: SLC superfamily gene and transcript annotation browser
-      ATLAS_FAMILY_LABEL: SLC
-      ATLAS_DOWNLOAD_PREFIX: slc
+      ATLASFORGE_APP_NAME: SLC Gene Family Brain Transcript Atlas
+      ATLASFORGE_APP_SHORT_NAME: SLC Atlas
+      ATLASFORGE_APP_DESCRIPTION: SLC superfamily gene and transcript annotation browser
+      ATLASFORGE_FAMILY_LABEL: SLC
+      ATLASFORGE_DOWNLOAD_PREFIX: slc

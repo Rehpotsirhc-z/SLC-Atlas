@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Mirrors src/slc_atlas/models/browser.py using 0-based, half-open coordinates
+// Mirrors src/atlasforge/models/browser.py using 0-based, half-open coordinates
 
 export type ChromRole = "primary" | "alt" | "unplaced"
 

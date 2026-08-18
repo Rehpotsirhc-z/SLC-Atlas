@@ -4,7 +4,7 @@
 
 """Join the annotation, the Ensembl coordinates and the NCBI summaries together, and write
 them out as source/genes.tsv and source/transcripts.tsv, whose columns are the ones the
-models in src/slc_atlas/models/gene.py describe.
+models in src/atlasforge/models/gene.py describe.
 
 Any symbol listed in the curated exclusions.txt is left out. Where symbol_overrides.tsv
 gives a display symbol for a gene, that symbol is shown instead of the approved symbol

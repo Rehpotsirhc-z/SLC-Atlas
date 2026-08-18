@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Define the `atlas fetch` and `atlas build` commands"""
+"""Define the `atlasforge fetch` and `atlasforge build` commands"""
 
 import argparse
 import os
@@ -252,7 +252,7 @@ def _paths(chosen: Mapping[str, Any]) -> "PipelinePaths":
 
     data_dir = Path(chosen["data_dir"])
     if data_dir != settings.data_dir:
-        os.environ["ATLAS_DATA_DIR"] = str(data_dir)
+        os.environ["ATLASFORGE_DATA_DIR"] = str(data_dir)
         refresh()
     return PipelinePaths(data_dir, Path(chosen.get("curation_dir") or data_dir / "curation"))
 

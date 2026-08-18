@@ -16,6 +16,6 @@ reuse annotate \
     --copyright "Dong Lab, Yale School of Medicine <https://donglab.org>" \
     --license Apache-2.0 \
     --recursive \
-    src/slc_atlas/ \
+    src/atlasforge/ \
     web/src/ \
     web/vite.config.ts

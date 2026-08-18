@@ -1,6 +1,6 @@
 #+title: Pipeline files
 
-This page describes the files shared by ~atlas fetch~, ~atlas build~, and the
+This page describes the files shared by ~atlasforge fetch~, ~atlasforge build~, and the
 running application. Use it to inspect a dataset, replace fetched data, or
 identify the pipeline step that creates a file.
 
@@ -12,10 +12,10 @@ and built application data separate:
 |------------------------------+---------|
 | ~<data-dir>/cache/~          | Downloads and intermediate files that can be reused by later fetches |
 | ~<data-dir>/curation/~       | Files you review and edit to make dataset-specific choices |
-| ~<data-dir>/source/~         | Normalized inputs written by ~atlas fetch~ and read by ~atlas build~ |
+| ~<data-dir>/source/~         | Normalized inputs written by ~atlasforge fetch~ and read by ~atlasforge build~ |
 | ~<data-dir>/app/~            | Built Parquet tables and binary assets served by the application |
 
-~atlas fetch~ does not replace existing curation files. It also skips a completed
+~atlasforge fetch~ does not replace existing curation files. It also skips a completed
 fetch step when all of that step's declared outputs already exist. Use ~--step NAME~
 to run a step again. If you replace a source file yourself, skip the fetch
 step that normally creates it or keep the replacement in place when running
@@ -26,14 +26,14 @@ steps. If those files already exist, the step reads them without replacing them.
 
 If a step fails, only its dependent steps are skipped. The remaining work continues,
 and the command ends with a summary and a non-zero exit status. Run the same command
-again to reuse completed work and retry the rest. Set ~ATLAS_TRACEBACK=1~ to include
+again to reuse completed work and retry the rest. Set ~ATLASFORGE_TRACEBACK=1~ to include
 tracebacks for unexpected errors.
 
-~atlas build~ reads only from ~source/~ and writes to ~app/~. Files in ~cache/~ and
+~atlasforge build~ reads only from ~source/~ and writes to ~app/~. Files in ~cache/~ and
 ~curation/~ are not served directly.
 
 * Curation files
-The first ~atlas fetch~ creates the following files in ~--curation-dir~, which
+The first ~atlasforge fetch~ creates the following files in ~--curation-dir~, which
 defaults to ~<data-dir>/curation/~. Unless ~--no-review~ is set, the command
 then pauses so you can review any newly created files.
 
@@ -200,7 +200,7 @@ rejected because it may not identify the exact base. A p-value that underflows t
 zero is preserved and shown above the chart's numeric scale.
 
 * Built application files
-~atlas build~ converts source files into the Parquet tables under ~<data-dir>/app/~.
+~atlasforge build~ converts source files into the Parquet tables under ~<data-dir>/app/~.
 These are implementation details of the API and should not be edited by hand.
 Run the relevant build step again instead.
 

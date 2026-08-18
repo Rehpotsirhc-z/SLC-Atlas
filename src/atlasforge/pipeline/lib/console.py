@@ -134,7 +134,7 @@ def styled(text: str, level: str) -> Text:
 
 def traceback_wanted() -> bool:
     """Whether a failing step should print its Python traceback rather than one line."""
-    return bool(os.environ.get("ATLAS_TRACEBACK"))
+    return bool(os.environ.get("ATLASFORGE_TRACEBACK"))
 
 
 def current_step() -> str:

@@ -34,7 +34,7 @@ PATIENCE = 5.0
 JITTER_MAX = 0.5
 HOST_WORKERS = 6
 
-USER_AGENT = f"slc-atlas/{PRODUCT_VERSION} (+https://donglab.org)"
+USER_AGENT = f"atlasforge/{PRODUCT_VERSION} (+https://donglab.org)"
 
 # Values are (requests in flight, minimum interval)
 # cspell:ignore eutils

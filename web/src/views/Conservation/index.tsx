@@ -87,10 +87,7 @@ export default function Conservation() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      <ViewHeader
-        title="Conservation"
-        subtitle="Ortholog sequence conservation across species"
-      />
+      <ViewHeader title="Conservation" subtitle="Ortholog sequence conservation across species" />
 
       <Paper
         variant="outlined"

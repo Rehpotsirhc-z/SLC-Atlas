@@ -15,7 +15,7 @@ from .pipeline.cli import add_parsers
 def _add_settings_flags(parser: argparse.ArgumentParser) -> None:
     for name, field in Settings.model_fields.items():
         shown = "" if isinstance(field.default, Path) or field.default == "" else field.default
-        env = f"ATLAS_{name.upper()}"
+        env = f"ATLASFORGE_{name.upper()}"
         parser.add_argument(
             f"--{name.replace('_', '-')}",
             dest=name,
@@ -28,7 +28,7 @@ def _apply_settings_flags(args: argparse.Namespace) -> None:
     for name in Settings.model_fields:
         value = getattr(args, name, None)
         if value is not None:
-            os.environ[f"ATLAS_{name.upper()}"] = str(value)
+            os.environ[f"ATLASFORGE_{name.upper()}"] = str(value)
     refresh()
 
 

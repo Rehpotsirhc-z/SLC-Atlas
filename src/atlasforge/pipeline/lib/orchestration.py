@@ -143,7 +143,7 @@ def _attempt(step: Step) -> Result:
         if console.traceback_wanted():
             console.paragraph(traceback.format_exc(), "detail")
         else:
-            console.detail("Set ATLAS_TRACEBACK=1 to see where this came from")
+            console.detail("Set ATLASFORGE_TRACEBACK=1 to see where this came from")
         return Result(step, FAILED, f"{type(e).__name__}: {e}")
     status = PARTIAL if reporting.failed(step.name) else OK
     return Result(step, status, findings=reporting.findings(step.name))

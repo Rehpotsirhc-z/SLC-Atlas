@@ -94,10 +94,7 @@ export default function Expression() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      <ViewHeader
-        title="Expression"
-        subtitle="RNA abundance (TPM) across GTEx tissues"
-      />
+      <ViewHeader title="Expression" subtitle="RNA abundance (TPM) across GTEx tissues" />
 
       <Paper
         variant="outlined"

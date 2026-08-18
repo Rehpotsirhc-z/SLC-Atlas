@@ -12,6 +12,7 @@ alphafold
 anatomogram
 anatomograms
 atac
+atlasforge
 bcif
 bgcolor
 bigbed
@@ -71,6 +72,7 @@ intramembrane
 intron
 introns
 isoform
+itimer
 kilobases
 ladderize
 lddt
@@ -108,7 +110,10 @@ retmode
 retree
 rsid
 sampid
+segs
+setitimer
 setrecursionlimit
+sigalrm
 smts
 smtsd
 squareform
@@ -123,6 +128,7 @@ uberon
 ucsc
 uids
 underflowed
+underflows
 uniprot
 uniprotkb
 unpivot

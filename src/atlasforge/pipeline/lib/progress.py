@@ -34,7 +34,7 @@ _lock = threading.Lock()
 
 
 def disabled() -> bool:
-    return bool(os.environ.get("ATLAS_NO_PROGRESS")) or not console.console.is_terminal
+    return bool(os.environ.get("ATLASFORGE_NO_PROGRESS")) or not console.console.is_terminal
 
 
 def _columns() -> tuple:

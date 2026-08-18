@@ -23,9 +23,9 @@ def render(template: str, config: dict[str, str] | None = None) -> str:
     config = atlas_config() if config is None else config
     island = json.dumps(config, separators=(",", ":")).replace("<", "\\u003c")
     return (
-        template.replace("__ATLAS_APP_NAME__", html.escape(config["name"]))
-        .replace("__ATLAS_APP_DESCRIPTION__", html.escape(config["description"]))
-        .replace("__ATLAS_CONFIG_JSON__", island)
+        template.replace("__ATLASFORGE_APP_NAME__", html.escape(config["name"]))
+        .replace("__ATLASFORGE_APP_DESCRIPTION__", html.escape(config["description"]))
+        .replace("__ATLASFORGE_CONFIG_JSON__", island)
     )
 
 

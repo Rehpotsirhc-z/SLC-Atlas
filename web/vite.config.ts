@@ -23,9 +23,9 @@ const escapeAttr = (value: string) =>
 
 const renderShell = (html: string, config: AtlasConfig) =>
   html
-    .replaceAll("__ATLAS_APP_NAME__", escapeAttr(config.name))
-    .replaceAll("__ATLAS_APP_DESCRIPTION__", escapeAttr(config.description))
-    .replaceAll("__ATLAS_CONFIG_JSON__", JSON.stringify(config).replace(/</g, "\\u003c"))
+    .replaceAll("__ATLASFORGE_APP_NAME__", escapeAttr(config.name))
+    .replaceAll("__ATLASFORGE_APP_DESCRIPTION__", escapeAttr(config.description))
+    .replaceAll("__ATLASFORGE_CONFIG_JSON__", JSON.stringify(config).replace(/</g, "\\u003c"))
 
 const webManifest = (config: AtlasConfig) =>
   JSON.stringify({
@@ -45,7 +45,7 @@ const webManifest = (config: AtlasConfig) =>
   })
 
 export default defineConfig(({ mode }) => {
-  const atlasConfig = resolveAtlasConfig(loadEnv(mode, envDir, "ATLAS_"))
+  const atlasConfig = resolveAtlasConfig(loadEnv(mode, envDir, "ATLASFORGE_"))
 
   return {
     envDir,
@@ -145,7 +145,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": {
           // Allow parallel checkouts to use separate API servers
-          target: process.env.ATLAS_API || "http://localhost:8000",
+          target: process.env.ATLASFORGE_API || "http://localhost:8000",
           changeOrigin: true,
         },
       },
