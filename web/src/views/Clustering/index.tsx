@@ -74,7 +74,7 @@ export default function Clustering() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
       <ViewHeader
         title="Clustering"
-        subtitle="Similarity trees by amino-acid, DNA (CDS), GTEx RNA co-expression, and ortholog identity"
+        subtitle="Similarity trees by amino-acid, DNA (CDS), RNA co-expression, and ortholog identity"
       />
 
       <Paper

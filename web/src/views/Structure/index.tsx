@@ -128,7 +128,7 @@ export default function Structure() {
   const header = (
     <ViewHeader
       title="Structure"
-      subtitle={`AlphaFold models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures`}
+      subtitle={`Predicted models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures`}
     />
   )
 
