@@ -338,6 +338,7 @@ export default function GenomeBrowser() {
                   justifyContent: "center",
                   gap: 1,
                   px: 2,
+                  textAlign: "center",
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
