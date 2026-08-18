@@ -139,7 +139,13 @@ def _steps(paths: PipelinePaths, options: BuildOptions) -> dict[str, Step]:
     }
 
 
-def _summary(steps: Sequence[Step], data_dir: Path, whole: bool) -> None:
+def _summary(
+    steps: Sequence[Step],
+    data_dir: Path,
+    whole: bool,
+    serve_command: str = "",
+    export_command: str = "",
+) -> None:
     console.blank()
     if whole:
         console.success("The atlas is ready with these files:")
@@ -150,9 +156,20 @@ def _summary(steps: Sequence[Step], data_dir: Path, whole: bool) -> None:
             if path.exists() and path.is_file():
                 size = path.stat().st_size / 1024**2
                 console.detail(f"{path.relative_to(data_dir)}  ({size:.1f} MiB)", indent=2)
+    if whole and (serve_command or export_command):
+        console.blank()
+        console.success("Serve it locally with:")
+        console.detail(serve_command, indent=2)
+        console.success("or write a static site with:")
+        console.detail(export_command, indent=2)
 
 
-def run(options: BuildOptions, paths: PipelinePaths) -> bool:
+def run(
+    options: BuildOptions,
+    paths: PipelinePaths,
+    serve_command: str = "",
+    export_command: str = "",
+) -> bool:
     """Build every view that can be built, and say whether anything went wrong."""
     if not paths.source.is_dir():
         raise SystemExit(
@@ -173,5 +190,5 @@ def run(options: BuildOptions, paths: PipelinePaths) -> bool:
             run_stage([step], ledger, frozenset(options.only_steps))
 
     summarize(ledger, "Build", f"{COMMAND_NAME} build")
-    _summary(chosen, paths.data_dir, not ledger.unusable)
+    _summary(chosen, paths.data_dir, not ledger.unusable, serve_command, export_command)
     return ledger.unusable

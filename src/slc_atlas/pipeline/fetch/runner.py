@@ -317,7 +317,9 @@ def _curation_outputs(paths: PipelinePaths) -> tuple[Path, ...]:
     return (paths.cache / "hgnc_family.txt", *(paths.curation_dir / name for name in names))
 
 
-def run(options: plan.FetchOptions, paths: PipelinePaths) -> tuple[bool, bool]:
+def run(
+    options: plan.FetchOptions, paths: PipelinePaths, build_command: str = ""
+) -> tuple[bool, bool]:
     """Return whether the run halted for curation review, and whether anything went wrong."""
     halted = False
 
@@ -353,9 +355,10 @@ def run(options: plan.FetchOptions, paths: PipelinePaths) -> tuple[bool, bool]:
 
     summarize(ledger, "Fetch", f"{COMMAND_NAME} fetch")
     console.blank()
-    message = plan.INCOMPLETE if ledger.unusable else plan.DONE
-    console.paragraph(
-        message.format(source=paths.source, command=COMMAND_NAME),
-        "warn" if ledger.unusable else "success",
-    )
+    if ledger.unusable:
+        console.paragraph(plan.INCOMPLETE.format(source=paths.source), "warn")
+    else:
+        console.paragraph(plan.DONE.format(source=paths.source), "success")
+        console.detail(build_command or f"{COMMAND_NAME} build", indent=2)
+        console.paragraph(plan.DONE_AGAIN, "success")
     return False, ledger.unusable

@@ -80,10 +80,11 @@ LABELS = {
 }
 
 DONE = (
-    "Fetch complete. Your editable source files are in {source}.\nReview or replace any of "
-    "them, then run `{command} build` to build the atlas.\nRun fetch again to download any "
-    "missing files; files already on disk are left unchanged."
+    "Fetch complete. Your editable source files are in {source}.\n"
+    "Review or replace any of them, then build the atlas with:"
 )
+
+DONE_AGAIN = "Run fetch again to download any missing files; files already on disk are left unchanged."
 
 INCOMPLETE = (
     "Some of the dataset is missing. Everything that could be fetched is in {source}, and "

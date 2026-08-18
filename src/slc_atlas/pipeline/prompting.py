@@ -18,10 +18,7 @@ NO_SOURCE = (
     f"a gene-list file. See `{COMMAND_NAME} fetch --help` for all supported inputs."
 )
 
-INTRO = (
-    "\nLet's set up the dataset. Press Enter to accept the value in brackets.\n"
-    "When you finish, the equivalent command is printed so you can repeat the setup."
-)
+INTRO = "\nLet's set up the dataset. Press Enter to accept the value in brackets.\n"
 
 CANCELLED = "\nSetup cancelled"
 
@@ -56,6 +53,26 @@ def command_line(command: str, spec: Sequence[Option], chosen: Mapping[str, Any]
 def echo(command: str) -> None:
     print("\nRun the same setup again with:")
     print(f"  {command}\n")
+
+
+def follow_on(
+    command: str,
+    spec: Sequence[Option],
+    args: argparse.Namespace,
+    chosen: Mapping[str, Any],
+    tail: str = "",
+) -> str:
+    """Reconstruct a follow-on command carrying the flags the user gave that this command
+    also accepts. Step selectors are per-phase, so they never carry over."""
+    words = [f"{COMMAND_NAME} {command}"]
+    if tail:
+        words.append(tail)
+    for option in spec:
+        if option.positional or option.name == "step":
+            continue
+        if getattr(args, option.name, None) is not None and option.name in chosen:
+            words.append(_word(option, chosen[option.name]))
+    return " ".join(words)
 
 
 def _word(option: Option, value: Any) -> str:

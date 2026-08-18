@@ -275,6 +275,7 @@ def _fetch(args: argparse.Namespace) -> int:
     if not source:
         raise SystemExit(prompting.NO_SOURCE)
     rerun = prompting.command_line("fetch", FETCH, chosen)
+    build_command = prompting.follow_on("build", BUILD, args, chosen)
     console.detail(f"Source: {_source_label(source)}")
 
     from .fetch.plan import FetchOptions
@@ -305,6 +306,7 @@ def _fetch(args: argparse.Namespace) -> int:
             only_steps=tuple(chosen["step"]),
         ),
         _paths(chosen),
+        build_command,
     )
     if halted:
         console.blank()
@@ -319,6 +321,9 @@ def _build(args: argparse.Namespace) -> int:
     chosen = resolve(BUILD, args)
     from .build.runner import BuildOptions, run
 
+    data_dir = next(option for option in BUILD if option.name == "data_dir")
+    serve_command = prompting.follow_on("serve", (data_dir,), args, chosen)
+    export_command = prompting.follow_on("export", (data_dir,), args, chosen, tail="site")
     unusable = run(
         BuildOptions(
             mafft=chosen["mafft"],
@@ -328,6 +333,8 @@ def _build(args: argparse.Namespace) -> int:
             only_steps=tuple(chosen["step"]),
         ),
         _paths(chosen),
+        serve_command,
+        export_command,
     )
     return 1 if unusable else 0
 
