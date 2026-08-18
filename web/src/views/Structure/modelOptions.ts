@@ -16,7 +16,7 @@ export interface ModelOption {
   source: ModelSource
 }
 
-/** Return whether the model and topology figure use the same residue numbering. */
+// Return whether the model and topology figure use the same residue numbering.
 export const indexesFigure = (source: ModelSource | null | undefined) =>
   source?.kind === "afdb" && source.canonical
 

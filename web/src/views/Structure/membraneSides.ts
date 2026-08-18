@@ -45,7 +45,7 @@ const FALLBACK_LABELS: Record<Side, string> = {
   outside: "Non-cytoplasmic side",
 }
 
-/** Trim a compartment name to what the figure's left gutter can hold. */
+// Trim a compartment name to what the figure's left gutter can hold.
 export function laneLabel(label: string): string {
   const short = label
     .replace(/^Mitochondrial /, "")
@@ -67,7 +67,7 @@ export interface MembraneFaces {
   membrane: string | null
 }
 
-/** Resolve the two faces from the compartments this protein's own annotation names. */
+// Resolve the two faces from the compartments this protein's own annotation names.
 export function membraneFaces(domains: ProteinFeature[]): MembraneFaces {
   const present = new Set<Compartment>()
   for (const domain of domains) {

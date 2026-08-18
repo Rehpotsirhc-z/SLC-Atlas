@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Draw coverage tracks on a canvas */
+// Draw coverage tracks on a canvas
 
 import type { CoverageArrays } from "@/api/bbi"
 import { COVERAGE_RECORDS_PER_PX } from "./constants"
@@ -17,7 +17,7 @@ export interface CoverageInk {
   grid: string
 }
 
-/** First interval that could touch the view, so a wide slice is not walked end to end. */
+// First interval that could touch the view, so a wide slice is not walked end to end.
 function firstFrom(starts: Int32Array, ends: Int32Array, base: number): number {
   let lo = 0
   let hi = starts.length
@@ -29,7 +29,7 @@ function firstFrom(starts: Int32Array, ends: Int32Array, base: number): number {
   return lo
 }
 
-/** First interval starting at or after a base, which is one past the last one in view. */
+// First interval starting at or after a base, which is one past the last one in view.
 function firstAfter(starts: Int32Array, base: number): number {
   let lo = 0
   let hi = starts.length
@@ -41,11 +41,7 @@ function firstAfter(starts: Int32Array, base: number): number {
   return lo
 }
 
-/**
- * The records to draw a view from, at whatever stride keeps the walk near the width of the
- * lane. A view holding a hundred records to the pixel is drawn from a merged copy of them,
- * which gives every column the same peak for a fraction of the walk.
- */
+// Choose a summary level that keeps the record count proportional to the lane width
 function seriesFor(data: CoverageArrays, view: Viewport, width: number): CoverageArrays {
   const seen = firstAfter(data.starts, view.end) - firstFrom(data.starts, data.ends, view.start)
   const budget = Math.max(width, 1) * COVERAGE_RECORDS_PER_PX
@@ -53,10 +49,7 @@ function seriesFor(data: CoverageArrays, view: Viewport, width: number): Coverag
   return coverageAtStride(data, 2 ** Math.ceil(Math.log2(seen / budget)))
 }
 
-/**
- * Tallest value per pixel column. The buffer is supplied by the caller and reused across
- * frames, because a drag allocates this once per lane per frame otherwise.
- */
+// Reuse the caller's buffer to avoid allocating once per lane on every drag frame
 export function columnPeaks(out: Float32Array, data: CoverageArrays, scale: Scale): number {
   out.fill(0)
   const width = out.length
@@ -79,7 +72,7 @@ export function columnPeaks(out: Float32Array, data: CoverageArrays, scale: Scal
   return peak
 }
 
-/** The tallest the track stands anywhere in a view, at full resolution. */
+// Highest full-resolution score in the viewport
 export function peakInView(data: CoverageArrays, view: Viewport): number {
   const { starts, ends, scores } = data
   let peak = 0
@@ -90,14 +83,13 @@ export function peakInView(data: CoverageArrays, view: Viewport): number {
   return peak
 }
 
-/** The value the track carries at one base, or null where it carries none. */
 export interface Bin {
   start: number
   end: number
   value: number
 }
 
-/** Return the record covering a base, or null where no interval was recorded. */
+// Return the record covering a base, or null where no interval was recorded.
 export function binAt(data: CoverageArrays, base: number): Bin | null {
   const { starts, ends, scores } = data
   const index = firstFrom(starts, ends, base)
@@ -105,11 +97,7 @@ export function binAt(data: CoverageArrays, base: number): Bin | null {
   return { start: starts[index], end: ends[index], value: scores[index] }
 }
 
-/**
- * The outline of the columns, as one path. A vertex is only put down where the height changes,
- * since a lane is mostly flat and mostly empty: writing two of them per pixel is most of what
- * a stack of two dozen lanes costs to draw.
- */
+// Add vertices only where column height changes to keep mostly empty paths small
 function fillColumns(
   ctx: CanvasRenderingContext2D,
   peaks: Float32Array,

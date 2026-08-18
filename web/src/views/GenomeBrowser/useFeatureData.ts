@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Load gene models and GWAS variants for the current genomic block. */
+// Load gene models and GWAS variants for the current genomic block.
 
 import { useMemo, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
@@ -28,7 +28,7 @@ const NO_VARIANTS = EMPTY_VARIANTS
 export interface GeneModels {
   transcripts: TranscriptModel[]
   loading: boolean
-  /** No models are available in the loaded block */
+  // No models are available in the loaded block
   empty: boolean
 }
 

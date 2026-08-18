@@ -12,10 +12,8 @@ export interface ConfidenceBar {
   score: number
 }
 
-/**
- * AlphaFold indexes pLDDT by its model's own sequence, so an array that is not exactly as
- * long as the residue axis cannot be aligned to it and is dropped rather than stretched.
- */
+// AlphaFold indexes pLDDT by its model's own sequence, so an array that is not exactly as
+// long as the residue axis cannot be aligned to it and is dropped rather than stretched.
 export function confidenceBars(plddt: number[] | null, length: number): ConfidenceBar[] {
   if (!plddt?.length || plddt.length !== length) return []
 

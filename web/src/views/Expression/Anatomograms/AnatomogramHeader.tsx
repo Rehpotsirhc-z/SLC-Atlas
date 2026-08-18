@@ -13,7 +13,7 @@ interface Props {
   onPickSex: (sex: "female" | "male") => void
   onPickBrain: () => void
   actions: ReactNode
-  /** Drag props when the header doubles as a floating window's grab area */
+  // Drag props when the header doubles as a floating window's grab area
   dragProps?: {
     onMouseDown?: (e: React.MouseEvent) => void
     onTouchStart?: (e: React.TouchEvent) => void

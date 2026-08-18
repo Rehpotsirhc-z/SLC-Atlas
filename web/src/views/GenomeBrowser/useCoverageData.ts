@@ -2,13 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Read visible coverage from bigWigs in reusable blocks.
- *
- * Blocks keep nearby pans in memory, while resolution remains part of each query key. Visible
- * lanes are prioritized, and previous results remain on screen until replacements arrive. At
- * wide views, tracks use only summary resolutions verified by the build pipeline.
- */
+// Read visible coverage from bigWigs in reusable blocks.
+//
+// Blocks keep nearby pans in memory, while resolution remains part of each query key. Visible
+// lanes are prioritized, and previous results remain on screen until replacements arrive. At
+// wide views, tracks use only summary resolutions verified by the build pipeline.
 
 import { useMemo, useRef } from "react"
 import { useQueries } from "@tanstack/react-query"
@@ -34,7 +32,7 @@ export interface LaneData {
   minus: CoverageArrays | null
   loading: boolean
   failed: boolean
-  /** The track has no data on this chromosome at all, which is not the same as a flat lane */
+  // The track has no data on this chromosome at all, which is not the same as a flat lane
   absent: boolean
 }
 
@@ -80,7 +78,7 @@ export function coverageBlock(
   return { start, end: Math.round(start + size) }
 }
 
-/** Keep the current block until the view moves outside it. */
+// Keep the current block until the view moves outside it.
 export function useCoverageBlock(
   view: Viewport,
   chrom: string | undefined,
@@ -107,11 +105,11 @@ interface Request {
   trackId: string
   strand: "plus" | "minus" | null
   url: string
-  /** Bases a summary record should stand for, or 0 to read every stored record */
+  // Bases a summary record should stand for, or 0 to read every stored record
   step: number
 }
 
-/** Return a stable power-of-two summary resolution no coarser than one screen column. */
+// Return a stable power-of-two summary resolution no coarser than one screen column.
 export function summaryStep(view: Viewport, width: number): number {
   const perColumn = (view.end - view.start) / Math.max(width, 1)
   return 2 ** Math.floor(Math.log2(Math.max(perColumn, 1)))

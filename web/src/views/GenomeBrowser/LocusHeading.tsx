@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Display the current genomic location */
+// Display the current genomic location
 
 import { memo, useEffect, useRef } from "react"
 import { Box, Typography, useTheme } from "@mui/material"

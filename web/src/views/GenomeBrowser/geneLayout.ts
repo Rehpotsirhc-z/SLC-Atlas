@@ -104,7 +104,7 @@ export interface ViewCounts {
   hidden: number
 }
 
-/** Count visible and omitted models in the current viewport. */
+// Count visible and omitted models in the current viewport.
 export function countInView(layout: TrackLayout<Spanning>, view: Viewport): ViewCounts {
   let deepest = -1
   let drawn = 0

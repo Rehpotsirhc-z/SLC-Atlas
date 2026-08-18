@@ -14,7 +14,7 @@ function residueOf(loci: Loci): number | null {
   return location ? StructureProperties.residue.label_seq_id(location) : null
 }
 
-/** Report the residue under the pointer, so the figure can light the chain it belongs to. */
+// Report the residue under the pointer, so the figure can light the chain it belongs to.
 export function subscribeHover(
   plugin: PluginContext,
   onHover: (residue: number | null) => void,

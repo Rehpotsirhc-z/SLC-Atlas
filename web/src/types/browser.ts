@@ -27,7 +27,7 @@ export interface CoverageTrack {
   minus_url: string | null
   bin: number
   bytes: number
-  /** Bases per column past which this track's own summaries may be drawn, 0 where they may not be */
+  // Bases per column past which this track's own summaries may be drawn, 0 where they may not be
   reduction: number
   chroms: string[]
 }
@@ -101,7 +101,7 @@ export interface Region {
   clipped: boolean
 }
 
-/** One bigBed row: where it is, and one tab-separated string of everything else */
+// One bigBed row: where it is, and one tab-separated string of everything else
 export interface RawFeature {
   start: number
   end: number

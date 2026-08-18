@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Render shared browser tooltips */
+// Render shared browser tooltips
 
 import type { ReactNode } from "react"
 import { Typography, useTheme } from "@mui/material"
@@ -42,6 +42,6 @@ export default function BrowserTooltip({ x, y, children }: Props) {
   )
 }
 
-/** Strand spelled out, because a bare + or - after a middle dot reads as punctuation. */
+// Strand spelled out, because a bare + or - after a middle dot reads as punctuation.
 export const strandLabel = (strand: string) =>
   strand === "-" ? "reverse strand" : strand === "+" ? "forward strand" : "strand unknown"

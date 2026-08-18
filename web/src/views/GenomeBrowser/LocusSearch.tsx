@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Search for a gene or genomic coordinate */
+// Search for a gene or genomic coordinate
 
 import { useCallback, useMemo, useState } from "react"
 import SearchIcon from "@mui/icons-material/Search"
@@ -26,12 +26,10 @@ export interface Locus {
 
 const digits = (value: string) => Number(value.replace(/,/g, ""))
 
-/**
- * Parse a genomic coordinate from user input.
- *
- * Input uses one-based inclusive coordinates. The browser uses zero-based, half-open
- * coordinates, so only the start changes.
- */
+// Parse a genomic coordinate from user input.
+//
+// Input uses one-based inclusive coordinates. The browser uses zero-based, half-open
+// coordinates, so only the start changes.
 export function parseLocus(text: string, span: number): Locus | null {
   const trimmed = text.trim()
   const range = LOCUS.exec(trimmed)

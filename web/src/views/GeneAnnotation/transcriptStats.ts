@@ -17,7 +17,7 @@ export function sortTranscripts(transcripts: Transcript[], key: TranscriptSortKe
   })
 }
 
-/** Biotype counts, most common first */
+// Biotype counts, most common first
 export function buildTypeCounts(transcripts: Transcript[]): [string, number][] {
   const counts = new Map<string, number>()
   for (const t of transcripts) counts.set(t.type, (counts.get(t.type) ?? 0) + 1)

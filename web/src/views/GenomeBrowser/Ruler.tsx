@@ -4,8 +4,14 @@
 
 import { memo, useCallback, useMemo } from "react"
 import { Box, useTheme } from "@mui/material"
-import { CANVAS_FONT_PX, EDGE_PAD, RULER_H } from "./constants"
-import { ticksFor, type Scale, type Viewport } from "./scale"
+import {
+  CANVAS_FONT_PX,
+  EDGE_PAD,
+  RULER_H,
+  RULER_LABEL_GAP_PX,
+  RULER_TICK_GAP_PX,
+} from "./constants"
+import { rulerTicks, type Scale, type Viewport } from "./scale"
 import { useLaneCanvas } from "./useLaneCanvas"
 import type { Painter } from "./useBrowserView"
 
@@ -15,9 +21,6 @@ interface Props {
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
 }
-
-// Enough room that two coordinate labels never touch
-const TICK_GAP_PX = 92
 
 function Ruler({ width, gutter, subscribe, liveView }: Props) {
   const { palette, custom } = useTheme()
@@ -38,6 +41,7 @@ function Ruler({ width, gutter, subscribe, liveView }: Props) {
       ctx.fillStyle = ink.text
       ctx.font = ink.font
       ctx.textBaseline = "alphabetic"
+      ctx.textAlign = "center"
       ctx.lineWidth = 1
 
       const baseline = RULER_H - 0.5
@@ -46,15 +50,19 @@ function Ruler({ width, gutter, subscribe, liveView }: Props) {
       ctx.lineTo(scale.width, baseline)
       ctx.stroke()
 
-      for (const tick of ticksFor(scale, TICK_GAP_PX)) {
+      const ticks = rulerTicks(
+        scale,
+        RULER_TICK_GAP_PX,
+        RULER_LABEL_GAP_PX,
+        (label) => ctx.measureText(label).width,
+      )
+      for (const tick of ticks) {
         const x = Math.round(tick.x) + 0.5
         ctx.beginPath()
         ctx.moveTo(x, RULER_H - 7)
         ctx.lineTo(x, RULER_H)
         ctx.stroke()
-        // The first and last labels are pulled inside so they are not clipped by the edge
-        ctx.textAlign = tick.x < 30 ? "left" : tick.x > scale.width - 30 ? "right" : "center"
-        ctx.fillText(tick.label, Math.min(Math.max(tick.x, 0), scale.width), RULER_H - 12)
+        if (tick.showLabel) ctx.fillText(tick.label, tick.labelX, RULER_H - 12)
       }
     },
     [ink],

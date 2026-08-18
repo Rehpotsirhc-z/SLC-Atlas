@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Translate between track and Ensembl chromosome names */
+// Translate between track and Ensembl chromosome names
 
 import type { Chrom } from "@/types/browser"
 
-/** Fold the spellings of one chromosome onto a single key. */
+// Fold the spellings of one chromosome onto a single key.
 export function normalizeChrom(name: string): string {
   const bare = name.trim().toLowerCase().replace(/^chr/, "")
   if (bare === "mt" || bare === "mito" || bare === "mtdna") return "m"
@@ -14,9 +14,9 @@ export function normalizeChrom(name: string): string {
 }
 
 export interface ChromNames {
-  /** Whatever this dataset's tracks call it, or null when it has no such chromosome */
+  // Name used by track files, or null if the chromosome is unavailable
   track: (name: string) => string | null
-  /** What the gene table calls it */
+  // Name used by gene data
   ensembl: (name: string) => string | null
 }
 

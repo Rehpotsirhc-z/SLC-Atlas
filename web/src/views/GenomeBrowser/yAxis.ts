@@ -14,7 +14,7 @@ function stepFor(max: number, count: number): number {
   return rungs.find((step) => Math.floor(max / step) <= count) ?? rungs[rungs.length - 1]
 }
 
-/** Format a coverage value for compact labels. */
+// Format a coverage value for compact labels.
 export function formatSignal(value: number): string {
   const size = Math.abs(value)
   if (size >= 1000) return value.toExponential(1)
@@ -24,7 +24,7 @@ export function formatSignal(value: number): string {
   return value.toFixed(2)
 }
 
-/** Return sparse, rounded y-axis ticks in ascending order. */
+// Return sparse, rounded y-axis ticks in ascending order.
 export function yTicks(max: number, reach: number): number[] {
   if (!(max > 0) || !Number.isFinite(max) || !(reach > 0)) return []
   const allowed = Math.min(Math.max(Math.floor(reach / Y_TICK_GAP_PX), 1), Y_TICK_MAX)
@@ -40,13 +40,11 @@ export interface AxisMark {
   pinned: boolean
 }
 
-/** Merge automatic ticks with fixed marks without overlapping labels. */
+// Merge automatic ticks with fixed marks without overlapping labels.
 export function axisMarks(max: number, reach: number, pinned: readonly number[] = []): AxisMark[] {
   if (!(max > 0) || !(reach > 0)) return []
   const px = (value: number) => (value / max) * reach
-  const held = pinned.filter(
-    (value) => value > 0 && value <= max && px(value) >= AXIS_LABEL_GAP_PX,
-  )
+  const held = pinned.filter((value) => value > 0 && value <= max && px(value) >= AXIS_LABEL_GAP_PX)
   const ticks = yTicks(max, reach).filter((value) =>
     held.every((mark) => Math.abs(px(value) - px(mark)) >= AXIS_LABEL_GAP_PX),
   )

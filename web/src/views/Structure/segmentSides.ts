@@ -49,13 +49,11 @@ export const isOrientingEvidence = (f: ProteinFeature) => NON_CYTOPLASMIC.has(f.
 const across = (segment: MembraneSegment, side: Side) =>
   segment.kind === "transmembrane" ? opposite(side) : side
 
-/**
- * Assign a face to every stretch of chain between the membrane segments. A stretch that
- * contains an annotated topological domain takes its face from it; the rest are filled in
- * from the nearest annotated neighbor, crossing the segments in between. Where two
- * annotations cannot both be satisfied by that walk the stretch between them is flagged
- * rather than silently redrawn.
- */
+// Assign a face to every stretch of chain between the membrane segments. A stretch that
+// contains an annotated topological domain takes its face from it; the rest are filled in
+// from the nearest annotated neighbor, crossing the segments in between. Where two
+// annotations cannot both be satisfied by that walk the stretch between them is flagged
+// rather than silently redrawn.
 export function resolveChainSides(
   segments: MembraneSegment[],
   domains: ProteinFeature[],

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Export the genome browser as SVG */
+// Export the genome browser as SVG
 
 import type { CoverageArrays } from "@/api/bbi"
 import { monoFontFamily, svgSansFontFamily } from "@/theme/fonts"
@@ -22,6 +22,8 @@ import {
   LANE_GAP,
   MINUS_ALPHA,
   RULER_H,
+  RULER_LABEL_GAP_PX,
+  RULER_TICK_GAP_PX,
   UTR_H,
   Y_HEADROOM,
 } from "./constants"
@@ -29,14 +31,13 @@ import { columnPeaks } from "./drawCoverage"
 import { arrowHead } from "./drawGenes"
 import { firstFrom, GWAS_PLOT_TOP, gwasCeiling, SIGNIFICANCE_Y } from "./drawGwas"
 import { countInView, type GeneSpan, type TrackLayout } from "./geneLayout"
-import { scaleFor, ticksFor, type Viewport } from "./scale"
+import { rulerTicks, scaleFor, type Viewport } from "./scale"
 import { axisMarks, formatSignal, yTicks } from "./yAxis"
 
 const MARGIN = 20
 const LABEL_W = 168
 const GUTTER = LABEL_W + AXIS_W
 export const FIGURE_FIXED_W = 980
-const TICK_GAP_PX = 92
 const TITLE_PX = 16
 const LABEL_PX = 12
 const NAME_PX = 13
@@ -249,11 +250,18 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       y,
       RULER_H,
       `<line x1="0" y1="${RULER_H - 0.5}" x2="${PLOT_W}" y2="${RULER_H - 0.5}" stroke="${input.ink.axis}"/>` +
-        ticksFor(scale, TICK_GAP_PX)
+        rulerTicks(
+          scale,
+          RULER_TICK_GAP_PX,
+          RULER_LABEL_GAP_PX,
+          (label) => label.length * LABEL_PX * 0.6,
+        )
           .map(
             (tick) =>
               `<line x1="${tick.x.toFixed(1)}" y1="${RULER_H - 7}" x2="${tick.x.toFixed(1)}" y2="${RULER_H}" stroke="${input.ink.axis}"/>` +
-              `<text x="${tick.x.toFixed(1)}" y="${RULER_H - 12}" text-anchor="middle" font-size="${LABEL_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(tick.label)}</text>`,
+              (tick.showLabel
+                ? `<text x="${tick.labelX.toFixed(1)}" y="${RULER_H - 12}" text-anchor="middle" font-size="${LABEL_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(tick.label)}</text>`
+                : ""),
           )
           .join(""),
     ),

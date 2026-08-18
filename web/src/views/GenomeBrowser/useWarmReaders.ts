@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Warm visible track indexes at the lowest read priority. */
+// Warm visible track indexes at the lowest read priority.
 
 import { useEffect } from "react"
 import { gwasUrl, modelsUrl, trackUrl, warmCoverage, warmFeatures } from "@/api/bbi"

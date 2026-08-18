@@ -5,9 +5,9 @@
 export interface RouteMeta {
   path: string
   label: string
-  /** Whether the floating gene-info popup may show on this route */
+  // Whether the floating gene-info popup may show on this route
   popup?: boolean
-  /** Capability this route needs; the nav hides it when the dataset lacks that data */
+  // Capability this route needs; the nav hides it when the dataset lacks that data
   capability?: string
 }
 

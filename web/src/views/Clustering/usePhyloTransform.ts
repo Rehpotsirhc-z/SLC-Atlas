@@ -19,7 +19,7 @@ const MAX_ZOOM_FACTOR = 80
 const FIT_MARGIN = 0.92
 const DRAG_SLOP_PX = 3
 
-/** What the pointer gesture did, so the caller knows whether to hover-test */
+// Completed gesture type, used to decide whether pointer-up should trigger a hover test
 export type GesturePhase = "pinch" | "pan" | "idle"
 
 interface Options {
@@ -154,7 +154,7 @@ export function usePhyloTransform({ isRadial, layoutData, size, svgRef, containe
     [svgRef],
   )
 
-  /** Returns true when the pointer-up should be treated as a click-select */
+  // Returns true when the pointer-up should be treated as a click-select
   const endGesture = useCallback(
     (e: React.PointerEvent): boolean => {
       if (isRadial) {

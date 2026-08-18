@@ -2,13 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Turning the rows of a bigBed into the shapes the Genome Browser draws.
- *
- * A bigBed row is its span and one tab-separated string of everything else, in the order
- * `pipeline/lib/bigbed.py` wrote it. The two sides are only ever changed together, so the
- * field order is named here rather than counted out at each use.
- */
+// The bigBed field order must match `pipeline/lib/bigbed.py`
 
 import type { Exon, RawFeature, TranscriptModel } from "@/types/browser"
 

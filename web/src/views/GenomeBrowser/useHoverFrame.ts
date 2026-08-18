@@ -2,17 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Read the pointer no more than once a frame */
+// Read the pointer no more than once a frame
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-/**
- * Pointer events can arrive faster than the screen redraws. Process only the last event in each
- * frame.
- *
- * `read` is called with the event's own coordinates rather than the event, a pointer event
- * being recycled by the time the frame runs.
- */
+// Pointer events can arrive faster than the screen redraws. Process only the last event in each
+// frame.
+//
+// Capture coordinates immediately so the frame callback does not retain the event
 export function useHoverFrame<T>(
   read: (clientX: number, clientY: number) => T | null,
   same: (a: T | null, b: T | null) => boolean,

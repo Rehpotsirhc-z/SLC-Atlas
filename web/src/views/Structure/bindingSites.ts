@@ -50,7 +50,7 @@ export const clipSpans = (spans: ResidueSpan[], from: number, to: number): Resid
 export const spansOverlap = (spans: ResidueSpan[], from: number, to: number) =>
   spans.some((s) => s.end >= from && s.start <= to)
 
-/** Sort and coalesce, so touching or overlapping intervals become one. */
+// Sort and coalesce, so touching or overlapping intervals become one.
 export function mergeSpans(spans: ResidueSpan[]): ResidueSpan[] {
   const sorted = [...spans].sort((a, b) => a.start - b.start || a.end - b.end)
   const merged: ResidueSpan[] = []

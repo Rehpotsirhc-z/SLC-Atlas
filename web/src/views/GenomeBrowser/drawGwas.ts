@@ -2,12 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * The GWAS lane: one mark per variant at its own significance, colored by which way the
- * effect goes. A p-value that underflowed to zero arrives as a null and is drawn in a band
- * above the scale, since placing it at the largest float the language has would stretch the
- * axis until every real variant sat on the floor.
- */
+// Null significance values represent p-values that underflowed to zero and are drawn above the
+// scale so they do not flatten the remaining variants
 
 import type { VariantBlock } from "@/api/bbi"
 import { GWAS_POINT_R, GWAS_SIGNIFICANCE_P } from "./constants"
@@ -38,11 +34,7 @@ export interface GwasFrame {
   showSignificance: boolean
 }
 
-/**
- * The first variant at or after a position. The points are held in position order, so a study
- * covering a whole chromosome is still read from where the view starts rather than from its
- * first variant.
- */
+// Find the first visible variant without scanning from the start of a chromosome-wide study
 export function firstFrom(block: VariantBlock, base: number): number {
   const positions = block.positions
   let lo = 0
@@ -55,7 +47,7 @@ export function firstFrom(block: VariantBlock, base: number): number {
   return lo
 }
 
-/** Height the axis needs, kept at the significance line so the rule is always meaningful. */
+// Height the axis needs, kept at the significance line so the rule is always meaningful.
 export function gwasCeiling(block: VariantBlock, from: number, to: number): number {
   const { positions, values } = block
   let peak = 0

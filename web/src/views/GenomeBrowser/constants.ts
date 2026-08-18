@@ -22,6 +22,11 @@ export const RULER_H = 38
 export const LANE_GAP = 7
 export const GROUP_GAP = 8
 
+// Ticks sit at least this far apart, enough that two centered coordinate labels never touch
+export const RULER_TICK_GAP_PX = 92
+// An edge label pulled inside the plot is dropped rather than drawn closer than this to its neighbor
+export const RULER_LABEL_GAP_PX = 6
+
 export const LANE_HEIGHT_DEFAULT = 64
 export const LANE_HEIGHT_MIN = 32
 export const LANE_HEIGHT_MAX = 160

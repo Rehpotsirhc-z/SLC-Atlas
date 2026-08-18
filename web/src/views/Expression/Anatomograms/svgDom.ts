@@ -46,7 +46,7 @@ export function shapeKey(el: SVGElement): string {
   return el.id
 }
 
-/** Smallest hotspot under the cursor, so nested organs win over the body outline */
+// Smallest hotspot under the cursor, so nested organs win over the body outline
 export function tissueAt(wrap: HTMLElement, clientX: number, clientY: number): string | null {
   let best: string | null = null
   let bestArea = Infinity

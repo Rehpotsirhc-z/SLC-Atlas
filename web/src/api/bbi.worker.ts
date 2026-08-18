@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Read bigWig coverage and bigBed features outside the main thread. */
+// Read bigWig coverage and bigBed features outside the main thread.
 
 import { BigBed, BigWig } from "@gmod/bbi"
 
@@ -13,7 +13,7 @@ interface ReadRequest {
   chrom: string
   start: number
   end: number
-  /** Set to read the file's own summaries at this many bases a column instead of every record */
+  // Summary resolution in bases; omit to read every record
   basesPerSpan?: number
 }
 
@@ -40,7 +40,7 @@ interface BigWigFeature {
   start: number
   end: number
   score?: number
-  /** A summary record carries the peak of everything it stands for */
+  // Peak score represented by a summary record
   maxScore?: number
 }
 
@@ -60,7 +60,7 @@ interface BedFeature {
   rest?: string
 }
 
-/** What crosses back for a feature: its span, and one string of everything else */
+// What crosses back for a feature: its span, and one string of everything else
 interface RawFeature {
   start: number
   end: number
@@ -77,7 +77,8 @@ function open(url: string, kind: ReadRequest["kind"]) {
   let held = readers.get(url)
   if (!held) {
     held = (kind === "features" ? new BigBed({ url }) : new BigWig({ url })) as unknown as
-      BigWigReader | BigBedReader
+      | BigWigReader
+      | BigBedReader
     readers.set(url, held)
   }
   return held

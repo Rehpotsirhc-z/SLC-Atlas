@@ -13,7 +13,7 @@ import { VirtualListbox } from "@/components/autocomplete/VirtualListbox"
 
 interface SearchBarProps {
   genes: Gene[]
-  /** Only needed by views that filter their own content by the query text */
+  // Only needed by views that filter their own content by the query text
   value?: string
   onChange?: (value: string) => void
   onSelect?: (geneId: string) => void

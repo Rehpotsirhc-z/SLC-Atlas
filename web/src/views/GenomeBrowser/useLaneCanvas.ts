@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Paint a browser lane on a high-density canvas */
+// Paint a browser lane on a high-density canvas
 
 import { useEffect, useRef, useState } from "react"
 import { frameScale, type Scale, type Viewport } from "./scale"
@@ -11,11 +11,7 @@ import type { Painter } from "./useBrowserView"
 
 export type LanePaint = (ctx: CanvasRenderingContext2D, scale: Scale) => void
 
-/**
- * The display's pixel ratio, watched rather than read once. Dragging a window to a screen of a
- * different density changes it, and a backing store sized for the old one would then be
- * painted through the new one's transform.
- */
+// Track device-pixel-ratio changes when the window moves between displays
 function useDevicePixelRatio(): number {
   const [ratio, setRatio] = useState(() => window.devicePixelRatio || 1)
   useEffect(() => {

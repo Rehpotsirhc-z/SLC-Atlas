@@ -2,26 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * A lane's records read at the stride the zoom can show.
- *
- * A slice holds a run of records per window, and a view wide enough to hold several windows
- * holds more records than it has pixels, which a lane would otherwise walk end to end on every
- * frame of a drag. Records are merged in powers of two and the tallest of each group is kept,
- * so the peak a column is drawn at is the one the full records would have given it.
- *
- * A group is closed wherever the records stop being contiguous, so it covers exactly what its
- * members covered. That is the whole discipline here: merging across a gap would let a lane
- * report signal over a stretch its track says nothing about, which is the one mistake this
- * view must not make, and it is why the file's own reduced views are not used.
- *
- * Levels are held against the records they were built from, so they are built once per read
- * and let go with it.
- */
+// Cache power-of-two summary levels so dense coverage remains cheap to draw while panning
+// Groups stop at gaps to avoid showing signal where the source track has no records
 
 import type { CoverageArrays } from "@/api/bbi"
 
-/** Walk the records in groups of `stride`, breaking wherever the track leaves a gap. */
+// Walk the records in groups of `stride`, breaking wherever the track leaves a gap.
 function eachGroup(
   data: CoverageArrays,
   stride: number,

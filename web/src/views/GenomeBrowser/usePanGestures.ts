@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Handle panning, zooming, and range selection */
+// Handle panning, zooming, and range selection
 
 import { useCallback, useEffect, useRef, type RefObject } from "react"
 import {
@@ -21,7 +21,7 @@ interface Options {
   plotRef: RefObject<HTMLElement | null>
   selectionRef: RefObject<HTMLDivElement | null>
   width: number
-  /** Where the plot starts, since the labels down the left are not part of it */
+  // Where the plot starts, since the labels down the left are not part of it
   gutter: number
   enabled: boolean
 }
@@ -32,7 +32,7 @@ interface Drag {
   from: Viewport
   ranging: boolean
   moved: boolean
-  /** Measured once: asking the layout where the plot is, every move, is asking it to settle */
+  // Cached to avoid layout reads on every pointer move
   left: number
 }
 

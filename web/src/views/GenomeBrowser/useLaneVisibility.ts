@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Which lanes of the stack are on screen */
+// Which lanes of the stack are on screen
 
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react"
 import { LANE_REVEAL_PX } from "./constants"
@@ -10,17 +10,13 @@ import { LANE_REVEAL_PX } from "./constants"
 export type LaneWatch = (el: Element, onVisible: (visible: boolean) => void) => () => void
 
 export interface LaneVisibility {
-  /** Register a lane's canvas under a name, so what is on screen can be asked for by it */
+  // Register a lane canvas under its visibility key
   watch: (el: Element, key: string, onVisible: (visible: boolean) => void) => () => void
-  /** Whether a lane is on screen, which is what decides whose bytes are read first */
+  // Whether a lane is on screen
   isVisible: (key: string) => boolean
 }
 
-/**
- * Two dozen lanes scroll inside the frame and about eight are on screen, but a move repaints all
- * of them, so a lane off the frame skips the frame and catches up on its way back. One observer
- * for the stack rather than one per lane, the frame being the root every one of them shares.
- */
+// Share one observer across the lane stack and skip repainting offscreen lanes
 export function useLaneVisibility(frameRef: RefObject<HTMLElement | null>): LaneVisibility {
   const watchers = useRef(new Map<Element, { key: string; onVisible: (v: boolean) => void }>())
   const shown = useRef(new Set<string>())

@@ -17,7 +17,7 @@ interface Options {
   onFillWidth: (px: number) => void
 }
 
-/** Widens the rail so the figure fills the available height without scrolling */
+// Widens the rail so the figure fills the available height without scrolling
 export function useRailAutoWidth({ view, maxWidth, onAutoWidth, onFillWidth }: Options) {
   const rootRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)

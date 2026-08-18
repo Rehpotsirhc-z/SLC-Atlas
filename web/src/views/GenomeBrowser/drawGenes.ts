@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Draw transcript or gene models on a canvas */
+// Draw transcript or gene models on a canvas
 
 import type { TranscriptModel } from "@/types/browser"
 import {

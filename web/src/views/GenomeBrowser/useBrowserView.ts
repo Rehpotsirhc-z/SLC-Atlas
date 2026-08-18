@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** Keep gesture updates synchronized without rerendering every frame */
+// Keep gesture updates synchronized without rerendering every frame
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { VIEW_REST_MS, VIEW_SETTLE_MS } from "./constants"
@@ -11,23 +11,23 @@ import { clampView, zoomAbout, type Viewport } from "./scale"
 export type Painter = (view: Viewport) => void
 
 export interface BrowserView {
-  /** Where the view has settled, for readouts and anything derived */
+  // Last committed viewport
   view: Viewport
-  /** Where the view is right now, which during a drag is ahead of the state above */
+  // Current viewport, including uncommitted gesture updates
   liveView: () => Viewport
-  /** Whether the view is mid-gesture, for anything that should hold still until it stops */
+  // Whether a gesture is active
   moving: () => boolean
   bounds: Viewport
   subscribe: (paint: Painter) => () => void
-  /** Move without telling React, then repaint on the next frame */
+  // Update the live viewport and repaint without rerendering
   apply: (next: Viewport) => void
-  /** Publish where the view ended up, and call the movement over */
+  // Commit the live viewport and end the gesture
   commit: () => void
-  /** For a gesture that arrives as a burst of events and never says when it is done */
+  // Commit after a short pause between gesture events
   settle: () => void
-  /** For a gesture that announces its own end, like a button coming up */
+  // Commit when an explicit gesture ends
   release: () => void
-  /** Publish and come to rest at once, for a jump that has no gesture behind it */
+  // Commit an immediate jump
   goTo: (next: Viewport) => void
   panBy: (bases: number) => void
   zoomBy: (factor: number, atBase?: number) => void
@@ -83,14 +83,14 @@ export function useBrowserView(initial: Viewport, bounds: Viewport): BrowserView
     [schedule],
   )
 
-  /** Publish the live viewport to React and trigger any required data loading. */
+  // Publish the live viewport to React and trigger any required data loading.
   const publish = useCallback(() => {
     clearTimeout(pending.current)
     pending.current = 0
     setView((current) => (same(current, live.current) ? current : live.current))
   }, [])
 
-  /** Mark the movement complete after brief pauses used to continue the same gesture. */
+  // Mark the movement complete after brief pauses used to continue the same gesture.
   const rest = useCallback(() => {
     clearTimeout(settling.current)
     settling.current = window.setTimeout(() => {
