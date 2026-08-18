@@ -24,6 +24,7 @@ interface Options {
   // Where the plot starts, since the labels down the left are not part of it
   gutter: number
   enabled: boolean
+  onReset: () => void
 }
 
 interface Drag {
@@ -39,10 +40,20 @@ interface Drag {
 // A wheel that reports in lines or in pages says so, and its numbers mean something else
 const DELTA_TO_PX = [1, 16, 400]
 
-export function usePanGestures({ view, plotRef, selectionRef, width, gutter, enabled }: Options) {
+export function usePanGestures({
+  view,
+  plotRef,
+  selectionRef,
+  width,
+  gutter,
+  enabled,
+  onReset,
+}: Options) {
   const drag = useRef<Drag | null>(null)
   const viewRef = useRef(view)
   viewRef.current = view
+  const resetRef = useRef(onReset)
+  resetRef.current = onReset
 
   // Where the plot sits, measured once per burst of wheel events rather than per event: asking
   // the layout is asking it to settle, and a trackpad pinch arrives as a stream
@@ -191,7 +202,7 @@ export function usePanGestures({ view, plotRef, selectionRef, width, gutter, ena
         "=": () => current.zoomBy(ZOOM_STEP),
         "-": () => current.zoomBy(1 / ZOOM_STEP),
         _: () => current.zoomBy(1 / ZOOM_STEP),
-        "0": () => current.reset(),
+        "0": () => resetRef.current(),
       }
       const act = keys[event.key]
       if (!act) return

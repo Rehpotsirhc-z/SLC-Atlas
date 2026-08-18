@@ -162,6 +162,16 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     [browserGenes, setSelectedGeneId],
   )
 
+  const resetView = useCallback(() => {
+    const current = view.liveView()
+    if (current.start !== initial.start || current.end !== initial.end) {
+      view.reset()
+      return
+    }
+    setRegionGeneId(null)
+    setSelectedGeneId(null)
+  }, [view, initial, setSelectedGeneId])
+
   const goToLocus = useCallback(
     (locus: { chrom: string; start: number; end: number }) => {
       const track = names.track(locus.chrom)
@@ -204,6 +214,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   return {
     searchGenes: browserGenes,
     selectRegionGene,
+    resetView,
     selectedGeneId,
     setSelectedGeneId,
     region,

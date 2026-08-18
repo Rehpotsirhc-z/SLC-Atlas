@@ -70,6 +70,7 @@ export default function GenomeBrowser() {
     width: plotWidth,
     gutter,
     enabled: state.region != null && plotWidth > 0,
+    onReset: state.resetView,
   })
 
   const buildFigure = useCallback(
@@ -190,7 +191,7 @@ export default function GenomeBrowser() {
           onToggleSettings={state.toggleSettings}
           settingsRef={settingsRef}
           counterText=""
-          onResetView={state.view.reset}
+          onResetView={state.resetView}
           exportItems={exportItems}
           hasRegion={state.region != null}
         />
