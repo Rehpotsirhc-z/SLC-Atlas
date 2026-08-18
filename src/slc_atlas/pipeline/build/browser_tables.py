@@ -9,7 +9,7 @@ from pathlib import Path
 
 import polars as pl
 
-from ..lib import bed12, bigbed, windows
+from ..lib import bed12, bigbed, paths, windows
 from ..lib.reporting import report_missing
 from ..lib.text import natural_key
 
@@ -240,8 +240,6 @@ def _shared_reduction(held: int | None, found: int) -> int:
 
 def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
     """Combine coverage files into drawable tracks."""
-    from ..fetch.slice_coverage import track_filename
-
     tracks: dict[str, dict] = {}
     report_missing(
         "coverage lane",
@@ -253,7 +251,7 @@ def track_frame(rows: list[dict], coverage_dir: Path) -> pl.DataFrame:
             continue
         strand = (row.get("strand") or "").lower()
         local = row.get("local") == "yes"
-        name = track_filename(row["track_id"], strand)
+        name = paths.track_filename(row["track_id"], strand)
         present = local and (coverage_dir / name).is_file()
         track = tracks.setdefault(
             row["track_id"],

@@ -46,3 +46,7 @@ class PipelinePaths:
     @property
     def work(self) -> Path:
         return self.cache / "work"
+
+
+def track_filename(track_id: str, strand: str) -> str:
+    return f"{track_id}.{strand}.bw" if strand else f"{track_id}.bw"

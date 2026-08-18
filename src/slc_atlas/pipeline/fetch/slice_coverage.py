@@ -8,7 +8,7 @@ import csv
 import shutil
 from pathlib import Path
 
-from ..lib import bigwig, console, progress, windows
+from ..lib import bigwig, console, paths, progress, windows
 from ..lib.http import download
 from ..lib.reporting import count, report_missing
 from .fetch_coverage import resolve
@@ -16,10 +16,6 @@ from .fetch_coverage import resolve
 # The writer runs its own threads, so a few tracks at once fills the machine without
 # oversubscribing it
 WORKERS = 4
-
-
-def track_filename(track_id: str, strand: str) -> str:
-    return f"{track_id}.{strand}.bw" if strand else f"{track_id}.bw"
 
 
 def read_table(path: Path) -> list[dict]:
@@ -67,7 +63,7 @@ def slice_track(
     *,
     whole_genome: bool,
 ) -> str:
-    target = out_dir / track_filename(row["track_id"], row["strand"])
+    target = out_dir / paths.track_filename(row["track_id"], row["strand"])
     if target.exists():
         return f"kept {target.name}"
 
