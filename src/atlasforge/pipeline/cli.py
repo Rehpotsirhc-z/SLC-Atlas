@@ -98,12 +98,12 @@ FETCH = (
     Option(
         "download_predicted",
         "download AlphaFold models for local hosting",
-        prompt="Download the predicted models?",
+        prompt="Download the AlphaFold models?",
     ),
     Option(
         "download_experimental",
         "download every PDB entry for local hosting",
-        prompt="Download the experimental models?",
+        prompt="Download the PDB structures?",
     ),
     Option(
         "gene_models_file",
