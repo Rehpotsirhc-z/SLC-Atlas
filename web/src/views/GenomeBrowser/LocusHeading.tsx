@@ -32,7 +32,11 @@ function LocusHeading({ chrom, symbol, subscribe }: Props) {
   )
 
   return (
-    <Box sx={{ px: `${EDGE_PAD}px`, pt: 1.25, pb: 0.5 }}>
+    <Box
+      onPointerDown={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+      sx={{ px: `${EDGE_PAD}px`, pt: 1.25, pb: 0.5, userSelect: "text", cursor: "text" }}
+    >
       <Typography
         sx={{
           fontFamily: custom.monoFontFamily,

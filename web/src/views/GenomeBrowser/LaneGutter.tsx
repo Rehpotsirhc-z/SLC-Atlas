@@ -40,6 +40,8 @@ export default function LaneGutter({
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        userSelect: "text",
+        cursor: "text",
       }}
     >
       {group !== undefined && (

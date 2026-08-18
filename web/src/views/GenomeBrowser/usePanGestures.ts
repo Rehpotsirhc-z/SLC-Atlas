@@ -161,9 +161,11 @@ export function usePanGestures({
   const onDoubleClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       if (!enabled) return
+      const box = event.currentTarget.getBoundingClientRect()
+      if (event.clientX - box.left < gutter) return
       viewRef.current.zoomBy(ZOOM_STEP, baseAt(event.clientX))
     },
-    [baseAt, enabled],
+    [baseAt, enabled, gutter],
   )
 
   // Wheel has to be bound by hand: React listens passively, and a passive listener may not
