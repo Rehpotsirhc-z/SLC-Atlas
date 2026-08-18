@@ -12,6 +12,7 @@ import { esc } from "@/components/heatmap/figureSvg"
 import {
   AXIS_TICK_PX,
   AXIS_W,
+  CHEVRON_SPACING,
   EXON_H,
   GENE_ROW_H,
   GENE_TRACK_PAD,
@@ -34,12 +35,52 @@ import { axisMarks, formatSignal, yTicks } from "./yAxis"
 const MARGIN = 20
 const LABEL_W = 168
 const GUTTER = LABEL_W + AXIS_W
-const PLOT_W = 980
+export const FIGURE_FIXED_W = 980
 const TICK_GAP_PX = 92
 const TITLE_PX = 16
 const LABEL_PX = 12
-const SUB_PX = 10.5
+const NAME_PX = 13
+const GROUP_PX = 11
+const SUB_PX = 11.5
+const LABEL_LINE_H = 1.4
 const AXIS_LABEL_PX = 10
+
+interface LabelLine {
+  text: string
+  size: number
+  fill: string
+  mono?: boolean
+  caps?: boolean
+}
+
+// Build a strand-chevron path that does not overlap exons
+function chevronPath(
+  from: number,
+  to: number,
+  y: number,
+  forward: boolean,
+  origin: number,
+  exons: readonly { x: number; width: number }[],
+): string {
+  const reach = 3
+  let ei = 0
+  const segs: string[] = []
+  for (
+    let x = origin + Math.ceil((from - origin) / CHEVRON_SPACING) * CHEVRON_SPACING;
+    x < to;
+    x += CHEVRON_SPACING
+  ) {
+    if (x - reach < from) continue
+    while (ei < exons.length && exons[ei].x + exons[ei].width < x - reach) ei++
+    if (ei < exons.length && exons[ei].x <= x + reach) continue
+    const back = x - (forward ? reach : -reach)
+    const tip = x + (forward ? reach : -reach)
+    segs.push(
+      `M ${back.toFixed(1)} ${(y - reach).toFixed(1)} L ${tip.toFixed(1)} ${y.toFixed(1)} L ${back.toFixed(1)} ${(y + reach).toFixed(1)}`,
+    )
+  }
+  return segs.join(" ")
+}
 
 const svgMonoFontFamily = monoFontFamily.replace(/"/g, "&quot;")
 
@@ -54,6 +95,7 @@ export interface FigureLane {
 export interface FigureInk {
   text: string
   muted: string
+  primary: string
   axis: string
   zero: string
   plot: string
@@ -76,6 +118,7 @@ export interface FigureInput {
   showGwas: boolean
   showGrid: boolean
   showSignificance: boolean
+  plotWidth: number
   transcripts: TrackLayout<TranscriptModel> | null
   genes: TrackLayout<GeneSpan> | null
   colorOf: (biotype: string | null) => string
@@ -88,6 +131,7 @@ function gridMarks(
   reach: number,
   stranded: boolean,
   color: string,
+  plotW: number,
 ): string {
   return yTicks(max, reach)
     .map((value) => {
@@ -96,7 +140,7 @@ function gridMarks(
       return rows
         .map(
           (at) =>
-            `<line x1="0" y1="${at.toFixed(1)}" x2="${PLOT_W}" y2="${at.toFixed(1)}" stroke="${color}" stroke-opacity="0.25"/>`,
+            `<line x1="0" y1="${at.toFixed(1)}" x2="${plotW}" y2="${at.toFixed(1)}" stroke="${color}" stroke-opacity="0.25"/>`,
         )
         .join("")
     })
@@ -115,6 +159,7 @@ function areaPath(peaks: Float32Array, baseline: number, reach: number, max: num
 }
 
 export function buildBrowserFigureSvg(input: FigureInput): string {
+  const PLOT_W = Math.max(1, Math.round(input.plotWidth))
   const scale = scaleFor(input.view, PLOT_W)
   const plusBuffer = new Float32Array(PLOT_W)
   const minusBuffer = new Float32Array(PLOT_W)
@@ -123,24 +168,35 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
   let y = 0
   let clipSeq = 0
 
-  const label = (text: string, top: number, ...subs: string[]) =>
-    `<text x="${LABEL_W - 10}" y="${top + 12}" text-anchor="end" font-size="${LABEL_PX}" fill="${input.ink.text}">${esc(text)}</text>` +
-    subs
-      .map(
-        (sub, index) =>
-          `<text x="${LABEL_W - 10}" y="${top + 26 + index * 13}" text-anchor="end" font-size="${SUB_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(sub)}</text>`,
-      )
-      .join("")
-
-  const groupName = (name: string, top: number) =>
-    `<text x="${LABEL_W - 10}" y="${top - 3}" text-anchor="end" font-size="${SUB_PX}" letter-spacing="0.7" fill="${input.ink.muted}">${esc(name.toUpperCase())}</text>`
-
   const lane = (top: number, height: number, content: string) => {
     const id = `browser-clip-${clipSeq++}`
     clips.push(
       `<clipPath id="${id}"><rect x="0" y="0" width="${PLOT_W}" height="${height}"/></clipPath>`,
     )
     return `<g transform="translate(${GUTTER} ${top})" clip-path="url(#${id})">${content}</g>`
+  }
+
+  const gutterLabel = (lines: LabelLine[], top: number, height: number, center: boolean) => {
+    const total = lines.reduce((sum, line) => sum + line.size * LABEL_LINE_H, 0)
+    let cursor = center ? (height - total) / 2 : GENE_TRACK_PAD
+    const texts = lines
+      .map((line) => {
+        const baseline = cursor + line.size
+        cursor += line.size * LABEL_LINE_H
+        const text = line.caps ? line.text.toUpperCase() : line.text
+        return (
+          `<text x="0" y="${baseline.toFixed(1)}" font-size="${line.size}"` +
+          (line.caps ? ' letter-spacing="0.7"' : "") +
+          (line.mono ? ` font-family="${svgMonoFontFamily}"` : "") +
+          ` fill="${line.fill}">${esc(text)}</text>`
+        )
+      })
+      .join("")
+    const id = `browser-clip-${clipSeq++}`
+    clips.push(
+      `<clipPath id="${id}"><rect x="0" y="0" width="${LABEL_W}" height="${height}"/></clipPath>`,
+    )
+    return `<g transform="translate(0 ${top})" clip-path="url(#${id})">${texts}</g>`
   }
 
   const surface = (height: number) =>
@@ -224,15 +280,32 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
     const seen = Math.max(peakPlus, peakMinus)
     const ceiling = input.yMax ?? (seen > 0 ? seen * Y_HEADROOM : 1)
 
+    const laneLines: LabelLine[] = []
+    if (opensGroup)
+      laneLines.push({ text: openName, size: GROUP_PX, fill: input.ink.primary, caps: true })
+    laneLines.push({
+      text: item.track.label,
+      size: NAME_PX,
+      fill: item.absent ? input.ink.axis : input.ink.text,
+    })
+    if (!item.absent)
+      laneLines.push({
+        text: `peak signal ${formatSignal(seen)}`,
+        size: SUB_PX,
+        fill: input.ink.muted,
+        mono: true,
+      })
+
     body.push(
-      (opensGroup ? groupName(openName, y) : "") +
-        label(item.track.label, y, ...(item.absent ? [] : [`peak signal ${formatSignal(seen)}`])) +
+      gutterLabel(laneLines, y, height, true) +
         axis(y, height, ceiling, stranded) +
         lane(
           y,
           height,
           surface(height) +
-            (input.showGrid ? gridMarks(ceiling, baseline, reach, stranded, input.ink.axis) : "") +
+            (input.showGrid
+              ? gridMarks(ceiling, baseline, reach, stranded, input.ink.axis, PLOT_W)
+              : "") +
             `<path d="${areaPath(plusBuffer, baseline, reach, ceiling, 1)}" fill="${item.color}"/>` +
             (item.minus
               ? `<path d="${areaPath(minusBuffer, baseline, reach, ceiling, -1)}" fill="${item.color}" fill-opacity="${MINUS_ALPHA}"/>`
@@ -274,9 +347,13 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       input.showSignificance && SIGNIFICANCE_Y <= max
         ? `<line x1="0" y1="${toY(SIGNIFICANCE_Y).toFixed(1)}" x2="${PLOT_W}" y2="${toY(SIGNIFICANCE_Y).toFixed(1)}" stroke="${input.ink.significance}" stroke-dasharray="4 3"/>`
         : ""
+    const gwasLines: LabelLine[] = [
+      { text: "GWAS", size: GROUP_PX, fill: input.ink.primary, caps: true },
+      { text: input.study.trait, size: NAME_PX, fill: input.ink.text },
+      { text: "−log10(p)", size: SUB_PX, fill: input.ink.muted, mono: true },
+    ]
     body.push(
-      groupName("GWAS", y) +
-        label(input.study.trait, y, "−log10(p)") +
+      gutterLabel(gwasLines, y, GWAS_LANE_HEIGHT, true) +
         axis(
           y,
           GWAS_LANE_HEIGHT,
@@ -323,6 +400,16 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
         marks.push(
           `<line x1="${left.toFixed(1)}" y1="${cy}" x2="${right.toFixed(1)}" y2="${cy}" stroke="${color}"/>`,
         )
+        const exonBoxes = transcript.exons.map((exon) => scale.boxFor(exon.start, exon.end))
+        const chevrons = chevronPath(
+          Math.max(left, 0),
+          Math.min(right, PLOT_W),
+          cy,
+          transcript.strand !== "-",
+          left,
+          exonBoxes,
+        )
+        if (chevrons) marks.push(`<path d="${chevrons}" fill="none" stroke="${color}"/>`)
         for (const exon of transcript.exons) {
           const coding =
             transcript.cds_start !== null && transcript.cds_end !== null
@@ -350,7 +437,7 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       }
 
       const text = transcript ? transcript.gene_name || transcript.transcript_id : span!.label
-      // The same rule the canvas applies, so the file reads the way the page does
+      // Match the on-screen label placement
       const textLeft = left - 6 - text.length * LABEL_PX * 0.6
       if (textLeft > 0 && textLeft > (takenTo[row] ?? -Infinity) + 6) {
         marks.push(
@@ -360,9 +447,21 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       takenTo[row] = right
     }
     const kind = input.transcripts ? "transcripts" : "genes"
-    const subs = [`${counts.drawn} ${kind}`]
-    if (counts.hidden > 0) subs.push(`${counts.hidden} not rendered`)
-    body.push(label("Genes", y, ...subs) + lane(y, height, marks.join("")))
+    const geneLines: LabelLine[] = [{ text: "Genes", size: NAME_PX, fill: input.ink.text }]
+    geneLines.push({
+      text: `${counts.drawn} ${kind}`,
+      size: SUB_PX,
+      fill: input.ink.muted,
+      mono: true,
+    })
+    if (counts.hidden > 0)
+      geneLines.push({
+        text: `${counts.hidden} hidden`,
+        size: SUB_PX,
+        fill: input.ink.muted,
+        mono: true,
+      })
+    body.push(gutterLabel(geneLines, y, height, false) + lane(y, height, marks.join("")))
     y += height
   }
 
@@ -373,7 +472,7 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="${svgSansFontFamily}">` +
     `<defs>${clips.join("")}</defs>` +
     `<rect width="${width}" height="${height}" fill="${input.ink.background}"/>` +
-    `<text x="${MARGIN}" y="${titleBaseline}" font-size="${TITLE_PX}" font-family="${svgMonoFontFamily}" font-weight="600" fill="${input.ink.text}">${esc(input.title)}</text>` +
+    `<text x="${MARGIN}" y="${titleBaseline}" font-size="${TITLE_PX}" font-family="${svgMonoFontFamily}" font-weight="600" fill="${input.ink.primary}">${esc(input.title)}</text>` +
     `<g transform="translate(${MARGIN} ${titleBaseline + 16})">${body.join("")}</g>` +
     `</svg>`
   )

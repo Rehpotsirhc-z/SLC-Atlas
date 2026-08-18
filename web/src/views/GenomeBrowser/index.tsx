@@ -10,7 +10,7 @@ import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { biotypeColor } from "@/utils/biotypeColor"
 import { downloadName } from "@/utils/download"
-import { figureExportHandlers } from "@/utils/exportFigure"
+import { downloadPng, downloadSvg } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
 import BrowserSettings from "./BrowserSettings"
 import BrowserToolbar from "./BrowserToolbar"
@@ -20,7 +20,7 @@ import LaneGroup from "./LaneGroup"
 import LocusHeading, { locusText } from "./LocusHeading"
 import Ruler from "./Ruler"
 import TrackLane from "./TrackLane"
-import { buildBrowserFigureSvg, type FigureLane } from "./browserFigureSvg"
+import { buildBrowserFigureSvg, FIGURE_FIXED_W, type FigureLane } from "./browserFigureSvg"
 import {
   AXIS_W,
   EDGE_PAD,
@@ -36,10 +36,8 @@ import { useGenomeBrowserState } from "./useGenomeBrowserState"
 import { usePanGestures } from "./usePanGestures"
 import { useSpaceBelow } from "./useSpaceBelow"
 
-// Leave half a gutter between the settings button and its panel
 const SETTINGS_GAP = EDGE_PAD / 2
 
-// Keep the loading placeholder stable across renders
 const UNREAD: LaneData = {
   plus: EMPTY_COVERAGE,
   minus: null,
@@ -52,14 +50,11 @@ export default function GenomeBrowser() {
   const available = useCapability("browser")
   const { palette, custom } = useTheme()
   const isSmall = useMediaQuery(useTheme().breakpoints.down("sm"))
-  // Measure lane widths from the scroller and gestures from the full plot
   const [frameRef, { w: frameWidth }] = useElementSize<HTMLDivElement>()
-  // Measure the shared plot area independently of its children
   const [plotAreaRef, { h: plotAreaHeight }] = useElementSize<HTMLDivElement>()
   const plotRef = useRef<HTMLDivElement>(null)
   const selectionRef = useRef<HTMLDivElement>(null)
   const settingsRef = useRef<HTMLButtonElement>(null)
-  // Keep the settings panel within the browser card
   const cardRef = useRef<HTMLDivElement>(null)
   const gwasBlockRef = useRef<VariantBlock | null>(null)
 
@@ -77,60 +72,62 @@ export default function GenomeBrowser() {
     enabled: state.region != null && plotWidth > 0,
   })
 
-  const buildFigure = useCallback(() => {
-    const region = state.region
-    if (!region) return null
-    const lanes: FigureLane[] = state.tracks.map((track) => {
-      const lane = state.coverage.get(track.track_id)
-      return {
-        track,
-        color: state.colors.get(track.label) ?? palette.primary.main,
-        plus: lane?.plus ?? EMPTY_COVERAGE,
-        minus: lane?.minus ?? null,
-        absent: lane?.absent ?? UNREAD.absent,
-      }
-    })
-    const transcripts =
-      state.drawn === "transcripts"
-        ? layoutTranscripts(state.models.transcripts, state.modelGap, MAX_GENE_ROWS)
-        : null
-    const genes =
-      state.drawn === "genes"
-        ? layoutGenes(collapseToGenes(state.models.transcripts), state.modelGap, MAX_GENE_ROWS)
-        : null
-    return buildBrowserFigureSvg({
-      view: state.view.view,
-      chrom: region.chrom,
-      title: `${region.symbol ?? region.gene_id} · ${locusText(region.chrom, state.view.view)}`,
-      lanes,
-      laneHeight: state.prefs.laneHeight,
-      yMax: state.yMaxFor(),
-      study: state.prefs.showGwas ? (state.study ?? null) : null,
-      gwasBlock: gwasBlockRef.current ?? EMPTY_VARIANTS,
-      showGwas: state.prefs.showGwas,
-      showGrid: state.prefs.showGrid,
-      showSignificance: state.prefs.showSignificance,
-      transcripts,
-      genes,
-      colorOf: (biotype) => biotypeColor(biotype, palette.mode),
-      ink: {
-        text: palette.text.primary,
-        muted: palette.text.secondary,
-        axis: palette.text.disabled,
-        zero: palette.divider,
-        plot: custom.plotSurface,
-        background: palette.background.paper,
-        raised: palette.error.main,
-        lowered: palette.primary.main,
-        significance: palette.warning.main,
-        highlight: palette.secondary.main,
-      },
-    })
-  }, [state, palette, custom])
+  const buildFigure = useCallback(
+    (figureWidth: number) => {
+      const region = state.region
+      if (!region) return null
+      const lanes: FigureLane[] = state.tracks.map((track) => {
+        const lane = state.coverage.get(track.track_id)
+        return {
+          track,
+          color: state.colors.get(track.label) ?? palette.primary.main,
+          plus: lane?.plus ?? EMPTY_COVERAGE,
+          minus: lane?.minus ?? null,
+          absent: lane?.absent ?? UNREAD.absent,
+        }
+      })
+      const transcripts =
+        state.drawn === "transcripts"
+          ? layoutTranscripts(state.models.transcripts, state.modelGap, MAX_GENE_ROWS)
+          : null
+      const genes =
+        state.drawn === "genes"
+          ? layoutGenes(collapseToGenes(state.models.transcripts), state.modelGap, MAX_GENE_ROWS)
+          : null
+      return buildBrowserFigureSvg({
+        view: state.view.view,
+        chrom: region.chrom,
+        title: `${region.symbol ?? region.gene_id} · ${locusText(region.chrom, state.view.view)}`,
+        lanes,
+        laneHeight: state.prefs.laneHeight,
+        yMax: state.yMaxFor(),
+        study: state.prefs.showGwas ? (state.study ?? null) : null,
+        gwasBlock: gwasBlockRef.current ?? EMPTY_VARIANTS,
+        showGwas: state.prefs.showGwas,
+        showGrid: state.prefs.showGrid,
+        showSignificance: state.prefs.showSignificance,
+        plotWidth: figureWidth,
+        transcripts,
+        genes,
+        colorOf: (biotype) => biotypeColor(biotype, palette.mode),
+        ink: {
+          text: palette.text.primary,
+          muted: palette.text.secondary,
+          primary: palette.primary.main,
+          axis: palette.text.disabled,
+          zero: palette.divider,
+          plot: custom.plotSurface,
+          background: palette.background.paper,
+          raised: palette.error.main,
+          lowered: palette.primary.main,
+          significance: palette.warning.main,
+          highlight: palette.secondary.main,
+        },
+      })
+    },
+    [state, palette, custom],
+  )
 
-  const { exportSvg, exportPng } = useMemo(() => figureExportHandlers(buildFigure), [buildFigure])
-
-  // Fit the settings panel into the space below its button
   const settingsRoom = useSpaceBelow(
     settingsRef,
     cardRef,
@@ -142,13 +139,23 @@ export default function GenomeBrowser() {
     [settingsRoom],
   )
 
-  const exportItems = useMemo(
-    () => [
-      { label: "Genome browser SVG", onClick: () => exportSvg(downloadName("genome_browser.svg")) },
-      { label: "Genome browser PNG", onClick: () => exportPng(downloadName("genome_browser.png")) },
-    ],
-    [exportSvg, exportPng],
-  )
+  const exportItems = useMemo(() => {
+    const saveSvg = (width: number) => {
+      const svg = buildFigure(width)
+      if (svg) void downloadSvg(svg, downloadName("genome_browser.svg"))
+    }
+    const savePng = (width: number) => {
+      const svg = buildFigure(width)
+      if (svg) void downloadPng(svg, downloadName("genome_browser.png"))
+    }
+    const width = plotWidth || FIGURE_FIXED_W
+    return [
+      { label: "Genome browser SVG (current width)", onClick: () => saveSvg(width) },
+      { label: "Genome browser SVG (standard width)", onClick: () => saveSvg(FIGURE_FIXED_W) },
+      { label: "Genome browser PNG (current width)", onClick: () => savePng(width) },
+      { label: "Genome browser PNG (standard width)", onClick: () => savePng(FIGURE_FIXED_W) },
+    ]
+  }, [buildFigure, plotWidth])
 
   if (!available) {
     return (
@@ -204,7 +211,6 @@ export default function GenomeBrowser() {
                   flexDirection: "column",
                   outline: "none",
                   cursor: "grab",
-                  // A pan is not a text selection, and on touch it is not the browser's to claim
                   userSelect: "none",
                   touchAction: "pan-y",
                   "&:active": { cursor: "grabbing" },
@@ -242,7 +248,7 @@ export default function GenomeBrowser() {
                       minHeight: 0,
                       overflowY: "auto",
                       overflowX: "hidden",
-                      // Reserve scrollbar space so lanes and gene rows stay aligned
+                      // Keep lane and gene-track widths aligned when the scrollbar appears
                       scrollbarGutter: "stable",
                       "& > *:first-of-type": { mt: 0 },
                     }}
@@ -335,14 +341,14 @@ export default function GenomeBrowser() {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  Search for a gene or a place written{" "}
+                  Search for a gene or enter a genomic location such as{" "}
                   <Box component="span" sx={{ fontFamily: custom.monoFontFamily }}>
                     chr:start-end
                   </Box>{" "}
-                  to see its genomic neighborhood.
+                  to explore the surrounding region.
                 </Typography>
                 <Typography variant="caption" color="text.disabled">
-                  Drag to pan · ⌘/Ctrl + scroll to zoom · shift-drag to select a range
+                  Drag to pan · ⌘/Ctrl + scroll to zoom · Shift-drag to select a range
                 </Typography>
               </Box>
             )}
@@ -353,7 +359,7 @@ export default function GenomeBrowser() {
                 anchorEl={settingsRef.current}
                 placement="bottom-start"
                 modifiers={[
-                  // Keep the panel below its button and shift it inside the card when space is tight
+                  // Keep the panel below its button and within the card
                   { name: "flip", enabled: false },
                   {
                     name: "preventOverflow",

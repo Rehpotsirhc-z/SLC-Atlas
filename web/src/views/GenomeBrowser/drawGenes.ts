@@ -24,7 +24,7 @@ export interface GeneInk {
   label: string
   highlight: string
   font: string
-  /** Widths already measured, since a name keeps its width for as long as the face does */
+  // Label widths cached by font weight and text
   widths: Map<string, number>
 }
 
@@ -47,20 +47,28 @@ export function arrowHead(left: number, right: number, forward: boolean): ArrowH
   return { tip, back: forward ? tip - head : tip + head, half: head / 2 }
 }
 
-/** One path for a whole intron's worth of arrows, a stroke apiece being most of what they cost. */
+// Draw strand chevrons relative to the feature, skipping exons
 function chevrons(
   ctx: CanvasRenderingContext2D,
   from: number,
   to: number,
   y: number,
   forward: boolean,
+  origin: number,
+  exons: readonly { x: number; width: number }[],
 ) {
   const reach = 3
-  const first = Math.ceil(from / CHEVRON_SPACING) * CHEVRON_SPACING
+  let ei = 0
   let drawn = false
   ctx.beginPath()
-  for (let x = first; x < to; x += CHEVRON_SPACING) {
+  for (
+    let x = origin + Math.ceil((from - origin) / CHEVRON_SPACING) * CHEVRON_SPACING;
+    x < to;
+    x += CHEVRON_SPACING
+  ) {
     if (x - reach < from) continue
+    while (ei < exons.length && exons[ei].x + exons[ei].width < x - reach) ei++
+    if (ei < exons.length && exons[ei].x <= x + reach) continue
     ctx.moveTo(x - (forward ? reach : -reach), y - reach)
     ctx.lineTo(x + (forward ? reach : -reach), y)
     ctx.lineTo(x - (forward ? reach : -reach), y + reach)
@@ -69,11 +77,7 @@ function chevrons(
   if (drawn) ctx.stroke()
 }
 
-/**
- * Draw a name to the left of a model, but only into space nothing else on that row has
- * taken. A row can hold many models, and labelling every one of them writes each name over
- * the model before it, which is worse than leaving some of them unnamed.
- */
+// Draw a label when it fits before the model without overlapping the row
 function labelBefore(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -85,8 +89,7 @@ function labelBefore(
 ): boolean {
   if (x < LABEL_MIN_PX) return false
   const face = `${bold ? 600 : 400} ${CANVAS_LABEL_PX}px ${ink.font}`
-  // Measuring is the dearest call in this loop and a name is measured on every frame of a drag,
-  // so the width is kept and the face is only set when there is something to draw
+  // Cache measurements because this runs on every frame while dragging
   const key = `${bold ? "b" : "r"}\u0000${text}`
   let measured = ink.widths.get(key)
   if (measured === undefined) {
@@ -116,12 +119,11 @@ export interface TranscriptFrame {
 export function drawTranscripts({ ctx, scale, height, top, layout, ink }: TranscriptFrame) {
   ctx.clearRect(0, 0, scale.width, height)
   ctx.lineWidth = 1
-  // How far along each row something has already been drawn, so a name is only written into
-  // space that is still free. Models arrive left to right, which is what makes this enough
+  // Track occupied space in each row to prevent label overlap
   const takenTo: number[] = []
 
   for (const { item, row } of layout.items) {
-    // Packed in start order, so nothing past the right edge can be followed by something inside
+    // Items are ordered by start position
     if (item.start > scale.end) break
     if (item.end < scale.start) continue
     const y = rowCentre(row, top)
@@ -134,12 +136,20 @@ export function drawTranscripts({ ctx, scale, height, top, layout, ink }: Transc
     ctx.moveTo(left, y)
     ctx.lineTo(right, y)
     ctx.stroke()
-    chevrons(ctx, Math.max(left, 0), Math.min(right, scale.width), y, item.strand !== "-")
+    const exonBoxes = item.exons.map((e) => scale.boxFor(e.start, e.end))
+    chevrons(
+      ctx,
+      Math.max(left, 0),
+      Math.min(right, scale.width),
+      y,
+      item.strand !== "-",
+      left,
+      exonBoxes,
+    )
 
     ctx.fillStyle = color
     for (const exon of item.exons) {
-      // An exon is drawn twice where it is part coding and part not, so the reader sees
-      // where translation actually starts rather than only where the exon does
+      // Draw coding regions taller than UTRs, even when both share an exon
       const coding =
         item.cds_start !== null && item.cds_end !== null
           ? { start: Math.max(exon.start, item.cds_start), end: Math.min(exon.end, item.cds_end) }
