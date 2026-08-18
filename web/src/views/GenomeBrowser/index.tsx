@@ -182,9 +182,11 @@ export default function GenomeBrowser() {
       >
         <BrowserToolbar
           genes={state.searchGenes}
+          regionId={state.region?.gene_id ?? null}
           mode={state.mode}
           onModeChange={state.setMode}
           onSelectGene={state.selectRegionGene}
+          onClearGene={state.clearRegion}
           onGoToLocus={state.goToLocus}
           onZoom={(factor) => state.view.zoomBy(factor)}
           settingsOpen={state.settingsOpen}

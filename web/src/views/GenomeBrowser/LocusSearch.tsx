@@ -4,7 +4,7 @@
 
 // Search for a gene or genomic coordinate
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import SearchIcon from "@mui/icons-material/Search"
 import { Autocomplete, InputAdornment, TextField, Typography } from "@mui/material"
 import { acInputSx, StyledPopper } from "@/components/autocomplete/styles"
@@ -48,15 +48,34 @@ export function parseLocus(text: string, span: number): Locus | null {
 
 interface Props {
   genes: BrowserGene[]
+  regionId: string | null
   onSelectGene: (geneId: string) => void
+  onClearGene: () => void
   onGoToLocus: (locus: Locus) => void
   width?: number | string
 }
 
-export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 320 }: Props) {
+export default function LocusSearch({
+  genes,
+  regionId,
+  onSelectGene,
+  onClearGene,
+  onGoToLocus,
+  width = 320,
+}: Props) {
   const [text, setText] = useState("")
   // Preserve accepted input so reopening shows the full gene list
   const [committed, setCommitted] = useState<string | null>(null)
+
+  const hadRegion = useRef(regionId)
+  useEffect(() => {
+    const had = hadRegion.current
+    hadRegion.current = regionId
+    if (had && !regionId) {
+      setText("")
+      setCommitted(null)
+    }
+  }, [regionId])
 
   const index = useMemo(
     () =>
@@ -139,6 +158,7 @@ export default function LocusSearch({ genes, onSelectGene, onGoToLocus, width = 
           setText(next.symbol)
         } else if (next === null) {
           setCommitted(null)
+          onClearGene()
         } else if (typeof next === "string") {
           submit(next)
         }

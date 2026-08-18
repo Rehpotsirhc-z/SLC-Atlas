@@ -18,9 +18,11 @@ import type { GeneTrackMode } from "./GeneTrack"
 
 interface Props {
   genes: BrowserGene[]
+  regionId: string | null
   mode: GeneTrackMode
   onModeChange: (mode: GeneTrackMode) => void
   onSelectGene: (geneId: string) => void
+  onClearGene: () => void
   onGoToLocus: (locus: Locus) => void
   onZoom: (factor: number) => void
   settingsOpen: boolean
@@ -39,9 +41,11 @@ const MODES: { value: GeneTrackMode; label: string }[] = [
 
 export default function BrowserToolbar({
   genes,
+  regionId,
   mode,
   onModeChange,
   onSelectGene,
+  onClearGene,
   onGoToLocus,
   onZoom,
   settingsOpen,
@@ -81,7 +85,9 @@ export default function BrowserToolbar({
           <>
             <LocusSearch
               genes={genes}
+              regionId={regionId}
               onSelectGene={onSelectGene}
+              onClearGene={onClearGene}
               onGoToLocus={onGoToLocus}
               width={wrapped ? "100%" : 300}
             />
