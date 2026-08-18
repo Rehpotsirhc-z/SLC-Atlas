@@ -100,7 +100,6 @@ function GeneTrack({
     () => ({
       colorOf: (biotype) => biotypeColor(biotype, palette.mode),
       label: palette.text.secondary,
-      highlight: palette.secondary.main,
       font: custom.monoFontFamily,
       widths: new Map(),
     }),

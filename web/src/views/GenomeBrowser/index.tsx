@@ -122,7 +122,6 @@ export default function GenomeBrowser() {
           raised: palette.error.main,
           lowered: palette.primary.main,
           significance: palette.warning.main,
-          highlight: palette.secondary.main,
         },
       })
     },

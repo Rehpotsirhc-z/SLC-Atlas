@@ -22,7 +22,6 @@ import type { Scale } from "./scale"
 export interface GeneInk {
   colorOf: (biotype: string | null) => string
   label: string
-  highlight: string
   font: string
   // Label widths cached by font weight and text
   widths: Map<string, number>
@@ -88,7 +87,7 @@ function labelBefore(
   takenTo: number,
 ): boolean {
   if (x < LABEL_MIN_PX) return false
-  const face = `${bold ? 600 : 400} ${CANVAS_LABEL_PX}px ${ink.font}`
+  const face = `${bold ? 700 : 400} ${CANVAS_LABEL_PX}px ${ink.font}`
   // Cache measurements because this runs on every frame while dragging
   const key = `${bold ? "b" : "r"}\u0000${text}`
   let measured = ink.widths.get(key)
@@ -201,7 +200,7 @@ export function drawGenes({ ctx, scale, height, top, layout, ink }: GeneFrame) {
     if (item.start > scale.end) break
     if (item.end < scale.start) continue
     const y = rowCentre(row, top)
-    const color = item.is_atlas_gene ? ink.highlight : ink.colorOf(item.biotype)
+    const color = ink.colorOf(item.biotype)
     const left = scale.toX(item.start)
     const right = scale.toX(item.end)
     const forward = item.strand !== "-"

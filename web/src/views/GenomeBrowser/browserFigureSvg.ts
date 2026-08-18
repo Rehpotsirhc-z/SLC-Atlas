@@ -104,7 +104,6 @@ export interface FigureInk {
   raised: string
   lowered: string
   significance: string
-  highlight: string
 }
 
 export interface FigureInput {
@@ -389,7 +388,7 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       const right = scale.toX(item.end)
       const transcript = "transcript_id" in item ? item : null
       const span = transcript ? null : (item as GeneSpan)
-      const color = span?.is_atlas_gene === true ? input.ink.highlight : input.colorOf(item.biotype)
+      const color = input.colorOf(item.biotype)
 
       if (span) {
         const { tip, back, half } = arrowHead(left, right, span.strand !== "-")
@@ -448,8 +447,9 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
       // Match the on-screen label placement
       const textLeft = left - 6 - text.length * LABEL_PX * 0.6
       if (textLeft > 0 && textLeft > (takenTo[row] ?? -Infinity) + 6) {
+        const weight = item.is_atlas_gene ? ` font-weight="700"` : ""
         marks.push(
-          `<text x="${(left - 6).toFixed(1)}" y="${cy + 4}" text-anchor="end" font-size="${LABEL_PX}" font-family="${svgMonoFontFamily}" fill="${input.ink.muted}">${esc(text)}</text>`,
+          `<text x="${(left - 6).toFixed(1)}" y="${cy + 4}" text-anchor="end" font-size="${LABEL_PX}" font-family="${svgMonoFontFamily}"${weight} fill="${input.ink.muted}">${esc(text)}</text>`,
         )
       }
       takenTo[row] = right

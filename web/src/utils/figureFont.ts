@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import monoBold from "@fontsource/source-code-pro/files/source-code-pro-latin-700-normal.woff2?url"
 import monoRegular from "@fontsource/source-code-pro/files/source-code-pro-latin-400-normal.woff2?url"
 import sansBold from "@fontsource/source-sans-3/files/source-sans-3-latin-700-normal.woff2?url"
 import sansRegular from "@fontsource/source-sans-3/files/source-sans-3-latin-400-normal.woff2?url"
@@ -12,6 +13,7 @@ const FACES = [
   { family: "Source Sans 3", weight: 600, url: sansSemibold },
   { family: "Source Sans 3", weight: 700, url: sansBold },
   { family: "Source Code Pro", weight: 400, url: monoRegular },
+  { family: "Source Code Pro", weight: 700, url: monoBold },
 ]
 
 async function base64(url: string): Promise<string> {
