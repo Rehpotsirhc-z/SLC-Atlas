@@ -39,6 +39,8 @@ const LABEL_W = 168
 const GUTTER = LABEL_W + AXIS_W
 export const FIGURE_FIXED_W = 980
 const TITLE_PX = 16
+const TITLE_ASCENT = 11
+const TITLE_BODY_GAP = 4
 const LABEL_PX = 12
 const NAME_PX = 13
 const GROUP_PX = 11
@@ -474,14 +476,15 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
   }
 
   const width = GUTTER + PLOT_W + MARGIN * 2
-  const titleBaseline = MARGIN + TITLE_PX
-  const height = y + titleBaseline + MARGIN + 8
+  const titleBaseline = MARGIN + TITLE_ASCENT
+  const bodyTop = titleBaseline + TITLE_BODY_GAP
+  const height = bodyTop + y + MARGIN
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="${svgSansFontFamily}">` +
     `<defs>${clips.join("")}</defs>` +
     `<rect width="${width}" height="${height}" fill="${input.ink.background}"/>` +
     `<text x="${MARGIN}" y="${titleBaseline}" font-size="${TITLE_PX}" font-family="${svgMonoFontFamily}" font-weight="600" fill="${input.ink.primary}">${esc(input.title)}</text>` +
-    `<g transform="translate(${MARGIN} ${titleBaseline + 16})">${body.join("")}</g>` +
+    `<g transform="translate(${MARGIN} ${bodyTop})">${body.join("")}</g>` +
     `</svg>`
   )
 }
