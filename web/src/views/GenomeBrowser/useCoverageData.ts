@@ -84,6 +84,7 @@ export function useCoverageBlock(
   chrom: string | undefined,
   chromSize: number,
   marginSpans = BLOCK_MARGIN_SPANS,
+  refineOnZoomIn = false,
 ): CoverageBlock | null {
   const held = useRef<{ chrom: string; block: CoverageBlock } | null>(null)
   if (!chrom || chromSize <= 0) return null
@@ -94,7 +95,11 @@ export function useCoverageBlock(
     view.start >= kept.block.start &&
     view.end <= kept.block.end
   ) {
-    return kept.block
+    if (!refineOnZoomIn) return kept.block
+    const ideal = coverageBlock(view, chromSize, marginSpans)
+    if (kept.block.end - kept.block.start <= ideal.end - ideal.start) return kept.block
+    held.current = { chrom, block: ideal }
+    return ideal
   }
   const block = coverageBlock(view, chromSize, marginSpans)
   held.current = { chrom, block }

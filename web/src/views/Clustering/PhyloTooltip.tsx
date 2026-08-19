@@ -41,7 +41,7 @@ export default function PhyloTooltip({ leaf, gene, x, y, monoFont }: Props) {
           <Box component="span" sx={{ color: "text.secondary" }}>
             <Box
               component="span"
-              sx={{ mx: 0.25, fontWeight: 700, fontSize: 15, verticalAlign: "middle" }}
+              sx={{ mx: 0.25, fontSize: 15, verticalAlign: "middle" }}
             >
               {" · "}
             </Box>

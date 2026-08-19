@@ -41,7 +41,13 @@ export default function GwasTrack({
   watch,
   blockRef,
 }: Props) {
-  const block = useCoverageBlock(view.view, chrom || undefined, chromSize, GWAS_BLOCK_MARGIN_SPANS)
+  const block = useCoverageBlock(
+    view.view,
+    chrom || undefined,
+    chromSize,
+    GWAS_BLOCK_MARGIN_SPANS,
+    true,
+  )
   // Select the pyramid level from the cached block to avoid refetching during each zoom step
   const blockStep = block ? (block.end - block.start) / Math.max(width, 1) : 0
   const gwas = useVisibleGwas(chrom || undefined, block, blockStep, study, isVisible)
