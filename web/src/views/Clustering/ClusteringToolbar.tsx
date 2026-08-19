@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material"
+import type { Theme } from "@mui/material/styles"
 import {
   METRIC_LABEL,
   METRIC_ORDER,
@@ -13,7 +14,35 @@ import ToolbarMeasureProbe from "@/components/view/ToolbarMeasureProbe"
 import ViewToolbar from "@/components/view/ViewToolbar"
 import ViewToolbarActions, { type ExportItem } from "@/components/view/ViewToolbarActions"
 import { useToolbarFit } from "@/components/view/useToolbarFit"
-import { capLineSx } from "@/theme"
+import { capLineSx, doomColors } from "@/theme"
+
+const wrappedMetricSx = (theme: Theme) => {
+  const radius = theme.shape.borderRadius
+  return {
+    width: "100%",
+    display: "flex",
+    flexWrap: "wrap",
+    columnGap: 0,
+    rowGap: "8px",
+    "& .MuiToggleButtonGroup-grouped": {
+      flex: "1 1 30%",
+    },
+    "& .MuiToggleButtonGroup-grouped:nth-of-type(3)": {
+      borderTopRightRadius: radius,
+      borderBottomRightRadius: radius,
+    },
+    "& .MuiToggleButtonGroup-grouped:nth-of-type(4)": {
+      marginLeft: 0,
+      borderLeft: "1px solid",
+      borderLeftColor: "divider",
+      borderTopLeftRadius: radius,
+      borderBottomLeftRadius: radius,
+    },
+    "& .MuiToggleButtonGroup-grouped.Mui-selected": {
+      borderColor: doomColors[theme.palette.mode].magenta,
+    },
+  }
+}
 
 const TISSUE_OPTIONS: { value: TreeTissue; label: string }[] = [
   { value: "all", label: "All tissues" },
@@ -62,7 +91,7 @@ export default function ClusteringToolbar({
               fullWidth={wrapped}
               value={metric}
               onChange={(_, v) => v && onMetricChange(v)}
-              sx={{ width: toggleWidth }}
+              sx={wrapped ? wrappedMetricSx : { width: toggleWidth }}
             >
               {METRIC_ORDER.map((m) => (
                 <ToggleButton key={m} value={m} sx={{ minWidth }}>
