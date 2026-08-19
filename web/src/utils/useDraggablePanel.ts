@@ -14,6 +14,9 @@ export function useDraggablePanel(
   pos: PanelPos | null,
   onPosChange: (pos: PanelPos) => void,
   defaultPos: PanelPos,
+  width: number,
+  height: number,
+  margin = 12,
 ) {
   const currentPos = pos ?? defaultPos
   const posRef = useRef(currentPos)
@@ -25,31 +28,29 @@ export function useDraggablePanel(
     const container = panel?.parentElement
     if (!panel || !container) return
     const rect = container.getBoundingClientRect()
-    const pad = 12
+    const pad = margin
     const x = rect.left + defaultPos.x
     const y = rect.top + defaultPos.y
-    const fitX = Math.max(pad, Math.min(x, window.innerWidth - panel.offsetWidth - pad))
-    const fitY = Math.max(pad, Math.min(y, window.innerHeight - panel.offsetHeight - pad))
+    const fitX = Math.max(pad, Math.min(x, window.innerWidth - width - pad))
+    const fitY = Math.max(pad, Math.min(y, window.innerHeight - height - pad))
     onPosChange({ x: fitX, y: fitY })
-  }, [pos, defaultPos, onPosChange, panelRef])
+  }, [pos, defaultPos, onPosChange, panelRef, width, height, margin])
 
+  // Re-clamp when the width changes
   useEffect(() => {
-    const panel = panelRef.current
-    if (!panel) return
-    const pad = 12
+    const pad = margin
     const clamp = () => {
-      const { offsetWidth: pw, offsetHeight: ph } = panel
       const cw = window.innerWidth
       const ch = window.innerHeight
       const p = posRef.current
-      const x = Math.max(pad, Math.min(p.x, cw - pw - pad))
-      const y = Math.max(pad, Math.min(p.y, ch - ph - pad))
+      const x = Math.max(pad, Math.min(p.x, cw - width - pad))
+      const y = Math.max(pad, Math.min(p.y, ch - height - pad))
       if (x !== p.x || y !== p.y) onPosChange({ x, y })
     }
     clamp()
     window.addEventListener("resize", clamp)
     return () => window.removeEventListener("resize", clamp)
-  }, [onPosChange, panelRef])
+  }, [onPosChange, width, height, margin])
 
   function startDrag(startX: number, startY: number) {
     const initX = currentPos.x

@@ -12,11 +12,14 @@ import { glowFlash } from "@/theme"
 import { useDraggablePanel, type PanelPos } from "@/utils/useDraggablePanel"
 import { useFloatingWindow } from "@/utils/useFloatingWindow"
 import { useResizablePanel, type PanelSize } from "@/utils/useResizablePanel"
+import { useViewportSize } from "@/utils/useViewportSize"
 
 export interface StatRow {
   label: string
   value: ReactNode
 }
+
+const PANEL_MARGIN = 16
 
 interface Props {
   accent: string
@@ -61,18 +64,23 @@ export default function FloatingPanel({
 }: Props) {
   const { custom } = useTheme()
   const panelRef = useRef<HTMLDivElement>(null)
+  const vp = useViewportSize()
+  const intendedW = Math.max(size?.w ?? defaultWidth, minWidth)
+  const height = Math.max(size?.h ?? defaultHeight, minHeight)
+  const width = Math.min(intendedW, vp.w - PANEL_MARGIN * 2)
+  const currentSize = { w: width, h: height }
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
     pos,
     onPosChange,
     defaultPos,
+    width,
+    height,
+    PANEL_MARGIN,
   )
-  const width = Math.max(size?.w ?? defaultWidth, minWidth)
-  const height = Math.max(size?.h ?? defaultHeight, minHeight)
-  const currentSize = { w: width, h: height }
   useLayoutEffect(() => {
-    if (!size || size.w < minWidth || size.h < minHeight) onSizeChange(currentSize)
-  }, [size, width, height, minWidth, minHeight, onSizeChange])
+    if (!size || size.w < minWidth || size.h < minHeight) onSizeChange({ w: intendedW, h: height })
+  }, [size, intendedW, height, minWidth, minHeight, onSizeChange])
   const { startResize } = useResizablePanel(
     currentPos,
     onPosChange,

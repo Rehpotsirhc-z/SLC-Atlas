@@ -55,16 +55,20 @@ export default function AnatomogramWindow({
   const setPos = useUIStore((s) => s.setRailFloatPos)
   const setSize = useUIStore((s) => s.setRailFloatSize)
 
+  const vp = useViewportSize()
+  const panelW = Math.min(size.w, vp.w - VIEWPORT_INSET)
+  const panelH = Math.min(size.h, vp.h - VIEWPORT_INSET)
+
   const { currentPos, handleDragStart, handleTouchStart } = useDraggablePanel(
     panelRef,
     pos,
     setPos,
     DEFAULT_POS,
+    panelW,
+    panelH,
   )
   const { startResize } = useResizablePanel(currentPos, setPos, size, setSize, MIN_W, MIN_H)
   const { zIndex, focusProps } = useFloatingWindow("anatomogram")
-
-  const vp = useViewportSize()
   const dragProps = {
     onMouseDown: handleDragStart,
     onTouchStart: handleTouchStart,
@@ -80,8 +84,8 @@ export default function AnatomogramWindow({
         position: "fixed",
         top: currentPos.y,
         left: currentPos.x,
-        width: Math.min(size.w, vp.w - VIEWPORT_INSET),
-        height: Math.min(size.h, vp.h - VIEWPORT_INSET),
+        width: panelW,
+        height: panelH,
         zIndex,
         border: 1,
         borderColor: "divider",
