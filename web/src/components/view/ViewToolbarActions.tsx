@@ -29,7 +29,8 @@ export default function ViewToolbarActions({
 }: Props) {
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
   const wrapped = tbState === "wrapped"
-  const showCounter = tbState === "full" || tbState === "counterCompact"
+  const showCounter =
+    (tbState === "full" || tbState === "counterCompact") && counterText.trim().length > 0
   const iconButtons = tbState === "compact" || tbState === "counterCompact"
 
   return (

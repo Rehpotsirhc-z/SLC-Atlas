@@ -33,7 +33,10 @@ export default function StructureToolbar({
   onResetView,
   exportItems,
 }: Props) {
-  const { tbState, toolbarRef, probeRefs } = useToolbarFit({ counterText, toggleCount: 1 })
+  const { tbState, toolbarRef, probeRefs } = useToolbarFit({
+    counterText,
+    toggleCount: showTreeButton ? 2 : 1,
+  })
   const wrapped = tbState === "wrapped"
 
   return (
@@ -70,6 +73,13 @@ export default function StructureToolbar({
       />
       <ToolbarMeasureProbe refs={probeRefs} counterText={counterText}>
         <Box ref={probeRefs.registerToggle(0)} sx={{ width: SEARCH_WIDTH }} />
+        {showTreeButton && (
+          <Box ref={probeRefs.registerToggle(1)} sx={{ display: "flex" }}>
+            <IconButton size="small">
+              <AccountTreeIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        )}
       </ToolbarMeasureProbe>
     </>
   )

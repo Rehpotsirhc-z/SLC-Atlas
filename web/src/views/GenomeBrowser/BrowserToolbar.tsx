@@ -56,7 +56,7 @@ export default function BrowserToolbar({
   exportItems,
   hasRegion,
 }: Props) {
-  const { tbState, toolbarRef, probeRefs } = useToolbarFit({ counterText, toggleCount: 2 })
+  const { tbState, toolbarRef, probeRefs } = useToolbarFit({ counterText, toggleCount: 3 })
   const wrapped = tbState === "wrapped"
 
   const modeToggle = (
@@ -65,15 +65,62 @@ export default function BrowserToolbar({
       exclusive
       value={mode}
       onChange={(_event, next) => next && onModeChange(next)}
+      sx={wrapped ? { flexGrow: 1 } : undefined}
     >
       {MODES.map((option) => (
-        <ToggleButton key={option.value} value={option.value} sx={{ minWidth: wrapped ? 0 : 96 }}>
+        <ToggleButton
+          key={option.value}
+          value={option.value}
+          sx={{ minWidth: wrapped ? 0 : 96, flex: wrapped ? 1 : "none" }}
+        >
           <Box component="span" sx={capLineSx}>
             {option.label}
           </Box>
         </ToggleButton>
       ))}
     </ToggleButtonGroup>
+  )
+
+  const iconGroup = (
+    <Box sx={{ display: "flex" }}>
+      <Tooltip title="Zoom out">
+        <span>
+          <IconButton
+            size="small"
+            aria-label="Zoom out"
+            onClick={() => onZoom(0.5)}
+            disabled={!hasRegion}
+          >
+            <ZoomOutIcon fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title="Zoom in">
+        <span>
+          <IconButton
+            size="small"
+            aria-label="Zoom in"
+            onClick={() => onZoom(2)}
+            disabled={!hasRegion}
+          >
+            <ZoomInIcon fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title={settingsOpen ? "" : "Display settings"}>
+        <span>
+          <IconButton
+            ref={settingsRef}
+            size="small"
+            aria-label="Display settings"
+            onClick={onToggleSettings}
+            color={settingsOpen ? "secondary" : "default"}
+          >
+            <SettingsIcon fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+    </Box>
   )
 
   return (
@@ -91,46 +138,17 @@ export default function BrowserToolbar({
               onGoToLocus={onGoToLocus}
               width={wrapped ? "100%" : 300}
             />
-            {modeToggle}
-            <Box sx={{ display: "flex" }}>
-              <Tooltip title="Zoom out">
-                <span>
-                  <IconButton
-                    size="small"
-                    aria-label="Zoom out"
-                    onClick={() => onZoom(0.5)}
-                    disabled={!hasRegion}
-                  >
-                    <ZoomOutIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Zoom in">
-                <span>
-                  <IconButton
-                    size="small"
-                    aria-label="Zoom in"
-                    onClick={() => onZoom(2)}
-                    disabled={!hasRegion}
-                  >
-                    <ZoomInIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title={settingsOpen ? "" : "Display settings"}>
-                <span>
-                  <IconButton
-                    ref={settingsRef}
-                    size="small"
-                    aria-label="Display settings"
-                    onClick={onToggleSettings}
-                    color={settingsOpen ? "secondary" : "default"}
-                  >
-                    <SettingsIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Box>
+            {wrapped ? (
+              <Box sx={{ width: "100%", display: "flex", alignItems: "center", gap: 1 }}>
+                {modeToggle}
+                {iconGroup}
+              </Box>
+            ) : (
+              <>
+                {modeToggle}
+                {iconGroup}
+              </>
+            )}
           </>
         }
         actions={
@@ -153,6 +171,17 @@ export default function BrowserToolbar({
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+        <Box ref={probeRefs.registerToggle(2)} sx={{ display: "flex" }}>
+          <IconButton size="small">
+            <ZoomOutIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small">
+            <ZoomInIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small">
+            <SettingsIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </ToolbarMeasureProbe>
     </>
   )
