@@ -19,6 +19,12 @@ export const MIN_H = 320
 
 export type { StatRow }
 
+export interface PanelAction {
+  label: string
+  icon?: ReactNode
+  onClick: () => void
+}
+
 interface Props {
   symbol: string | null
   geneId: string | null
@@ -27,7 +33,8 @@ interface Props {
   statRows: StatRow[]
   ucscGene: Gene | null
   onClose: () => void
-  onOpenInGenes: () => void
+  onOpenInGenes?: () => void
+  primaryAction?: PanelAction
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
   size: PanelSize | null
@@ -45,6 +52,7 @@ export default function FloatingGenePanel({
   ucscGene,
   onClose,
   onOpenInGenes,
+  primaryAction,
   pos,
   onPosChange,
   size,
@@ -56,17 +64,32 @@ export default function FloatingGenePanel({
     <>
       <Divider sx={{ mb: 1.5 }} />
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<TableRowsIcon />}
-          onClick={onOpenInGenes}
-          sx={capButtonSx}
-        >
-          <Box component="span" sx={capBoxSx}>
-            Open in Genes view
-          </Box>
-        </Button>
+        {primaryAction && (
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={primaryAction.icon}
+            onClick={primaryAction.onClick}
+            sx={capButtonSx}
+          >
+            <Box component="span" sx={capBoxSx}>
+              {primaryAction.label}
+            </Box>
+          </Button>
+        )}
+        {onOpenInGenes && (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<TableRowsIcon />}
+            onClick={onOpenInGenes}
+            sx={capButtonSx}
+          >
+            <Box component="span" sx={capBoxSx}>
+              Open in Genes view
+            </Box>
+          </Button>
+        )}
         <Box sx={{ display: "flex", gap: 0.5 }}>
           {geneId && (
             <Button

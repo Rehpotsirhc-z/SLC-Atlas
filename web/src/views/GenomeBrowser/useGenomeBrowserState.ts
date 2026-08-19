@@ -167,6 +167,15 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     setSelectedGeneId(null)
   }, [setSelectedGeneId])
 
+  // Unlisted genes have no manifest window, so frame their model span directly
+  const reframeGene = useCallback(
+    (geneId: string, start: number, end: number) => {
+      if (browserGenes.some((gene) => gene.gene_id === geneId)) selectRegionGene(geneId)
+      else view.goTo({ start, end })
+    },
+    [browserGenes, selectRegionGene, view],
+  )
+
   const resetView = useCallback(() => {
     const current = view.liveView()
     if (current.start !== initial.start || current.end !== initial.end) {
@@ -218,6 +227,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   return {
     searchGenes: browserGenes,
     selectRegionGene,
+    reframeGene,
     clearRegion,
     resetView,
     selectedGeneId,

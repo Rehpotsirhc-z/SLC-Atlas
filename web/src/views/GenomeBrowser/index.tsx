@@ -12,9 +12,11 @@ import { biotypeColor } from "@/utils/biotypeColor"
 import { downloadName } from "@/utils/download"
 import { downloadPng, downloadSvg } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
+import BinCoveragePanel from "./BinCoveragePanel"
+import BrowserGenePopup from "./BrowserGenePopup"
 import BrowserSettings from "./BrowserSettings"
 import BrowserToolbar from "./BrowserToolbar"
-import GeneTrack from "./GeneTrack"
+import GeneTrack, { type GeneTrackHandle } from "./GeneTrack"
 import GwasTrack from "./GwasTrack"
 import LaneGroup from "./LaneGroup"
 import LocusHeading, { locusText } from "./LocusHeading"
@@ -31,6 +33,7 @@ import {
   MAX_GENE_ROWS,
 } from "./constants"
 import { collapseToGenes, layoutGenes, layoutTranscripts } from "./geneLayout"
+import { useBrowserPick } from "./useBrowserPick"
 import type { LaneData } from "./useCoverageData"
 import { useGenomeBrowserState } from "./useGenomeBrowserState"
 import { usePanGestures } from "./usePanGestures"
@@ -57,11 +60,21 @@ export default function GenomeBrowser() {
   const settingsRef = useRef<HTMLButtonElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const gwasBlockRef = useRef<VariantBlock | null>(null)
+  const geneTrackRef = useRef<GeneTrackHandle | null>(null)
 
   const gutter = (isSmall ? GUTTER_W_SM : GUTTER_W) + AXIS_W
   const plotWidth = Math.max(0, frameWidth - gutter - EDGE_PAD)
   const geneTrackMax = Math.max(GENE_TRACK_MIN_H, plotAreaHeight * GENE_TRACK_MAX_SHARE)
   const state = useGenomeBrowserState(frameRef, plotWidth)
+
+  const pick = useBrowserPick({
+    geneTrackRef,
+    groups: state.groups,
+    coverage: state.coverage,
+    colors: state.colors,
+    fallbackColor: palette.primary.main,
+    committedView: state.view.view,
+  })
 
   const gestures = usePanGestures({
     view: state.view,
@@ -71,6 +84,7 @@ export default function GenomeBrowser() {
     gutter,
     enabled: state.region != null && plotWidth > 0,
     onReset: state.resetView,
+    onPick: pick.onPick,
   })
 
   const buildFigure = useCallback(
@@ -312,6 +326,7 @@ export default function GenomeBrowser() {
                       view={state.view.view}
                       subscribe={state.view.subscribe}
                       liveView={state.view.liveView}
+                      pickRef={geneTrackRef}
                     />
                   </Box>
 
@@ -354,6 +369,24 @@ export default function GenomeBrowser() {
                   Drag to pan · ⌘/Ctrl + scroll to zoom · Shift-drag to select a range
                 </Typography>
               </Box>
+            )}
+
+            {pick.picked?.kind === "gene" && (
+              <BrowserGenePopup
+                gene={pick.picked.gene}
+                chrom={state.region?.chrom ?? ""}
+                onReframe={state.reframeGene}
+                onClose={pick.dismiss}
+              />
+            )}
+            {pick.picked?.kind === "bin" && (
+              <BinCoveragePanel
+                base={pick.picked.base}
+                chrom={state.region?.chrom ?? ""}
+                range={pick.binRange}
+                assays={pick.binAssays ?? []}
+                onClose={pick.dismiss}
+              />
             )}
 
             {state.settingsOpen && (

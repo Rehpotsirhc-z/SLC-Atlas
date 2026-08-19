@@ -188,6 +188,7 @@ function TrackLane({
       <LaneAxis height={height} handleRef={axisRef} />
       <Box
         ref={plotRef}
+        data-coverage-lane={track.track_id}
         sx={{
           position: "relative",
           flex: 1,

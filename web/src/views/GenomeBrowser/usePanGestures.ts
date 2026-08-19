@@ -25,6 +25,7 @@ interface Options {
   gutter: number
   enabled: boolean
   onReset: () => void
+  onPick?: (base: number, clientX: number, clientY: number) => void
 }
 
 interface Drag {
@@ -48,12 +49,15 @@ export function usePanGestures({
   gutter,
   enabled,
   onReset,
+  onPick,
 }: Options) {
   const drag = useRef<Drag | null>(null)
   const viewRef = useRef(view)
   viewRef.current = view
   const resetRef = useRef(onReset)
   resetRef.current = onReset
+  const pickRef = useRef(onPick)
+  pickRef.current = onPick
 
   // Where the plot sits, measured once per burst of wheel events rather than per event: asking
   // the layout is asking it to settle, and a trackpad pinch arrives as a stream
@@ -139,7 +143,12 @@ export function usePanGestures({
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId)
       }
-      if (!active.moved) return
+      if (!active.moved) {
+        if (!active.ranging && event.type === "pointerup") {
+          pickRef.current?.(baseAt(event.clientX), event.clientX, event.clientY)
+        }
+        return
+      }
 
       if (active.ranging) {
         showSelection(null)
@@ -155,7 +164,7 @@ export function usePanGestures({
       // Publish immediately, but briefly delay treating the gesture as finished
       viewRef.current.release()
     },
-    [showSelection, width, gutter],
+    [showSelection, width, gutter, baseAt],
   )
 
   const onDoubleClick = useCallback(

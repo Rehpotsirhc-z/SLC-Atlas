@@ -124,3 +124,9 @@ export const CANVAS_LABEL_PX = 12
 export const SETTINGS_W = 284
 // Align settings fields along the same right edge
 export const SETTINGS_FIELD_W = 110
+
+export const POPUP_DEFAULT_POS = { x: 29, y: 325 }
+export const BIN_POPUP_W = 320
+export const BIN_POPUP_H = 420
+export const POPUP_MIN_W = 260
+export const POPUP_MIN_H = 240

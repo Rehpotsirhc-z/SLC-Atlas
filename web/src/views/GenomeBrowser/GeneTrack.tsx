@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { memo, useCallback, useMemo, useRef } from "react"
+import { memo, useCallback, useImperativeHandle, useMemo, useRef, type RefObject } from "react"
 import { Box, Tooltip, Typography, useTheme } from "@mui/material"
 import type { TranscriptModel } from "@/types/browser"
 import { biotypeColor } from "@/utils/biotypeColor"
@@ -39,6 +39,12 @@ function countTitle(mode: GeneTrackMode, drawn: number, hidden: number): string 
   return hidden > 0 ? `${shown}; ${hidden} additional ${kind} hidden` : shown
 }
 
+export type Target = TranscriptModel | GeneSpan
+
+export interface GeneTrackHandle {
+  pickAt: (clientX: number, clientY: number) => Target | null
+}
+
 interface Props {
   transcripts: TranscriptModel[]
   mode: GeneTrackMode
@@ -52,9 +58,8 @@ interface Props {
   view: Viewport
   subscribe: (paint: Painter) => () => void
   liveView: () => Viewport
+  pickRef?: RefObject<GeneTrackHandle | null>
 }
-
-type Target = TranscriptModel | GeneSpan
 
 const isTranscript = (item: Target): item is TranscriptModel => "transcript_id" in item
 
@@ -78,6 +83,7 @@ function GeneTrack({
   view,
   subscribe,
   liveView,
+  pickRef,
 }: Props) {
   const { palette, custom } = useTheme()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -137,6 +143,8 @@ function GeneTrack({
   )
 
   const { hovered: hover, onMove, clear } = useHoverFrame(read, sameHover)
+
+  useImperativeHandle(pickRef, () => ({ pickAt: (x, y) => read(x, y)?.item ?? null }), [read])
 
   const onPointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -199,6 +207,7 @@ function GeneTrack({
       </Box>
       <Box
         ref={scrollRef}
+        data-gene-track
         sx={{
           position: "relative",
           flex: 1,
