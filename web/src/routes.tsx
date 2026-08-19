@@ -10,7 +10,6 @@ import Conservation from "./views/Conservation"
 import Expression from "./views/Expression"
 import GeneAnnotation from "./views/GeneAnnotation"
 import GenomeBrowser from "./views/GenomeBrowser"
-import PetScan from "./views/PetScan"
 import Structure from "./views/Structure"
 
 export interface AppRoute extends RouteMeta {
@@ -24,7 +23,6 @@ const ELEMENTS: Record<RoutePath, ReactNode> = {
   "/browser": <GenomeBrowser />,
   "/expression": <Expression />,
   "/structure": <Structure />,
-  "/pet": <PetScan />,
 }
 
 export const routes: AppRoute[] = ROUTES.map((r) => ({

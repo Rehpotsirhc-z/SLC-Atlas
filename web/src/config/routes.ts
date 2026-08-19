@@ -22,7 +22,6 @@ export const ROUTES = [
   route({ path: "/browser", label: "Genome Browser", capability: "browser" }),
   route({ path: "/expression", label: "Expression", popup: true, capability: "expression" }),
   route({ path: "/structure", label: "Structure", capability: "structure" }),
-  route({ path: "/pet", label: "PET-SCAN" }),
 ]
 
 export type RoutePath = (typeof ROUTES)[number]["path"]
