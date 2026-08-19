@@ -17,10 +17,10 @@ const route = <P extends string>(meta: RouteMeta & { path: P }) => meta
 // Imported by vite.config.ts for the export's route pages, so nothing here may touch the DOM
 export const ROUTES = [
   route({ path: "/genes", label: "Genes" }),
-  route({ path: "/clustering", label: "Clustering", popup: true }),
-  route({ path: "/conservation", label: "Conservation", popup: true }),
+  route({ path: "/clustering", label: "Clustering", popup: true, capability: "clustering" }),
+  route({ path: "/conservation", label: "Conservation", popup: true, capability: "conservation" }),
   route({ path: "/browser", label: "Genome Browser", capability: "browser" }),
-  route({ path: "/expression", label: "Expression", popup: true }),
+  route({ path: "/expression", label: "Expression", popup: true, capability: "expression" }),
   route({ path: "/structure", label: "Structure", capability: "structure" }),
   route({ path: "/pet", label: "PET-SCAN" }),
 ]

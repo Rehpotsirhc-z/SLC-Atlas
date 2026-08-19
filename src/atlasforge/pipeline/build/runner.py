@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ...config import COMMAND_NAME
 from ..lib import console, interrupt, progress, windows
-from ..lib.orchestration import Ledger, Step, preflight, run_stage, summarize
+from ..lib.orchestration import Ledger, Step, complete, preflight, run_stage, summarize
 from ..lib.paths import PipelinePaths
 from . import (
     build_browser,
@@ -55,6 +55,22 @@ def _selected(options: BuildOptions) -> set[str]:
     return {ALWAYS} | (views - options.skipped_views)
 
 
+def _buildable(steps: dict[str, Step], selected: set[str], options: BuildOptions) -> set[str]:
+    """Skip optional views with missing inputs during a full build."""
+    if options.only_steps:
+        return selected
+    keep = set()
+    for name in selected:
+        step = steps[name]
+        missing = [] if name == ALWAYS else [path for path in step.inputs if not complete(path)]
+        if missing:
+            files = ", ".join(path.name for path in missing)
+            console.note(f"No source for the {name} view ({files}); leaving it out")
+        else:
+            keep.add(name)
+    return keep
+
+
 def _resolve_mafft(explicit: str) -> str:
     mafft = explicit or os.environ.get("ATLASFORGE_MAFFT") or shutil.which("mafft")
     if not mafft:
@@ -90,7 +106,11 @@ def _steps(paths: PipelinePaths, options: BuildOptions) -> dict[str, Step]:
             ),
             label="Building the genome browser tables",
             requires=("pybigtools",),
-            inputs=(genes, source / "browser" / "transcripts.bed", source / "browser" / "chroms.tsv"),
+            inputs=(
+                genes,
+                source / "browser" / "transcripts.bed",
+                source / "browser" / "chroms.tsv",
+            ),
             outputs=(
                 browser_out / "windows.parquet",
                 browser_out / "models.bb",
@@ -176,11 +196,13 @@ def run(
             f"No source files were found in {paths.source}. Run `{COMMAND_NAME} fetch` first, "
             "or use --data-dir with an existing dataset."
         )
-    selected = _selected(options)
     steps = _steps(paths, options)
+    selected = _buildable(steps, _selected(options), options)
     # A build output is a function of source files the user edits by hand, so its being on
     # disk says nothing about whether it is still the right answer
-    chosen = [replace(steps[name], skip_when_present=False) for name in STEP_NAMES if name in selected]
+    chosen = [
+        replace(steps[name], skip_when_present=False) for name in STEP_NAMES if name in selected
+    ]
     preflight(chosen)
 
     # No build step reads another's output, so each one stands or falls on its own

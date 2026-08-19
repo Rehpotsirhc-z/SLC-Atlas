@@ -12,8 +12,3 @@ export const useCapabilities = () =>
     queryFn: () => api.get<Record<string, boolean>>("/capabilities.json"),
     staleTime: Infinity,
   })
-
-export function useCapability(name: string | undefined): boolean {
-  const { data } = useCapabilities()
-  return !name || data?.[name] !== false
-}

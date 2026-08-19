@@ -9,6 +9,7 @@ from ..deps import get_source
 from ..models.browser import BrowserGene, Region, TrackManifest
 from ..models.structure import DataSourceRecord
 from ..responses import byte_range_file
+from .availability import unavailable_guard
 
 router = APIRouter()
 
@@ -17,11 +18,7 @@ UNAVAILABLE = "Genome Browser data is not available for this dataset"
 # Everything drawn along the axis is read by byte range and served as a file rather than as a
 # response built per gene: the view asks for a place, not for a gene
 
-
-def require(value):
-    if value is None:
-        raise HTTPException(404, UNAVAILABLE)
-    return value
+require = unavailable_guard(UNAVAILABLE)
 
 
 @router.get(

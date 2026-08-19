@@ -257,7 +257,9 @@ def build_structure(
         .rename({"model_url": "model_source_url"})
     )
     present = {p.name for p in models_dir.glob("*.*cif")}
-    return structure_checks.drop_stale(df.with_columns(pl.col("model_file").is_in(present).alias("model_available")))
+    return structure_checks.drop_stale(
+        df.with_columns(pl.col("model_file").is_in(present).alias("model_available"))
+    )
 
 
 def build_sources(source_dir: Path, structures: pl.DataFrame) -> pl.DataFrame:
@@ -285,10 +287,6 @@ def build_sources(source_dir: Path, structures: pl.DataFrame) -> pl.DataFrame:
 def run(source_dir: Path, out_dir: Path) -> None:
     structure_source = source_dir / "structure"
     structure_out = out_dir / "structure"
-
-    if not structure_source.exists():
-        console.detail(f"No {structure_source}; skipping the structure view")
-        return
 
     gene_map = read_tsv(structure_source, "uniprot_map.tsv", UNIPROT_MAP_SCHEMA)
     unmapped = gene_map.filter(pl.col("uniprot_accession").is_null())
@@ -344,7 +342,9 @@ def run(source_dir: Path, out_dir: Path) -> None:
 
     n_models = int(structure["afdb_entry_id"].is_not_null().sum())
     n_experimental = int((structure["n_experimental"] > 0).sum())
-    console.success(f"Wrote {structure.height} genes ({n_models} with a model, "
-        f"{n_experimental} with experimental structures) -> {structure_out}")
+    console.success(
+        f"Wrote {structure.height} genes ({n_models} with a model, "
+        f"{n_experimental} with experimental structures) -> {structure_out}"
+    )
     console.detail(f"{total_models} model files in {models_dir} ({copied} copied)")
     console.detail(f"{count('experimental file', total_pdb)} mirrored ({pdb_copied} copied)")

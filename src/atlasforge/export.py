@@ -113,20 +113,22 @@ async def _get(client: httpx.AsyncClient, url: str) -> httpx.Response:
     return await client.get(url)
 
 
-def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
-    urls = [
-        "/api/capabilities.json",
-        "/api/genes.json",
-        "/api/conservation.json",
-        "/api/conservation/species-tree.json",
-        "/api/conservation/species-tree.nwk",
-    ]
-    urls += [f"/api/expression/{scope.value}.json" for scope in TissueScope]
-    for method in ClusterMethod:
-        urls += [f"/api/clustering/{method.value}.json", f"/api/clustering/{method.value}.nwk"]
-    urls += [f"/api/genes/{gid}/transcripts.json" for gid in gene_ids]
-    if capabilities.get("structure"):
-        urls += [
+def _view_urls(view: str, gene_ids: list[str]) -> list[str]:
+    if view == "conservation":
+        return [
+            "/api/conservation.json",
+            "/api/conservation/species-tree.json",
+            "/api/conservation/species-tree.nwk",
+        ]
+    if view == "expression":
+        return [f"/api/expression/{scope.value}.json" for scope in TissueScope]
+    if view == "clustering":
+        urls: list[str] = []
+        for method in ClusterMethod:
+            urls += [f"/api/clustering/{method.value}.json", f"/api/clustering/{method.value}.nwk"]
+        return urls
+    if view == "structure":
+        urls = [
             "/api/structure.json",
             "/api/structure/sources.json",
             "/api/structure/topology.json",
@@ -137,13 +139,29 @@ def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
                 f"/api/structure/{gid}/features.json",
                 f"/api/structure/{gid}/experimental.json",
             ]
-    if capabilities.get("browser"):
-        urls += [
-            "/api/browser/tracks.json",
-            "/api/browser/sources.json",
-            "/api/browser/genes.json",
-        ]
+        return urls
+    if view == "browser":
+        urls = ["/api/browser/tracks.json", "/api/browser/sources.json", "/api/browser/genes.json"]
         urls += [f"/api/browser/{gid}/region.json" for gid in gene_ids]
+        return urls
+    return []
+
+
+VIEW_PREFIXES = {
+    "conservation": "/api/conservation",
+    "expression": "/api/expression",
+    "clustering": "/api/clustering",
+    "structure": "/api/structure",
+    "browser": "/api/browser",
+}
+
+
+def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
+    urls = ["/api/capabilities.json", "/api/genes.json"]
+    urls += [f"/api/genes/{gid}/transcripts.json" for gid in gene_ids]
+    for view in VIEW_PREFIXES:
+        if capabilities.get(view):
+            urls += _view_urls(view, gene_ids)
     return urls
 
 
@@ -159,7 +177,7 @@ def _uncovered(urls: list[str], capabilities: dict[str, bool]) -> set[str]:
         for path, methods in app.openapi()["paths"].items()
         if "get" in methods and path.startswith("/api")
     }
-    for view, prefix in (("structure", "/api/structure"), ("browser", "/api/browser")):
+    for view, prefix in VIEW_PREFIXES.items():
         if not capabilities.get(view):
             templates = {p: r for p, r in templates.items() if not p.startswith(prefix)}
     hit = {path for path, regex in templates.items() for u in urls if regex.match(u)}

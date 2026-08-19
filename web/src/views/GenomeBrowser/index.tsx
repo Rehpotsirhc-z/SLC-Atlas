@@ -5,7 +5,6 @@
 import { useCallback, useMemo, useRef } from "react"
 import { Box, Divider, Paper, Popper, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { EMPTY_COVERAGE, EMPTY_VARIANTS, type VariantBlock } from "@/api/bbi"
-import { useCapability } from "@/api/hooks/useCapabilities"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { biotypeColor } from "@/utils/biotypeColor"
@@ -50,7 +49,6 @@ const UNREAD: LaneData = {
 }
 
 export default function GenomeBrowser() {
-  const available = useCapability("browser")
   const { palette, custom } = useTheme()
   const isSmall = useMediaQuery(useTheme().breakpoints.down("sm"))
   const [frameRef, { w: frameWidth }] = useElementSize<HTMLDivElement>()
@@ -170,17 +168,6 @@ export default function GenomeBrowser() {
       { label: "Genome browser PNG (standard width)", onClick: () => savePng(FIGURE_FIXED_W) },
     ]
   }, [buildFigure, plotWidth])
-
-  if (!available) {
-    return (
-      <Box>
-        <ViewHeader title="Genome Browser" subtitle="Not available for this dataset" />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          This dataset was built without genome browser data.
-        </Typography>
-      </Box>
-    )
-  }
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>

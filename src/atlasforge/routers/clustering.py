@@ -8,8 +8,11 @@ from ..data.source import DataSource
 from ..deps import get_source
 from ..models.clustering import ClusterMethod, ClusterNode
 from ..responses import newick_response
+from .availability import unavailable_guard
 
 router = APIRouter()
+
+require = unavailable_guard("Clustering data is not built for this dataset")
 
 
 @router.get(
@@ -21,7 +24,7 @@ def get_clustering(
     method: ClusterMethod,
     source: DataSource = Depends(get_source),
 ):
-    return source.get_clustering(method=method).to_dicts()
+    return require(source.get_clustering(method=method)).to_dicts()
 
 
 @router.get(
@@ -33,4 +36,4 @@ def get_clustering_newick(
     method: ClusterMethod,
     source: DataSource = Depends(get_source),
 ):
-    return newick_response(source.get_clustering_newick(method=method), method)
+    return newick_response(require(source.get_clustering_newick(method=method)), method)

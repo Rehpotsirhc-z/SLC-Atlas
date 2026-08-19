@@ -3,17 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react"
-import {
-  Alert,
-  Box,
-  Divider,
-  Paper,
-  Stack,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material"
-import { useCapability } from "@/api/hooks/useCapabilities"
+import { Box, Divider, Paper, Stack, Typography, useMediaQuery, useTheme } from "@mui/material"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
@@ -46,7 +36,6 @@ export default function Structure() {
   const [exportModelPng, setExportModelPng] = useState<ModelExporter | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const paneRef = useRef<HTMLDivElement>(null)
-  const available = useCapability("structure")
 
   const {
     wall,
@@ -131,18 +120,6 @@ export default function Structure() {
       subtitle={`Predicted models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures`}
     />
   )
-
-  if (!available) {
-    return (
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-        {header}
-        <Alert severity="info">
-          This dataset was built without structure data. Run the pipeline without
-          <code> --skip-structure</code> to add it.
-        </Alert>
-      </Box>
-    )
-  }
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>

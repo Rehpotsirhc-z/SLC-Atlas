@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import polars as pl
 from fastapi import APIRouter, Depends, HTTPException, Request
 from ..data.source import DataSource
 from ..deps import get_source
@@ -15,16 +14,13 @@ from ..models.structure import (
     Structure,
     StructureDetail,
 )
+from .availability import unavailable_guard
 
 router = APIRouter()
 
 UNAVAILABLE = "Structure data is not built for this dataset"
 
-
-def require(df: pl.DataFrame | None) -> pl.DataFrame:
-    if df is None:
-        raise HTTPException(404, UNAVAILABLE)
-    return df
+require = unavailable_guard(UNAVAILABLE)
 
 
 @router.get(

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ReactNode } from "react"
+import CapabilityGate from "./components/view/CapabilityGate"
 import { ROUTES, type RouteMeta, type RoutePath } from "./config/routes"
 import Clustering from "./views/Clustering"
 import Conservation from "./views/Conservation"
@@ -26,4 +27,11 @@ const ELEMENTS: Record<RoutePath, ReactNode> = {
   "/pet": <PetScan />,
 }
 
-export const routes: AppRoute[] = ROUTES.map((r) => ({ ...r, element: ELEMENTS[r.path] }))
+export const routes: AppRoute[] = ROUTES.map((r) => ({
+  ...r,
+  element: (
+    <CapabilityGate capability={r.capability} label={r.label}>
+      {ELEMENTS[r.path]}
+    </CapabilityGate>
+  ),
+}))

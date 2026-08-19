@@ -6,8 +6,11 @@ from fastapi import APIRouter, Depends
 from ..data.source import DataSource
 from ..deps import get_source
 from ..models.expression import ExpressionCell, TissueScope
+from .availability import unavailable_guard
 
 router = APIRouter()
+
+require = unavailable_guard("Expression data is not built for this dataset")
 
 
 @router.get(
@@ -19,4 +22,4 @@ def get_expression(
     tissue_scope: TissueScope,
     source: DataSource = Depends(get_source),
 ):
-    return source.get_expression(tissue_scope=tissue_scope).to_dicts()
+    return require(source.get_expression(tissue_scope=tissue_scope)).to_dicts()

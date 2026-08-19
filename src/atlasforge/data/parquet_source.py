@@ -7,6 +7,13 @@ import polars as pl
 
 from .newick import adjacency_to_newick
 
+GENES_FILE = "genes.parquet"
+TRANSCRIPTS_FILE = "transcripts.parquet"
+EXPRESSION_FILE = "expression.parquet"
+CLUSTERING_FILE = "clustering.parquet"
+CONSERVATION_FILE = "conservation.parquet"
+SPECIES_TREE_FILE = "species_tree.parquet"
+
 STRUCTURE_FILE = "structure/structure.parquet"
 FEATURES_FILE = "structure/features.parquet"
 EXPERIMENTAL_FILE = "structure/experimental.parquet"
@@ -20,6 +27,22 @@ CHROMS_FILE = "browser/chroms.parquet"
 GWAS_DIR = "browser/gwas"
 STUDIES_FILE = "browser/studies.parquet"
 BROWSER_SOURCES_FILE = "browser/sources.parquet"
+
+CAPABILITY_FILES: dict[str, tuple[str, ...]] = {
+    "expression": (EXPRESSION_FILE,),
+    "clustering": (CLUSTERING_FILE,),
+    "conservation": (CONSERVATION_FILE, SPECIES_TREE_FILE),
+    "structure": (STRUCTURE_FILE, FEATURES_FILE, EXPERIMENTAL_FILE, SOURCES_FILE),
+    "browser": (
+        MODELS_FILE,
+        WINDOWS_FILE,
+        BROWSER_GENES_FILE,
+        TRACKS_FILE,
+        CHROMS_FILE,
+        STUDIES_FILE,
+        BROWSER_SOURCES_FILE,
+    ),
+}
 
 # These run to megabytes across a family and are only ever read one gene at a time
 PER_RESIDUE_COLUMNS = ("plddt", "sequence")
@@ -56,8 +79,7 @@ class ParquetSource:
         return pl.scan_parquet(path)
 
     def _scan_optional(self, filename: str) -> pl.LazyFrame | None:
-        """Return None when the file is not there, which happens when the build step for
-        that view was skipped, so that the caller can answer 404 rather than 500."""
+        """Return None when an optional view file was not built."""
         path = self._dir / filename
         return pl.scan_parquet(path) if path.exists() else None
 
@@ -79,40 +101,53 @@ class ParquetSource:
         return path
 
     def get_genes(self) -> pl.DataFrame:
-        return self._scan("genes.parquet").collect()
+        return self._scan(GENES_FILE).collect()
 
     def get_transcripts(self, gene_id: str) -> pl.DataFrame:
-        return self._scan("transcripts.parquet").filter(pl.col("gene_id") == gene_id).collect()
+        return self._scan(TRANSCRIPTS_FILE).filter(pl.col("gene_id") == gene_id).collect()
 
-    def get_expression(self, gene_id: str | None = None, tissue_scope: str = "all") -> pl.DataFrame:
-        lf = self._scan("expression.parquet").filter(pl.col("tissue_scope") == tissue_scope)
+    def get_expression(
+        self, gene_id: str | None = None, tissue_scope: str = "all"
+    ) -> pl.DataFrame | None:
+        lf = self._scan_optional(EXPRESSION_FILE)
+        if lf is None:
+            return None
+        lf = lf.filter(pl.col("tissue_scope") == tissue_scope)
         if gene_id:
             lf = lf.filter(pl.col("gene_id") == gene_id)
         return lf.collect()
 
-    def get_conservation(self, gene_ids: list[str] | None = None) -> pl.DataFrame:
-        lf = self._scan("conservation.parquet")
+    def get_conservation(self, gene_ids: list[str] | None = None) -> pl.DataFrame | None:
+        lf = self._scan_optional(CONSERVATION_FILE)
+        if lf is None:
+            return None
         if gene_ids:
             lf = lf.filter(pl.col("gene_id").is_in(gene_ids))
         return lf.collect()
 
-    def get_species_tree(self) -> pl.DataFrame:
-        return self._scan("species_tree.parquet").collect()
+    def get_species_tree(self) -> pl.DataFrame | None:
+        lf = self._scan_optional(SPECIES_TREE_FILE)
+        return lf.collect() if lf is not None else None
 
-    def get_species_tree_newick(self) -> str:
+    def get_species_tree_newick(self) -> str | None:
         """Build the Newick form of the species tree back up from its rows."""
-        return adjacency_to_newick(
-            self.get_species_tree(), ("species_label", "species"), include_root_branch=True
-        )
+        tree = self.get_species_tree()
+        if tree is None:
+            return None
+        return adjacency_to_newick(tree, ("species_label", "species"), include_root_branch=True)
 
-    def get_clustering(self, method: str = "aa_sequence") -> pl.DataFrame:
-        return self._scan("clustering.parquet").filter(pl.col("method") == method).collect()
+    def get_clustering(self, method: str = "aa_sequence") -> pl.DataFrame | None:
+        lf = self._scan_optional(CLUSTERING_FILE)
+        if lf is None:
+            return None
+        return lf.filter(pl.col("method") == method).collect()
 
-    def get_clustering_newick(self, method: str = "aa_sequence") -> str:
+    def get_clustering_newick(self, method: str = "aa_sequence") -> str | None:
         """Build the Newick form of the clustering tree back up from its rows."""
-        return adjacency_to_newick(
-            self.get_clustering(method=method), ("symbol", "gene_id"), include_root_branch=False
-        )
+        clustering = self.get_clustering(method=method)
+        if clustering is None:
+            return None
+        return adjacency_to_newick(clustering, ("symbol", "gene_id"), include_root_branch=False)
 
     def _scan_by_gene(self, filename: str, gene_id: str | None) -> pl.DataFrame | None:
         lf = self._scan_optional(filename)
@@ -196,4 +231,4 @@ class ParquetSource:
         return lf.collect() if lf is not None else None
 
     def capabilities(self) -> dict[str, bool]:
-        return {"structure": self.has(STRUCTURE_FILE), "browser": self.has(MODELS_FILE)}
+        return {view: all(self.has(f) for f in files) for view, files in CAPABILITY_FILES.items()}

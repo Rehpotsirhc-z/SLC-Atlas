@@ -12,7 +12,7 @@ import { ROUTES, type RouteMeta } from "@/config/routes"
 function useVisibleRoutes() {
   const { data } = useCapabilities()
   return useMemo(
-    () => ROUTES.filter((r) => !r.capability || data?.[r.capability] !== false),
+    () => ROUTES.filter((route) => !route.capability || data?.[route.capability] === true),
     [data],
   )
 }

@@ -8,8 +8,11 @@ from ..data.source import DataSource
 from ..deps import get_source
 from ..models.conservation import ConservationCell, SpeciesNode
 from ..responses import newick_response
+from .availability import unavailable_guard
 
 router = APIRouter()
+
+require = unavailable_guard("Conservation data is not built for this dataset")
 
 
 @router.get(
@@ -18,7 +21,7 @@ router = APIRouter()
     summary="Ortholog identity for every gene and species",
 )
 def get_conservation(source: DataSource = Depends(get_source)):
-    return source.get_conservation().to_dicts()
+    return require(source.get_conservation()).to_dicts()
 
 
 @router.get(
@@ -27,7 +30,7 @@ def get_conservation(source: DataSource = Depends(get_source)):
     summary="The species tree, as a flat table of nodes",
 )
 def get_species_tree(source: DataSource = Depends(get_source)):
-    return source.get_species_tree().to_dicts()
+    return require(source.get_species_tree()).to_dicts()
 
 
 @router.get(
@@ -36,4 +39,4 @@ def get_species_tree(source: DataSource = Depends(get_source)):
     summary="The species tree, as Newick",
 )
 def get_species_tree_newick(source: DataSource = Depends(get_source)):
-    return newick_response(source.get_species_tree_newick(), "species_tree")
+    return newick_response(require(source.get_species_tree_newick()), "species_tree")

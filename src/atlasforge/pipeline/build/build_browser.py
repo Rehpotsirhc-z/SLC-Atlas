@@ -139,10 +139,6 @@ def check_flank(source_dir: Path, flank_min: int, flank_max: int) -> None:
 def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> None:
     browser = source_dir / "browser"
     models_path, chroms_path = browser / "transcripts.bed", browser / "chroms.tsv"
-    if not models_path.exists() or not chroms_path.exists():
-        console.detail(f"No gene models in {browser}, so the Genome Browser view is left out")
-        return
-
     check_flank(browser, flank_min, flank_max)
     transcripts = bed12.read_bed12(models_path)
     genes = pl.read_csv(
@@ -224,7 +220,8 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
         out / "chroms.parquet",
     )
 
-    console.detail(f"{count('gene', window_df.height)} over "
+    console.detail(
+        f"{count('gene', window_df.height)} over "
         f"{windows.covered_bases(merged) / 1e6:.0f} Mb"
         f"{' (the whole genome)' if whole_genome else ' of windows'}, "
         f"{count('transcript model', written)}, "
@@ -232,4 +229,5 @@ def run(source_dir: Path, out_dir: Path, *, flank_min: int, flank_max: int) -> N
         f"{count('coverage track', tracks.height)} from {count('lane', len(coverage))} "
         f"({mirrored} copied here, {copied} new), "
         f"{count('GWAS study/GWAS studies', len(studies))} "
-        f"holding {count('variant', kept_variants)}")
+        f"holding {count('variant', kept_variants)}"
+    )
