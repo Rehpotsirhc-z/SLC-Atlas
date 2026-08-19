@@ -55,6 +55,7 @@ if ! /workspace/.venv/bin/python -c 'import ensurepip' 2>/dev/null; then
 fi
 if [ "$need_pip" = 1 ] || ! sha256sum -c "$STAMP" >/dev/null 2>&1; then
     /workspace/.venv/bin/pip install --upgrade pip wheel
+    mkdir -p /workspace/web/dist
     /workspace/.venv/bin/pip install -e '/workspace[pipeline,dev]'
     sha256sum "$REQ" >"$STAMP"
 fi
