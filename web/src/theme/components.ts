@@ -142,6 +142,9 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
     },
     MuiCssBaseline: {
       styleOverrides: {
+        "@media (pointer: coarse)": {
+          "input, textarea, select": { fontSize: "16px !important" },
+        },
         "a:not(.MuiButtonBase-root):focus-visible": {
           outline: `2px solid ${c.blue}`,
           outlineOffset: 2,
