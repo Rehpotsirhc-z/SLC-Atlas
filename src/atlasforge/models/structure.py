@@ -117,7 +117,9 @@ class ExperimentalStructure(BaseModel):
 
 class DataSourceRecord(BaseModel):
     source: str
+    domain: str | None = None
     version: str | None = None
+    assembly: str | None = None
     retrieved_date: str | None = None
     license_spdx: str | None = None
     url: str | None = None

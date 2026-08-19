@@ -7,7 +7,6 @@ from ..data.source import DataSource
 from ..deps import get_source
 from ..responses import byte_range_file
 from ..models.structure import (
-    DataSourceRecord,
     ExperimentalStructure,
     GeneTopology,
     ProteinFeature,
@@ -30,15 +29,6 @@ require = unavailable_guard(UNAVAILABLE)
 )
 def list_structures(source: DataSource = Depends(get_source)):
     return require(source.get_structure()).to_dicts()
-
-
-@router.get(
-    "/structure/sources.json",
-    response_model=list[DataSourceRecord],
-    summary="Where the structure data came from, and under what license",
-)
-def list_sources(source: DataSource = Depends(get_source)):
-    return require(source.get_data_sources()).to_dicts()
 
 
 @router.get(

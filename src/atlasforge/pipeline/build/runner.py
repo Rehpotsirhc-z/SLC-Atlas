@@ -25,6 +25,7 @@ from . import (
     build_conservation,
     build_expression,
     build_gene_tables,
+    build_sources,
     build_structure,
 )
 
@@ -84,6 +85,11 @@ def _clustering(paths: PipelinePaths, options: BuildOptions) -> None:
     build_clustering.run(paths.source, paths.app, paths.work, _resolve_mafft(options.mafft))
 
 
+def _gene_tables(source: Path, out: Path) -> None:
+    build_gene_tables.run(source, out)
+    build_sources.run(source, out)
+
+
 def _steps(paths: PipelinePaths, options: BuildOptions) -> dict[str, Step]:
     source, out = paths.source, paths.app
     structure_out, browser_out = out / "structure", out / "browser"
@@ -91,10 +97,10 @@ def _steps(paths: PipelinePaths, options: BuildOptions) -> dict[str, Step]:
     return {
         "gene_tables": Step(
             "gene_tables",
-            lambda: build_gene_tables.run(source, out),
+            lambda: _gene_tables(source, out),
             label="Building the gene and transcript tables",
             inputs=(genes, transcripts),
-            outputs=(out / "genes.parquet", out / "transcripts.parquet"),
+            outputs=(out / "genes.parquet", out / "transcripts.parquet", out / "sources.parquet"),
         ),
         "browser": Step(
             "browser",
@@ -153,7 +159,6 @@ def _steps(paths: PipelinePaths, options: BuildOptions) -> dict[str, Step]:
                 structure_out / "structure.parquet",
                 structure_out / "features.parquet",
                 structure_out / "experimental.parquet",
-                structure_out / "sources.parquet",
             ),
         ),
     }

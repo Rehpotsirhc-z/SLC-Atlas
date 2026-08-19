@@ -13,11 +13,21 @@ EXPRESSION_FILE = "expression.parquet"
 CLUSTERING_FILE = "clustering.parquet"
 CONSERVATION_FILE = "conservation.parquet"
 SPECIES_TREE_FILE = "species_tree.parquet"
+APP_SOURCES_FILE = "sources.parquet"
+
+SOURCE_COLUMNS = (
+    "domain",
+    "source",
+    "version",
+    "assembly",
+    "retrieved_date",
+    "license_spdx",
+    "url",
+)
 
 STRUCTURE_FILE = "structure/structure.parquet"
 FEATURES_FILE = "structure/features.parquet"
 EXPERIMENTAL_FILE = "structure/experimental.parquet"
-SOURCES_FILE = "structure/sources.parquet"
 
 MODELS_FILE = "browser/models.bb"
 WINDOWS_FILE = "browser/windows.parquet"
@@ -32,7 +42,7 @@ CAPABILITY_FILES: dict[str, tuple[str, ...]] = {
     "expression": (EXPRESSION_FILE,),
     "clustering": (CLUSTERING_FILE,),
     "conservation": (CONSERVATION_FILE, SPECIES_TREE_FILE),
-    "structure": (STRUCTURE_FILE, FEATURES_FILE, EXPERIMENTAL_FILE, SOURCES_FILE),
+    "structure": (STRUCTURE_FILE, FEATURES_FILE, EXPERIMENTAL_FILE),
     "browser": (
         MODELS_FILE,
         WINDOWS_FILE,
@@ -184,9 +194,30 @@ class ParquetSource:
     def get_experimental_structures(self, gene_id: str | None = None) -> pl.DataFrame | None:
         return self._scan_by_gene(EXPERIMENTAL_FILE, gene_id)
 
-    def get_data_sources(self) -> pl.DataFrame | None:
-        lf = self._scan_optional(SOURCES_FILE)
-        return lf.collect() if lf is not None else None
+    def get_all_sources(self) -> pl.DataFrame | None:
+        """Return provenance records for every available dataset."""
+        parts = []
+        core = self._scan_optional(APP_SOURCES_FILE)
+        if core is not None:
+            parts.append(core.collect())
+        # GWAS citations live in the track manifest, so omit incomplete records here
+        browser = self.get_browser_sources()
+        if browser is not None and "kind" in browser.columns:
+            browser = browser.filter(pl.col("kind") != "gwas")
+        if browser is not None and not browser.is_empty():
+            parts.append(browser.with_columns(pl.lit("browser").alias("domain")))
+        if not parts:
+            return None
+        columns = list(SOURCE_COLUMNS)
+        normalized = []
+        for part in parts:
+            missing = [pl.lit(None, pl.String).alias(c) for c in columns if c not in part.columns]
+            normalized.append((part.with_columns(missing) if missing else part).select(columns))
+        merged = pl.concat(normalized)
+        return merged.with_columns(
+            pl.when(pl.col(c).str.len_chars() == 0).then(None).otherwise(pl.col(c)).alias(c)
+            for c in columns
+        )
 
     def get_track_manifest(self) -> dict | None:
         """Everything the browser needs before it draws anything: the tracks it may read,

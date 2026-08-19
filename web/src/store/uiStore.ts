@@ -50,6 +50,8 @@ interface UIState {
   setPopupContent: (content: PopupContent | null) => void
   anatomogramSex: "female" | "male"
   setAnatomogramSex: (sex: "female" | "male") => void
+  aboutOpen: boolean
+  setAboutOpen: (open: boolean) => void
   windowStack: string[]
   raiseWindow: (key: string) => void
 }
@@ -94,6 +96,8 @@ export const useUIStore = create<UIState>()(
       setPopupContent: (content) => set({ popupContent: content }),
       anatomogramSex: "female",
       setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
+      aboutOpen: false,
+      setAboutOpen: (open) => set({ aboutOpen: open }),
       windowStack: [],
       raiseWindow: (key) =>
         set((s) =>

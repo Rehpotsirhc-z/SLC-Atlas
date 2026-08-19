@@ -107,7 +107,9 @@ export interface ExperimentalStructure {
 
 export interface DataSourceRecord {
   source: string
+  domain: string | null
   version: string | null
+  assembly: string | null
   retrieved_date: string | null
   license_spdx: string | null
   url: string | null

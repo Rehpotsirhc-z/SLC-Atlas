@@ -6,7 +6,9 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { AppBar, Box, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { AppNavMenu, AppNavTabs } from "./components/AppNav"
 import ThemeToggle from "./components/ThemeToggle"
+import AppInfoButton from "./components/AppInfoButton"
 import GeneInfoPopup from "./components/GeneInfoPopup"
+import AboutDataPopup from "./components/AboutDataPopup"
 import { routes } from "./routes"
 import { atlas } from "./config/atlas"
 import { HOME_ROUTE } from "./config/routes"
@@ -35,6 +37,7 @@ export default function App() {
           </Typography>
           {!isMobile && <AppNavTabs />}
           <Box sx={{ flexGrow: 1 }} />
+          <AppInfoButton />
           <ThemeToggle />
         </Toolbar>
       </AppBar>
@@ -57,6 +60,7 @@ export default function App() {
         </Routes>
       </Box>
       <GeneInfoPopup />
+      <AboutDataPopup />
     </Box>
   )
 }

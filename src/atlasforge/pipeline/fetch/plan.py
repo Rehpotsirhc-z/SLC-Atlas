@@ -25,6 +25,7 @@ STAGES = [
     ["fetch_uniprot_sequences"],
     ["fetch_protein_features", "fetch_structures"],
     ["download_models", "download_experimental_models", "fetch_confidence"],
+    ["record_sources"],
 ]
 
 STEP_NAMES = tuple(step for stage in STAGES for step in stage)
@@ -77,6 +78,7 @@ LABELS = {
     "fetch_confidence": "Fetching AlphaFold confidence (pLDDT) per residue",
     "download_models": "Mirroring the AlphaFold models",
     "download_experimental_models": "Mirroring the PDB structures",
+    "record_sources": "Recording where the data came from",
 }
 
 DONE = (

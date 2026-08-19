@@ -130,7 +130,6 @@ def _view_urls(view: str, gene_ids: list[str]) -> list[str]:
     if view == "structure":
         urls = [
             "/api/structure.json",
-            "/api/structure/sources.json",
             "/api/structure/topology.json",
         ]
         for gid in gene_ids:
@@ -157,7 +156,7 @@ VIEW_PREFIXES = {
 
 
 def _plan(capabilities: dict[str, bool], gene_ids: list[str]) -> list[str]:
-    urls = ["/api/capabilities.json", "/api/genes.json"]
+    urls = ["/api/capabilities.json", "/api/sources.json", "/api/genes.json"]
     urls += [f"/api/genes/{gid}/transcripts.json" for gid in gene_ids]
     for view in VIEW_PREFIXES:
         if capabilities.get(view):

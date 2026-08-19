@@ -14,7 +14,6 @@ which lets anyone who redistributes the dataset leave one of them out without th
 of the others being affected.
 """
 
-from datetime import date, datetime
 from pathlib import Path
 
 import polars as pl
@@ -25,17 +24,6 @@ from ..lib.reporting import count, report_missing
 from ..lib.structures import rank_experimental
 from . import structure_checks
 from .model_files import copy_models, stale_models
-
-SOURCES = [
-    ("AlphaFold DB", "structures.tsv", "CC-BY-4.0", "https://alphafold.ebi.ac.uk"),
-    ("UniProt", "features.tsv", "CC-BY-4.0", "https://www.uniprot.org"),
-    (
-        "PDBe (via 3D-Beacons)",
-        "experimental.tsv",
-        "CC0-1.0",
-        "https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons",
-    ),
-]
 
 # Structure rows are large, so use small groups to keep gene lookups narrow
 STRUCTURE_ROW_GROUP = 64
@@ -78,14 +66,6 @@ EXPERIMENTAL_SCHEMA = {
     "model_url": pl.Utf8,
     "model_page_url": pl.Utf8,
     "created": pl.Utf8,
-}
-
-SOURCES_SCHEMA = {
-    "source": pl.Utf8,
-    "version": pl.Utf8,
-    "retrieved_date": pl.Utf8,
-    "license_spdx": pl.Utf8,
-    "url": pl.Utf8,
 }
 
 # Both files are fetched rather than built from other source files, so one of them being
@@ -262,28 +242,6 @@ def build_structure(
     )
 
 
-def build_sources(source_dir: Path, structures: pl.DataFrame) -> pl.DataFrame:
-    versions = structures["afdb_version"].drop_nulls().unique().to_list()
-    afdb_version = f"v{versions[0]}" if len(versions) == 1 else None
-    rows = []
-    for source, filename, license_spdx, url in SOURCES:
-        path = source_dir / filename
-        rows.append(
-            {
-                "source": source,
-                "version": afdb_version if source.startswith("AlphaFold") else None,
-                "retrieved_date": (
-                    datetime.fromtimestamp(path.stat().st_mtime).date().isoformat()
-                    if path.exists()
-                    else date.today().isoformat()
-                ),
-                "license_spdx": license_spdx,
-                "url": url,
-            }
-        )
-    return pl.DataFrame(rows, schema=SOURCES_SCHEMA)
-
-
 def run(source_dir: Path, out_dir: Path) -> None:
     structure_source = source_dir / "structure"
     structure_out = out_dir / "structure"
@@ -336,7 +294,6 @@ def run(source_dir: Path, out_dir: Path) -> None:
     )
     parquet.write(features, structure_out / "features.parquet")
     parquet.write(experimental, structure_out / "experimental.parquet")
-    parquet.write(build_sources(structure_source, structure), structure_out / "sources.parquet")
 
     structure_checks.report_models(structure, total_models)
 

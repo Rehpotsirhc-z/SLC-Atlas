@@ -43,6 +43,7 @@ from . import (
     gtex,
     hgnc,
     plan,
+    record_sources,
     slice_coverage,
     subset_expression,
 )
@@ -300,6 +301,12 @@ def _steps(options: plan.FetchOptions, paths: PipelinePaths) -> dict[str, Step]:
             skip_when_present=False,
         ),
         *_browser_steps(options, paths),
+        Step(
+            "record_sources",
+            lambda: record_sources.run(options, paths),
+            inputs=(genes,),
+            outputs=(source / "sources.tsv",),
+        ),
     ]
     return {step.name: step for step in steps}
 

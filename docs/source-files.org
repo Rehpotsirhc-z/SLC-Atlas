@@ -69,6 +69,13 @@ These files define the genes in the atlas and are used by every view.
 The gene coordinates use the Ensembl assembly selected during fetch. Browser
 annotations and GWAS studies must use the same assembly.
 
+** Data sources
+The About panel summarizes where each dataset came from.
+
+| File          | Contents | Created by |
+|---------------+----------+------------|
+| ~sources.tsv~ | ~domain~, ~source~, ~version~, ~assembly~, ~retrieved_date~, ~license_spdx~, ~url~, one row per external source of the genes, expression, conservation, and structure data | ~record_sources~ |
+
 ** Clustering
 The clustering build combines sequences, expression values, orthologs, and
 family assignments. Some inputs are also used by other views.

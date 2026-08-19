@@ -5,7 +5,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "../client"
 import type {
-  DataSourceRecord,
   ExperimentalStructure,
   GeneTopology,
   ProteinFeature,
@@ -44,10 +43,4 @@ export const useExperimentalStructures = (geneId: string | null) =>
     queryKey: ["structure", geneId, "experimental"],
     queryFn: () => api.get<ExperimentalStructure[]>(`/structure/${geneId}/experimental.json`),
     enabled: geneId != null,
-  })
-
-export const useStructureSources = () =>
-  useQuery({
-    queryKey: ["structure", "sources"],
-    queryFn: () => api.get<DataSourceRecord[]>("/structure/sources.json"),
   })
