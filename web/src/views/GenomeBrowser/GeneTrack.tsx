@@ -30,8 +30,7 @@ import { frameScale, type Scale, type Viewport } from "./scale"
 import { useHoverFrame } from "./useHoverFrame"
 import { useLaneCanvas } from "./useLaneCanvas"
 import type { Painter } from "./useBrowserView"
-
-export type GeneTrackMode = "transcripts" | "genes"
+import type { GeneTrackMode } from "@/types/browser"
 
 function countTitle(mode: GeneTrackMode, drawn: number, hidden: number): string {
   const kind = mode === "transcripts" ? "transcript models" : "genes"

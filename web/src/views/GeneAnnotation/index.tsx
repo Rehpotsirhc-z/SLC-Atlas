@@ -14,6 +14,7 @@ import { downloadGenes } from "./geneDownloads"
 import GeneTable from "./GeneTable"
 import GeneTableSkeleton from "./GeneTableSkeleton"
 import { useGeneAnnotationState } from "./useGeneAnnotationState"
+import { ROWS_PER_PAGE_OPTIONS } from "./shareParams"
 
 export default function GeneAnnotation() {
   const {
@@ -170,7 +171,7 @@ export default function GeneAnnotation() {
                   setRowsPerPage(parseInt(e.target.value))
                   setPage(0)
                 }}
-                rowsPerPageOptions={[25, 50, 100]}
+                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
                 sx={{ borderTop: 1, borderColor: "divider", flexShrink: 0, mr: 0.5 }}
               />
             </>

@@ -12,18 +12,20 @@ import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurf
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { downloadName } from "@/utils/download"
+import { GENETREE_PARAM } from "@/utils/shareParams"
+import { useShareParam } from "@/utils/useShareParam"
 import ConservationHeatmap, { type ConservationHeatmapHandle } from "./ConservationHeatmap"
 import ConservationLegend from "./ConservationLegend"
 import ConservationToolbar from "./ConservationToolbar"
 import GeneOrderControl from "./GeneOrderControl"
+import { CELL_PARAM, SPECIESTREE_PARAM } from "./shareParams"
 import { useConservationState } from "./useConservationState"
-import type { CellMetricKey } from "@/types/conservation"
 
 export default function Conservation() {
-  const [cellMetric, setCellMetric] = useState<CellMetricKey>("perc_id")
+  const [cellMetric, setCellMetric] = useShareParam(CELL_PARAM)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [showSpeciesTree, setShowSpeciesTree] = useState(true)
-  const [showGeneTree, setShowGeneTree] = useState(true)
+  const [showSpeciesTree, setShowSpeciesTree] = useShareParam(SPECIESTREE_PARAM)
+  const [showGeneTree, setShowGeneTree] = useShareParam(GENETREE_PARAM)
   const heatmapRef = useRef<ConservationHeatmapHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 

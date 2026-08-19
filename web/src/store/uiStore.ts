@@ -7,6 +7,8 @@ import { persist } from "zustand/middleware"
 import type { ThemeMode } from "@/theme"
 import type { TreeMetric, TreeTissue } from "@/api/hooks/useClustering"
 import type { PanelPos } from "@/utils/useDraggablePanel"
+import { DEFAULT_PREFS, type BrowserPrefs, type GeneTrackMode } from "@/types/browser"
+import { clearModeOverride, clearPrefOverrides, persistedBrowserState } from "./browserOverrides"
 export type { PopupContent }
 import type { PopupContent } from "@/types/popup"
 
@@ -50,6 +52,10 @@ interface UIState {
   setPopupContent: (content: PopupContent | null) => void
   anatomogramSex: "female" | "male"
   setAnatomogramSex: (sex: "female" | "male") => void
+  browserPrefs: BrowserPrefs
+  setBrowserPrefs: (next: Partial<BrowserPrefs>) => void
+  browserMode: GeneTrackMode
+  setBrowserMode: (mode: GeneTrackMode) => void
   aboutOpen: boolean
   setAboutOpen: (open: boolean) => void
   windowStack: string[]
@@ -58,6 +64,18 @@ interface UIState {
 
 export const RAIL_MIN_WIDTH = 220
 export const RAIL_FLOAT_DEFAULT_SIZE: PanelSize = { w: 300, h: 480 }
+
+const partializeUI = (state: UIState) => ({
+  themeMode: state.themeMode,
+  railOpen: state.railOpen,
+  railWidth: state.railWidth,
+  railFloating: state.railFloating,
+  railFloatPos: state.railFloatPos,
+  railFloatSize: state.railFloatSize,
+  anatomogramSex: state.anatomogramSex,
+  ...persistedBrowserState(state.browserPrefs, state.browserMode),
+})
+type PersistedUI = ReturnType<typeof partializeUI>
 
 export const useUIStore = create<UIState>()(
   persist(
@@ -96,6 +114,16 @@ export const useUIStore = create<UIState>()(
       setPopupContent: (content) => set({ popupContent: content }),
       anatomogramSex: "female",
       setAnatomogramSex: (sex) => set({ anatomogramSex: sex }),
+      browserPrefs: DEFAULT_PREFS,
+      setBrowserPrefs: (next) => {
+        clearPrefOverrides(Object.keys(next) as (keyof BrowserPrefs)[])
+        set((s) => ({ browserPrefs: { ...s.browserPrefs, ...next } }))
+      },
+      browserMode: "transcripts",
+      setBrowserMode: (mode) => {
+        clearModeOverride()
+        set({ browserMode: mode })
+      },
       aboutOpen: false,
       setAboutOpen: (open) => set({ aboutOpen: open }),
       windowStack: [],
@@ -108,15 +136,18 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: "atlas-ui",
-      partialize: (state) => ({
-        themeMode: state.themeMode,
-        railOpen: state.railOpen,
-        railWidth: state.railWidth,
-        railFloating: state.railFloating,
-        railFloatPos: state.railFloatPos,
-        railFloatSize: state.railFloatSize,
-        anatomogramSex: state.anatomogramSex,
-      }),
+      version: 1,
+      partialize: partializeUI,
+      migrate: (persisted) => persisted as PersistedUI,
+      // Add defaults missing from state saved by older builds
+      merge: (persisted, current) => {
+        const stored = (persisted ?? {}) as Partial<UIState>
+        return {
+          ...current,
+          ...stored,
+          browserPrefs: { ...DEFAULT_PREFS, ...stored.browserPrefs },
+        }
+      },
     },
   ),
 )

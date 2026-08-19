@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "@mui/material"
 import { useGeneById, useGenes } from "@/api/hooks/useGenes"
 import {
@@ -13,13 +13,16 @@ import {
   useTopology,
 } from "@/api/hooks/useStructure"
 import { useUIStore } from "@/store/uiStore"
+import { FAMILY_PARAM } from "@/utils/shareParams"
+import { readArrival, useShareMirror, useShareParam } from "@/utils/useShareParam"
 import { buildModelOptions, PREDICTED_ID } from "./modelOptions"
 import { countMarks, featureMarks, signalPeptide } from "./sequenceFeatures"
+import { PDB_PARAM } from "./shareParams"
 import { buildWall } from "./topologyWall"
 import type { ModelSource } from "./molstar/types"
 
 export function useStructureState() {
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null)
+  const [familyFilter, setFamilyFilter] = useShareParam(FAMILY_PARAM)
   // Keyed by gene so picking an entry for one gene cannot leak into the next
   const [pdbChoice, setPdbChoice] = useState<{ geneId: string; pdbId: string } | null>(null)
   const [collapseSignal, setCollapseSignal] = useState(0)
@@ -118,6 +121,19 @@ export function useStructureState() {
     () => buildModelOptions(selected, experimental),
     [selected, experimental],
   )
+
+  useShareMirror(PDB_PARAM, selectedPdbId)
+
+  // Apply a shared PDB ID only after confirming it belongs to the selected gene
+  const arrivalPdb = useRef(readArrival(PDB_PARAM))
+  useEffect(() => {
+    const wanted = arrivalPdb.current
+    if (!wanted || !selectedGeneId || !experimental) return
+    arrivalPdb.current = null
+    if (modelOptions.some((option) => option.id === wanted)) {
+      setPdbChoice({ geneId: selectedGeneId, pdbId: wanted })
+    }
+  }, [experimental, modelOptions, selectedGeneId])
 
   // The predicted model opens by default: it is the only one every gene has, and the only
   // one numbered in the same residues as the topology figure

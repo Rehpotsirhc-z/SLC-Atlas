@@ -6,6 +6,9 @@ import { useCallback, useEffect, useDeferredValue, useMemo, useState } from "rea
 import { useGenes } from "@/api/hooks/useGenes"
 import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
+import { FAMILY_PARAM } from "@/utils/shareParams"
+import { useShareParam } from "@/utils/useShareParam"
+import { DIR_PARAM, ROWS_PARAM, SEARCH_MIRROR_MS, SEARCH_PARAM, SORT_PARAM } from "./shareParams"
 
 export type SortKey = "id" | "symbol" | "name" | "position" | "length" | "category" | "family"
 export type SortDirection = "asc" | "desc"
@@ -48,12 +51,14 @@ function sortGenes(genes: Gene[], sortKey: SortKey, direction: SortDirection): G
 
 export function useGeneAnnotationState() {
   const { data: genes = [], isLoading, error } = useGenes()
-  const [searchText, setSearchText] = useState("")
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<SortKey>("symbol")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [searchText, setSearchText] = useShareParam(SEARCH_PARAM, {
+    mirrorDebounceMs: SEARCH_MIRROR_MS,
+  })
+  const [familyFilter, setFamilyFilter] = useShareParam(FAMILY_PARAM)
+  const [sortKey, setSortKey] = useShareParam(SORT_PARAM)
+  const [sortDirection, setSortDirection] = useShareParam(DIR_PARAM)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(50)
+  const [rowsPerPage, setRowsPerPage] = useShareParam(ROWS_PARAM)
   const [expandedGeneIds, setExpandedGeneIds] = useState<ReadonlySet<string>>(() => new Set())
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
 

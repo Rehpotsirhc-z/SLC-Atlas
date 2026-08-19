@@ -107,3 +107,30 @@ export interface RawFeature {
   end: number
   rest: string
 }
+
+export type YScaleMode = "auto" | "shared" | "fixed"
+
+export type GeneTrackMode = "transcripts" | "genes"
+
+export interface BrowserPrefs {
+  laneHeight: number
+  yScale: YScaleMode
+  yFixed: number
+  showGwas: boolean
+  showSignificance: boolean
+  showGrid: boolean
+  hidden: string[]
+}
+
+export const LANE_HEIGHT_MIN = 32
+export const LANE_HEIGHT_MAX = 160
+
+export const DEFAULT_PREFS: BrowserPrefs = {
+  laneHeight: 64,
+  yScale: "auto",
+  yFixed: 1,
+  showGwas: true,
+  showSignificance: true,
+  showGrid: true,
+  hidden: [],
+}

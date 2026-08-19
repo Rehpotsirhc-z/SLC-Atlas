@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useState, type ReactNode, type RefObject } from "react"
+import { useCallback, type ReactNode, type RefObject } from "react"
 import { Box, Stack, Typography } from "@mui/material"
 import InfoTooltip from "@/components/InfoTooltip"
 import { capBoxSx } from "@/theme"
@@ -36,6 +36,8 @@ interface Props {
   svgRef: RefObject<SVGSVGElement | null>
   onExporterChange: (exporter: ModelExporter | null) => void
   membrane: boolean
+  mode: TopologyMode
+  onModeChange: (mode: TopologyMode) => void
 }
 
 export default function LinkedPanes({
@@ -52,6 +54,8 @@ export default function LinkedPanes({
   svgRef,
   onExporterChange,
   membrane,
+  mode,
+  onModeChange,
 }: Props) {
   const selectModel = useCallback(
     (id: string) => onSelectPdbId(id === PREDICTED_ID ? null : id),
@@ -60,7 +64,6 @@ export default function LinkedPanes({
   const [figureRef, figureBox] = useElementSize<HTMLDivElement>("content")
   // Floored so a fractional column width cannot leave the figure a sub-pixel too wide
   const trackWidth = Math.max(Math.floor(figureBox.w), TRACK.minWidth)
-  const [mode, setMode] = useState<TopologyMode>("regions")
 
   const topology = useTopologyState({
     features: features ?? [],
@@ -97,7 +100,7 @@ export default function LinkedPanes({
             </Typography>
             <TopologyGuide mode={topology.membrane ? mode : "features"} />
           </Stack>
-          {topology.membrane && <TopologyModeToggle mode={mode} onChange={setMode} />}
+          {topology.membrane && <TopologyModeToggle mode={mode} onChange={onModeChange} />}
         </Stack>
         <Box sx={{ overflowX: "auto" }}>
           {!structure.uniprot_length ? (

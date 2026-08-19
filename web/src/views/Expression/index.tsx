@@ -13,6 +13,8 @@ import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurf
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { downloadName } from "@/utils/download"
+import { GENETREE_PARAM } from "@/utils/shareParams"
+import { useShareParam } from "@/utils/useShareParam"
 import AnatomogramDock from "./AnatomogramDock"
 import ExpressionHeatmap, { type ExpressionHeatmapHandle } from "./ExpressionHeatmap"
 import ExpressionLegend from "./ExpressionLegend"
@@ -23,7 +25,7 @@ import { useExpressionState } from "./useExpressionState"
 
 export default function Expression() {
   const [searchOpen, setSearchOpen] = useState(false)
-  const [showGeneTree, setShowGeneTree] = useState(true)
+  const [showGeneTree, setShowGeneTree] = useShareParam(GENETREE_PARAM)
   const heatmapRef = useRef<ExpressionHeatmapHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 

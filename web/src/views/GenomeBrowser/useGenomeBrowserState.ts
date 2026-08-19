@@ -6,10 +6,17 @@ import { useCallback, useEffect, useMemo, useState, type RefObject } from "react
 import { useTheme } from "@mui/material"
 import { useBrowserGenes, useRegion, useTrackManifest } from "@/api/hooks/useBrowser"
 import { useUIStore } from "@/store/uiStore"
-import type { BrowserGene, Chrom, CoverageTrack, Region } from "@/types/browser"
-import { DEFAULT_PREFS, type BrowserPrefs } from "./BrowserSettings"
-import type { GeneTrackMode } from "./GeneTrack"
+import {
+  DEFAULT_PREFS,
+  type BrowserGene,
+  type Chrom,
+  type CoverageTrack,
+  type GeneTrackMode,
+  type Region,
+} from "@/types/browser"
 import { TRANSCRIPT_MAX_SPAN, Y_HEADROOM } from "./constants"
+import { useArrivalLocus } from "./useArrivalLocus"
+import { useBrowserMirror } from "./useBrowserMirror"
 import { chromNames } from "./chromNames"
 import { peakInView } from "./drawCoverage"
 import { rowGap } from "./geneLayout"
@@ -31,8 +38,10 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
 
-  const [prefs, setPrefs] = useState<BrowserPrefs>(DEFAULT_PREFS)
-  const [mode, setMode] = useState<GeneTrackMode>("transcripts")
+  const prefs = useUIStore((s) => s.browserPrefs)
+  const updatePrefs = useUIStore((s) => s.setBrowserPrefs)
+  const mode = useUIStore((s) => s.browserMode)
+  const setMode = useUIStore((s) => s.setBrowserMode)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [pendingLocus, setPendingLocus] = useState<(Viewport & { chrom: string }) | null>(null)
 
@@ -214,10 +223,27 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     setPendingLocus(null)
   }, [pendingLocus, region, view])
 
-  const updatePrefs = useCallback(
-    (next: Partial<BrowserPrefs>) => setPrefs((current) => ({ ...current, ...next })),
-    [],
-  )
+  useArrivalLocus({
+    ready: manifestQuery.data != null && browserGenesQuery.data != null,
+    names,
+    browserGenes,
+    goToLocus,
+    setPendingLocus,
+  })
+
+  useBrowserMirror({
+    prefs,
+    mode,
+    region,
+    committed: view.view,
+    moving: view.moving,
+    liveView: view.liveView,
+  })
+
+  const restoreDefaults = useCallback(() => {
+    updatePrefs(DEFAULT_PREFS)
+    setMode("transcripts")
+  }, [updatePrefs, setMode])
 
   const toggleSettings = useCallback(() => setSettingsOpen((open) => !open), [])
   const closeSettings = useCallback(() => setSettingsOpen(false), [])
@@ -248,6 +274,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     view,
     prefs,
     updatePrefs,
+    restoreDefaults,
     yMaxFor,
     mode,
     drawn,

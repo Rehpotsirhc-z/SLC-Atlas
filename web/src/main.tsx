@@ -17,11 +17,16 @@ import "@fontsource/source-sans-3/600.css"
 import "@fontsource/source-sans-3/700.css"
 import AppThemeProvider from "./components/AppThemeProvider"
 import App from "./App"
+import { captureArrival } from "./utils/shareUrl"
+import { applyShareArrival } from "./store/shareArrival"
 
 const { pathname, search, hash } = window.location
 if (pathname.length > 1 && pathname.endsWith("/")) {
   window.history.replaceState(null, "", pathname.slice(0, -1) + search + hash)
 }
+
+captureArrival()
+applyShareArrival()
 
 const queryClient = new QueryClient({
   defaultOptions: {

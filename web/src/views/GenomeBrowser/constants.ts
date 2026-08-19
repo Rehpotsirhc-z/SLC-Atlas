@@ -27,9 +27,8 @@ export const RULER_TICK_GAP_PX = 92
 // An edge label pulled inside the plot is dropped rather than drawn closer than this to its neighbor
 export const RULER_LABEL_GAP_PX = 6
 
-export const LANE_HEIGHT_DEFAULT = 64
-export const LANE_HEIGHT_MIN = 32
-export const LANE_HEIGHT_MAX = 160
+// Region shown around a point locus such as chr9:4500000
+export const ARRIVAL_POINT_SPAN = 100_000
 
 export const GWAS_LANE_HEIGHT = 112
 export const GWAS_LANE_KEY = "gwas"

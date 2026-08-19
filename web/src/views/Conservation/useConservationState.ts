@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import {
   resolveClusterMethod,
   useClustering,
@@ -11,13 +11,17 @@ import {
 } from "@/api/hooks/useClustering"
 import { useConservation, useSpeciesTree } from "@/api/hooks/useConservation"
 import { useGeneById } from "@/api/hooks/useGenes"
+import { tissueParam } from "@/store/shareArrival"
 import { useUIStore } from "@/store/uiStore"
 import { usePublishPopup } from "@/store/usePublishPopup"
 import { uniqueFamilies, uniqueGeneOptions } from "@/utils/geneOptions"
+import { FAMILY_PARAM } from "@/utils/shareParams"
+import { useShareMirror, useShareParam } from "@/utils/useShareParam"
 import type { CellMetricKey } from "@/types/conservation"
+import { CONSERVATION_ORDER } from "./shareParams"
 
 export function useConservationState(cellMetric: CellMetricKey) {
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null)
+  const [familyFilter, setFamilyFilter] = useShareParam(FAMILY_PARAM)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -25,6 +29,10 @@ export function useConservationState(cellMetric: CellMetricKey) {
   const setMetric = useUIStore((s) => s.setTreeMetric)
   const tissue = useUIStore((s) => s.treeTissue)
   const setTissue = useUIStore((s) => s.setTreeTissue)
+
+  useShareMirror(CONSERVATION_ORDER, metric)
+  const tissueDescriptor = useMemo(() => tissueParam("tissue", metric), [metric])
+  useShareMirror(tissueDescriptor, tissue)
 
   const method = resolveClusterMethod(metric, tissue)
   const { data: cells, isLoading: cl, error: ce } = useConservation()

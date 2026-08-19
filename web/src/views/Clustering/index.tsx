@@ -12,13 +12,15 @@ import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurf
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { downloadName } from "@/utils/download"
+import { useShareParam } from "@/utils/useShareParam"
 import ClusteringToolbar from "./ClusteringToolbar"
 import LayoutToggle from "./LayoutToggle"
-import PhyloTree, { type Layout, type PhyloTreeHandle } from "./PhyloTree"
+import PhyloTree, { type PhyloTreeHandle } from "./PhyloTree"
+import { LAYOUT_PARAM } from "./shareParams"
 import { useClusteringState } from "./useClusteringState"
 
 export default function Clustering() {
-  const [layout, setLayout] = useState<Layout>("rectangular")
+  const [layout, setLayout] = useShareParam(LAYOUT_PARAM)
   const [searchOpen, setSearchOpen] = useState(false)
   const treeRef = useRef<PhyloTreeHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))

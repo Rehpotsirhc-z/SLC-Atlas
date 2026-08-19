@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import {
   resolveClusterMethod,
   useClustering,
@@ -14,9 +14,12 @@ import { useGeneById } from "@/api/hooks/useGenes"
 import { useUIStore } from "@/store/uiStore"
 import { usePublishPopup } from "@/store/usePublishPopup"
 import { uniqueFamilies, uniqueGeneOptions } from "@/utils/geneOptions"
+import { FAMILY_PARAM } from "@/utils/shareParams"
+import { useShareMirror, useShareParam } from "@/utils/useShareParam"
+import { EXPRESSION_ORDER, EXPRESSION_TISSUE } from "./shareParams"
 
 export function useExpressionState() {
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null)
+  const [familyFilter, setFamilyFilter] = useShareParam(FAMILY_PARAM)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -24,6 +27,9 @@ export function useExpressionState() {
   const setMetric = useUIStore((s) => s.setExpressionMetric)
   const tissue = useUIStore((s) => s.expressionTissue)
   const setTissue = useUIStore((s) => s.setExpressionTissue)
+
+  useShareMirror(EXPRESSION_ORDER, metric)
+  useShareMirror(EXPRESSION_TISSUE, tissue)
 
   const method = resolveClusterMethod(metric, tissue)
   const { data: rows, isLoading: el, error: ee } = useExpressionMatrix(tissue)

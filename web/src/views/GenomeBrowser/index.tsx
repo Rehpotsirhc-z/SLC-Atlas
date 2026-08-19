@@ -394,6 +394,7 @@ export default function GenomeBrowser() {
                 <BrowserSettings
                   prefs={state.prefs}
                   onChange={state.updatePrefs}
+                  onRestoreDefaults={state.restoreDefaults}
                   onClose={state.closeSettings}
                   anchorRef={settingsRef}
                   tracks={state.allTracks}

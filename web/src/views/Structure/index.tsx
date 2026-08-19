@@ -16,11 +16,13 @@ import {
   PREFERRED_CONTENT_WIDTH,
   SIDE_BY_SIDE_MIN_WIDTH,
 } from "./constants"
+import { useShareParam } from "@/utils/useShareParam"
 import ExperimentalTable from "./ExperimentalTable"
 import IdentityCard from "./IdentityCard"
 import StructureToolbar from "./StructureToolbar"
 import TopologyWall from "./TopologyWall"
 import LinkedPanes from "./LinkedPanes"
+import { TOPO_PARAM } from "./shareParams"
 import { useStructureState } from "./useStructureState"
 import { EMPTY_WALL } from "./topologyWall"
 import type { Gene } from "@/types/gene"
@@ -32,6 +34,7 @@ export default function Structure() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [topoMode, setTopoMode] = useShareParam(TOPO_PARAM)
   // Present only while the viewer is mounted, which is what gates the export menu entry
   const [exportModelPng, setExportModelPng] = useState<ModelExporter | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -191,6 +194,8 @@ export default function Structure() {
                       svgRef={svgRef}
                       onExporterChange={handleExporterChange}
                       membrane={selectedHasMembrane}
+                      mode={topoMode}
+                      onModeChange={setTopoMode}
                     />
 
                     {experimental && experimental.length > 0 && (

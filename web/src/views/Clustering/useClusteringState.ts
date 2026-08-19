@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import {
   METHOD_LABEL,
   resolveClusterMethod,
@@ -11,12 +11,16 @@ import {
   type TreeTissue,
 } from "@/api/hooks/useClustering"
 import { useGeneById, useGenes } from "@/api/hooks/useGenes"
+import { tissueParam } from "@/store/shareArrival"
 import { useUIStore } from "@/store/uiStore"
 import { usePublishPopup } from "@/store/usePublishPopup"
 import { uniqueFamilies, uniqueGeneOptions } from "@/utils/geneOptions"
+import { FAMILY_PARAM } from "@/utils/shareParams"
+import { useShareMirror, useShareParam } from "@/utils/useShareParam"
+import { CLUSTERING_METRIC } from "./shareParams"
 
 export function useClusteringState() {
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null)
+  const [familyFilter, setFamilyFilter] = useShareParam(FAMILY_PARAM)
 
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -24,6 +28,10 @@ export function useClusteringState() {
   const setMetric = useUIStore((s) => s.setClusteringMetric)
   const tissue = useUIStore((s) => s.clusteringTissue)
   const setTissue = useUIStore((s) => s.setClusteringTissue)
+
+  useShareMirror(CLUSTERING_METRIC, metric)
+  const tissueDescriptor = useMemo(() => tissueParam("tissue", metric), [metric])
+  useShareMirror(tissueDescriptor, tissue)
 
   const method = resolveClusterMethod(metric, tissue)
   const { data, isLoading, error } = useClustering(method)

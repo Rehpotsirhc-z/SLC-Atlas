@@ -6,6 +6,7 @@ import { memo, useRef, type RefObject } from "react"
 import CloseIcon from "@mui/icons-material/Close"
 import {
   Box,
+  Button,
   Checkbox,
   Divider,
   FormControlLabel,
@@ -18,42 +19,21 @@ import {
 } from "@mui/material"
 import FloatingSurface from "@/components/view/FloatingSurface"
 import { glowFlashSx } from "@/theme"
-import type { CoverageTrack } from "@/types/browser"
-import FixedMaxField from "./FixedMaxField"
-import { usePanelDismiss } from "./usePanelDismiss"
 import {
-  LANE_HEIGHT_DEFAULT,
   LANE_HEIGHT_MAX,
   LANE_HEIGHT_MIN,
-  SETTINGS_FIELD_W,
-  SETTINGS_W,
-} from "./constants"
-
-export type YScaleMode = "auto" | "shared" | "fixed"
-
-export interface BrowserPrefs {
-  laneHeight: number
-  yScale: YScaleMode
-  yFixed: number
-  showGwas: boolean
-  showSignificance: boolean
-  showGrid: boolean
-  hidden: string[]
-}
-
-export const DEFAULT_PREFS: BrowserPrefs = {
-  laneHeight: LANE_HEIGHT_DEFAULT,
-  yScale: "auto",
-  yFixed: 1,
-  showGwas: true,
-  showSignificance: true,
-  showGrid: true,
-  hidden: [],
-}
+  type BrowserPrefs,
+  type CoverageTrack,
+  type YScaleMode,
+} from "@/types/browser"
+import FixedMaxField from "./FixedMaxField"
+import { usePanelDismiss } from "./usePanelDismiss"
+import { SETTINGS_FIELD_W, SETTINGS_W } from "./constants"
 
 interface Props {
   prefs: BrowserPrefs
   onChange: (next: Partial<BrowserPrefs>) => void
+  onRestoreDefaults: () => void
   onClose: () => void
   // Button excluded from outside-click dismissal
   anchorRef: RefObject<HTMLElement | null>
@@ -63,7 +43,15 @@ interface Props {
 
 const rowSx = { fontSize: 13, m: 0, "& .MuiFormControlLabel-label": { fontSize: 13 } }
 
-function BrowserSettings({ prefs, onChange, onClose, anchorRef, tracks, sx }: Props) {
+function BrowserSettings({
+  prefs,
+  onChange,
+  onRestoreDefaults,
+  onClose,
+  anchorRef,
+  tracks,
+  sx,
+}: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   usePanelDismiss({ panelRef, anchorRef, onClose })
 
@@ -91,14 +79,24 @@ function BrowserSettings({ prefs, onChange, onClose, anchorRef, tracks, sx }: Pr
         <Typography variant="overline" color="primary" sx={{ lineHeight: 1 }}>
           Display
         </Typography>
-        <IconButton
-          size="small"
-          aria-label="Close display settings"
-          onClick={onClose}
-          sx={{ p: 0.25, my: -0.5, mr: -0.5, color: "text.secondary" }}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Button
+            size="small"
+            onClick={onRestoreDefaults}
+            aria-label="Reset display settings to defaults"
+            sx={{ py: 0, my: -0.5, fontSize: 12, color: "text.secondary" }}
+          >
+            Reset
+          </Button>
+          <IconButton
+            size="small"
+            aria-label="Close display settings"
+            onClick={onClose}
+            sx={{ p: 0.25, my: -0.5, mr: -0.5, color: "text.secondary" }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </Box>
 
       <Box>

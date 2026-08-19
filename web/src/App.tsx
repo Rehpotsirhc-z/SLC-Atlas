@@ -9,6 +9,7 @@ import ThemeToggle from "./components/ThemeToggle"
 import AppInfoButton from "./components/AppInfoButton"
 import GeneInfoPopup from "./components/GeneInfoPopup"
 import AboutDataPopup from "./components/AboutDataPopup"
+import ShareUrlSync from "./components/ShareUrlSync"
 import { routes } from "./routes"
 import { atlas } from "./config/atlas"
 import { HOME_ROUTE } from "./config/routes"
@@ -20,6 +21,7 @@ export default function App() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
+      <ShareUrlSync />
       <AppBar
         position="static"
         color="default"

@@ -12,9 +12,8 @@ import ViewToolbar from "@/components/view/ViewToolbar"
 import ViewToolbarActions, { type ExportItem } from "@/components/view/ViewToolbarActions"
 import { useToolbarFit } from "@/components/view/useToolbarFit"
 import { capLineSx } from "@/theme"
-import type { BrowserGene } from "@/types/browser"
+import type { BrowserGene, GeneTrackMode } from "@/types/browser"
 import LocusSearch, { type Locus } from "./LocusSearch"
-import type { GeneTrackMode } from "./GeneTrack"
 
 interface Props {
   genes: BrowserGene[]
