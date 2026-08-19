@@ -35,7 +35,7 @@ export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Pr
   const setSize = useUIStore((s) => s.setPopupSize)
 
   const full = geneById.get(gene.geneId) ?? null
-  const familyColor = full ? getFamilyColor(full.family, palette.mode) : palette.text.secondary
+  const familyColor = full ? getFamilyColor(full.family, palette.mode) : palette.primary.main
 
   const statRows: StatRow[] = [
     ...(full
