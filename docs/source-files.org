@@ -63,7 +63,7 @@ These files define the genes in the atlas and are used by every view.
 
 | File            | Contents                                                                                                       | Created by     |
 |-----------------+----------------------------------------------------------------------------------------------------------------+----------------|
-| ~genes.tsv~       | ~id~, ~symbol~, ~name~, ~chromosome~, ~start~, ~end~, ~strand~, ~length~, ~alias~, ~category~, ~family~, ~family_name~, ~function_brief~ | ~assemble_genes~ |
+| ~genes.tsv~     | ~id~, ~symbol~, ~name~, ~chromosome~, ~start~, ~end~, ~strand~, ~length~, ~alias~, ~category~, ~family~, ~family_name~, ~function_brief~ | ~assemble_genes~ |
 | ~transcripts.tsv~ | ~id~, ~gene_id~, ~name~, ~type~, ~start~, ~end~, ~length~                                                                    | ~assemble_genes~ |
 
 The gene coordinates use the Ensembl assembly selected during fetch. Browser
@@ -132,15 +132,15 @@ windows around the atlas genes. Use ~--browser-whole-genome~ to retain genome-wi
 instead. Each window uses the gene length as its flank, limited by ~--browser-flank-min~
 and ~--browser-flank-max~, and is at least 200 kb wide.
 
-| File             | Contents                                                                                         | Created by        |
-|------------------+--------------------------------------------------------------------------------------------------+-------------------|
-| ~transcripts.bed~  | Transcript models for the retained regions, as BED12 followed by ~gene_id~, ~biotype~, and ~gene_name~ | ~fetch_gene_models~ |
-| ~chroms.tsv~     | Chromosome name, length, and role                                                                | ~fetch_gene_models~ |
-| ~gene_models.tsv~  | Annotation source, version, assembly, license, URL, retrieval date, and fetch flanks             | ~fetch_gene_models~ |
-| ~coverage.tsv~     | Resolved coverage sources, chromosome checks, binning, hosting mode, and size estimates          | ~fetch_coverage~    |
-| ~coverage/*.bw~    | Optional local bigWig copies, whole-genome or cut to the merged browser windows                  | ~slice_coverage~    |
-| ~gwas.parquet~     | GWAS variants in the retained regions                                                            | ~fetch_gwas~        |
-| ~gwas_studies.tsv~ | Trait, citation, source, assembly, license, URL, retrieval date, variant count, and chromosomes  | ~fetch_gwas~        |
+| File             | Contents                                                                                                          | Created by        |
+|------------------+-------------------------------------------------------------------------------------------------------------------+-------------------|
+| ~transcripts.bed~  | Transcript models for the retained regions, as BED12 followed by ~gene_id~, ~biotype~, ~gene_name~, and ~transcript_name~ | ~fetch_gene_models~ |
+| ~chroms.tsv~       | Chromosome name, length, and role                                                                                 | ~fetch_gene_models~ |
+| ~gene_models.tsv~  | Annotation source, version, assembly, license, URL, retrieval date, and fetch flanks                              | ~fetch_gene_models~ |
+| ~coverage.tsv~     | Resolved coverage sources, chromosome checks, binning, hosting mode, and size estimates                           | ~fetch_coverage~    |
+| ~coverage/*.bw~    | Optional local bigWig copies, whole-genome or cut to the merged browser windows                                   | ~slice_coverage~    |
+| ~gwas.parquet~     | GWAS variants in the retained regions                                                                             | ~fetch_gwas~        |
+| ~gwas_studies.tsv~ | Trait, citation, source, assembly, license, URL, retrieval date, variant count, and chromosomes                   | ~fetch_gwas~        |
 
 *** Gene model input
 By default, the pipeline downloads the GENCODE release associated with
@@ -151,17 +151,17 @@ GTF is preferred because it stores each required value in a named attribute. The
 pipeline groups ~exon~ rows by ~transcript_id~ to construct exon blocks and the
 introns between them, and reads ~CDS~ rows for the coding range. It takes the
 biotype from whichever of ~transcript_type~, ~transcript_biotype~, ~gene_type~,
-~gene_biotype~, or ~biotype~ is present, and the label from ~gene_name~, ~Name~, or
-~gene~.  GFF3 is read the same way, with each row naming its transcript through
-~Parent~.
+~gene_biotype~, or ~biotype~ is present, the gene label from ~gene_name~, ~Name~, or
+~gene~, and the transcript name from ~transcript_name~ when present. GFF3 is read
+the same way, with each row naming its transcript through ~Parent~.
 
 BED12 has one free-text ~name~ field, so the pipeline accepts three layouts:
 
-| ~name~ holds                                    | Rest of the identity comes from                 | Written by                       |
-|-----------------------------------------------+-------------------------------------------------+----------------------------------|
-| the transcript ID                             | columns 13, 14, 15: ~gene_id~, ~biotype~, ~gene_name~ | this pipeline                    |
-| ~transcript_id___gene_id___biotype___gene_name~ | the name field itself                           | other portals in this field      |
-| the transcript ID alone                       | nothing; gene fields stay empty                 | ~gtfToGenePred~ then ~genePredToBed~ |
+| ~name~ holds                                    | Rest of the identity comes from                                      | Written by                       |
+|-----------------------------------------------+----------------------------------------------------------------------+----------------------------------|
+| the transcript ID                             | columns 13, 14, 15, 16: ~gene_id~, ~biotype~, ~gene_name~, ~transcript_name~ | this pipeline                    |
+| ~transcript_id___gene_id___biotype___gene_name~ | the name field itself                                                | other portals in this field      |
+| the transcript ID alone                       | nothing; gene fields stay empty                                      | ~gtfToGenePred~ then ~genePredToBed~ |
 
 The build compares the start and end coordinates of shared genes. It stops when
 fewer than 95% agree, which usually indicates that the annotation and gene table
@@ -215,7 +215,7 @@ Large binary assets remain in their native formats:
 
 | Source                         | Built location              | Behavior                                                                               |
 |--------------------------------+-----------------------------+----------------------------------------------------------------------------------------|
-| ~source/structure/models/~     | ~app/structure/models/~       | Copied and served locally                                                              |
+| ~source/structure/models/~       | ~app/structure/models/~       | Copied and served locally                                                              |
 | ~source/browser/coverage/~       | ~app/browser/coverage/~       | Copied and served with byte-range support                                              |
 | ~source/browser/transcripts.bed~ | ~app/browser/models.bb~       | bigBed read by byte range for the region in view                                       |
 | ~source/browser/gwas.parquet~    | ~app/browser/gwas/{study}.bb~ | One bigBed per study, with full-resolution variants and pyramid levels for wider views |
