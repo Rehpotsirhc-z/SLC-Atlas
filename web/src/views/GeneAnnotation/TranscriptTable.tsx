@@ -42,7 +42,7 @@ const COLUMNS: {
   { key: "name", label: "Name", align: "left", skeletonWidth: "60%" },
   { key: "type", label: "Type", align: "left", skeletonWidth: "50%" },
   { key: "start", label: "Position", align: "left", skeletonWidth: "70%" },
-  { key: "length", label: "Length", align: "right", skeletonWidth: "40%" },
+  { key: "length", label: "Spliced length", align: "right", skeletonWidth: "40%" },
 ]
 
 interface Props {
