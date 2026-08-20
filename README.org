@@ -57,6 +57,21 @@ See the [[file:docs/README.org][documentation overview]] for guides to AtlasForg
 - Genome Browser :: Coverage and GWAS tracks around each gene, shown with its transcript models
 - Structure :: Predicted and experimental models with membrane topology and residue-level confidence
 
+* Screenshots
+See the [[file:screenshots/README.org][full gallery]] for more examples in light and dark themes.
+
+*Structure View:* /Predicted and experimental models shown alongside membrane topology and confidence scores. This example uses Regions mode; a per-residue snake plot is also available./
+
+#+html: <p align="center"><a href="screenshots/09_structure-regions_hd_dark.png"><img src="screenshots/09_structure-regions_hd_dark.png" alt="Structure view" width="820"></a></p>
+
+*Expression View:* /A tissue RNA abundance heatmap linked to anatomy diagrams, with tissues highlighted on hover./
+
+#+html: <p align="center"><a href="screenshots/07_expression-brain_hd_dark.png"><img src="screenshots/07_expression-brain_hd_dark.png" alt="Expression view" width="820"></a></p>
+
+*Genome Browser View:* /Coverage tracks, GWAS associations, and gene models aligned on a shared genomic axis./
+
+#+html: <p align="center"><a href="screenshots/05_browser-transcripts_hd_light.png"><img src="screenshots/05_browser-transcripts_hd_light.png" alt="Genome Browser view" width="820"></a></p>
+
 * Fetch and build options
 Use ~atlasforge fetch --help~ and ~atlasforge build --help~ for the complete command
 reference. The options most often used when creating a dataset are:

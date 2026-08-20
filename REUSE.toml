@@ -16,6 +16,7 @@ path = [
   ".devcontainer/README.org",
   "README.org",
   "scripts/screenshots/README.org",
+  "screenshots/**",
   "docs/*.org",
   "scripts/benchmarks/**",
   "src/atlasforge/pipeline/templates/**",

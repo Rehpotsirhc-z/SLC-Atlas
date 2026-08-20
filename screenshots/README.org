@@ -1,0 +1,48 @@
+#+title: AtlasForge Screenshots
+
+This gallery shows every AtlasForge view and its main states, captured from the
+SLC Atlas at 1920×1080. The gallery includes both light and dark themes, and
+every view supports either theme.
+
+* Genes
+The Genes view presents gene annotations with expandable transcript details.
+
+#+html: <p align="center"><a href="01_genes_hd_light.png"><img src="01_genes_hd_light.png" alt="Genes view" width="900"></a></p>
+
+* Clustering
+The Clustering view displays rectangular or radial dendrograms using amino acid,
+DNA, co-expression, orthology, or family grouping methods.
+
+#+html: <p align="center"><a href="02_clustering-rectangular_hd_light.png"><img src="02_clustering-rectangular_hd_light.png" alt="Clustering view, rectangular layout" width="900"></a><br><em>Rectangular layout</em></p>
+
+#+html: <p align="center"><a href="03_clustering-radial_hd_light.png"><img src="03_clustering-radial_hd_light.png" alt="Clustering view, radial layout" width="900"></a><br><em>Radial layout</em></p>
+
+* Conservation
+The Conservation view compares each gene with its orthologs across species and
+aligns the results with the species tree.
+
+#+html: <p align="center"><a href="04_conservation_hd_light.png"><img src="04_conservation_hd_light.png" alt="Conservation view" width="900"></a></p>
+
+* Genome Browser
+The Genome Browser shows transcripts, coverage tracks, and GWAS signals
+around the selected gene.
+
+#+html: <p align="center"><a href="05_browser-transcripts_hd_light.png"><img src="05_browser-transcripts_hd_light.png" alt="Genome Browser, transcript models" width="900"></a><br><em>Transcript models</em></p>
+
+#+html: <p align="center"><a href="06_browser-gwas_hd_light.png"><img src="06_browser-gwas_hd_light.png" alt="Genome Browser, coverage and GWAS tracks" width="900"></a><br><em>Coverage and GWAS tracks</em></p>
+
+* Expression
+The Expression view shows tissue RNA abundance in a heatmap linked to anatomy
+diagrams that highlight and scroll to a tissue on hover.
+
+#+html: <p align="center"><a href="07_expression-brain_hd_dark.png"><img src="07_expression-brain_hd_dark.png" alt="Expression view, brain tissues" width="900"></a><br><em>Brain tissues</em></p>
+
+#+html: <p align="center"><a href="08_expression-male_hd_dark.png"><img src="08_expression-male_hd_dark.png" alt="Expression view, male anatomogram" width="900"></a><br><em>Whole body, male anatomogram</em></p>
+
+* Structure
+The Structure view combines predicted and experimental protein structures with
+model confidence, topology, binding sites, and residue-level cross-references.
+
+#+html: <p align="center"><a href="09_structure-regions_hd_dark.png"><img src="09_structure-regions_hd_dark.png" alt="Structure view, region topology" width="900"></a><br><em>Region topology</em></p>
+
+#+html: <p align="center"><a href="10_structure-residues_hd_dark.png"><img src="10_structure-residues_hd_dark.png" alt="Structure view, per-residue topology" width="900"></a><br><em>Per-residue topology</em></p>
