@@ -29,15 +29,17 @@ server or export static files for a web server like nginx to serve.
 
 | Endpoint                    | Payload (KiB, identity / gzip) | Dynamic server requests/s | nginx requests/s |
 |-----------------------------+--------------------------------+---------------------------+------------------|
-| =capabilities.json=           | 0.1 / 0.1                      |                     2,022 | 119,016          |
-| =structure/{gene}.json=       | 6.5 / 2.8                      |                     1,398 | 92,616           |
-| =browser/tracks.json=         | 49 / 2.5                       |                       712 | 27,546           |
-| =genes.json=                  | 322 / 63                       |                       339 | 6,108            |
-| =clustering/aa_sequence.json= | 130 / 17                       |                       309 | 14,282           |
-| =structure.json=              | 387 / 31                       |                       173 | 4,891            |
-| =expression/brain.json=       | 757 / 114                      |                        60 | 2,366            |
-| =expression/all.json=         | 1,495 / 256                    |                        25 | 1,348            |
-| =conservation.json=           | 3,133 / 258                    |                        20 | 477              |
+| =capabilities.json=           | 0.1 / 0.1                      |                      2022 |           119016 |
+| =structure/{gene}.json=       | 6.5 / 2.8                      |                      1398 |            92616 |
+| =browser/tracks.json=         | 49 / 2.5                       |                       712 |            27546 |
+| =genes.json=                  | 322 / 63                       |                       339 |             6108 |
+| =clustering/aa_sequence.json= | 130 / 17                       |                       309 |            14282 |
+| =structure.json=              | 387 / 31                       |                       173 |             4891 |
+| =expression/brain.json=       | 757 / 114                      |                        60 |             2366 |
+| =expression/all.json=         | 1,495 / 256                    |                        25 |             1348 |
+| =conservation.json=           | 3,133 / 258                    |                        20 |              477 |
+| *Average*                   |                                |                       562 |            29850 |
+#+TBLFM: @>$3=vmean(@2..@-1);%.0f::@>$4=vmean(@2..@-1);%.0f
 
 Throughput is the mean number of requests served per second with ten concurrent
 connections. The nginx static deployment handles 18–66 times as many requests as the
@@ -51,13 +53,13 @@ Each browser rendered 33 coverage lanes, gene models, and the 17.4-million-varia
 from the same local server. Values are milliseconds to a visually stable view, shown as
 *cold / warm*.
 
-| Region       | Visible span (Mb) | igv.js (ms) | AtlasForge nginx server (ms) | AtlasForge dynamic server (ms) | JBrowse 2 (ms) |
-|--------------+-------------------+-------------+------------------------------+--------------------------------+----------------|
-| Range        |              0.05 | 777 / 649   | 777 / 699                    | 1,392 / 1,168                  | 2,971 / 3,002  |
-| Range        |                 1 | 942 / 724   | 937 / 716                    | 1,405 / 1,216                  | 3,665 / 3,359  |
-| Range        |                10 | 1,082 / 900 | 848 / 915                    | 1,466 / 1,416                  | 3,212 / 3,056  |
-| Range        |                50 | 826 / 632   | 1,082 / 935                  | 1,781 / 1,416                  | 3,372 / 3,268  |
-| Chromosome 1 |               249 | 715 / 586   | 1,149 / 1,099                | 1,796 / 1,499                  | 3,033 / 3,017  |
+| Visible region span (Mb) | igv.js (ms) | AtlasForge nginx server (ms) | AtlasForge dynamic server (ms) | JBrowse 2 (ms) |
+|--------------------------+-------------+------------------------------+--------------------------------+----------------|
+|                     0.05 | 777 / 649   | 777 / 699                    | 1,392 / 1,168                  | 2,971 / 3,002  |
+|                        1 | 942 / 724   | 937 / 716                    | 1,405 / 1,216                  | 3,665 / 3,359  |
+|                       10 | 1,082 / 900 | 848 / 915                    | 1,466 / 1,416                  | 3,212 / 3,056  |
+|                       50 | 826 / 632   | 1,082 / 935                  | 1,781 / 1,416                  | 3,372 / 3,268  |
+|                      249 | 715 / 586   | 1,149 / 1,099                | 1,796 / 1,499                  | 3,033 / 3,017  |
 
 Across spans from 50 kb to the full length of chromosome 1 (249 Mb), the
 AtlasForge static deployment loads in about one second, which is about as fast
@@ -67,50 +69,50 @@ longer than static deployment.
 ** Coverage-track transfer
 The values show transferred data / HTTP requests for one 309 MiB bigWig track.
 
-| Region | Visible span (Mb) | igv.js (KiB / requests) | AtlasForge (KiB / requests) | JBrowse 2 (KiB / requests) |
-|--------+-------------------+---------------------------+--------------------------------+--------------------------|
-| Range | 0.05 | 25 / 11 | 96 / 7 | 768 / 3 |
-| Range | 1 | 128 / 11 | 299 / 14 | 1,280 / 5 |
-| Range | 10 | 249 / 11 | 256 / 11 | 1,024 / 4 |
-| Range | 50 | 68 / 9 | 92 / 6 | 1,280 / 5 |
-| Chromosome 1 | 249 | 32 / 9 | 155 / 11 | 933 / 4 |
+| Visible region span (Mb) | igv.js (KiB / requests) | AtlasForge (KiB / requests) | JBrowse 2 (KiB / requests) |
+|--------------------------+-------------------------+-----------------------------+----------------------------|
+|                     0.05 | 25 / 11                 | 96 / 7                      | 768 / 3                    |
+|                        1 | 128 / 11                | 299 / 14                    | 1,280 / 5                  |
+|                       10 | 249 / 11                | 256 / 11                    | 1,024 / 4                  |
+|                       50 | 68 / 9                  | 92 / 6                      | 1,280 / 5                  |
+|                      249 | 32 / 9                  | 155 / 11                    | 933 / 4                    |
 
 AtlasForge loads all 33 lanes concurrently, so its per-track result varies by about 30% as
 prefetch requests are scheduled. igv.js and JBrowse 2 were stable between runs.
 
 * Build and deployment
 ** Build time
-| Operation      | Time     | Work performed                                           |
-|----------------+----------+----------------------------------------------------------|
-| ~gene_tables~    | 0.23 s   | Convert gene and transcript tables to Parquet            |
-| ~conservation~   | 0.39 s   | Build the ortholog matrix and species tree               |
-| ~structure~      | 1.25 s   | Build metadata and copy the structure models                |
-| ~expression~     | 1.82 s   | Reshape the GTEx expression matrix                       |
-| ~clustering~     | 11.9 s   | Run protein and codon alignments                         |
+| Operation      | Time     | Work performed                                   |
+|----------------+----------+--------------------------------------------------|
+| ~gene_tables~    | 0.23 s   | Convert gene and transcript tables to Parquet    |
+| ~conservation~   | 0.39 s   | Build the ortholog matrix and species tree       |
+| ~structure~      | 1.25 s   | Build metadata and copy the structure models     |
+| ~expression~     | 1.82 s   | Reshape the GTEx expression matrix               |
+| ~clustering~     | 11.9 s   | Run protein and codon alignments                 |
 | ~browser~        | 81.7 s   | Build genomic indexes and copy the coverage data |
-| *Complete build* | *97 s*   | Build data for all views                         |
-| Static export  | 5.5 s    | Write responses and copy the binary data          |
-| Source fetch   | 12.5 min | Download the source data              |
+| *Complete build* | *97 s*     | Build data for all views                         |
+| Static export  | 5.5 s    | Write responses and copy the binary data         |
+| Source fetch   | 12.5 min | Download the source data                         |
 
 Source fetch time depends on network conditions and upstream availability. The GTEx expression
 matrix accounts for most of the download.
 
 ** Hosting footprint
-| Deployment | Size (MiB) |
-|------------+------|
-| Core atlas content | 61 |
-| Remote coverage and structure models | 1,116 |
-| Remote coverage | 1,874 |
-| Full local mirror | 5,407 |
+| Deployment                           | Size (MiB) |
+|--------------------------------------+------------|
+| Core atlas content                   | 61         |
+| Remote coverage and structure models | 1,116      |
+| Remote coverage                      | 1,874      |
+| Full local mirror                    | 5,407      |
 
-| Component | Size (MiB) |
-|-----------+------|
-| Coverage bigWigs | 3,533 |
-| GWAS bigBed | 1,065 |
-| Structure models | 750 |
-| Transcript models | 31 |
-| JSON and Parquet content | About 23 |
-| Frontend | 6.5; 1.5 compressed |
+| Component                | Size (MiB)          |
+|--------------------------+---------------------|
+| Coverage bigWigs         | 3,533               |
+| GWAS bigBed              | 1,065               |
+| Structure models         | 750                 |
+| Transcript models        | 31                  |
+| JSON and Parquet content | About 23            |
+| Frontend                 | 6.5; 1.5 compressed |
 
 Coverage tracks can stream from ENCODE, and structure models can stream from AlphaFold DB or
 RCSB. The GWAS and transcript-model files are hosted with the atlas.
@@ -125,10 +127,10 @@ The AtlasForge package itself is 0.37 MiB. Most installed space is used by Polar
 SciPy, NumPy, and Biopython.
 
 * Structure files
-| Model | Size (KiB) | Local mirror (ms) | Remote source (ms) |
-|-------+------+--------------+---------------|
-| AlphaFold DB Q8WV83 | 200 | 1 | 61 |
-| RCSB PDB 12oy | 369 | 1 | 47 |
+| Model               | Size (KiB) | Local mirror (ms) | Remote source (ms) |
+|---------------------+------------+-------------------+--------------------|
+| AlphaFold DB Q8WV83 |        200 |                 1 |                 61 |
+| RCSB PDB 12oy       |        369 |                 1 |                 47 |
 
 The local mirror primarily provides offline access and independence from source services.
 Coordinate transfer is a small part of Mol* viewer startup in either mode.
@@ -137,12 +139,14 @@ Coordinate transfer is a small part of Mol* viewer startup in either mode.
 The annotation, expression, and conservation build steps scale approximately linearly with the
 number of genes.
 
-| Genes | Build time (s) | =genes.json= (KiB) | =conservation.json= (KiB) | Conservation latency (ms) |
-|-------+------------+--------------+---------------------+----------------------|
-| 25 | 0.64 | 18 | 170 | 2.8 |
-| 100 | 0.82 | 70 | 680 | 10.5 |
-| 250 | 1.22 | 173 | 1,700 | 20.7 |
-| 462 | 1.95 | 322 | 3,133 | 41.8 |
+|   Genes | Build time (s) | =genes.json= (KiB) | =conservation.json= (KiB) | Conservation latency (ms) |
+|---------+----------------+------------------+-------------------------+---------------------------|
+|      25 |           0.64 |               18 |                     170 |                       2.8 |
+|     100 |           0.82 |               70 |                     680 |                      10.5 |
+|     250 |           1.22 |              173 |                    1700 |                      20.7 |
+|     462 |           1.95 |              322 |                    3133 |                      41.8 |
+| *Average* |           1.16 |            145.8 |                  1420.8 |                      18.9 |
+#+TBLFM: @>$2=vmean(@2..@-1);%.2f::@>$3=vmean(@2..@-1);%.1f::@>$4=vmean(@2..@-1);%.1f::@>$5=vmean(@2..@-1);%.1f
 
 * Methods
 Tests ran on Linux with an Intel Core Ultra 7 255HX, 30 GiB RAM, Python 3.12,
@@ -154,5 +158,5 @@ local nginx server. Render time is the median of three runs; other tables use at
 least five runs. Remote structure timings reflect the network conditions at the
 time of measurement.
 
-The harness and raw results are available in [[../scripts/benchmarks/]]. See the
-[[../scripts/benchmarks/README.org][benchmark instructions]] for reproduction instructions.
+See the [[../scripts/benchmarks/README.org][benchmark instructions]] for the harness, raw results, and
+reproduction steps.
