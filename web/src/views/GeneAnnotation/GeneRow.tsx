@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { keyframes } from "@emotion/react"
-import { memo, useEffect, useState } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
@@ -23,6 +23,7 @@ import { useUIStore } from "@/store/uiStore"
 import type { Gene } from "@/types/gene"
 import { formatPosition } from "@/utils/format"
 import { ensemblUrl, ucscUrl } from "@/utils/links"
+import { SELECTED_ROW_TOP_GAP } from "./constants"
 import ExternalLink from "./ExternalLink"
 import TranscriptTable from "./TranscriptTable"
 
@@ -49,6 +50,8 @@ function GeneRow({
   mapAvailableWidth,
 }: GeneRowProps) {
   const [flashing, setFlashing] = useState(false)
+  const rowRef = useRef<HTMLTableRowElement>(null)
+  const transcriptCellRef = useRef<HTMLTableCellElement>(null)
   const theme = useTheme()
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
 
@@ -70,14 +73,54 @@ function GeneRow({
 
   useEffect(() => {
     if (!isSelected) return
-    setFlashing(true)
-    const t = setTimeout(() => setFlashing(false), 1400)
-    return () => clearTimeout(t)
+    const row = rowRef.current
+    if (!row) return
+    let scrollContainer = row.parentElement
+    while (scrollContainer && scrollContainer.scrollHeight <= scrollContainer.clientHeight) {
+      scrollContainer = scrollContainer.parentElement
+    }
+    const alignRow = () => {
+      if (!scrollContainer) {
+        row.scrollIntoView({ block: "start", behavior: "smooth" })
+        return
+      }
+      const headerHeight = scrollContainer.querySelector<HTMLElement>("thead")?.offsetHeight ?? 0
+      const rowTop = row.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollTop + rowTop - headerHeight - SELECTED_ROW_TOP_GAP,
+        behavior: "smooth",
+      })
+    }
+    let hasFlashed = false
+    const flashOnce = () => {
+      if (hasFlashed) return
+      hasFlashed = true
+      setFlashing(true)
+      window.setTimeout(() => setFlashing(false), 1400)
+    }
+    let alignmentTimer = 0
+    const scheduleAlignment = () => {
+      window.clearTimeout(alignmentTimer)
+      alignmentTimer = window.setTimeout(() => {
+        alignRow()
+        flashOnce()
+      }, 120)
+    }
+    const resizeObserver = new ResizeObserver(scheduleAlignment)
+    if (transcriptCellRef.current) resizeObserver.observe(transcriptCellRef.current)
+    scheduleAlignment()
+    const observerTimer = window.setTimeout(() => resizeObserver.disconnect(), 2500)
+    return () => {
+      resizeObserver.disconnect()
+      window.clearTimeout(alignmentTimer)
+      window.clearTimeout(observerTimer)
+    }
   }, [isSelected])
 
   return (
     <>
       <TableRow
+        ref={rowRef}
         hover
         data-gene-id={gene.id}
         onClick={() => onToggleExpanded(gene.id)}
@@ -156,7 +199,11 @@ function GeneRow({
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell colSpan={10} sx={{ p: 0, borderBottom: expanded ? undefined : "none" }}>
+        <TableCell
+          ref={transcriptCellRef}
+          colSpan={10}
+          sx={{ p: 0, borderBottom: expanded ? undefined : "none" }}
+        >
           <Collapse in={expanded} mountOnEnter unmountOnExit>
             <TranscriptTable
               geneId={gene.id}

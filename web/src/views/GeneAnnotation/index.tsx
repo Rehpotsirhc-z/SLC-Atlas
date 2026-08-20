@@ -43,28 +43,14 @@ export default function GeneAnnotation() {
   const tableScrollRef = useRef<HTMLDivElement>(null)
   const [scrollViewportWidth, setScrollViewportWidth] = useState(0)
 
-  const handledGeneIdRef = useRef<string | null>(null)
+  const jumpedGeneIdRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!selectedGeneId || handledGeneIdRef.current === selectedGeneId) return
-    const idx = visibleGenes.findIndex((g) => g.id === selectedGeneId)
-    if (idx === -1) return
-    const targetPage = Math.floor(idx / rowsPerPage)
-    if (page !== targetPage) {
-      setPage(targetPage)
-      return
-    }
-    const row = tableScrollRef.current?.querySelector<HTMLElement>(
-      `[data-gene-id="${CSS.escape(selectedGeneId)}"]`,
-    )
-    if (!row) return
-    handledGeneIdRef.current = selectedGeneId
-    // Wait for the Collapse animation to finish before centering so that it
-    // doesn't get pushed down by the expanded content
-    const t = setTimeout(() => {
-      row.scrollIntoView({ block: "center", behavior: "smooth" })
-    }, 300)
-    return () => clearTimeout(t)
-  }, [selectedGeneId, visibleGenes, rowsPerPage, page])
+    if (!selectedGeneId || jumpedGeneIdRef.current === selectedGeneId) return
+    const geneIndex = visibleGenes.findIndex((gene) => gene.id === selectedGeneId)
+    if (geneIndex === -1) return
+    jumpedGeneIdRef.current = selectedGeneId
+    setPage(Math.floor(geneIndex / rowsPerPage))
+  }, [selectedGeneId, visibleGenes, rowsPerPage, setPage])
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))

@@ -5,3 +5,4 @@
 export const SEARCH_WIDTH = 360
 export const MIN_CONTENT_WIDTH = 520
 export const MAP_COLUMN_MIN_WIDTH = 280
+export const SELECTED_ROW_TOP_GAP = 8
