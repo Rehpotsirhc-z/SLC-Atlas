@@ -21,6 +21,7 @@ TRANSCRIPT_FIELDS = (
     "transcript_version",
     "biotype",
     "gene_name",
+    "transcript_name",
     "is_atlas_gene",
 )
 
@@ -49,6 +50,7 @@ def transcript_row(model: dict) -> tuple[str, int, int, str]:
             model["transcript_version"] or "",
             model["biotype"] or "",
             model["gene_name"] or "",
+            model["transcript_name"] or "",
             "1" if model["is_atlas_gene"] else "0",
         )
     )

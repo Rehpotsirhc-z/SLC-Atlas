@@ -20,6 +20,7 @@ const enum Model {
   Version,
   Biotype,
   GeneName,
+  TranscriptName,
   IsAtlasGene,
 }
 
@@ -50,6 +51,7 @@ export function parseTranscript(chrom: string, feature: RawFeature): TranscriptM
     transcript_version: maybe(fields[Model.Version]),
     model_gene_id: maybe(fields[Model.GeneId]),
     gene_name: maybe(fields[Model.GeneName]),
+    transcript_name: maybe(fields[Model.TranscriptName]),
     biotype: maybe(fields[Model.Biotype]),
     chrom,
     start: feature.start,

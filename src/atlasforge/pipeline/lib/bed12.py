@@ -13,7 +13,7 @@ from . import progress
 
 NAME_SEPARATOR = "___"
 
-EXTRA_COLUMNS = ("gene_id", "biotype", "gene_name")
+EXTRA_COLUMNS = ("gene_id", "biotype", "gene_name", "transcript_name")
 
 GTF_ATTR = re.compile(r'(\S+)\s+"([^"]*)"')
 
@@ -30,6 +30,7 @@ class Transcript:
     gene_id: str
     biotype: str
     gene_name: str
+    transcript_name: str
     strand: str
     cds_start: int | None
     cds_end: int | None
@@ -82,6 +83,7 @@ def _assemble(rows) -> list[Transcript]:
                     attrs.get("gene_id", ""),
                     _pick(attrs, BIOTYPE_KEYS),
                     _pick(attrs, NAME_KEYS, attrs.get("gene_id", "")),
+                    attrs.get("transcript_name", ""),
                 ),
             )
         elif feature == "CDS":
@@ -91,7 +93,7 @@ def _assemble(rows) -> list[Transcript]:
 
     out = []
     for transcript_id, blocks in exons.items():
-        chrom, strand, gene_id, biotype, gene_name = meta[transcript_id]
+        chrom, strand, gene_id, biotype, gene_name, transcript_name = meta[transcript_id]
         blocks.sort()
         cds = coding.get(transcript_id)
         out.append(
@@ -103,6 +105,7 @@ def _assemble(rows) -> list[Transcript]:
                 gene_id=gene_id,
                 biotype=biotype,
                 gene_name=gene_name,
+                transcript_name=transcript_name,
                 strand=strand,
                 cds_start=cds[0] if cds else None,
                 cds_end=cds[1] if cds else None,
@@ -142,18 +145,18 @@ def from_gff3(path: Path) -> list[Transcript]:
     return _assemble(_feature_rows(path, attrs_of, {"exon", "CDS"}))
 
 
-def _identify(name: str, extra: list[str]) -> tuple[str, str, str, str]:
-    """Read the transcript ID, gene ID, biotype, and gene name from a BED row.
+def _identify(name: str, extra: list[str]) -> tuple[str, str, str, str, str]:
+    """Read the transcript ID, gene ID, biotype, gene name, and transcript name from a BED row.
 
-    This pipeline writes extra columns, some pipelines pack all four values into the name
-    field, and files converted directly from GTF with genePredToBed contain only the
-    transcript ID.
+    This pipeline writes extra columns, some pipelines pack all values into the name field,
+    and files converted directly from GTF with genePredToBed contain only the transcript ID.
+    A transcript name is optional, so an older file without it reads back empty.
     """
     if NAME_SEPARATOR in name:
-        packed = name.split(NAME_SEPARATOR) + [""] * 4
-        return packed[0], packed[1], packed[2], packed[3] or packed[1]
-    gene_id, biotype, gene_name = (extra + ["", "", ""])[:3]
-    return name, gene_id, biotype, gene_name or gene_id
+        packed = name.split(NAME_SEPARATOR) + [""] * 5
+        return packed[0], packed[1], packed[2], packed[3] or packed[1], packed[4]
+    gene_id, biotype, gene_name, transcript_name = (extra + ["", "", "", ""])[:4]
+    return name, gene_id, biotype, gene_name or gene_id, transcript_name
 
 
 def read_bed12(path: Path) -> list[Transcript]:
@@ -171,7 +174,9 @@ def read_bed12(path: Path) -> list[Transcript]:
             thick_start, thick_end = int(parts[6]), int(parts[7])
             sizes = [int(v) for v in parts[10].rstrip(",").split(",") if v]
             starts = [int(v) for v in parts[11].rstrip(",").split(",") if v]
-            transcript_id, gene_id, biotype, gene_name = _identify(name, parts[12:])
+            transcript_id, gene_id, biotype, gene_name, transcript_name = _identify(
+                name, parts[12:]
+            )
             coding = thick_start != thick_end
             out.append(
                 Transcript(
@@ -182,6 +187,7 @@ def read_bed12(path: Path) -> list[Transcript]:
                     gene_id=gene_id,
                     biotype=biotype,
                     gene_name=gene_name,
+                    transcript_name=transcript_name,
                     strand=strand,
                     cds_start=thick_start if coding else None,
                     cds_end=thick_end if coding else None,
@@ -233,6 +239,7 @@ def write_bed12(path: Path, transcripts) -> None:
                         t.gene_id,
                         t.biotype,
                         t.gene_name,
+                        t.transcript_name,
                     )
                 )
                 + "\n"

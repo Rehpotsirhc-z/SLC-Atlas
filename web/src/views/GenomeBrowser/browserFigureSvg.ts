@@ -445,7 +445,7 @@ export function buildBrowserFigureSvg(input: FigureInput): string {
         }
       }
 
-      const text = transcript ? transcript.gene_name || transcript.transcript_id : span!.label
+      const text = transcript ? transcript.transcript_name || transcript.transcript_id : span!.label
       // Match the on-screen label placement
       const textLeft = left - 6 - text.length * LABEL_PX * 0.6
       if (textLeft > 0 && textLeft > (takenTo[row] ?? -Infinity) + 6) {

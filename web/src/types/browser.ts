@@ -72,6 +72,7 @@ export interface TranscriptModel {
   transcript_version: string | null
   model_gene_id: string | null
   gene_name: string | null
+  transcript_name: string | null
   biotype: string | null
   chrom: string
   start: number

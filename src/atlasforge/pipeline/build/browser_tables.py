@@ -132,6 +132,7 @@ def transcript_rows(transcripts, sizes: dict[str, int], atlas_ids: set[str]):
                 "transcript_version": bed12.version_of(t.transcript_id),
                 "model_gene_id": gene_id,
                 "gene_name": t.gene_name,
+                "transcript_name": t.transcript_name,
                 "biotype": t.biotype,
                 "chrom": t.chrom,
                 "start": t.start,

@@ -171,7 +171,7 @@ export function drawTranscripts({ ctx, scale, height, top, layout, ink }: Transc
 
     labelBefore(
       ctx,
-      item.gene_name || item.transcript_id,
+      item.transcript_name || item.transcript_id,
       left,
       y,
       item.is_atlas_gene,
