@@ -1,0 +1,9 @@
+4.0K	/workspace/.bench-build/app/sources.parquet
+4.0K	/workspace/.bench-build/app/species_tree.parquet
+60K	/workspace/.bench-build/app/clustering.parquet
+68K	/workspace/.bench-build/app/genes.parquet
+156K	/workspace/.bench-build/app/transcripts.parquet
+168K	/workspace/.bench-build/app/expression.parquet
+188K	/workspace/.bench-build/app/conservation.parquet
+754M	/workspace/.bench-build/app/structure
+4.6G	/workspace/.bench-build/app/browser

@@ -16,6 +16,8 @@ path = [
   ".devcontainer/README.org",
   "README.org",
   "docs/source-files.org",
+  "docs/benchmarks.org",
+  "scripts/benchmarks/**",
   "src/atlasforge/pipeline/templates/**",
   "web/src/views/Expression/Anatomograms/anatomogram/ATTRIBUTION.org",
   "web/public/ATTRIBUTION.org"

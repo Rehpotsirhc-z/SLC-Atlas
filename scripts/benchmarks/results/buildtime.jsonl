@@ -1,0 +1,8 @@
+{"label":"web_build (tsc -b && vite build)","start":"2026-08-19T23:44:06+00:00","end":"2026-08-19T23:44:20+00:00","wall_seconds":13.740,"exit_code":0,"cmd":"npm --prefix web run build"}
+{"label":"build_step:gene_tables","start":"2026-08-19T23:46:00+00:00","end":"2026-08-19T23:46:00+00:00","wall_seconds":0.233,"exit_code":0,"cmd":"atlasforge build --data-dir /workspace/.bench-build --step gene_tables"}
+{"label":"build_step:expression","start":"2026-08-19T23:46:00+00:00","end":"2026-08-19T23:46:02+00:00","wall_seconds":1.815,"exit_code":0,"cmd":"atlasforge build --data-dir /workspace/.bench-build --step expression"}
+{"label":"build_step:conservation","start":"2026-08-19T23:46:02+00:00","end":"2026-08-19T23:46:03+00:00","wall_seconds":0.393,"exit_code":0,"cmd":"atlasforge build --data-dir /workspace/.bench-build --step conservation"}
+{"label":"build_step:clustering","start":"2026-08-19T23:46:03+00:00","end":"2026-08-19T23:46:15+00:00","wall_seconds":11.919,"exit_code":0,"cmd":"atlasforge build --data-dir /workspace/.bench-build --step clustering"}
+{"label":"build_step:structure","start":"2026-08-19T23:46:15+00:00","end":"2026-08-19T23:46:16+00:00","wall_seconds":1.247,"exit_code":0,"cmd":"atlasforge build --data-dir /workspace/.bench-build --step structure"}
+{"label":"build_step:browser","start":"2026-08-19T23:46:16+00:00","end":"2026-08-19T23:47:38+00:00","wall_seconds":81.662,"exit_code":0,"cmd":"atlasforge build --data-dir /workspace/.bench-build --step browser"}
+{"label":"export (static site)","start":"2026-08-19T23:49:35+00:00","end":"2026-08-19T23:49:41+00:00","wall_seconds":5.463,"exit_code":0,"cmd":"atlasforge export /workspace/.bench-export --data-dir /workspace/.bench-build --web-dir /workspace/web/dist"}

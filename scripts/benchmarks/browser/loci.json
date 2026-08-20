@@ -1,0 +1,44 @@
+[
+  {
+    "bucket": "small",
+    "gene_id": "ENSG00000141873",
+    "symbol": "SLC39A3",
+    "chrom": "chr19",
+    "chrom_ensembl": "19",
+    "gene_start": 2732203,
+    "gene_end": 2740071,
+    "window_start": 2632203,
+    "window_end": 2840071,
+    "pan_start": 0,
+    "pan_end": 58617616,
+    "span": 7868
+  },
+  {
+    "bucket": "medium",
+    "gene_id": "ENSG00000196517",
+    "symbol": "SLC6A9",
+    "chrom": "chr1",
+    "chrom_ensembl": "1",
+    "gene_start": 43989352,
+    "gene_end": 44031767,
+    "window_start": 43889352,
+    "window_end": 44131767,
+    "pan_start": 0,
+    "pan_end": 248956422,
+    "span": 42415
+  },
+  {
+    "bucket": "large",
+    "gene_id": "ENSG00000181804",
+    "symbol": "SLC9A9",
+    "chrom": "chr3",
+    "chrom_ensembl": "3",
+    "gene_start": 143265221,
+    "gene_end": 143848485,
+    "window_start": 142765221,
+    "window_end": 144348485,
+    "pan_start": 0,
+    "pan_end": 198295559,
+    "span": 583264
+  }
+]

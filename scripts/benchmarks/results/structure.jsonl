@@ -1,0 +1,4 @@
+{"label":"predicted (Q8WV83)","place":"local","url":"http://127.0.0.1:8080/api/structure/models/Q8WV83.bcif","reps":6,"status":200,"bytes":204840,"median_ms":1,"min_ms":1,"max_ms":23,"err":null}
+{"label":"predicted (Q8WV83)","place":"remote","url":"https://alphafold.ebi.ac.uk/files/AF-Q8WV83-F1-model_v6.bcif","reps":6,"status":200,"bytes":204840,"median_ms":61,"min_ms":43,"max_ms":203,"err":null}
+{"label":"experimental (12oy)","place":"local","url":"http://127.0.0.1:8080/api/structure/models/pdb/12oy.bcif","reps":6,"status":200,"bytes":377878,"median_ms":1,"min_ms":1,"max_ms":1,"err":null}
+{"label":"experimental (12oy)","place":"remote","url":"https://models.rcsb.org/12oy.bcif","reps":6,"status":200,"bytes":377878,"median_ms":47,"min_ms":44,"max_ms":228,"err":null}

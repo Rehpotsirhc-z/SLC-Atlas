@@ -1,0 +1,12 @@
+{
+  "name": "atlasforge-benchmarks",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Reproducible benchmark harness for AtlasForge",
+  "type": "module",
+  "dependencies": {
+    "autocannon": "^8.0.0",
+    "igv": "^3.8.5",
+    "playwright": "^1.62.1"
+  }
+}

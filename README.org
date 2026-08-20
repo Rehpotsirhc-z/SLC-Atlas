@@ -29,6 +29,10 @@ atlasforge build --data-dir ./my-atlas
 atlasforge serve --data-dir ./my-atlas
 #+end_src
 
+*Note:* ~atlasforge serve~ runs the dynamic server and generates API responses on
+demand. For public or high-traffic deployments, use ~atlasforge export~ with a
+static web server for better performance.
+
 Open [[http://localhost:8000]]. Here, ~752~ is an HGNC gene group ID. You can instead
 pass a text file containing one gene symbol or Ensembl gene ID per line, or a
 downloaded HGNC group TSV. Run ~atlasforge fetch~ without a source for an interactive

@@ -1,0 +1,17 @@
+# footprint  2026-08-20T03:05:54+00:00
+## hosting modes (bytes)
+full_local_mirror      5668137873
+remote_coverage        1961345973
+remote_cov+structure   1175338377
+content_only(no gwas)  63606907
+## client bundles
+atlasforge web/dist   6.48 MiB  (gzip: 1.54 MiB)
+igv.js                1.43 MiB
+jbrowse-web static    29.26 MiB
+## atlasforge python install (clean venvs)
+package alone (src)   0.37 MiB
++ serve deps          444.29 MiB
++ build deps          664.55 MiB
+## atlasforge python download (wheels)
+serve deps download   117.60 MiB
+pipeline deps download 171.81 MiB

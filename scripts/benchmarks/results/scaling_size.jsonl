@@ -1,0 +1,12 @@
+{"N":25,"endpoint":"genes.json","identity_bytes":18528,"median_time_s":0.001715}
+{"N":25,"endpoint":"conservation.json","identity_bytes":174026,"median_time_s":0.002778}
+{"N":25,"endpoint":"expression/all.json","identity_bytes":83176,"median_time_s":0.003038}
+{"N":100,"endpoint":"genes.json","identity_bytes":71950,"median_time_s":0.002445}
+{"N":100,"endpoint":"conservation.json","identity_bytes":695836,"median_time_s":0.010470}
+{"N":100,"endpoint":"expression/all.json","identity_bytes":332892,"median_time_s":0.007711}
+{"N":250,"endpoint":"genes.json","identity_bytes":176781,"median_time_s":0.003217}
+{"N":250,"endpoint":"conservation.json","identity_bytes":1737272,"median_time_s":0.020696}
+{"N":250,"endpoint":"expression/all.json","identity_bytes":831074,"median_time_s":0.013920}
+{"N":462,"endpoint":"genes.json","identity_bytes":329485,"median_time_s":0.004329}
+{"N":462,"endpoint":"conservation.json","identity_bytes":3213625,"median_time_s":0.041810}
+{"N":462,"endpoint":"expression/all.json","identity_bytes":1530471,"median_time_s":0.027870}

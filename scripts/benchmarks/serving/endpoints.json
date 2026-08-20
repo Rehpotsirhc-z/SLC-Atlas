@@ -1,0 +1,14 @@
+{
+  "note": "Fixed endpoint set for Group A, chosen before measuring. Light to heavy. gene_id for the heavy per-residue structure payload is the longest protein in the SLC set (SLC65B1, 1447 aa).",
+  "endpoints": [
+    { "key": "capabilities",        "path": "/api/capabilities.json",                 "weight": "tiny" },
+    { "key": "genes",               "path": "/api/genes.json",                        "weight": "moderate (462 genes)" },
+    { "key": "browser_tracks",      "path": "/api/browser/tracks.json",               "weight": "manifest (gates browser)" },
+    { "key": "structure_list",      "path": "/api/structure.json",                    "weight": "light (pLDDT dropped)" },
+    { "key": "clustering_aa",       "path": "/api/clustering/aa_sequence.json",       "weight": "moderate (tree)" },
+    { "key": "expression_brain",    "path": "/api/expression/brain.json",             "weight": "moderate" },
+    { "key": "expression_all",      "path": "/api/expression/all.json",               "weight": "heavy (genes x tissues)" },
+    { "key": "conservation",        "path": "/api/conservation.json",                 "weight": "heavy (genes x species)" },
+    { "key": "structure_gene",      "path": "/api/structure/ENSG00000185920.json",    "weight": "heavy per-gene (per-residue pLDDT)" }
+  ]
+}

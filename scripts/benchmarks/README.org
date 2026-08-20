@@ -1,0 +1,100 @@
+#+title: Benchmark Instructions
+
+This directory contains the scripts and raw results used for [[../../docs/benchmarks.org][the benchmark
+summary]]. The benchmarks use the 462-gene SLC dataset in =data/= and write their
+results to =results/=. Temporary builds are written to dedicated scratch
+directories.
+
+* Requirements
+Install AtlasForge and build the frontend from the repository root:
+
+#+begin_src sh
+pip install -e '.[pipeline,dev]'
+npm --prefix web ci
+npm --prefix web run build
+npm --prefix scripts/benchmarks install
+npx --prefix scripts/benchmarks playwright install chromium
+#+end_src
+
+The browser comparisons also require nginx and a local JBrowse 2 web
+distribution at =scripts/benchmarks/browser/jbrowse-web/=. The scripts expect the
+SLC source dataset in =data/source= and =data/curation=.
+
+* Record the environment
+Run this once before collecting results:
+
+#+begin_src sh
+bash scripts/benchmarks/lib/env.sh
+#+end_src
+
+The command records the hardware, software versions, commit, and dataset size in
+=scripts/benchmarks/results/ENV.txt=.
+
+* Build and export
+Build each pipeline step separately in =.bench-build=, then export the result:
+
+#+begin_src sh
+bash scripts/benchmarks/buildtime/build_steps.sh
+atlasforge export .bench-export --data-dir .bench-build --web-dir web/dist
+#+end_src
+
+The build script replaces =.bench-build=. Set =SCRATCH= to use a different temporary
+directory. The export directory can also be changed, but the serving scripts
+currently expect =.bench-export=.
+
+* Serving
+Compare ~atlasforge serve~ (FastAPI) with the static export served by nginx
+(=deploy/nginx.conf= rules):
+
+#+begin_src sh
+bash scripts/benchmarks/serving/run_serving.sh
+python scripts/benchmarks/lib/analyze_serving.py
+#+end_src
+
+Run the Build and export step first: the dynamic server reads =.bench-build= and nginx
+serves =.bench-export=. The script starts and stops both servers. It measures throughput
+with =serve_bench.mjs= and median time to first byte with =ttfb.sh=, then summarizes both
+results with =analyze_serving.py=.
+
+* Genome browser
+Prepare the shared nginx site and start nginx and ~atlasforge serve~:
+
+#+begin_src sh
+bash scripts/benchmarks/browser/setup_nginx.sh
+#+end_src
+
+Then run either browser measurement:
+
+#+begin_src sh
+bash scripts/benchmarks/browser/run_browser.sh
+bash scripts/benchmarks/browser/run_render.sh
+#+end_src
+
+=run_browser.sh= measures the requests and bytes used to read one bigWig track at
+five spans. =run_render.sh= measures the time until each complete browser view
+stops changing. Both compare AtlasForge, igv.js, and JBrowse 2 at the same loci
+with the same underlying files.
+
+* Other measurements
+Measure local and remote structure downloads while the browser servers are running:
+
+#+begin_src sh
+node scripts/benchmarks/structure/fetch_struct.mjs
+#+end_src
+
+Measure the exported site and dependency footprints:
+
+#+begin_src sh
+bash scripts/benchmarks/footprint/measure.sh
+#+end_src
+
+This command creates temporary virtual environments and downloads Python wheels,
+so it needs network access and enough temporary disk space.
+
+Measure build time, response size, and response latency at several gene counts:
+
+#+begin_src sh
+bash scripts/benchmarks/scaling/run_scaling.sh
+#+end_src
+
+The scaling script recreates =.bench-scale-*= directories.

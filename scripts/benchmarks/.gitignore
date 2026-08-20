@@ -1,0 +1,16 @@
+# Ignore generated and downloaded benchmark dependencies
+node_modules/
+package-lock.json
+browser/jbrowse-web/
+browser/site/jbrowse-web
+browser/site/data
+browser/site/igv.min.js
+# Ignore generated browser configuration
+browser/hg38.chrom.sizes
+browser/site/hg38.chrom.sizes
+browser/site/config_full.json
+browser/site/tracks_full.json
+browser/site/jb_tracks_cov.txt
+browser/site/jb_tracks_full.txt
+# Ignore temporary debugging scripts
+browser/_*.mjs
