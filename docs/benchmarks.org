@@ -24,23 +24,23 @@ or differences between hosting providers.
   source services.
 
 * Serving
-AtlasForge can generate responses on demand through its application server or
-export static files for a web server like nginx to serve.
+AtlasForge can generate responses on demand through its dynamic application
+server or export static files for a web server like nginx to serve.
 
-| Endpoint | Payload (KiB, identity / gzip) | Dynamic requests/s | nginx requests/s |
-|----------+---------------------------+---------------+-------------|
-| =capabilities.json= | 0.1 / 0.1 | 2,022 | 119,016 |
-| =structure/{gene}.json= | 6.5 / 2.8 | 1,398 | 92,616 |
-| =browser/tracks.json= | 49 / 2.5 | 712 | 27,546 |
-| =genes.json= | 322 / 63 | 339 | 6,108 |
-| =clustering/aa_sequence.json= | 130 / 17 | 309 | 14,282 |
-| =structure.json= | 387 / 31 | 173 | 4,891 |
-| =expression/brain.json= | 757 / 114 | 60 | 2,366 |
-| =expression/all.json= | 1,495 / 256 | 25 | 1,348 |
-| =conservation.json= | 3,133 / 258 | 20 | 477 |
+| Endpoint                    | Payload (KiB, identity / gzip) | Dynamic server requests/s | nginx requests/s |
+|-----------------------------+--------------------------------+---------------------------+------------------|
+| =capabilities.json=           | 0.1 / 0.1                      |                     2,022 | 119,016          |
+| =structure/{gene}.json=       | 6.5 / 2.8                      |                     1,398 | 92,616           |
+| =browser/tracks.json=         | 49 / 2.5                       |                       712 | 27,546           |
+| =genes.json=                  | 322 / 63                       |                       339 | 6,108            |
+| =clustering/aa_sequence.json= | 130 / 17                       |                       309 | 14,282           |
+| =structure.json=              | 387 / 31                       |                       173 | 4,891            |
+| =expression/brain.json=       | 757 / 114                      |                        60 | 2,366            |
+| =expression/all.json=         | 1,495 / 256                    |                        25 | 1,348            |
+| =conservation.json=           | 3,133 / 258                    |                        20 | 477              |
 
 Throughput is the mean number of requests served per second with ten concurrent
-connections. The nginx server handles 18–66 times as many requests as the
+connections. The nginx static deployment handles 18–66 times as many requests as the
 dynamic server because it returns prebuilt files instead of generating each
 response on demand, making the static export the better choice for public or
 high-traffic deployments.
@@ -48,19 +48,21 @@ high-traffic deployments.
 * Genome browser
 ** Render time
 Each browser rendered 33 coverage lanes, gene models, and the 17.4-million-variant GWAS track
-from the same nginx server. Values are milliseconds to a visually stable view, shown as
+from the same local server. Values are milliseconds to a visually stable view, shown as
 *cold / warm*.
 
-| Region | Visible span (Mb) | igv.js (ms) | AtlasForge nginx (ms) | AtlasForge ~serve~ (ms) | JBrowse 2 (ms) |
-|--------+-------------------+-------------+-------------------------+---------------------------+----------------|
-| Range | 0.05 | 777 / 649 | 777 / 699 | 1,392 / 1,168 | 2,971 / 3,002 |
-| Range | 1 | 942 / 724 | 937 / 716 | 1,405 / 1,216 | 3,665 / 3,359 |
-| Range | 10 | 1,082 / 900 | 848 / 915 | 1,466 / 1,416 | 3,212 / 3,056 |
-| Range | 50 | 826 / 632 | 1,082 / 935 | 1,781 / 1,416 | 3,372 / 3,268 |
-| Chromosome 1 | 249 | 715 / 586 | 1,149 / 1,099 | 1,796 / 1,499 | 3,033 / 3,017 |
+| Region       | Visible span (Mb) | igv.js (ms) | AtlasForge nginx server (ms) | AtlasForge dynamic server (ms) | JBrowse 2 (ms) |
+|--------------+-------------------+-------------+------------------------------+--------------------------------+----------------|
+| Range        |              0.05 | 777 / 649   | 777 / 699                    | 1,392 / 1,168                  | 2,971 / 3,002  |
+| Range        |                 1 | 942 / 724   | 937 / 716                    | 1,405 / 1,216                  | 3,665 / 3,359  |
+| Range        |                10 | 1,082 / 900 | 848 / 915                    | 1,466 / 1,416                  | 3,212 / 3,056  |
+| Range        |                50 | 826 / 632   | 1,082 / 935                  | 1,781 / 1,416                  | 3,372 / 3,268  |
+| Chromosome 1 |               249 | 715 / 586   | 1,149 / 1,099                | 1,796 / 1,499                  | 3,033 / 3,017  |
 
-The static AtlasForge deployment stays near one second across a 5,000-fold change in visible
-span. Dynamic serving adds roughly 0.5–0.7 s in this test.
+Across spans from 50 kb to the full length of chromosome 1 (249 Mb), the
+AtlasForge static deployment loads in about one second, which is about as fast
+as igv.js and 3 times faster than JBrowse 2. The dynamic server takes roughly 0.5–0.7 s
+longer than static deployment.
 
 ** Coverage-track transfer
 The values show transferred data / HTTP requests for one 309 MiB bigWig track.
@@ -86,7 +88,7 @@ prefetch requests are scheduled. igv.js and JBrowse 2 were stable between runs.
 | ~expression~     | 1.82 s   | Reshape the GTEx expression matrix                       |
 | ~clustering~     | 11.9 s   | Run protein and codon alignments                         |
 | ~browser~        | 81.7 s   | Build genomic indexes and copy the coverage data |
-| *Complete build* | *97 s*   | Build all six views                                      |
+| *Complete build* | *97 s*   | Build data for all views                         |
 | Static export  | 5.5 s    | Write responses and copy the binary data          |
 | Source fetch   | 12.5 min | Download the source data              |
 
@@ -143,13 +145,14 @@ number of genes.
 | 462 | 1.95 | 322 | 3,133 | 41.8 |
 
 * Methods
-Tests ran on Linux with an Intel Core Ultra 7 255HX, 30 GiB RAM, Python 3.12, Polars
-1.43, Node 20, Playwright 1.62 with Chromium, autocannon 8, nginx 1.24, igv.js 3.8.5,
-and JBrowse 2 web 4.3.0.
+Tests ran on Linux with an Intel Core Ultra 7 255HX, 30 GiB RAM, Python 3.12,
+Polars 1.43, Node 20, Playwright 1.62 with Chromium, autocannon 8, nginx 1.24,
+igv.js 3.8.5, and JBrowse 2 web 4.3.0.
 
-Browser comparisons used the same data files, locus, viewport, cache state, and local nginx
-server. Render time is the median of three runs; other tables use at least five runs. Remote
-structure timings reflect the network conditions at the time of measurement.
+Browser comparisons used the same data files, locus, viewport, cache state, and
+local nginx server. Render time is the median of three runs; other tables use at
+least five runs. Remote structure timings reflect the network conditions at the
+time of measurement.
 
 The harness and raw results are available in [[../scripts/benchmarks/]]. See the
-[[../scripts/benchmarks/README.org][benchmark harness guide]] for reproduction instructions.
+[[../scripts/benchmarks/README.org][benchmark instructions]] for reproduction instructions.

@@ -43,7 +43,8 @@ directory. The export directory can also be changed, but the serving scripts
 currently expect =.bench-export=.
 
 * Serving
-Compare ~atlasforge serve~ (FastAPI) with the static export served by nginx
+Compare the dynamic server (~atlasforge serve~) with the static deployment
+(~atlasforge export~ served by nginx)
 (=deploy/nginx.conf= rules):
 
 #+begin_src sh
@@ -51,13 +52,13 @@ bash scripts/benchmarks/serving/run_serving.sh
 python scripts/benchmarks/lib/analyze_serving.py
 #+end_src
 
-Run the Build and export step first: the dynamic server reads =.bench-build= and nginx
-serves =.bench-export=. The script starts and stops both servers. It measures throughput
+Run the Build and export step first: the dynamic server reads =.bench-build=, while the static deployment
+serves =.bench-export= through nginx. The script starts and stops both servers. It measures throughput
 with =serve_bench.mjs= and median time to first byte with =ttfb.sh=, then summarizes both
 results with =analyze_serving.py=.
 
 * Genome browser
-Prepare the shared nginx site and start nginx and ~atlasforge serve~:
+Prepare the shared site and start the static deployment and dynamic server:
 
 #+begin_src sh
 bash scripts/benchmarks/browser/setup_nginx.sh
