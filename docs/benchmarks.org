@@ -14,7 +14,7 @@ or differences between hosting providers.
   from a 309 MiB coverage file. This avoids unnecessary downloads and keeps load times fast.
 - Dynamic serving :: Even without a static export, ~atlasforge serve~ returns the
   largest JSON endpoint in 42 ms so the atlas remains responsive.
-- Build :: The complete process of fetching, building, and exporting the SLC atlas
+- Preparation :: The complete process of fetching, building, and exporting the SLC atlas
   takes about 15 minutes. Since it is one of the largest human gene superfamilies,
   smaller families should generally finish faster depending on internet connection.
 - Static serving :: nginx handles 18–66 times as many requests per second as the
@@ -80,19 +80,20 @@ The values show transferred data / HTTP requests for one 309 MiB bigWig track.
 AtlasForge loads all 33 lanes concurrently, so its per-track result varies by about 30% as
 prefetch requests are scheduled. igv.js and JBrowse 2 were stable between runs.
 
-* Build and deployment
-** Build time
-| Operation      | Time     | Work performed                                   |
-|----------------+----------+--------------------------------------------------|
-| ~gene_tables~    | 0.23 s   | Convert gene and transcript tables to Parquet    |
-| ~conservation~   | 0.39 s   | Build the ortholog matrix and species tree       |
-| ~structure~      | 1.25 s   | Build metadata and copy the structure models     |
-| ~expression~     | 1.82 s   | Reshape the GTEx expression matrix               |
-| ~clustering~     | 11.9 s   | Run protein and codon alignments                 |
-| ~browser~        | 81.7 s   | Build genomic indexes and copy the coverage data |
-| *Complete build* | *97 s*     | Build data for all views                         |
-| Static export  | 5.5 s    | Write responses and copy the binary data         |
-| Source fetch   | 12.5 min | Download the source data                         |
+* Atlas preparation and deployment
+** Preparation time
+| Operation         | Time     | Work performed                                      |
+|-------------------+----------+-----------------------------------------------------|
+| Source fetch      | 12.5 min | Download the source data                            |
+| ~gene_tables~       | 0.23 s   | Convert gene and transcript tables to Parquet       |
+| ~conservation~      | 0.39 s   | Build the ortholog matrix and species tree          |
+| ~structure~         | 1.25 s   | Build metadata and copy the structure models        |
+| ~expression~        | 1.82 s   | Reshape the GTEx expression matrix                  |
+| ~clustering~        | 11.9 s   | Run protein and codon alignments                    |
+| ~browser~           | 81.7 s   | Build genomic indexes and copy the coverage data    |
+| *Complete build*    | *97 s*     | Build data for all views                            |
+| *Static export*     | *5.5 s*  | Write responses and copy the binary data            |
+| *Total preparation* | *14.2 min* | Fetch sources, build all views, and export the site |
 
 Source fetch time depends on network conditions and upstream availability. The GTEx expression
 matrix accounts for most of the download.
