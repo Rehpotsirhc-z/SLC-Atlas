@@ -8,12 +8,12 @@ identify the pipeline step that creates a file.
 The pipeline keeps downloaded material, human decisions, normalized source data,
 and built application data separate:
 
-| Directory                    | Purpose |
-|------------------------------+---------|
-| ~<data-dir>/cache/~          | Downloads and intermediate files that can be reused by later fetches |
-| ~<data-dir>/curation/~       | Files you review and edit to make dataset-specific choices |
-| ~<data-dir>/source/~         | Normalized inputs written by ~atlasforge fetch~ and read by ~atlasforge build~ |
-| ~<data-dir>/app/~            | Built Parquet tables and binary assets served by the application |
+| Directory            | Purpose                                                                    |
+|----------------------+----------------------------------------------------------------------------|
+| ~<data-dir>/cache/~    | Downloads and intermediate files that can be reused by later fetches       |
+| ~<data-dir>/curation/~ | Files you review and edit to make dataset-specific choices                 |
+| ~<data-dir>/source/~   | Normalized inputs written by ~atlasforge fetch~ and read by ~atlasforge build~ |
+| ~<data-dir>/app/~      | Built Parquet tables and binary assets served by the application           |
 
 ~atlasforge fetch~ does not replace existing curation files. It also skips a completed
 fetch step when all of that step's declared outputs already exist. Use ~--step NAME~
@@ -40,15 +40,15 @@ then pauses so you can review any newly created files.
 Blank lines and comment lines beginning with ~#~ are ignored. TSV files must
 remain tab-separated.
 
-| File                    | Controls |
-|-------------------------+----------|
-| ~families.tsv~          | Family keys and display names for the HGNC groups in the atlas |
-| ~exclusions.txt~        | HGNC-approved gene symbols to leave out, one per line |
-| ~symbol_overrides.tsv~  | Display symbols to use without changing the approved searchable symbols |
-| ~species.tsv~           | Species included in conservation and their names in Ensembl, TimeTree, and UCSC |
-| ~uniprot_overrides.tsv~ | Manual corrections to the Ensembl gene-to-UniProt mapping |
+| File                  | Controls                                                                              |
+|-----------------------+---------------------------------------------------------------------------------------|
+| ~families.tsv~          | Family keys and display names for the HGNC groups in the atlas                        |
+| ~exclusions.txt~        | HGNC-approved gene symbols to leave out, one per line                                 |
+| ~symbol_overrides.tsv~  | Display symbols to use without changing the approved searchable symbols               |
+| ~species.tsv~           | Species included in conservation and their names in Ensembl, TimeTree, and UCSC       |
+| ~uniprot_overrides.tsv~ | Manual corrections to the Ensembl gene-to-UniProt mapping                             |
 | ~browser_tracks.tsv~    | Coverage tracks, their labels, grouping, source, strand, resolution, and hosting mode |
-| ~browser_gwas.tsv~      | GWAS studies, traits, citations, sources, assemblies, and licenses |
+| ~browser_gwas.tsv~      | GWAS studies, traits, citations, sources, assemblies, and licenses                    |
 
 Edit curation files instead of generated source tables whenever a choice has a
 matching curation file. For example, correct a UniProt match in
@@ -61,10 +61,10 @@ unless their names specify another format.
 ** Gene tables
 These files define the genes in the atlas and are used by every view.
 
-| File              | Contents | Created by |
-|-------------------+----------+------------|
+| File            | Contents                                                                                                       | Created by     |
+|-----------------+----------------------------------------------------------------------------------------------------------------+----------------|
 | ~genes.tsv~       | ~id~, ~symbol~, ~name~, ~chromosome~, ~start~, ~end~, ~strand~, ~length~, ~alias~, ~category~, ~family~, ~family_name~, ~function_brief~ | ~assemble_genes~ |
-| ~transcripts.tsv~ | ~id~, ~gene_id~, ~name~, ~type~, ~start~, ~end~, ~length~ | ~assemble_genes~ |
+| ~transcripts.tsv~ | ~id~, ~gene_id~, ~name~, ~type~, ~start~, ~end~, ~length~                                                                    | ~assemble_genes~ |
 
 The gene coordinates use the Ensembl assembly selected during fetch. Browser
 annotations and GWAS studies must use the same assembly.
@@ -72,20 +72,20 @@ annotations and GWAS studies must use the same assembly.
 ** Data sources
 The About panel summarizes where each dataset came from.
 
-| File          | Contents | Created by |
-|---------------+----------+------------|
+| File        | Contents                                                                                                                                                     | Created by     |
+|-------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------|
 | ~sources.tsv~ | ~domain~, ~source~, ~version~, ~assembly~, ~retrieved_date~, ~license_spdx~, ~url~, one row per external source of the genes, expression, conservation, and structure data | ~record_sources~ |
 
 ** Clustering
 The clustering build combines sequences, expression values, orthologs, and
 family assignments. Some inputs are also used by other views.
 
-| File                 | Contents | Also used by |
-|----------------------+----------+--------------|
-| ~cds.fasta~          | Canonical coding sequence keyed by Ensembl gene ID | — |
-| ~protein.fasta~      | Canonical protein sequence keyed by Ensembl gene ID | Structure |
-| ~expression.parquet~ | One row per gene, with ~gene_id~ followed by Float32 TPM columns for each sample | Expression |
-| ~sample_tissue.tsv~  | ~sample_id~, ~tissue~, ~tissue_detail~ | Expression |
+| File               | Contents                                                                              | Also used by |
+|--------------------+---------------------------------------------------------------------------------------+--------------|
+| ~cds.fasta~          | Canonical coding sequence keyed by Ensembl gene ID                                    | —            |
+| ~protein.fasta~      | Canonical protein sequence keyed by Ensembl gene ID                                   | Structure    |
+| ~expression.parquet~ | One row per gene, with ~gene_id~ followed by Float32 TPM columns for each sample        | Expression   |
+| ~sample_tissue.tsv~  | ~sample_id~, ~tissue~, ~tissue_detail~                                                      | Expression   |
 | ~orthologs.tsv~      | ~gene_id~, ~species~, ~target_gene_id~, identity values, orthology type, and ortholog count | Conservation |
 
 The build creates trees from protein sequence, coding sequence, expression
@@ -99,10 +99,10 @@ Expression values are TPM stored as Float32.
 ** Conservation
 Conservation uses the following files together:
 
-| File               | Contents | Created by |
-|--------------------+----------+------------|
-| ~orthologs.tsv~    | One gene and species comparison per row | ~fetch_orthologs~ |
-| ~species.tsv~      | ~species~, ~species_label~, ~taxon_id~ | ~fetch_species_tree~ |
+| File             | Contents                                              | Created by         |
+|------------------+-------------------------------------------------------+--------------------|
+| ~orthologs.tsv~    | One gene and species comparison per row               | ~fetch_orthologs~    |
+| ~species.tsv~      | ~species~, ~species_label~, ~taxon_id~                      | ~fetch_species_tree~ |
 | ~species_tree.nwk~ | Newick tree whose leaf names match the ~species~ column | ~fetch_species_tree~ |
 
 The build adds the reference species and creates both the conservation matrix
@@ -111,16 +111,16 @@ and the species tree used by the application.
 ** Structure
 Structure inputs are stored under ~source/structure/~:
 
-| File                   | Contents | Created by |
-|------------------------+----------+------------|
-| ~uniprot_map.tsv~      | Gene, symbol, UniProt accession and ID, sequence agreement, and matching route | ~fetch_uniprot_map~ |
-| ~sequences.tsv~        | UniProt canonical sequence used for residue numbering | ~fetch_uniprot_sequences~ |
-| ~features.tsv~         | Topology, binding-site, and ligand annotations with residue ranges | ~fetch_protein_features~ |
-| ~structures.tsv~       | AlphaFold and AlphaFill model metadata and URLs | ~fetch_structures~ |
-| ~experimental.tsv~     | PDB entry metadata, method, resolution, chains, coverage, and ligands | ~fetch_structures~ |
-| ~confidence.parquet~   | Per-residue pLDDT values for models that match the canonical UniProt sequence | ~fetch_confidence~ |
-| ~models/<accession>.cif~ or ~.bcif~ | Optional locally hosted predicted models | ~download_models~ |
-| ~models/pdb/<entry>.bcif~ | Optional locally hosted experimental models | ~download_experimental_models~ |
+| File                            | Contents                                                                       | Created by                   |
+|---------------------------------+--------------------------------------------------------------------------------+------------------------------|
+| ~uniprot_map.tsv~                 | Gene, symbol, UniProt accession and ID, sequence agreement, and matching route | ~fetch_uniprot_map~            |
+| ~sequences.tsv~                   | UniProt canonical sequence used for residue numbering                          | ~fetch_uniprot_sequences~      |
+| ~features.tsv~                    | Topology, binding-site, and ligand annotations with residue ranges             | ~fetch_protein_features~       |
+| ~structures.tsv~                  | AlphaFold and AlphaFill model metadata and URLs                                | ~fetch_structures~             |
+| ~experimental.tsv~                | PDB entry metadata, method, resolution, chains, coverage, and ligands          | ~fetch_structures~             |
+| ~confidence.parquet~              | Per-residue pLDDT values for models that match the canonical UniProt sequence  | ~fetch_confidence~             |
+| ~models/<accession>.cif~ or ~.bcif~ | Optional locally hosted predicted models                                       | ~download_models~              |
+| ~models/pdb/<entry>.bcif~         | Optional locally hosted experimental models                                    | ~download_experimental_models~ |
 
 Without ~--download-predicted~ or ~--download-experimental~, the application reads
 models from AlphaFold DB or RCSB. Locally downloaded models are copied to
@@ -132,15 +132,15 @@ windows around the atlas genes. Use ~--browser-whole-genome~ to retain genome-wi
 instead. Each window uses the gene length as its flank, limited by ~--browser-flank-min~
 and ~--browser-flank-max~, and is at least 200 kb wide.
 
-| File                   | Contents | Created by |
-|------------------------+----------+------------|
-| ~transcripts.bed~      | Transcript models for the retained regions, as BED12 followed by ~gene_id~, ~biotype~, and ~gene_name~ | ~fetch_gene_models~ |
-| ~chroms.tsv~           | Chromosome name, length, and role | ~fetch_gene_models~ |
-| ~gene_models.tsv~      | Annotation source, version, assembly, license, URL, retrieval date, and fetch flanks | ~fetch_gene_models~ |
-| ~coverage.tsv~         | Resolved coverage sources, chromosome checks, binning, hosting mode, and size estimates | ~fetch_coverage~ |
-| ~coverage/*.bw~        | Optional local bigWig copies, whole-genome or cut to the merged browser windows | ~slice_coverage~ |
-| ~gwas.parquet~         | GWAS variants in the retained regions | ~fetch_gwas~ |
-| ~gwas_studies.tsv~     | Trait, citation, source, assembly, license, URL, retrieval date, variant count, and chromosomes | ~fetch_gwas~ |
+| File             | Contents                                                                                         | Created by        |
+|------------------+--------------------------------------------------------------------------------------------------+-------------------|
+| ~transcripts.bed~  | Transcript models for the retained regions, as BED12 followed by ~gene_id~, ~biotype~, and ~gene_name~ | ~fetch_gene_models~ |
+| ~chroms.tsv~     | Chromosome name, length, and role                                                                | ~fetch_gene_models~ |
+| ~gene_models.tsv~  | Annotation source, version, assembly, license, URL, retrieval date, and fetch flanks             | ~fetch_gene_models~ |
+| ~coverage.tsv~     | Resolved coverage sources, chromosome checks, binning, hosting mode, and size estimates          | ~fetch_coverage~    |
+| ~coverage/*.bw~    | Optional local bigWig copies, whole-genome or cut to the merged browser windows                  | ~slice_coverage~    |
+| ~gwas.parquet~     | GWAS variants in the retained regions                                                            | ~fetch_gwas~        |
+| ~gwas_studies.tsv~ | Trait, citation, source, assembly, license, URL, retrieval date, variant count, and chromosomes  | ~fetch_gwas~        |
 
 *** Gene model input
 By default, the pipeline downloads the GENCODE release associated with
@@ -157,11 +157,11 @@ biotype from whichever of ~transcript_type~, ~transcript_biotype~, ~gene_type~,
 
 BED12 has one free-text ~name~ field, so the pipeline accepts three layouts:
 
-| ~name~ holds                                     | Rest of the identity comes from | Written by |
-|--------------------------------------------------+---------------------------------+------------|
-| the transcript ID                                | columns 13, 14, 15: ~gene_id~, ~biotype~, ~gene_name~ | this pipeline |
-| ~transcript_id___gene_id___biotype___gene_name~  | the name field itself           | other portals in this field |
-| the transcript ID alone                          | nothing; gene fields stay empty | ~gtfToGenePred~ then ~genePredToBed~ |
+| ~name~ holds                                    | Rest of the identity comes from                 | Written by                       |
+|-----------------------------------------------+-------------------------------------------------+----------------------------------|
+| the transcript ID                             | columns 13, 14, 15: ~gene_id~, ~biotype~, ~gene_name~ | this pipeline                    |
+| ~transcript_id___gene_id___biotype___gene_name~ | the name field itself                           | other portals in this field      |
+| the transcript ID alone                       | nothing; gene fields stay empty                 | ~gtfToGenePred~ then ~genePredToBed~ |
 
 The build compares the start and end coordinates of shared genes. It stops when
 fewer than 95% agree, which usually indicates that the annotation and gene table
@@ -192,13 +192,13 @@ text separated by tabs, commas, or spaces; text may be gzip-compressed.
 
 Columns may appear in any order:
 
-| Meaning     | Accepted names | Required |
-|-------------+----------------+----------|
-| Position    | ~base_pair_location~, ~position~, ~pos~, ~bp~, ~hm_pos~, ~chromStart~ | Yes |
-| P-value     | ~p_value~, ~p~, ~pval~, ~pvalue~ | Yes |
-| Chromosome  | ~chromosome~, ~chrom~, ~chr~, ~hm_chrom~, ~#chrom~ | Unless the file name supplies it |
-| Variant ID  | ~rsid~, ~snp_id~, ~variant_id~, ~hm_rsid~, ~snp~, ~rs_id~ | No |
-| Effect size | ~beta~, ~beta_value~, ~hm_beta~, ~effect_size~, ~b~ | No |
+| Meaning     | Accepted names                                            | Required                         |
+|-------------+-----------------------------------------------------------+----------------------------------|
+| Position    | ~base_pair_location~, ~position~, ~pos~, ~bp~, ~hm_pos~, ~chromStart~ | Yes                              |
+| P-value     | ~p_value~, ~p~, ~pval~, ~pvalue~                                  | Yes                              |
+| Chromosome  | ~chromosome~, ~chrom~, ~chr~, ~hm_chrom~, ~#chrom~                  | Unless the file name supplies it |
+| Variant ID  | ~rsid~, ~snp_id~, ~variant_id~, ~hm_rsid~, ~snp~, ~rs_id~             | No                               |
+| Effect size | ~beta~, ~beta_value~, ~hm_beta~, ~effect_size~, ~b~                 | No                               |
 
 Chromosome names may include or omit the ~chr~ prefix. A ~chromStart~ column
 uses BED-style, zero-based coordinates; every other position column uses
@@ -213,12 +213,12 @@ Run the relevant build step again instead.
 
 Large binary assets remain in their native formats:
 
-| Source | Built location | Behavior |
-|--------+----------------+----------|
-| ~source/structure/models/~ | ~app/structure/models/~ | Copied and served locally |
-| ~source/browser/coverage/~ | ~app/browser/coverage/~ | Copied and served with byte-range support |
-| ~source/browser/transcripts.bed~ | ~app/browser/models.bb~ | bigBed read by byte range for the region in view |
-| ~source/browser/gwas.parquet~ | ~app/browser/gwas/{study}.bb~ | One bigBed per study, with full-resolution variants and pyramid levels for wider views |
+| Source                         | Built location              | Behavior                                                                               |
+|--------------------------------+-----------------------------+----------------------------------------------------------------------------------------|
+| ~source/structure/models/~     | ~app/structure/models/~       | Copied and served locally                                                              |
+| ~source/browser/coverage/~       | ~app/browser/coverage/~       | Copied and served with byte-range support                                              |
+| ~source/browser/transcripts.bed~ | ~app/browser/models.bb~       | bigBed read by byte range for the region in view                                       |
+| ~source/browser/gwas.parquet~    | ~app/browser/gwas/{study}.bb~ | One bigBed per study, with full-resolution variants and pyramid levels for wider views |
 
 The static exporter copies these binary trees directly and renders the remaining
 API responses as JSON.

@@ -1,0 +1,9 @@
+#+title: AtlasForge Documentation
+
+For installation, configuration, deployment, and development instructions, see
+the [[file:../README.org][project README]].
+
+- [[file:source-files.org][Pipeline and source files]] explains the curation, source, cache, and built
+  application files used by ~atlasforge fetch~ and ~atlasforge build~.
+- [[file:benchmarks.org][Benchmarks]] covers build time, serving performance, browser rendering, storage,
+  and scaling measurements.

@@ -44,6 +44,9 @@ mappings in ~my-atlas/curation/~, and then run the command printed in the
 terminal. Existing files are never overwritten, so rerunning a fetch resumes the
 dataset and keeps your edits.
 
+* Documentation
+See the [[file:docs/README.org][documentation overview]] for guides to AtlasForge's files and performance.
+
 * Available Views
 - Genes :: Gene annotation and expandable transcript details
 - Clustering :: Protein sequence, coding sequence, and co-expression similarity
@@ -56,27 +59,27 @@ dataset and keeps your edits.
 Use ~atlasforge fetch --help~ and ~atlasforge build --help~ for the complete command
 reference. The options most often used when creating a dataset are:
 
-| Option                         | Purpose                                                                |
-|--------------------------------+------------------------------------------------------------------------|
-| ~--curation-dir PATH~            | Store editable decisions outside the data directory                    |
-| ~--gtex-version v8, v10, or v11~ | Choose the GTEx release; the default is v11                            |
-| ~--gtex-file PATH~               | Use a local ~.gct.gz~ or Parquet expression matrix                       |
-| ~--ensembl-release N~            | Pin the Ensembl release; the default is 116                            |
-| ~--tree-source NAME~             | Use ~ensembl_compara~, ~ncbi~, ~timetree~, or ~ucsc~                           |
-| ~--promote-alias-prefix PREFIX~  | Prefer matching aliases as display symbols                             |
-| ~--download-predicted~           | Keep local copies of AlphaFold models                                  |
-| ~--download-experimental~        | Keep local copies of PDB structures                                    |
-| ~--gene-models-file PATH~        | Use a local GTF, GFF3, or BED12 instead of a GENCODE download          |
-| ~--browser-tracks PATH~          | Create the coverage curation file from an existing bigWig directory    |
-| ~--browser-gwas PATH~            | Create the GWAS curation file from an existing study directory         |
+| Option                         | Purpose                                                                 |
+|--------------------------------+-------------------------------------------------------------------------|
+| ~--curation-dir PATH~            | Store editable decisions outside the data directory                     |
+| ~--gtex-version v8, v10, or v11~ | Choose the GTEx release; the default is v11                             |
+| ~--gtex-file PATH~               | Use a local ~.gct.gz~ or Parquet expression matrix                        |
+| ~--ensembl-release N~            | Pin the Ensembl release; the default is 116                             |
+| ~--tree-source NAME~             | Use ~ensembl_compara~, ~ncbi~, ~timetree~, or ~ucsc~                            |
+| ~--promote-alias-prefix PREFIX~  | Prefer matching aliases as display symbols                              |
+| ~--download-predicted~           | Keep local copies of AlphaFold models                                   |
+| ~--download-experimental~        | Keep local copies of PDB structures                                     |
+| ~--gene-models-file PATH~        | Use a local GTF, GFF3, or BED12 instead of a GENCODE download           |
+| ~--browser-tracks PATH~          | Create the coverage curation file from an existing bigWig directory     |
+| ~--browser-gwas PATH~            | Create the GWAS curation file from an existing study directory          |
 | ~--local-coverage~               | Copy the coverage tracks into the site instead of reading them remotely |
-| ~--browser-whole-genome~         | Keep the whole genome rather than slicing to the family's genes        |
-| ~--browser-bin BASES~            | Set the finest resolution for local coverage copies; the default is 25 |
-| ~--browser-max-bytes BYTES~      | Stop if local coverage copies would exceed this size in bytes          |
-| ~--no-review~                    | Skip the pause for reviewing newly created curation files             |
-| ~--skip-VIEW~                    | Omit browser, clustering, conservation, expression, or structure       |
-| ~--step NAME~                    | Run only one named step; repeat to select several                      |
-| ~--mafft PATH~                   | Use a specific MAFFT executable during the build                       |
+| ~--browser-whole-genome~         | Keep the whole genome rather than slicing to the family's genes         |
+| ~--browser-bin BASES~            | Set the finest resolution for local coverage copies; the default is 25  |
+| ~--browser-max-bytes BYTES~      | Stop if local coverage copies would exceed this size in bytes           |
+| ~--no-review~                    | Skip the pause for reviewing newly created curation files               |
+| ~--skip-VIEW~                    | Omit browser, clustering, conservation, expression, or structure        |
+| ~--step NAME~                    | Run only one named step; repeat to select several                       |
+| ~--mafft PATH~                   | Use a specific MAFFT executable during the build                        |
 
 Downloaded data lives in ~source/~, personal decisions in ~curation/~, reusable
 downloads in ~cache/~, and the finished dataset in ~app/~. See [[file:docs/source-files.org][Source files]] if you
@@ -87,18 +90,18 @@ Each setting can be supplied as an ~ATLASFORGE_*~ environment variable, in a ~.e
 or as a flag on ~atlasforge serve~ and ~atlasforge export~. A flag takes priority over the
 environment, which takes priority over ~.env~.
 
-| Variable | Flag | Purpose |
-|----------+------+---------|
-| ~ATLASFORGE_DATA_DIR~ | ~--data-dir~ | Dataset containing ~curation/~, ~source/~, ~cache/~, and ~app/~ |
-| ~ATLASFORGE_WEB_DIR~ | ~--web-dir~ | Built frontend files to serve |
-| ~ATLASFORGE_APP_NAME~ | ~--app-name~ | Full name used by the page and web app manifest |
-| ~ATLASFORGE_APP_SHORT_NAME~ | ~--app-short-name~ | Short name used in the app bar |
+| Variable                   | Flag              | Purpose                                                  |
+|----------------------------+-------------------+----------------------------------------------------------|
+| ~ATLASFORGE_DATA_DIR~        | ~--data-dir~        | Dataset containing ~curation/~, ~source/~, ~cache/~, and ~app/~  |
+| ~ATLASFORGE_WEB_DIR~         | ~--web-dir~         | Built frontend files to serve                            |
+| ~ATLASFORGE_APP_NAME~        | ~--app-name~        | Full name used by the page and web app manifest          |
+| ~ATLASFORGE_APP_SHORT_NAME~  | ~--app-short-name~  | Short name used in the app bar                           |
 | ~ATLASFORGE_APP_DESCRIPTION~ | ~--app-description~ | Description shown on the Genes view and in page metadata |
-| ~ATLASFORGE_FAMILY_LABEL~ | ~--family-label~ | Singular name used for a family member |
-| ~ATLASFORGE_DOWNLOAD_PREFIX~ | ~--download-prefix~ | Prefix for downloaded figures, tables, and trees |
-| ~ATLASFORGE_CORS_ORIGINS~ | ~--cors-origins~ | Comma-separated origins allowed to call the API |
-| ~ATLASFORGE_HOST~ | ~--host~ | Address used by ~atlasforge serve~ |
-| ~ATLASFORGE_PORT~ | ~--port~ | Port used by ~atlasforge serve~ |
+| ~ATLASFORGE_FAMILY_LABEL~    | ~--family-label~    | Singular name used for a family member                   |
+| ~ATLASFORGE_DOWNLOAD_PREFIX~ | ~--download-prefix~ | Prefix for downloaded figures, tables, and trees         |
+| ~ATLASFORGE_CORS_ORIGINS~    | ~--cors-origins~    | Comma-separated origins allowed to call the API          |
+| ~ATLASFORGE_HOST~            | ~--host~            | Address used by ~atlasforge serve~                         |
+| ~ATLASFORGE_PORT~            | ~--port~            | Port used by ~atlasforge serve~                            |
 
 Naming changes take effect when the site restarts or is exported again. The dataset does
 not need to be rebuilt.

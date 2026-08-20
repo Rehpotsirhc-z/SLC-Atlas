@@ -38,7 +38,7 @@ server or export static files for a web server like nginx to serve.
 | =expression/brain.json=       | 757 / 114                      |                        60 |             2366 |
 | =expression/all.json=         | 1,495 / 256                    |                        25 |             1348 |
 | =conservation.json=           | 3,133 / 258                    |                        20 |              477 |
-| *Average*                   |                                |                       562 |            29850 |
+| *Average*                     |                                |                       562 |            29850 |
 #+TBLFM: @>$3=vmean(@2..@-1);%.0f::@>$4=vmean(@2..@-1);%.0f
 
 Throughput is the mean number of requests served per second with ten concurrent
