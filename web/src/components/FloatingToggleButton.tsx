@@ -5,8 +5,7 @@
 import type { ReactNode } from "react"
 import CloseIcon from "@mui/icons-material/Close"
 import { IconButton, Tooltip, useTheme } from "@mui/material"
-import type { SxProps, Theme } from "@mui/material/styles"
-import { floatSurfaceBg, floatSurfaceBgHover } from "@/theme"
+import { emphasize, type SxProps, type Theme } from "@mui/material/styles"
 
 type Props = {
   open: boolean
@@ -40,12 +39,11 @@ export default function FloatingToggleButton({
             height: 44,
             borderRadius: "50%",
             boxShadow: 4,
-            backdropFilter: "blur(10px)",
-            bgcolor: floatSurfaceBg(theme),
+            bgcolor: "background.paper",
             border: 1,
             borderColor: "divider",
             color: open ? "text.secondary" : "primary.main",
-            "&:hover": { bgcolor: floatSurfaceBgHover(theme) },
+            "&:hover": { bgcolor: emphasize(theme.palette.background.paper, 0.06) },
           },
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}

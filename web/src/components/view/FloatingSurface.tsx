@@ -3,9 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ReactNode, Ref } from "react"
-import { Paper, useTheme } from "@mui/material"
+import { Paper } from "@mui/material"
 import type { SxProps, Theme } from "@mui/material/styles"
-import { floatSurfaceBg } from "@/theme"
 
 interface Props {
   sx?: SxProps<Theme>
@@ -14,7 +13,6 @@ interface Props {
 }
 
 export default function FloatingSurface({ sx, ref, children }: Props) {
-  const theme = useTheme()
   return (
     <Paper
       ref={ref}
@@ -22,8 +20,7 @@ export default function FloatingSurface({ sx, ref, children }: Props) {
       sx={[
         {
           position: "absolute",
-          bgcolor: floatSurfaceBg(theme),
-          backdropFilter: "blur(10px)",
+          bgcolor: "background.paper",
           border: 1,
           borderColor: "divider",
           borderRadius: 2,

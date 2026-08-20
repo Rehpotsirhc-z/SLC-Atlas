@@ -17,13 +17,7 @@ import {
 
 export { doomColors, type ThemeMode } from "./palette"
 export { monoFontFamily, monoFontSize, sansFontFamily } from "./fonts"
-export {
-  floatSurfaceBg,
-  floatSurfaceBgHover,
-  glowFlash,
-  glowFlashSx,
-  tooltipSurfaceSx,
-} from "./surfaces"
+export { glowFlash, glowFlashSx, tooltipSurfaceSx } from "./surfaces"
 export { capBoxSx, capButtonSx, capLineSx } from "./capBox"
 
 declare module "@mui/material/styles" {
