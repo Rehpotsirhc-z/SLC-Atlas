@@ -1,5 +1,7 @@
 #+title: AtlasForge
 
+#+html: <p align="center"><img src="docs/atlasforge-icon.png" alt="AtlasForge icon" width="192"></p>
+
 Turn a gene family into a self-hosted web atlas for exploring annotation,
 expression, conservation, sequence similarity, and protein structure. AtlasForge
 gathers public or user-provided data into editable source files, builds a site
