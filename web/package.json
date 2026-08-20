@@ -39,6 +39,7 @@
     "@types/react-window": "^1.8.8",
     "@vitejs/plugin-react": "^4.3.0",
     "cspell": "^9.8.0",
+    "playwright": "^1.62.1",
     "prettier": "^3.4.0",
     "sass": "^1.102.0",
     "svgo": "^4.0.1",

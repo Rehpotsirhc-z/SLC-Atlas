@@ -1,0 +1,65 @@
+#+title: Screenshot scripts
+
+Capture every atlas view and its meaningful states at four viewport sizes, in
+light and dark themes. Use a production build for final images, but the
+development server is fine for a quick check.
+
+* Setup
+Playwright is a development dependency of ~web~. Install the locked frontend
+dependencies, then install Chromium:
+
+#+begin_src sh
+npm --prefix web ci
+npm --prefix web exec -- playwright install chromium
+#+end_src
+
+* Run
+From the repo root:
+
+#+begin_src sh
+node scripts/screenshots/capture.mjs --url https://your-host --gene SLC6A4
+#+end_src
+
+The default run writes 96 images (12 views and states, four sizes, and two
+themes) to ~<repo>/screenshots/<gene>/~.
+
+** Options
+| flag         | meaning                                                            |
+|--------------+--------------------------------------------------------------------|
+| ~--url~        | atlas URL (required)                                               |
+| ~--gene~       | gene symbol or Ensembl ID to select (default ~SLC6A4~)               |
+| ~--no-gene~    | capture views without a selected gene                              |
+| ~--view~       | limit to views; repeat the flag or use a comma-separated list      |
+| ~--size~       | limit to ~ultrawide~, ~4k~, ~hd~, or ~phone~; accepts lists like ~--view~    |
+| ~--theme~      | use ~light~, ~dark~, or ~both~ (default ~both~)                            |
+| ~--out~        | output directory (default ~<repo>/screenshots/<gene-or-no-gene>~)    |
+| ~--settle~     | extra wait in milliseconds after each view is ready (default ~1500~) |
+| ~--keep-popup~ | leave the gene card where it opens                                 |
+| ~--headed~     | show the browser while capturing                                   |
+
+** Examples
+#+begin_src sh
+# Capture both clustering layouts at HD size in both themes
+node scripts/screenshots/capture.mjs --url https://your-host --view clustering --size hd
+
+# Capture views without selecting a gene
+node scripts/screenshots/capture.mjs --url https://your-host --no-gene
+
+# Run a quick check against the development server
+node scripts/screenshots/capture.mjs --url http://localhost:3000 --view structure --size hd
+#+end_src
+
+* How it works
+Most states are selected through shareable URL parameters. These include the
+gene, clustering layout, browser mode and GWAS lane, expression tissue, and
+structure figure mode.
+
+The theme and anatomogram sex are stored in ~localStorage~, so the script sets
+them before the page loads. It also scrolls the browser to reveal the lazy GWAS
+lane and waits for the Mol* 3D model before capturing structure views.
+
+Selecting a gene opens a floating card over clustering, conservation, and
+expression. The script moves that card to the bottom-left without clearing the
+selection; pass ~--keep-popup~ to leave it in place. On the narrow ~phone~ preset,
+the card still covers much of the view, so use ~--no-gene~ for an unobstructed
+image.

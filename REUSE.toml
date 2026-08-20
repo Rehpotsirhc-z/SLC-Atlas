@@ -15,6 +15,7 @@ path = [
   ".gitattributes",
   ".devcontainer/README.org",
   "README.org",
+  "scripts/screenshots/README.org",
   "docs/source-files.org",
   "docs/benchmarks.org",
   "scripts/benchmarks/**",
