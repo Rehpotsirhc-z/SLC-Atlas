@@ -259,6 +259,7 @@ export function useGenomeBrowserState(frameRef: RefObject<HTMLElement | null>, p
     selectedGeneId,
     setSelectedGeneId,
     region,
+    names,
     study,
     studyCovers,
     chromSize,

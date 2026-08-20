@@ -30,7 +30,7 @@ interface Props {
   geneName?: string | null
   familyColor: string
   statRows: StatRow[]
-  ucscGene: Gene | null
+  ucscGene: Pick<Gene, "chromosome" | "start" | "end"> | null
   onClose: () => void
   primaryAction?: PanelAction
   pos: PanelPos | null
@@ -64,7 +64,7 @@ export default function FloatingGenePanel({
         {primaryAction && (
           <Button
             size="small"
-            variant="contained"
+            variant="outlined"
             startIcon={primaryAction.icon}
             onClick={primaryAction.onClick}
             sx={capButtonSx}

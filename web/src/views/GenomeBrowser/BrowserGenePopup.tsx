@@ -19,11 +19,12 @@ import { formatLocus } from "./scale"
 interface Props {
   gene: GenePick
   chrom: string
+  ensemblChrom: string | null
   onReframe: (geneId: string, start: number, end: number) => void
   onClose: () => void
 }
 
-export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Props) {
+export default function BrowserGenePopup({ gene, chrom, ensemblChrom, onReframe, onClose }: Props) {
   const { palette } = useTheme()
   const geneById = useGeneById()
   const pos = useUIStore((s) => s.popupPos)
@@ -33,6 +34,11 @@ export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Pr
 
   const full = geneById.get(gene.geneId) ?? null
   const familyColor = full ? getFamilyColor(full.family, palette.mode) : palette.primary.main
+
+  // UCSC uses one-based inclusive coordinates
+  const ucscGene =
+    full ??
+    (ensemblChrom ? { chromosome: ensemblChrom, start: gene.start + 1, end: gene.end } : null)
 
   const statRows: StatRow[] = [
     ...(full
@@ -67,10 +73,10 @@ export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Pr
       geneName={full?.name}
       familyColor={familyColor}
       statRows={statRows}
-      ucscGene={full}
+      ucscGene={ucscGene}
       onClose={onClose}
       primaryAction={{
-        label: "View gene region",
+        label: "Zoom to this region",
         icon: <MyLocationIcon fontSize="small" />,
         onClick: reframe,
       }}

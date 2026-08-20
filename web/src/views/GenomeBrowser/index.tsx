@@ -362,6 +362,7 @@ export default function GenomeBrowser() {
               <BrowserGenePopup
                 gene={pick.picked.gene}
                 chrom={state.region?.chrom ?? ""}
+                ensemblChrom={state.names.ensembl(state.region?.chrom ?? "")}
                 onReframe={state.reframeGene}
                 onClose={pick.dismiss}
               />
