@@ -76,6 +76,8 @@ export function binReadout(
 export interface GenePick {
   geneId: string
   label: string
+  transcriptId: string | null
+  transcriptName: string | null
   biotype: string | null
   strand: string
   start: number
@@ -88,6 +90,8 @@ export function genePickFrom(item: TranscriptModel | GeneSpan): GenePick {
     return {
       geneId: item.model_gene_id ?? item.transcript_id,
       label: item.gene_name || item.model_gene_id || item.transcript_id,
+      transcriptId: item.transcript_id,
+      transcriptName: item.transcript_name,
       biotype: item.biotype,
       strand: item.strand,
       start: item.start,
@@ -98,6 +102,8 @@ export function genePickFrom(item: TranscriptModel | GeneSpan): GenePick {
   return {
     geneId: item.gene_id,
     label: item.label,
+    transcriptId: null,
+    transcriptName: null,
     biotype: item.biotype,
     strand: item.strand,
     start: item.start,

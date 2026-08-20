@@ -6,7 +6,7 @@
 
 import { createPortal } from "react-dom"
 import MyLocationIcon from "@mui/icons-material/MyLocation"
-import { useTheme } from "@mui/material"
+import { Box, useTheme } from "@mui/material"
 import { useGeneById } from "@/api/hooks/useGenes"
 import FamilyLabel from "@/components/FamilyLabel"
 import FloatingGenePanel, { type StatRow } from "@/components/genePanel/FloatingGenePanel"
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export default function BrowserGenePopup({ gene, chrom, ensemblChrom, onReframe, onClose }: Props) {
-  const { palette } = useTheme()
+  const { palette, custom } = useTheme()
   const geneById = useGeneById()
   const pos = useUIStore((s) => s.popupPos)
   const setPos = useUIStore((s) => s.setPopupPos)
@@ -40,6 +40,10 @@ export default function BrowserGenePopup({ gene, chrom, ensemblChrom, onReframe,
     full ??
     (ensemblChrom ? { chromosome: ensemblChrom, start: gene.start + 1, end: gene.end } : null)
 
+  const isTranscript = gene.transcriptId !== null
+  const geneLabel = full?.symbol ?? gene.label
+  const monoSx = { fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }
+
   const statRows: StatRow[] = [
     ...(full
       ? [
@@ -51,6 +55,19 @@ export default function BrowserGenePopup({ gene, chrom, ensemblChrom, onReframe,
                 color={familyColor}
                 category={full.category}
               />
+            ),
+          },
+        ]
+      : []),
+    ...(isTranscript
+      ? [
+          { label: "Gene", value: geneLabel },
+          {
+            label: "Gene ID",
+            value: (
+              <Box component="span" sx={monoSx}>
+                {gene.geneId}
+              </Box>
             ),
           },
         ]
@@ -68,8 +85,8 @@ export default function BrowserGenePopup({ gene, chrom, ensemblChrom, onReframe,
 
   return createPortal(
     <FloatingGenePanel
-      symbol={full?.symbol ?? gene.label}
-      geneId={gene.geneId}
+      symbol={isTranscript ? (gene.transcriptName ?? gene.transcriptId) : geneLabel}
+      geneId={isTranscript ? (gene.transcriptName ? gene.transcriptId : null) : gene.geneId}
       geneName={full?.name}
       familyColor={familyColor}
       statRows={statRows}
