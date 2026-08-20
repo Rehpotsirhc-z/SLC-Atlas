@@ -121,7 +121,7 @@ const boxAt = (fill) => {
 const framed = (fill, style, ground) => {
   const b = boxAt(fill)
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b.join(" ")}" role="img" aria-label="Atlas">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b.join(" ")}" role="img" aria-label="AtlasForge">` +
     style +
     (ground
       ? `<rect x="${b[0]}" y="${b[1]}" width="${b[2]}" height="${b[3]}" fill="${ground}"/>`
