@@ -7,7 +7,7 @@ volumes:
 
 services:
   atlas:
-    build: .
+    image: ghcr.io/thedonglab/atlasforge:latest
     restart: unless-stopped
     container_name: atlas
 
