@@ -27,7 +27,6 @@ function median(values: number[]): number | null {
 interface GeneExpressionPanelProps {
   info: ExpressionGeneInfo
   onClose: () => void
-  onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
   size: PanelSize | null

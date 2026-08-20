@@ -5,7 +5,6 @@
 // Show details and navigation for a selected browser gene
 
 import { createPortal } from "react-dom"
-import { useNavigate } from "react-router-dom"
 import MyLocationIcon from "@mui/icons-material/MyLocation"
 import { useTheme } from "@mui/material"
 import { useGeneById } from "@/api/hooks/useGenes"
@@ -26,9 +25,7 @@ interface Props {
 
 export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Props) {
   const { palette } = useTheme()
-  const navigate = useNavigate()
   const geneById = useGeneById()
-  const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
   const pos = useUIStore((s) => s.popupPos)
   const setPos = useUIStore((s) => s.setPopupPos)
   const size = useUIStore((s) => s.popupSize)
@@ -62,10 +59,6 @@ export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Pr
     onReframe(gene.geneId, gene.start, gene.end)
     onClose()
   }
-  const openInGenes = () => {
-    setSelectedGeneId(gene.geneId)
-    navigate("/genes")
-  }
 
   return createPortal(
     <FloatingGenePanel
@@ -76,7 +69,6 @@ export default function BrowserGenePopup({ gene, chrom, onReframe, onClose }: Pr
       statRows={statRows}
       ucscGene={full}
       onClose={onClose}
-      onOpenInGenes={full ? openInGenes : undefined}
       primaryAction={{
         label: "View gene region",
         icon: <MyLocationIcon fontSize="small" />,

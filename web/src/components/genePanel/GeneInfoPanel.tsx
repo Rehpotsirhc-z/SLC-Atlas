@@ -13,7 +13,6 @@ import FloatingGenePanel, { type StatRow } from "./FloatingGenePanel"
 interface GeneInfoPanelProps {
   info: GeneInfo
   onClose: () => void
-  onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
   size: PanelSize | null

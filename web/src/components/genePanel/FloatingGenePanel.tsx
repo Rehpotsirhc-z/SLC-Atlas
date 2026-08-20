@@ -4,7 +4,6 @@
 
 import { type ReactNode } from "react"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
-import TableRowsIcon from "@mui/icons-material/TableRows"
 import { Box, Button, Divider } from "@mui/material"
 import FloatingPanel, { type StatRow } from "@/components/FloatingPanel"
 import { capBoxSx, capButtonSx } from "@/theme"
@@ -33,7 +32,6 @@ interface Props {
   statRows: StatRow[]
   ucscGene: Gene | null
   onClose: () => void
-  onOpenInGenes?: () => void
   primaryAction?: PanelAction
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
@@ -51,7 +49,6 @@ export default function FloatingGenePanel({
   statRows,
   ucscGene,
   onClose,
-  onOpenInGenes,
   primaryAction,
   pos,
   onPosChange,
@@ -74,19 +71,6 @@ export default function FloatingGenePanel({
           >
             <Box component="span" sx={capBoxSx}>
               {primaryAction.label}
-            </Box>
-          </Button>
-        )}
-        {onOpenInGenes && (
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<TableRowsIcon />}
-            onClick={onOpenInGenes}
-            sx={capButtonSx}
-          >
-            <Box component="span" sx={capBoxSx}>
-              Open in Genes view
             </Box>
           </Button>
         )}

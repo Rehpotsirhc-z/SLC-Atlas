@@ -27,7 +27,6 @@ interface GeneConservationPanelProps {
   info: ConservationGeneInfo
   metric: CellMetricKey
   onClose: () => void
-  onOpenInGenes: () => void
   pos: PanelPos | null
   onPosChange: (pos: PanelPos) => void
   size: PanelSize | null

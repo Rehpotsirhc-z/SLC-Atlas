@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLocation } from "react-router-dom"
 import { useUIStore } from "@/store/uiStore"
 import { POPUP_PATHS } from "@/config/routes"
 import GeneInfoPanel from "./genePanel/GeneInfoPanel"
@@ -20,7 +20,6 @@ export default function GeneInfoPopup() {
   const size = useUIStore((s) => s.popupSize)
   const setSize = useUIStore((s) => s.setPopupSize)
   const { pathname } = useLocation()
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (!selectedGeneId) setContent(null)
@@ -29,14 +28,12 @@ export default function GeneInfoPopup() {
   if (!content || !POPUP_PATHS.has(pathname)) return null
 
   const onClose = () => setSelectedGeneId(null)
-  const onOpenInGenes = () => navigate("/genes")
   const geometry = {
     pos,
     onPosChange: setPos,
     size,
     onSizeChange: setSize,
     onClose,
-    onOpenInGenes,
   }
 
   switch (content.kind) {
