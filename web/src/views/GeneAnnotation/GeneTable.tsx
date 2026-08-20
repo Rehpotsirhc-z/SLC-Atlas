@@ -27,6 +27,7 @@ interface GeneTableProps {
   expandedGeneIds: ReadonlySet<string>
   onToggleExpanded: (geneId: string) => void
   onFamilyClick?: (family: string) => void
+  mapAvailableWidth: number
 }
 
 const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
@@ -81,6 +82,7 @@ export default function GeneTable({
   expandedGeneIds,
   onToggleExpanded,
   onFamilyClick,
+  mapAvailableWidth,
 }: GeneTableProps) {
   return (
     <TableContainer sx={{ overflowX: "visible" }}>
@@ -123,6 +125,7 @@ export default function GeneTable({
               expanded={expandedGeneIds.has(gene.id)}
               onToggleExpanded={onToggleExpanded}
               onFamilyClick={onFamilyClick}
+              mapAvailableWidth={mapAvailableWidth}
             />
           ))}
         </TableBody>

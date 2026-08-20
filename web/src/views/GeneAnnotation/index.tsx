@@ -41,6 +41,7 @@ export default function GeneAnnotation() {
   const paginatedGenes = visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage)
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const tableScrollRef = useRef<HTMLDivElement>(null)
+  const [scrollViewportWidth, setScrollViewportWidth] = useState(0)
 
   const handledGeneIdRef = useRef<string | null>(null)
   useEffect(() => {
@@ -94,6 +95,16 @@ export default function GeneAnnotation() {
     table.style.minWidth = `${naturalWidth}px`
     expandRail(naturalWidth)
   }, [isLoading, expandRail])
+
+  useEffect(() => {
+    const el = tableScrollRef.current
+    if (!el) return
+    const measure = () => setScrollViewportWidth(el.clientWidth)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isLoading, error])
 
   const exportItems = [
     { label: "Genes TSV", onClick: () => downloadGenes(visibleGenes, "tsv") },
@@ -158,6 +169,7 @@ export default function GeneAnnotation() {
                     expandedGeneIds={expandedGeneIds}
                     onToggleExpanded={toggleExpanded}
                     onFamilyClick={setFamilyFilter}
+                    mapAvailableWidth={scrollViewportWidth}
                   />
                 )}
               </Box>

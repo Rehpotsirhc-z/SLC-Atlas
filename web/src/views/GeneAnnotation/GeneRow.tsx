@@ -32,6 +32,7 @@ interface GeneRowProps {
   expanded: boolean
   onToggleExpanded: (geneId: string) => void
   onFamilyClick?: (family: string) => void
+  mapAvailableWidth: number
 }
 
 const rowFlash = keyframes`
@@ -39,7 +40,14 @@ const rowFlash = keyframes`
   100% { background-color: transparent; }
 `
 
-function GeneRow({ gene, isSelected, expanded, onToggleExpanded, onFamilyClick }: GeneRowProps) {
+function GeneRow({
+  gene,
+  isSelected,
+  expanded,
+  onToggleExpanded,
+  onFamilyClick,
+  mapAvailableWidth,
+}: GeneRowProps) {
   const [flashing, setFlashing] = useState(false)
   const theme = useTheme()
   const setSelectedGeneId = useUIStore((s) => s.setSelectedGeneId)
@@ -150,7 +158,11 @@ function GeneRow({ gene, isSelected, expanded, onToggleExpanded, onFamilyClick }
       <TableRow>
         <TableCell colSpan={10} sx={{ p: 0, borderBottom: expanded ? undefined : "none" }}>
           <Collapse in={expanded} mountOnEnter unmountOnExit>
-            <TranscriptTable geneId={gene.id} chromosome={gene.chromosome} />
+            <TranscriptTable
+              geneId={gene.id}
+              chromosome={gene.chromosome}
+              availableWidth={mapAvailableWidth}
+            />
           </Collapse>
         </TableCell>
       </TableRow>
