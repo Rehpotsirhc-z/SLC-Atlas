@@ -11,12 +11,12 @@ export default function AppInfoButton() {
   const setOpen = useUIStore((s) => s.setAboutOpen)
 
   return (
-    <Tooltip title="About the data">
+    <Tooltip title="About">
       <IconButton
         onClick={() => setOpen(!open)}
         size="small"
         color={open ? "secondary" : "inherit"}
-        aria-label="About the data"
+        aria-label="About"
       >
         <InfoOutlinedIcon fontSize="small" />
       </IconButton>

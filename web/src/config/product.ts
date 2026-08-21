@@ -11,6 +11,7 @@ export interface AtlasConfig {
 }
 
 export const PRODUCT_NAME = "AtlasForge"
+export const PRODUCT_URL = "https://github.com/TheDongLab/AtlasForge"
 
 export const ATLAS_DEFAULTS: AtlasConfig = {
   name: PRODUCT_NAME,

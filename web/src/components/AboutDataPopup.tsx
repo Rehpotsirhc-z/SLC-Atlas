@@ -11,6 +11,7 @@ import { useTrackManifest } from "@/api/hooks/useBrowser"
 import { useUIStore } from "@/store/uiStore"
 import { DATA_DOMAINS } from "@/config/methodology"
 import { atlas } from "@/config/atlas"
+import { PRODUCT_NAME, PRODUCT_URL } from "@/config/product"
 import type { PanelPos } from "@/utils/useDraggablePanel"
 import type { PanelSize } from "@/utils/useResizablePanel"
 import type { DataSourceRecord } from "@/types/structure"
@@ -98,9 +99,21 @@ export default function AboutDataPopup() {
   return (
     <FloatingPanel
       accent={theme.palette.primary.main}
-      title="About the data"
+      title="About"
       nameLine={atlas.name}
       onClose={() => setOpen(false)}
+      footer={
+        <>
+          <Divider sx={{ mb: 1 }} />
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            This atlas was generated using{" "}
+            <Link href={PRODUCT_URL} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
+              {PRODUCT_NAME}
+            </Link>
+            , an open-source system that generates an interactive web atlas for any gene family.
+          </Typography>
+        </>
+      }
       pos={pos}
       onPosChange={setPos}
       size={size}
