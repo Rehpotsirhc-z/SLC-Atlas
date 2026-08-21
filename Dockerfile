@@ -17,11 +17,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/atlas
-COPY pyproject.toml README.org ./
+COPY pyproject.toml README.org hatch_build.py ./
 COPY src/ ./src/
 COPY --from=web /build/dist ./web/dist
+ARG ATLASFORGE_VERSION=0.0.0
 # Installs the command the entrypoint runs
-RUN pip install --no-cache-dir .
+RUN SETUPTOOLS_SCM_PRETEND_VERSION=${ATLASFORGE_VERSION} pip install --no-cache-dir .
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
