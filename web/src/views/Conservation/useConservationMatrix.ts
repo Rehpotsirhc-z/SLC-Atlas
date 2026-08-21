@@ -9,15 +9,25 @@ import { useCellHitTest } from "@/components/heatmap/useCellHitTest"
 import { useDendroLeaves, useGeneRows } from "@/components/heatmap/useGeneRows"
 import { useHeatmapGrid } from "@/components/heatmap/useHeatmapGrid"
 import { useHeatmapMetrics } from "@/components/heatmap/useHeatmapMetrics"
+import { useHeatmapResize } from "@/components/heatmap/useHeatmapResize"
 import { useMatrixCanvas } from "@/components/heatmap/useMatrixCanvas"
 import { useRowFocus } from "@/components/heatmap/useRowFocus"
 import type { CellHover } from "@/components/heatmap/types"
+import { useUIStore } from "@/store/uiStore"
 import { useElementSize } from "@/utils/useElementSize"
 import type { ClusterNode } from "@/types/clustering"
 import type { ConservationCell, SpeciesNode } from "@/types/conservation"
 import { CELL_METRICS, type CellMetricKey } from "@/types/conservation"
 import type { Gene } from "@/types/gene"
-import { SP_TREE_PAD, SPECIES_LABEL_H, SPECIES_TREE_H, TOP_H } from "./constants"
+import {
+  COL_LABEL_GAP,
+  CORNER_DROPDOWN_MIN_W,
+  CORNER_INLINE_MIN_H,
+  MONO_CHAR_W,
+  SEARCH_PANEL_CLEAR_X,
+  SEARCH_PANEL_CLEAR_Y,
+} from "@/components/heatmap/constants"
+import { SP_TREE_PAD, SPECIES_LABEL_MIN_H, SPECIES_TREE_H } from "./constants"
 import { buildConservationFigureSvg } from "./conservationFigureSvg"
 import { useConservationCellFill } from "./useConservationColor"
 
@@ -46,6 +56,7 @@ interface Options {
   showSpeciesTree: boolean
   showGeneTree: boolean
   hasLegend: boolean
+  searchInCorner: boolean
 }
 
 const conservationKey = (c: ConservationCell) => `${c.gene_id}__${c.species}`
@@ -63,6 +74,7 @@ export function useConservationMatrix({
   showSpeciesTree,
   showGeneTree,
   hasLegend,
+  searchInCorner,
 }: Options) {
   const theme = useTheme()
   const mode = theme.palette.mode
@@ -79,8 +91,21 @@ export function useConservationMatrix({
 
   const nSpecies = useMemo(() => speciesNodes.filter((n) => n.species).length, [speciesNodes])
 
+  const cellSize = useUIStore((s) => s.conservationCellSize)
+  const setCellSize = useUIStore((s) => s.setConservationCellSize)
+  const maxGeneLabelLength = useMemo(
+    () =>
+      clusterNodes.reduce(
+        (maxLength, node) =>
+          node.gene_id ? Math.max(maxLength, (node.symbol ?? node.gene_id).length) : maxLength,
+        0,
+      ),
+    [clusterNodes],
+  )
+
   const {
     leftColW,
+    geneLabelW,
     cellW,
     cellH,
     geneFont,
@@ -88,7 +113,7 @@ export function useConservationMatrix({
     colFont: speciesFont,
     legendReserve,
     showLegend,
-  } = useHeatmapMetrics(containerW, nSpecies, hasLegend, showGeneTree)
+  } = useHeatmapMetrics(containerW, nSpecies, hasLegend, showGeneTree, cellSize, maxGeneLabelLength)
 
   const { geneTree, geneRows, rowByGene } = useGeneRows(clusterNodes, cellH)
 
@@ -119,7 +144,43 @@ export function useConservationMatrix({
   })
   const { matrix, gridW, gridH } = grid
 
-  const topH = showSpeciesTree ? TOP_H : SPECIES_LABEL_H
+  const speciesLabelH = useMemo(() => {
+    if (!speciesCols.length) return SPECIES_LABEL_MIN_H
+    const maxLabelLength = Math.max(...speciesCols.map((s) => s.label.length))
+    return Math.max(
+      SPECIES_LABEL_MIN_H,
+      Math.ceil(maxLabelLength * speciesFont * MONO_CHAR_W) + COL_LABEL_GAP + 4,
+    )
+  }, [speciesCols, speciesFont])
+
+  const topH = showSpeciesTree ? SPECIES_TREE_H + speciesLabelH : speciesLabelH
+
+  const contentLeft = grid.fits ? Math.max(0, (containerW - grid.contentW) / 2) : 0
+  const gridLeft = contentLeft + leftColW
+
+  const shouldCollapseCorner =
+    leftColW < CORNER_DROPDOWN_MIN_W ||
+    (searchInCorner && topH < CORNER_INLINE_MIN_H && contentLeft < SEARCH_PANEL_CLEAR_X)
+
+  const searchCoversContent =
+    gridLeft < SEARCH_PANEL_CLEAR_X ||
+    (topH < SEARCH_PANEL_CLEAR_Y && contentLeft < SEARCH_PANEL_CLEAR_X)
+
+  const {
+    setCellWidth,
+    finishCellWidthResize,
+    setCellHeight,
+    resetCellSize,
+    fits: layoutFits,
+    contentOffsetLeft,
+    cornerCollapsed,
+    searchCoversContent: visibleSearchCoversContent,
+  } = useHeatmapResize(setCellSize, {
+    fits: grid.fits,
+    contentLeft,
+    cornerCollapsed: shouldCollapseCorner,
+    searchCoversContent,
+  })
 
   const cellFill = useConservationCellFill(matrix, metricDef)
 
@@ -181,6 +242,10 @@ export function useConservationMatrix({
       speciesTree,
       geneRows,
       labels: speciesCols.map((s) => s.label),
+      topH,
+      geneLabelW,
+      showGeneTree,
+      showSpeciesTree,
       gridW,
       gridH,
       cellW,
@@ -192,6 +257,7 @@ export function useConservationMatrix({
       monoFont,
       muted,
       background: theme.palette.background.paper,
+      gridLine: lineColor,
       mode,
     })
   const figureRef = useRef(figure)
@@ -211,15 +277,24 @@ export function useConservationMatrix({
     speciesTree,
     speciesCols,
     speciesFont,
+    speciesLabelH,
     containerW,
     leftColW,
     cellW,
     cellH,
     geneFont,
     geneDotR,
+    geneLabelW,
     showLegend,
+    setCellWidth,
+    finishCellWidthResize,
+    setCellHeight,
+    resetCellSize,
+    cornerCollapsed,
+    searchCoversContent: visibleSearchCoversContent,
     contentW: grid.contentW,
-    fits: grid.fits,
+    fits: layoutFits,
+    contentOffsetLeft,
     gridW,
     gridH,
     selectedRow: grid.selectedRow,

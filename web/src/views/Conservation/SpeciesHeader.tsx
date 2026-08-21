@@ -9,7 +9,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import ColumnLabels from "@/components/heatmap/ColumnLabels"
 import { COL_LABEL_GAP, RIGHT_PAD } from "@/components/heatmap/constants"
 import type { DendroLayout } from "@/utils/dendrogram"
-import { SP_TREE_PAD, SPECIES_LABEL_H, SPECIES_TOGGLE_H, SPECIES_TREE_H } from "./constants"
+import { SP_TREE_PAD, SPECIES_TOGGLE_H, SPECIES_TREE_H } from "./constants"
 import type { SpeciesCol } from "./useConservationMatrix"
 
 interface SpeciesHeaderProps {
@@ -18,6 +18,7 @@ interface SpeciesHeaderProps {
   gridW: number
   cellW: number
   font: number
+  labelH: number
   fits: boolean
   containerW: number
   leftColW: number
@@ -31,6 +32,7 @@ const SpeciesHeader = memo(function SpeciesHeader({
   gridW,
   cellW,
   font,
+  labelH,
   fits,
   containerW,
   leftColW,
@@ -61,7 +63,7 @@ const SpeciesHeader = memo(function SpeciesHeader({
       )}
       <svg
         width={gridW + RIGHT_PAD}
-        height={SPECIES_LABEL_H}
+        height={labelH}
         style={{ display: "block", overflow: "visible" }}
       >
         <ColumnLabels

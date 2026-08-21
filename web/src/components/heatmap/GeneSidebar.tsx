@@ -7,7 +7,7 @@ import type { MouseEvent } from "react"
 import { useTheme } from "@mui/material"
 import { getFamilyColor } from "@/utils/familyColor"
 import type { DendroLayout } from "@/utils/dendrogram"
-import { GENE_LABEL_GAP, GENE_TREE_W, LEFT_W } from "./constants"
+import { GENE_LABEL_GAP, GENE_TREE_W } from "./constants"
 import type { GeneRow } from "./useGeneRows"
 
 interface GeneSidebarProps {
@@ -19,6 +19,7 @@ interface GeneSidebarProps {
   cellH: number
   geneFont: number
   geneDotR: number
+  labelW: number
   height: number
   showGeneTree: boolean
   onPick: (geneId: string | null) => void
@@ -33,6 +34,7 @@ export default function GeneSidebar({
   cellH,
   geneFont,
   geneDotR,
+  labelW,
   height,
   showGeneTree,
   onPick,
@@ -87,7 +89,7 @@ export default function GeneSidebar({
 
   return (
     <svg
-      width={showGeneTree ? LEFT_W : LEFT_W - GENE_TREE_W}
+      width={(showGeneTree ? GENE_TREE_W : 0) + labelW}
       height={height}
       style={{ display: "block" }}
     >

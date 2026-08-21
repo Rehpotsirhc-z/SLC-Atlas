@@ -13,9 +13,9 @@ interface HeatmapShellProps {
   headerRef: RefObject<HTMLDivElement | null>
   contentW: number
   fits: boolean
+  contentOffsetLeft?: number
   leftColW: number
   cornerSlot?: ReactNode
-  cornerMinHeight?: number
   headerSlot: ReactNode
   sidebar: ReactNode
   showGeneTree?: boolean
@@ -35,9 +35,9 @@ export default function HeatmapShell({
   headerRef,
   contentW,
   fits,
+  contentOffsetLeft,
   leftColW,
   cornerSlot,
-  cornerMinHeight,
   headerSlot,
   sidebar,
   showGeneTree = true,
@@ -60,7 +60,13 @@ export default function HeatmapShell({
       onPointerLeave={onPointerLeave}
       onClick={onBackgroundClick}
     >
-      <Box sx={{ width: contentW, ml: fits ? "auto" : 0, mr: fits ? "auto" : 0 }}>
+      <Box
+        sx={{
+          width: contentW,
+          ml: contentOffsetLeft != null ? `${contentOffsetLeft}px` : fits ? "auto" : 0,
+          mr: contentOffsetLeft != null ? 0 : fits ? "auto" : 0,
+        }}
+      >
         <Box
           ref={headerRef}
           sx={{ position: "sticky", top: 0, zIndex: 3, display: "flex", bgcolor: stickyBg }}
@@ -77,7 +83,6 @@ export default function HeatmapShell({
               display: "flex",
               flexDirection: "column",
               justifyContent: "flex-end",
-              minHeight: cornerMinHeight,
             }}
             onClick={(e) => e.stopPropagation()}
           >

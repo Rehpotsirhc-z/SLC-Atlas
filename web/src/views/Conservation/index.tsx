@@ -24,10 +24,12 @@ import { useConservationState } from "./useConservationState"
 export default function Conservation() {
   const [cellMetric, setCellMetric] = useShareParam(CELL_PARAM)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchCoversContent, setSearchCoversContent] = useState(false)
   const [showSpeciesTree, setShowSpeciesTree] = useShareParam(SPECIESTREE_PARAM)
   const [showGeneTree, setShowGeneTree] = useShareParam(GENETREE_PARAM)
   const heatmapRef = useRef<ConservationHeatmapHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
+  const searchFloats = isMobile || searchCoversContent
 
   const {
     cells,
@@ -128,6 +130,8 @@ export default function Conservation() {
                   onTissueChange={setTissue}
                 />
               }
+              searchInCorner={!searchFloats}
+              onSearchCoversContentChange={setSearchCoversContent}
               showSpeciesTree={showSpeciesTree}
               onToggleSpeciesTree={() => setShowSpeciesTree((v) => !v)}
               showGeneTree={showGeneTree}
@@ -135,13 +139,13 @@ export default function Conservation() {
               legendSlot={<ConservationLegend metric={cellMetric} />}
             />
 
-            {!isMobile && (
+            {!searchFloats && (
               <FloatingSurface sx={{ top: 12, left: 12, zIndex: 4, ...searchSurfaceSx }}>
                 {searchPanel}
               </FloatingSurface>
             )}
 
-            {isMobile && (
+            {searchFloats && (
               <>
                 {searchOpen && (
                   <FloatingSurface sx={{ bottom: 64, right: 12, zIndex: 4, ...searchSurfaceSx }}>

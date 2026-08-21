@@ -5,14 +5,22 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { MouseEvent } from "react"
 import { useTheme } from "@mui/material"
-import { COL_LABEL_GAP } from "@/components/heatmap/constants"
+import {
+  COL_LABEL_GAP,
+  CORNER_DROPDOWN_MIN_W,
+  CORNER_INLINE_MIN_H,
+  MONO_CHAR_W,
+  SEARCH_PANEL_CLEAR_X,
+} from "@/components/heatmap/constants"
 import { useCellHitTest } from "@/components/heatmap/useCellHitTest"
 import { useGeneRows } from "@/components/heatmap/useGeneRows"
 import { useHeatmapGrid } from "@/components/heatmap/useHeatmapGrid"
 import { useHeatmapMetrics } from "@/components/heatmap/useHeatmapMetrics"
+import { useHeatmapResize } from "@/components/heatmap/useHeatmapResize"
 import { useMatrixCanvas } from "@/components/heatmap/useMatrixCanvas"
 import { useRowFocus } from "@/components/heatmap/useRowFocus"
 import type { CellHover } from "@/components/heatmap/types"
+import { useUIStore } from "@/store/uiStore"
 import { useElementSize } from "@/utils/useElementSize"
 import { displayTissue, sortedTissues } from "@/utils/tissue"
 import { useTpmColorScale } from "@/utils/tpmColor"
@@ -39,6 +47,7 @@ interface Options {
   geneById: Map<string, Gene>
   showGeneTree: boolean
   hasLegend: boolean
+  searchInCorner: boolean
 }
 
 const rowKey = (r: ExpressionRow) => `${r.gene_id}__${r.tissue}`
@@ -53,6 +62,7 @@ export function useExpressionHeatmapState({
   geneById,
   showGeneTree,
   hasLegend,
+  searchInCorner,
 }: Options) {
   const theme = useTheme()
   const mode = theme.palette.mode
@@ -67,8 +77,21 @@ export function useExpressionHeatmapState({
 
   const tissueCols = useMemo(() => sortedTissues(rows), [rows])
 
+  const cellSize = useUIStore((s) => s.expressionCellSize)
+  const setCellSize = useUIStore((s) => s.setExpressionCellSize)
+  const maxGeneLabelLength = useMemo(
+    () =>
+      clusterNodes.reduce(
+        (maxLength, node) =>
+          node.gene_id ? Math.max(maxLength, (node.symbol ?? node.gene_id).length) : maxLength,
+        0,
+      ),
+    [clusterNodes],
+  )
+
   const {
     leftColW,
+    geneLabelW,
     cellW,
     cellH,
     geneFont,
@@ -76,12 +99,22 @@ export function useExpressionHeatmapState({
     colFont: tissueFont,
     legendReserve,
     showLegend,
-  } = useHeatmapMetrics(containerW, tissueCols.length, hasLegend, showGeneTree)
+  } = useHeatmapMetrics(
+    containerW,
+    tissueCols.length,
+    hasLegend,
+    showGeneTree,
+    cellSize,
+    maxGeneLabelLength,
+  )
 
   const topH = useMemo(() => {
     if (!tissueCols.length) return TISSUE_LABEL_H_MIN
-    const maxLen = Math.max(...tissueCols.map((t) => displayTissue(t).length))
-    return Math.max(TISSUE_LABEL_H_MIN, Math.ceil(maxLen * tissueFont * 0.62) + COL_LABEL_GAP + 4)
+    const maxLabelLength = Math.max(...tissueCols.map((t) => displayTissue(t).length))
+    return Math.max(
+      TISSUE_LABEL_H_MIN,
+      Math.ceil(maxLabelLength * tissueFont * MONO_CHAR_W) + COL_LABEL_GAP + 4,
+    )
   }, [tissueCols, tissueFont])
 
   const { geneTree, geneRows, rowByGene } = useGeneRows(clusterNodes, cellH)
@@ -181,6 +214,8 @@ export function useExpressionHeatmapState({
       cellW,
       cellH,
       topH,
+      geneLabelW,
+      showGeneTree,
       fillFor: cellFill,
       geneDotR,
       geneFont,
@@ -188,11 +223,35 @@ export function useExpressionHeatmapState({
       monoFont,
       muted,
       background: theme.palette.background.paper,
+      gridLine: lineColor,
       mode,
     })
   const figureRef = useRef(figure)
   figureRef.current = figure
   const buildFigure = useCallback(() => figureRef.current(), [])
+
+  const contentLeft = grid.fits ? Math.max(0, (containerW - grid.contentW) / 2) : 0
+  const shouldCollapseCorner =
+    leftColW < CORNER_DROPDOWN_MIN_W ||
+    (searchInCorner && topH < CORNER_INLINE_MIN_H && contentLeft < SEARCH_PANEL_CLEAR_X)
+
+  const searchCoversContent = contentLeft < SEARCH_PANEL_CLEAR_X
+
+  const {
+    setCellWidth,
+    finishCellWidthResize,
+    setCellHeight,
+    resetCellSize,
+    fits: layoutFits,
+    contentOffsetLeft,
+    cornerCollapsed,
+    searchCoversContent: visibleSearchCoversContent,
+  } = useHeatmapResize(setCellSize, {
+    fits: grid.fits,
+    contentLeft,
+    cornerCollapsed: shouldCollapseCorner,
+    searchCoversContent,
+  })
 
   return {
     containerRef,
@@ -211,9 +270,17 @@ export function useExpressionHeatmapState({
     cellH,
     geneFont,
     geneDotR,
+    geneLabelW,
     showLegend,
+    setCellWidth,
+    finishCellWidthResize,
+    setCellHeight,
+    resetCellSize,
+    cornerCollapsed,
+    searchCoversContent: visibleSearchCoversContent,
     contentW: grid.contentW,
-    fits: grid.fits,
+    fits: layoutFits,
+    contentOffsetLeft,
     gridW,
     gridH,
     selectedRow: grid.selectedRow,

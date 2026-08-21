@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import SearchIcon from "@mui/icons-material/Search"
-import { Box, Divider, Paper, useMediaQuery, useTheme } from "@mui/material"
+import { Box, Divider, Paper } from "@mui/material"
 import { downloadGeneTreeNewick } from "@/api/newick"
 import GeneSearchPanel from "@/components/autocomplete/GeneSearchPanel"
 import FloatingToggleButton from "@/components/FloatingToggleButton"
@@ -23,7 +23,6 @@ export default function Clustering() {
   const [layout, setLayout] = useShareParam(LAYOUT_PARAM)
   const [searchOpen, setSearchOpen] = useState(false)
   const treeRef = useRef<PhyloTreeHandle>(null)
-  const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
 
   const {
     data,
@@ -110,29 +109,19 @@ export default function Clustering() {
               geneById={geneById}
             />
 
-            {!isMobile && (
-              <FloatingSurface sx={{ top: 12, left: 12, zIndex: 2, ...searchSurfaceSx }}>
+            {searchOpen && (
+              <FloatingSurface sx={{ bottom: 64, right: 12, zIndex: 2, ...searchSurfaceSx }}>
                 {searchPanel}
               </FloatingSurface>
             )}
-
-            {isMobile && (
-              <>
-                {searchOpen && (
-                  <FloatingSurface sx={{ bottom: 64, right: 12, zIndex: 2, ...searchSurfaceSx }}>
-                    {searchPanel}
-                  </FloatingSurface>
-                )}
-                <FloatingToggleButton
-                  open={searchOpen}
-                  onToggle={() => setSearchOpen((v) => !v)}
-                  icon={<SearchIcon fontSize="small" />}
-                  title="Find gene"
-                  openTitle="Close search"
-                  sx={{ bottom: 12, right: 12, zIndex: 2 }}
-                />
-              </>
-            )}
+            <FloatingToggleButton
+              open={searchOpen}
+              onToggle={() => setSearchOpen((v) => !v)}
+              icon={<SearchIcon fontSize="small" />}
+              title="Find gene"
+              openTitle="Close search"
+              sx={{ bottom: 12, right: 12, zIndex: 2 }}
+            />
 
             <LayoutToggle layout={layout} onChange={setLayout} />
           </ViewStatus>

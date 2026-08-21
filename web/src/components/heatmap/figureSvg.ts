@@ -5,7 +5,7 @@
 import type { PaletteMode } from "@mui/material"
 import { svgSansFontFamily } from "@/theme/fonts"
 import { getFamilyColor } from "@/utils/familyColor"
-import { GENE_LABEL_GAP, GENE_TREE_W, LEFT_W } from "./constants"
+import { GENE_LABEL_GAP } from "./constants"
 import { cellRect } from "./geometry"
 import type { GeneRow } from "./useGeneRows"
 
@@ -16,18 +16,19 @@ export const svgFontFamily = (monoFont: string) => monoFont.replace(/"/g, "&quot
 export function cellRectsSvg(opts: {
   nRows: number
   nCols: number
+  leftW: number
   y0: number
   cellW: number
   cellH: number
   fillFor: (row: number, col: number) => string
 }): string {
-  const { nRows, nCols, y0, cellW, cellH, fillFor } = opts
+  const { nRows, nCols, leftW, y0, cellW, cellH, fillFor } = opts
   const rects: string[] = []
   for (let r = 0; r < nRows; r++) {
     for (let c = 0; c < nCols; c++) {
       const { x, y, w, h } = cellRect(r, c, cellW, cellH)
       rects.push(
-        `<rect x="${LEFT_W + x}" y="${y0 + y}" width="${w}" height="${h}" fill="${fillFor(r, c)}"/>`,
+        `<rect x="${leftW + x}" y="${y0 + y}" width="${w}" height="${h}" fill="${fillFor(r, c)}"/>`,
       )
     }
   }
@@ -36,6 +37,7 @@ export function cellRectsSvg(opts: {
 
 export function geneLabelsSvg(opts: {
   geneRows: GeneRow[]
+  dotX: number
   y0: number
   cellH: number
   geneDotR: number
@@ -43,14 +45,14 @@ export function geneLabelsSvg(opts: {
   svgFont: string
   mode: PaletteMode
 }): string {
-  const { geneRows, y0, cellH, geneDotR, geneFont, svgFont, mode } = opts
+  const { geneRows, dotX, y0, cellH, geneDotR, geneFont, svgFont, mode } = opts
   return geneRows
     .map((g, i) => {
       const color = getFamilyColor(g.family || "?", mode)
       const cy = y0 + i * cellH + cellH / 2
       return (
-        `<circle cx="${GENE_TREE_W}" cy="${cy}" r="${geneDotR}" fill="${color}"/>` +
-        `<text x="${GENE_TREE_W + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${svgFont}" fill="${color}">${esc(g.symbol)}</text>`
+        `<circle cx="${dotX}" cy="${cy}" r="${geneDotR}" fill="${color}"/>` +
+        `<text x="${dotX + GENE_LABEL_GAP}" y="${cy + geneFont * 0.28}" font-size="${geneFont}" font-family="${svgFont}" fill="${color}">${esc(g.symbol)}</text>`
       )
     })
     .join("")
@@ -58,16 +60,17 @@ export function geneLabelsSvg(opts: {
 
 export function columnLabelsSvg(opts: {
   labels: string[]
+  leftW: number
   y: number
   cellW: number
   font: number
   svgFont: string
   fill: string
 }): string {
-  const { labels, y, cellW, font, svgFont, fill } = opts
+  const { labels, leftW, y, cellW, font, svgFont, fill } = opts
   return labels
     .map((label, i) => {
-      const x = LEFT_W + i * cellW + cellW / 2
+      const x = leftW + i * cellW + cellW / 2
       return `<text x="${x}" y="${y}" font-size="${font}" font-family="${svgFont}" fill="${fill}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(label)}</text>`
     })
     .join("")

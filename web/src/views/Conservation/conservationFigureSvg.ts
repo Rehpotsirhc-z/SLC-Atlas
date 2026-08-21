@@ -4,30 +4,34 @@
 
 import { buildHeatmapFigureSvg } from "@/components/heatmap/buildHeatmapFigureSvg"
 import type { HeatmapFigureOptions } from "@/components/heatmap/buildHeatmapFigureSvg"
-import { COL_LABEL_GAP, LEFT_W } from "@/components/heatmap/constants"
+import { COL_LABEL_GAP, GENE_TREE_W } from "@/components/heatmap/constants"
 import { treePathSvg } from "@/components/heatmap/figureSvg"
 import type { DendroLayout } from "@/utils/dendrogram"
-import { SP_TREE_PAD, SPECIES_TREE_H, TOP_H } from "./constants"
+import { SP_TREE_PAD, SPECIES_TREE_H } from "./constants"
 
 type ConservationFigureOptions = Omit<
   HeatmapFigureOptions,
-  "geneTree" | "topH" | "contentTop" | "colLabelY" | "columnTree"
+  "geneTree" | "contentTop" | "colLabelY" | "columnTree"
 > & {
   geneTree: DendroLayout | null
   speciesTree: DendroLayout | null
+  showSpeciesTree: boolean
 }
 
 export function buildConservationFigureSvg({
   speciesTree,
+  showSpeciesTree,
   ...o
 }: ConservationFigureOptions): string | null {
   if (!o.geneTree || !speciesTree || o.gridW === 0) return null
+  const leftW = (o.showGeneTree ? GENE_TREE_W : 0) + o.geneLabelW
   return buildHeatmapFigureSvg({
     ...o,
     geneTree: o.geneTree,
-    topH: TOP_H,
-    contentTop: SP_TREE_PAD,
-    colLabelY: SPECIES_TREE_H + COL_LABEL_GAP,
-    columnTree: treePathSvg(speciesTree.edges, LEFT_W, SP_TREE_PAD, o.muted),
+    contentTop: showSpeciesTree ? SP_TREE_PAD : COL_LABEL_GAP,
+    colLabelY: showSpeciesTree ? SPECIES_TREE_H + COL_LABEL_GAP : COL_LABEL_GAP,
+    columnTree: showSpeciesTree
+      ? treePathSvg(speciesTree.edges, leftW, SP_TREE_PAD, o.muted)
+      : undefined,
   })
 }

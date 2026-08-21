@@ -6,6 +6,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { ThemeMode } from "@/theme"
 import type { TreeMetric, TreeTissue } from "@/api/hooks/useClustering"
+import { AUTO_CELL_SIZE, type CellSize } from "@/types/heatmap"
 import type { PanelPos } from "@/utils/useDraggablePanel"
 import { DEFAULT_PREFS, type BrowserPrefs, type GeneTrackMode } from "@/types/browser"
 import { clearModeOverride, clearPrefOverrides, persistedBrowserState } from "./browserOverrides"
@@ -32,6 +33,10 @@ interface UIState {
   setClusteringMetric: (metric: TreeMetric) => void
   clusteringTissue: TreeTissue
   setClusteringTissue: (tissue: TreeTissue) => void
+  expressionCellSize: CellSize
+  setExpressionCellSize: (next: Partial<CellSize>) => void
+  conservationCellSize: CellSize
+  setConservationCellSize: (next: Partial<CellSize>) => void
   themeMode: ThemeMode
   toggleThemeMode: () => void
   railOpen: boolean
@@ -73,6 +78,8 @@ const partializeUI = (state: UIState) => ({
   railFloatPos: state.railFloatPos,
   railFloatSize: state.railFloatSize,
   anatomogramSex: state.anatomogramSex,
+  expressionCellSize: state.expressionCellSize,
+  conservationCellSize: state.conservationCellSize,
   ...persistedBrowserState(state.browserPrefs, state.browserMode),
 })
 type PersistedUI = ReturnType<typeof partializeUI>
@@ -94,6 +101,12 @@ export const useUIStore = create<UIState>()(
       setClusteringMetric: (metric) => set({ clusteringMetric: metric }),
       clusteringTissue: "all",
       setClusteringTissue: (tissue) => set({ clusteringTissue: tissue }),
+      expressionCellSize: AUTO_CELL_SIZE,
+      setExpressionCellSize: (next) =>
+        set((s) => ({ expressionCellSize: { ...s.expressionCellSize, ...next } })),
+      conservationCellSize: AUTO_CELL_SIZE,
+      setConservationCellSize: (next) =>
+        set((s) => ({ conservationCellSize: { ...s.conservationCellSize, ...next } })),
       themeMode: "light",
       toggleThemeMode: () => set((s) => ({ themeMode: s.themeMode === "dark" ? "light" : "dark" })),
       railOpen: true,

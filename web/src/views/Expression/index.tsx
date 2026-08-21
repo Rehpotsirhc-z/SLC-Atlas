@@ -25,9 +25,11 @@ import { useExpressionState } from "./useExpressionState"
 
 export default function Expression() {
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchCoversContent, setSearchCoversContent] = useState(false)
   const [showGeneTree, setShowGeneTree] = useShareParam(GENETREE_PARAM)
   const heatmapRef = useRef<ExpressionHeatmapHandle>(null)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
+  const searchFloats = isMobile || searchCoversContent
 
   const {
     rows,
@@ -130,28 +132,33 @@ export default function Expression() {
                 onSelect={setSelectedGeneId}
                 geneById={geneById}
                 cornerSlot={<GeneOrderSelect metric={metric} onChange={setMetric} />}
+                searchInCorner={!searchFloats}
+                onSearchCoversContentChange={setSearchCoversContent}
                 onTissueClick={(t) => rail.pickTissue([t])}
                 showGeneTree={showGeneTree}
                 onToggleGeneTree={() => setShowGeneTree((v) => !v)}
                 legendSlot={<ExpressionLegend rows={rows ?? []} />}
               />
 
-              {!isMobile && (
+              {!searchFloats && (
                 <FloatingSurface sx={{ top: 12, left: 12, zIndex: 4, ...searchSurfaceSx }}>
                   {searchPanel}
                 </FloatingSurface>
               )}
 
               {isMobile && (
+                <FloatingToggleButton
+                  open={rail.railOpen}
+                  onToggle={() => rail.setRailOpen(!rail.railOpen)}
+                  icon={<AccessibilityNewIcon fontSize="small" />}
+                  title="Show anatomograms"
+                  openTitle="Hide anatomograms"
+                  sx={{ bottom: 12, right: 64, zIndex: 4 }}
+                />
+              )}
+
+              {searchFloats && (
                 <>
-                  <FloatingToggleButton
-                    open={rail.railOpen}
-                    onToggle={() => rail.setRailOpen(!rail.railOpen)}
-                    icon={<AccessibilityNewIcon fontSize="small" />}
-                    title="Show anatomograms"
-                    openTitle="Hide anatomograms"
-                    sx={{ bottom: 12, right: 64, zIndex: 4 }}
-                  />
                   {searchOpen && (
                     <FloatingSurface sx={{ bottom: 64, right: 12, zIndex: 4, ...searchSurfaceSx }}>
                       {searchPanel}
