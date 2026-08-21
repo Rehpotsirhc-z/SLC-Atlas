@@ -40,13 +40,7 @@ const rowFlash = keyframes`
   100% { background-color: transparent; }
 `
 
-function GeneRow({
-  gene,
-  isSelected,
-  expanded,
-  onToggleExpanded,
-  onFamilyClick,
-}: GeneRowProps) {
+function GeneRow({ gene, isSelected, expanded, onToggleExpanded, onFamilyClick }: GeneRowProps) {
   const [flashing, setFlashing] = useState(false)
   const rowRef = useRef<HTMLTableRowElement>(null)
   const transcriptCellRef = useRef<HTMLTableCellElement>(null)

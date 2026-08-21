@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Box, Divider, Paper, Stack, Typography, useMediaQuery, useTheme } from "@mui/material"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { downloadName } from "@/utils/download"
+import { useDeferredReady } from "@/utils/useDeferredReady"
 import { figureExportHandlers, withBackground } from "@/utils/exportFigure"
 import {
   CONTENT_PADDING_PX,
@@ -68,8 +69,7 @@ export default function Structure() {
   } = useStructureState()
 
   // The rail and the wall are the two expensive mounts, so both fill in a deferred render
-  const deferredGenes = useDeferredValue(genes, NO_GENES)
-  const deferredWall = useDeferredValue(wall, EMPTY_WALL)
+  const deferredReady = useDeferredReady()
 
   const { outerRef, railWidth, expandRail, useDrawer, contentWidth, onDragStart } = useFamilyRail({
     minContentWidth: MIN_CONTENT_WIDTH,
@@ -130,7 +130,7 @@ export default function Structure() {
 
       <Box ref={outerRef} sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         <FamilyRail
-          genes={deferredGenes}
+          genes={deferredReady ? genes : NO_GENES}
           familyFilter={familyFilter}
           onSelectFamily={setFamilyFilter}
           railWidth={railWidth}
@@ -214,7 +214,7 @@ export default function Structure() {
                 )}
                 {/* The wall stays mounted behind the detail so deselecting never rebuilds it */}
                 <TopologyWall
-                  wall={deferredWall}
+                  wall={deferredReady ? wall : EMPTY_WALL}
                   familyFilter={familyFilter}
                   hidden={selected != null}
                   onSelectGene={selectGene}

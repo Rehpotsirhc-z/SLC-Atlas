@@ -12,6 +12,7 @@ import FloatingToggleButton from "@/components/FloatingToggleButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
+import { useDeferredReady } from "@/utils/useDeferredReady"
 import { downloadName } from "@/utils/download"
 import { GENETREE_PARAM } from "@/utils/shareParams"
 import { useShareParam } from "@/utils/useShareParam"
@@ -53,6 +54,8 @@ export default function Expression() {
     setTissue,
     method,
   } = useExpressionState()
+
+  const deferredReady = useDeferredReady()
 
   const focusTissue = useCallback((tissues: string[]) => {
     heatmapRef.current?.focusTissue(tissues)
@@ -120,7 +123,7 @@ export default function Expression() {
           <Box sx={{ flex: 1, position: "relative", minHeight: 0, minWidth: 0 }}>
             <ViewStatus
               error={error}
-              loading={isLoading || !ready}
+              loading={isLoading || !ready || !deferredReady}
               errorMessage="Failed to load expression data."
             >
               <ExpressionHeatmap
