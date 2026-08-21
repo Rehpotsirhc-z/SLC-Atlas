@@ -10,12 +10,12 @@ const MODES: { value: TopologyMode; label: string; hint: string }[] = [
   {
     value: "regions",
     label: "Regions",
-    hint: "One mark per helix or loop, on a residue axis, so a helix is as wide as it is long",
+    hint: "Show each helix or loop as one mark on the residue axis",
   },
   {
     value: "residues",
     label: "Residues",
-    hint: "One bead per residue, threaded through the membrane",
+    hint: "Show each residue as a bead threaded through the membrane",
   },
 ]
 
@@ -32,10 +32,9 @@ export default function TopologyModeToggle({ mode, onChange }: Props) {
       value={mode}
       onChange={(_, next) => next && onChange(next)}
     >
-      {/* The tooltip sits inside the button: the group hands its children props of its own */}
       {MODES.map((option) => (
         <ToggleButton key={option.value} value={option.value} sx={{ p: 0 }}>
-          <Tooltip title={option.hint} arrow>
+          <Tooltip title={option.hint}>
             <Box component="span" sx={{ ...capLineSx, px: 1.25, py: 0.25 }}>
               {option.label}
             </Box>

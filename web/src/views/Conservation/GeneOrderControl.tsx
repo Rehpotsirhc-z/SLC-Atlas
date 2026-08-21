@@ -26,7 +26,7 @@ export default function GeneOrderControl({
 }: Props) {
   return (
     <Box sx={{ py: 1, pr: 1.5, display: "flex", flexDirection: "column", gap: 0.75 }}>
-      <Tooltip title="Tree used to order the gene rows" placement="top" arrow>
+      <Tooltip title="Choose the tree used to order gene rows" placement="top">
         <Select
           size="small"
           fullWidth

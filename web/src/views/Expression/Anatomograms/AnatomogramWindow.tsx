@@ -124,7 +124,7 @@ export default function AnatomogramWindow({
             onDoubleClick={(e) => e.stopPropagation()}
           >
             {!hideDock && (
-              <Tooltip title="Dock to sidebar" arrow>
+              <Tooltip title="Dock in the sidebar">
                 <IconButton
                   size="small"
                   onClick={onPopIn}
@@ -134,7 +134,7 @@ export default function AnatomogramWindow({
                 </IconButton>
               </Tooltip>
             )}
-            <Tooltip title="Close" arrow>
+            <Tooltip title="Close window">
               <IconButton size="small" onClick={onClose} sx={{ color: "text.secondary", p: "7px" }}>
                 <CloseIcon fontSize="small" />
               </IconButton>

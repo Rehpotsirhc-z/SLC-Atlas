@@ -28,12 +28,12 @@ export default function AnatomogramViewToggles({ view, onPickSex, onPickBrain }:
         onChange={(_, v) => v && onPickSex(v)}
       >
         <ToggleButton value="female" sx={{ px: 1.5 }}>
-          <Tooltip title="Female body" arrow>
+          <Tooltip title="Show female body">
             <FemaleIcon fontSize="small" />
           </Tooltip>
         </ToggleButton>
         <ToggleButton value="male" sx={{ px: 1.5 }}>
-          <Tooltip title="Male body" arrow>
+          <Tooltip title="Show male body">
             <MaleIcon fontSize="small" />
           </Tooltip>
         </ToggleButton>

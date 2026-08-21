@@ -11,7 +11,6 @@ export const glowFlash = keyframes`
 
 export const glowFlashSx = { animation: `${glowFlash} 0.8s ease-out` } as const
 
-// Bordered translucent skin shared by hover and family-label tooltips
 export const tooltipSurfaceSx = {
   bgcolor: "background.default",
   border: 1,

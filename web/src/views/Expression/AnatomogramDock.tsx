@@ -66,7 +66,7 @@ export default function AnatomogramDock({
     <>
       {!isMobile && !(railFloating && railOpen) && (
         <Box sx={{ flexShrink: 0, display: "flex", position: "relative" }}>
-          <Tooltip title={label} placement="left" arrow>
+          <Tooltip title={label} placement="left">
             <Box
               role="button"
               aria-label={label}

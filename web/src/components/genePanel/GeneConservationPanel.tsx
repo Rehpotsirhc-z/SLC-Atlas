@@ -95,7 +95,6 @@ export default function GeneConservationPanel({
             </Box>
           }
           placement="right"
-          arrow
         >
           <Typography
             variant="caption"
@@ -125,11 +124,7 @@ export default function GeneConservationPanel({
         </Typography>
       ),
       bar: (
-        <Tooltip
-          title={orthoLabel ? `${orthoLabel} ortholog` : "No ortholog"}
-          placement="top"
-          arrow
-        >
+        <Tooltip title={orthoLabel ? `${orthoLabel} ortholog` : "No ortholog"} placement="top">
           <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, pl: 5 }}>
             <MiniBar fraction={value !== null ? value / 100 : 0} />
           </Box>

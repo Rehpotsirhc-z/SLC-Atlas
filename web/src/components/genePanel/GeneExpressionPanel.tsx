@@ -78,7 +78,7 @@ export default function GeneExpressionPanel({ info, ...geometry }: GeneExpressio
       </Typography>
     ),
     bar: (
-      <Tooltip title={`${formatTpm(r.tpm)} TPM`} placement="top" arrow>
+      <Tooltip title={`${formatTpm(r.tpm)} TPM`} placement="top">
         <Box sx={{ pl: 5, minWidth: 0, display: "flex", alignItems: "center" }}>
           <MiniBar fraction={tpmIntensity(r.tpm, domainMax)} />
         </Box>

@@ -42,7 +42,7 @@ function AxisSlider({ icon, title, value, min, max, onChange, onCommit }: AxisSl
   }, [value])
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Tooltip title={title} placement="top" arrow>
+      <Tooltip title={title} placement="top">
         <Box sx={{ display: "flex", color: "text.secondary" }}>{icon}</Box>
       </Tooltip>
       <Slider

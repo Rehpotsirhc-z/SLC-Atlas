@@ -14,7 +14,7 @@ interface Props {
 export default function GeneOrderSelect({ metric, onChange }: Props) {
   return (
     <Box sx={{ py: 1, pr: 1.5 }}>
-      <Tooltip title="Tree used to order the gene rows" placement="top" arrow>
+      <Tooltip title="Choose the tree used to order gene rows" placement="top">
         <Select
           size="small"
           fullWidth

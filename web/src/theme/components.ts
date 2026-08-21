@@ -11,6 +11,9 @@ export function componentOverrides(c: DoomColors, mode: ThemeMode): ThemeOptions
   const divider = dividerFor(mode)
   const dimText = secondaryTextFor(mode)
   return {
+    MuiTooltip: {
+      defaultProps: { arrow: true },
+    },
     MuiTab: {
       styleOverrides: {
         root: { minHeight: 48, textTransform: "none" },

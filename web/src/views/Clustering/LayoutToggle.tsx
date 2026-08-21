@@ -31,7 +31,7 @@ export default function LayoutToggle({ layout, onChange }: Props) {
   return (
     <FloatingSurface sx={{ top: 12, right: 12, zIndex: 2, overflow: "hidden" }}>
       {LAYOUT_OPTIONS.map(({ value, icon, label }, i) => (
-        <Tooltip key={value} title={label} placement="left" arrow>
+        <Tooltip key={value} title={label} placement="left">
           <IconButton
             size="small"
             onClick={() => onChange(value)}

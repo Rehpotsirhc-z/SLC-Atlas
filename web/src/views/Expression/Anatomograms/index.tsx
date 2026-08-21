@@ -66,7 +66,7 @@ export default function AnatomogramRail({
         onPickBrain={onPickBrain}
         actions={
           <Box sx={{ justifySelf: "end" }}>
-            <Tooltip title="Pop out to a floating window" arrow>
+            <Tooltip title="Open in a floating window">
               <IconButton
                 size="small"
                 onClick={onPopOut}

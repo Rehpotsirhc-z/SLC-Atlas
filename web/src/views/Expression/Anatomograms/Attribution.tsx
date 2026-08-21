@@ -4,7 +4,6 @@
 
 import { Box, IconButton, Link, Tooltip, Typography } from "@mui/material"
 import type { SxProps, Theme } from "@mui/material/styles"
-import { tooltipSurfaceSx } from "@/theme"
 import { AttributionIcon } from "./icons"
 
 const SOURCE_URL = "https://github.com/ebi-gene-expression-group/anatomogram"
@@ -20,9 +19,6 @@ export default function AnatomogramAttribution({ sx }: { sx?: SxProps<Theme> }) 
     >
       <Tooltip
         placement="top-end"
-        slotProps={{
-          tooltip: { sx: { ...tooltipSurfaceSx, color: "text.primary", px: 1, maxWidth: 280 } },
-        }}
         title={
           <Typography variant="caption" component="p" sx={{ fontSize: 13, lineHeight: 1.5 }}>
             Anatomy figures adapted from the{" "}

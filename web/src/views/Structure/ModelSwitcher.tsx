@@ -17,7 +17,7 @@ export default function ModelSwitcher({ options, selectedPdbId, onSelect }: Prop
   const experimental = options.filter((option) => option.id !== PREDICTED_ID)
 
   return (
-    <Tooltip title="Model shown in the viewer" placement="top" arrow>
+    <Tooltip title="Choose the model shown in the viewer" placement="top">
       <Select
         size="small"
         fullWidth
