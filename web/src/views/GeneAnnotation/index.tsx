@@ -2,12 +2,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { Alert, Box, Divider, Paper, TablePagination, useMediaQuery, useTheme } from "@mui/material"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
 import ViewHeader from "@/components/view/ViewHeader"
 import { useUIStore } from "@/store/uiStore"
+import type { Gene } from "@/types/gene"
 import { MIN_CONTENT_WIDTH } from "./constants"
 import GeneAnnotationToolbar from "./GeneAnnotationToolbar"
 import { downloadGenes } from "./geneDownloads"
@@ -15,6 +24,8 @@ import GeneTable from "./GeneTable"
 import GeneTableSkeleton from "./GeneTableSkeleton"
 import { useGeneAnnotationState } from "./useGeneAnnotationState"
 import { ROWS_PER_PAGE_OPTIONS } from "./shareParams"
+
+const NO_GENES: Gene[] = []
 
 export default function GeneAnnotation() {
   const {
@@ -38,10 +49,14 @@ export default function GeneAnnotation() {
     resetView,
   } = useGeneAnnotationState()
 
-  const paginatedGenes = visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage)
+  const paginatedGenes = useMemo(
+    () => visibleGenes.slice(page * rowsPerPage, (page + 1) * rowsPerPage),
+    [visibleGenes, page, rowsPerPage],
+  )
+  const deferredGenes = useDeferredValue(paginatedGenes, NO_GENES)
+  const tableSettling = deferredGenes !== paginatedGenes
   const selectedGeneId = useUIStore((s) => s.selectedGeneId)
   const tableScrollRef = useRef<HTMLDivElement>(null)
-  const [scrollViewportWidth, setScrollViewportWidth] = useState(0)
 
   const jumpedGeneIdRef = useRef<string | null>(null)
   useEffect(() => {
@@ -69,7 +84,7 @@ export default function GeneAnnotation() {
   }, [resetView])
 
   useLayoutEffect(() => {
-    if (isLoading) return
+    if (isLoading || tableSettling) return
     const el = tableScrollRef.current
     const table = el?.querySelector<HTMLElement>("table")
     if (!el || !table) return
@@ -80,17 +95,7 @@ export default function GeneAnnotation() {
     table.style.width = prev
     table.style.minWidth = `${naturalWidth}px`
     expandRail(naturalWidth)
-  }, [isLoading, expandRail])
-
-  useEffect(() => {
-    const el = tableScrollRef.current
-    if (!el) return
-    const measure = () => setScrollViewportWidth(el.clientWidth)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [isLoading, error])
+  }, [isLoading, tableSettling, expandRail])
 
   const exportItems = [
     { label: "Genes TSV", onClick: () => downloadGenes(visibleGenes, "tsv") },
@@ -143,11 +148,11 @@ export default function GeneAnnotation() {
           ) : (
             <>
               <Box ref={tableScrollRef} sx={{ flex: 1, overflow: "auto" }}>
-                {isLoading ? (
+                {isLoading || tableSettling ? (
                   <GeneTableSkeleton />
                 ) : (
                   <GeneTable
-                    genes={paginatedGenes}
+                    genes={deferredGenes}
                     sortKey={sortKey}
                     sortDirection={sortDirection}
                     onSort={toggleSort}
@@ -155,7 +160,6 @@ export default function GeneAnnotation() {
                     expandedGeneIds={expandedGeneIds}
                     onToggleExpanded={toggleExpanded}
                     onFamilyClick={setFamilyFilter}
-                    mapAvailableWidth={scrollViewportWidth}
                   />
                 )}
               </Box>

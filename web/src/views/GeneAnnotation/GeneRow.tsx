@@ -33,7 +33,6 @@ interface GeneRowProps {
   expanded: boolean
   onToggleExpanded: (geneId: string) => void
   onFamilyClick?: (family: string) => void
-  mapAvailableWidth: number
 }
 
 const rowFlash = keyframes`
@@ -47,7 +46,6 @@ function GeneRow({
   expanded,
   onToggleExpanded,
   onFamilyClick,
-  mapAvailableWidth,
 }: GeneRowProps) {
   const [flashing, setFlashing] = useState(false)
   const rowRef = useRef<HTMLTableRowElement>(null)
@@ -205,11 +203,7 @@ function GeneRow({
           sx={{ p: 0, borderBottom: expanded ? undefined : "none" }}
         >
           <Collapse in={expanded} mountOnEnter unmountOnExit>
-            <TranscriptTable
-              geneId={gene.id}
-              chromosome={gene.chromosome}
-              availableWidth={mapAvailableWidth}
-            />
+            <TranscriptTable geneId={gene.id} chromosome={gene.chromosome} />
           </Collapse>
         </TableCell>
       </TableRow>

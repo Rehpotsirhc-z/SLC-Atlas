@@ -16,6 +16,7 @@ import {
 } from "@mui/material"
 import { useTranscripts } from "@/api/hooks/useGenes"
 import { formatPosition } from "@/utils/format"
+import { useElementSize } from "@/utils/useElementSize"
 import { MAP_COLUMN_MIN_WIDTH } from "./constants"
 import { MapAxisHeader, MapBarCell } from "./TranscriptMapColumn"
 import TranscriptMapDiagram from "./TranscriptMapDiagram"
@@ -30,7 +31,6 @@ import {
 import type { SortDir } from "@/types/table"
 
 const SKELETON_ROWS = 3
-const CONTENT_PAD_X = 16
 
 const COLUMNS: {
   key: TranscriptSortKey
@@ -48,16 +48,16 @@ const COLUMNS: {
 interface Props {
   geneId: string
   chromosome: string
-  availableWidth: number
 }
 
-export default function TranscriptTable({ geneId, chromosome, availableWidth }: Props) {
+export default function TranscriptTable({ geneId, chromosome }: Props) {
   const { data: transcripts, isLoading } = useTranscripts(geneId)
   const { custom } = useTheme()
   const [sortKey, setSortKey] = useState<TranscriptSortKey>("start")
   const [sortDir, setSortDir] = useState<SortDir>("asc")
   const headRef = useRef<HTMLTableSectionElement>(null)
   const [colsWidth, setColsWidth] = useState(0)
+  const [rootRef, { w: contentWidth }] = useElementSize<HTMLDivElement>("content")
 
   function handleSort(key: TranscriptSortKey) {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"))
@@ -84,13 +84,13 @@ export default function TranscriptTable({ geneId, chromosome, availableWidth }: 
     if (w) setColsWidth(w)
   }, [sorted])
 
-  const contentWidth = availableWidth > 0 ? availableWidth - CONTENT_PAD_X * 2 : 0
-  const inlineMap = colsWidth > 0 && contentWidth >= colsWidth + MAP_COLUMN_MIN_WIDTH
+  const measured = contentWidth > 0
+  const inlineMap = measured && colsWidth > 0 && contentWidth >= colsWidth + MAP_COLUMN_MIN_WIDTH
 
   const monoSx = { fontFamily: custom.monoFontFamily, fontSize: custom.monoFontSize }
 
   return (
-    <Box sx={{ p: 2, bgcolor: "background.default" }}>
+    <Box ref={rootRef} sx={{ p: 2, bgcolor: "background.default" }}>
       <Box
         sx={{
           display: "flex",
@@ -150,7 +150,9 @@ export default function TranscriptTable({ geneId, chromosome, availableWidth }: 
           </TableBody>
         </Table>
 
-        {!inlineMap && !isLoading && scale && <TranscriptMapDiagram transcripts={sorted} />}
+        {measured && !inlineMap && !isLoading && scale && (
+          <TranscriptMapDiagram transcripts={sorted} />
+        )}
       </Box>
     </Box>
   )
