@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useDeferredValue, useMemo, useRef, useState } from "react"
 import type { MouseEvent } from "react"
 import { useTheme } from "@mui/material"
 import {
@@ -77,8 +77,9 @@ export function useExpressionHeatmapState({
 
   const tissueCols = useMemo(() => sortedTissues(rows), [rows])
 
-  const cellSize = useUIStore((s) => s.expressionCellSize)
+  const rawCellSize = useUIStore((s) => s.expressionCellSize)
   const setCellSize = useUIStore((s) => s.setExpressionCellSize)
+  const cellSize = useDeferredValue(rawCellSize)
   const maxGeneLabelLength = useMemo(
     () =>
       clusterNodes.reduce(

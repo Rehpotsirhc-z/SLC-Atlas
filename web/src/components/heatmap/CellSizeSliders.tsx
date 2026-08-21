@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import HeightIcon from "@mui/icons-material/Height"
 import { Box, Button, Slider, Tooltip, Typography } from "@mui/material"
 import { CELL_H_MAX, CELL_H_MIN, CELL_SIZE_STEP, CELL_W_MAX, CELL_W_MIN } from "./constants"
@@ -35,6 +35,11 @@ interface AxisSliderProps {
 }
 
 function AxisSlider({ icon, title, value, min, max, onChange, onCommit }: AxisSliderProps) {
+  const [live, setLive] = useState(value)
+  const dragging = useRef(false)
+  useEffect(() => {
+    if (!dragging.current) setLive(value)
+  }, [value])
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
       <Tooltip title={title} placement="top" arrow>
@@ -45,14 +50,22 @@ function AxisSlider({ icon, title, value, min, max, onChange, onCommit }: AxisSl
         min={min}
         max={max}
         step={CELL_SIZE_STEP}
-        value={value}
-        onChange={(_event, next) => onChange(next as number)}
-        onChangeCommitted={onCommit ? () => onCommit() : undefined}
+        value={live}
+        onChange={(_event, next) => {
+          dragging.current = true
+          setLive(next as number)
+          onChange(next as number)
+        }}
+        onChangeCommitted={(_event, next) => {
+          dragging.current = false
+          setLive(next as number)
+          onCommit?.()
+        }}
         aria-label={title}
         sx={{ py: 0.5 }}
       />
       <Typography component="span" sx={valueSx}>
-        {value}px
+        {live}px
       </Typography>
     </Box>
   )

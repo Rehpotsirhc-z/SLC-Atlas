@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useDeferredValue, useMemo, useRef, useState } from "react"
 import type { MouseEvent } from "react"
 import { useTheme } from "@mui/material"
 import { useCellHitTest } from "@/components/heatmap/useCellHitTest"
@@ -91,8 +91,9 @@ export function useConservationMatrix({
 
   const nSpecies = useMemo(() => speciesNodes.filter((n) => n.species).length, [speciesNodes])
 
-  const cellSize = useUIStore((s) => s.conservationCellSize)
+  const rawCellSize = useUIStore((s) => s.conservationCellSize)
   const setCellSize = useUIStore((s) => s.setConservationCellSize)
+  const cellSize = useDeferredValue(rawCellSize)
   const maxGeneLabelLength = useMemo(
     () =>
       clusterNodes.reduce(
