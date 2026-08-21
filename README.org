@@ -4,10 +4,7 @@
 
 #+html: <p align="center"> <a href="https://pypi.org/project/atlasforge/"><img src="https://img.shields.io/pypi/v/atlasforge.svg" alt="PyPI version"></a> <a href="https://github.com/TheDongLab/AtlasForge/pkgs/container/atlasforge"><img src="https://img.shields.io/badge/ghcr.io-atlasforge-2496ED?logo=docker&logoColor=white" alt="Docker image"></a> <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" alt="License: Apache-2.0"></a> <a href="https://api.reuse.software/info/github.com/TheDongLab/AtlasForge"><img src="https://api.reuse.software/badge/github.com/TheDongLab/AtlasForge" alt="REUSE status"></a> <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black"></a> </p>
 
-Turn a gene family into a self-hosted web atlas for exploring annotation,
-expression, conservation, sequence similarity, and protein structure. AtlasForge
-gathers public or user-provided data into editable source files, builds a site
-from them, and serves it locally or exports it for any static web host.
+AtlasForge is an open-source system that generates an interactive web atlas for any gene family through automated data retrieval and analysis.
 
 * Requirements
 - Python 3.12 or newer
