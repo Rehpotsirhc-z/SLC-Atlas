@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "atlasforge"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A framework that turns any gene family into a self-hosted web atlas of cross-linked annotation, expression, conservation, clustering, and 3D structure views"
 requires-python = ">=3.12"
 dependencies = [
@@ -28,8 +28,15 @@ dev = ["black>=24.0", "reuse[charset-normalizer]>=5.0", "parquet-tools>=0.2.16"]
 [project.scripts]
 atlasforge = "atlasforge.cli:main"
 
+[tool.hatch.version]
+source = "vcs"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/atlasforge"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/pyproject.toml", "/README.org", "/REUSE.toml", "/LICENSE", "/LICENSES"]
+artifacts = ["web/dist/**"]
 
 # Run `npm --prefix web run build` before building a wheel
 [tool.hatch.build.targets.wheel.force-include]
