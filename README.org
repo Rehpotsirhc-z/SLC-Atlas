@@ -9,12 +9,14 @@ from them, and serves it locally or exports it for any static web host.
 
 * Requirements
 - Python 3.12 or newer
-- MAFFT for the Clustering view
-- Node.js only when developing the frontend from a checkout
-- Docker and the Dev Container CLI for the recommended development setup
+- [[https://mafft.cbrc.jp/alignment/software/][MAFFT]] for computing multiple-sequence alignment
 
-The Structure view is optional. MAFFT is also optional when both ~atlasforge fetch~ and
-~atlasforge build~ use ~--skip-clustering~.
+MAFFT is optional when both ~atlasforge fetch~ and ~atlasforge build~ use
+~--skip-clustering~.
+
+For development, the frontend requires Node.js. However, the recommended
+development setup uses Docker and the Dev Container CLI to automatically
+include all the dependencies.
 
 * TODO Quick start
 Install the complete data pipeline:
@@ -35,16 +37,20 @@ atlasforge serve --data-dir ./my-atlas
 demand. For public or high-traffic deployments, use ~atlasforge export~ with a
 static web server for better performance.
 
-Open [[http://localhost:8000]]. Here, ~752~ is an HGNC gene group ID. You can instead
-pass a text file containing one gene symbol or Ensembl gene ID per line, or a
-downloaded HGNC group TSV. Run ~atlasforge fetch~ without a source for an interactive
-setup.
+Here, ~752~ is an HGNC gene group ID. You can instead pass a text file containing
+one gene symbol or Ensembl gene ID per line, or a downloaded HGNC group TSV.
+Alternatively, you can run ~atlasforge fetch~ without any options for a fully
+interactive setup.
+
+The fetch command comes with an interactive setup to guide you through
+processing a new gene family. Once you run all three commands, open
+[[http://localhost:8000]] to see the running atlas.
 
 The first fetch creates curation files and then pauses for user inspection.
 Review the family names, excluded genes, display symbols, species, and UniProt
 mappings in ~my-atlas/curation/~, and then run the command printed in the
-terminal. Existing files are never overwritten, so rerunning a fetch resumes the
-dataset and keeps your edits.
+terminal. Existing files are never overwritten, so you can rerun a fetch to
+update any missing data.
 
 * Documentation
 See the [[file:docs/README.org][documentation overview]] for guides to AtlasForge's files and performance.
