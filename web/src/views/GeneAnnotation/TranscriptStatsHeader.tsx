@@ -19,7 +19,10 @@ export default function TranscriptStatsHeader({ typeCounts, stats }: Props) {
   const statRows: [string, string][] = [
     ["Total", `${stats.total} transcript${stats.total !== 1 ? "s" : ""}`],
     ["Genomic span", `${(stats.span / 1000).toFixed(1)} kb`],
-    ["Spliced length", `${stats.minLength.toLocaleString()}–${stats.maxLength.toLocaleString()} bp`],
+    [
+      "Spliced length",
+      `${stats.minLength.toLocaleString()}–${stats.maxLength.toLocaleString()} bp`,
+    ],
     ["Longest", stats.longestName || stats.longestId],
   ]
 

@@ -42,7 +42,11 @@ export default function TranscriptMapDiagram({ transcripts }: Props) {
 
   return (
     <Box>
-      <Typography variant="overline" color="primary" sx={{ lineHeight: 1, mb: 1, display: "block" }}>
+      <Typography
+        variant="overline"
+        color="primary"
+        sx={{ lineHeight: 1, mb: 1, display: "block" }}
+      >
         Transcript Map
       </Typography>
       <Box ref={containerRef} sx={{ width: "100%" }}>
