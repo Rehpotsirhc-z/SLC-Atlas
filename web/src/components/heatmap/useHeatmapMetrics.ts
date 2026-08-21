@@ -9,7 +9,6 @@ import {
   CELL_H_MIN,
   CELL_W_MAX,
   CELL_W_MIN,
-  GENE_LABEL_W,
   GENE_TOGGLE_W,
   GENE_TREE_W,
   LEFT_GUTTER,
@@ -23,6 +22,9 @@ import {
 import { geneLabelWidth } from "./geometry"
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
+
+const GENE_FONT_MIN = 10
+const GENE_FONT_MAX = 13
 
 interface HeatmapMetrics {
   leftColW: number
@@ -47,9 +49,9 @@ export function useHeatmapMetrics(
   cellSize: CellSize = AUTO_CELL_SIZE,
   maxLabelLength = 0,
 ): HeatmapMetrics {
-  const defaultLeftColW = leftColWidth(showGeneTree, GENE_LABEL_W)
+  const reserveLeftColW = leftColWidth(showGeneTree, geneLabelWidth(maxLabelLength, GENE_FONT_MAX))
   const legendReserve =
-    hasLegend && containerW - defaultLeftColW - LEGEND_W - RIGHT_PAD >= nCols * MIN_CELL_W
+    hasLegend && containerW - reserveLeftColW - LEGEND_W - RIGHT_PAD >= nCols * MIN_CELL_W
       ? LEGEND_W
       : 0
 
@@ -57,15 +59,15 @@ export function useHeatmapMetrics(
   const cellW = useMemo(() => {
     if (customWidth != null) return clamp(customWidth, CELL_W_MIN, CELL_W_MAX)
     if (!nCols || !containerW) return MIN_CELL_W
-    const availableWidth = containerW - defaultLeftColW - legendReserve
+    const availableWidth = containerW - reserveLeftColW - legendReserve
     return Math.max(MIN_CELL_W, Math.min(MAX_CELL_W, Math.floor(availableWidth / nCols)))
-  }, [containerW, nCols, defaultLeftColW, legendReserve, customWidth])
+  }, [containerW, nCols, reserveLeftColW, legendReserve, customWidth])
 
   const cellH =
     customHeight != null
       ? clamp(customHeight, CELL_H_MIN, CELL_H_MAX)
       : Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, Math.round(cellW * 0.8)))
-  const geneFont = Math.max(10, Math.min(13, Math.round(cellH * 0.5)))
+  const geneFont = clamp(Math.round(cellH * 0.5), GENE_FONT_MIN, GENE_FONT_MAX)
 
   const geneLabelW = geneLabelWidth(maxLabelLength, geneFont)
 
