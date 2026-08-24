@@ -158,6 +158,18 @@ for unknown page routes while leaving missing files under ~/api/~ as real 404
 responses. You can look at [[file:deploy/nginx.conf][deploy/nginx.conf]] for a complete example.
 Re-export after changing the dataset or the site name.
 
+To sync the exported atlas to an S3 bucket, use the AWS CLI:
+
+#+begin_src bash
+aws s3 sync ./site/ s3://example-atlas-bucket/
+#+end_src
+
+A typical AWS deployment uses the S3 bucket as the origin and puts CloudFront in
+front of it for HTTPS, a custom domain, and CDN caching. After an update, cached
+files with stable names may need a CloudFront invalidation. See
+[[file:scripts/deploy.sh][scripts/deploy.sh]] for a complete example that assigns cache headers, preserves
+the large data trees unless pruning is requested, and invalidates changed binary files.
+
 * TODO Development
 The dev container is the easiest way to setup the project with Python, Node.js,
 MAFFT, and the project dependencies bundled. Install Docker and the Dev
