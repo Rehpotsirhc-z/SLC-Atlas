@@ -16,7 +16,7 @@ export interface Transform {
 const ZOOM_STEP = 1.15
 const MIN_ZOOM_FACTOR = 0.5
 const MAX_ZOOM_FACTOR = 80
-const FIT_MARGIN = 0.92
+export const FIT_MARGIN = 0.92
 const DRAG_SLOP_PX = 3
 
 // Completed gesture type, used to decide whether pointer-up should trigger a hover test

@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
+import { SEARCH_PANEL_CLEAR_X } from "@/components/heatmap/constants"
 import { svgSansFontFamily } from "@/theme/fonts"
 import { figureExportHandlers } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
@@ -16,7 +17,7 @@ import { isFlat, type Layout, type LeafLayout } from "./phyloLayout"
 import { usePhyloFocus } from "./usePhyloFocus"
 import { usePhyloHitTest } from "./usePhyloHitTest"
 import { usePhyloLayout } from "./usePhyloLayout"
-import { usePhyloTransform } from "./usePhyloTransform"
+import { FIT_MARGIN, usePhyloTransform } from "./usePhyloTransform"
 
 export type { Layout }
 
@@ -35,6 +36,7 @@ interface PhyloTreeProps {
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
+  onSearchCoversContentChange?: (covers: boolean) => void
 }
 
 // Deliberately outside the palette so the tree keeps its own muted greys in both themes
@@ -48,7 +50,7 @@ interface HoverState {
 }
 
 const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree(
-  { data, layout, familyFilter, selectedGeneId, onSelect, geneById },
+  { data, layout, familyFilter, selectedGeneId, onSelect, geneById, onSearchCoversContentChange },
   ref,
 ) {
   const theme = useTheme()
@@ -81,6 +83,18 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     setTransform: view.setTransform,
     containerRef,
   })
+
+  const ready = layoutData && size.w > 0 && size.h > 0
+  const treeRenderedW = ready
+    ? isRadial
+      ? layoutData.width * Math.min(size.w / layoutData.width, size.h / layoutData.height) * FIT_MARGIN
+      : layoutData.width * rectScale
+    : size.w
+  const searchGutter = Math.max(0, (size.w - treeRenderedW) / 2)
+  const searchCoversContent = searchGutter < SEARCH_PANEL_CLEAR_X
+  useEffect(() => {
+    onSearchCoversContentChange?.(searchCoversContent)
+  }, [searchCoversContent, onSearchCoversContentChange])
 
   const buildSvgString = () => {
     if (!treeGroupRef.current || !layoutData) return null

@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import SearchIcon from "@mui/icons-material/Search"
-import { Box, Divider, Paper } from "@mui/material"
+import { Box, Divider, Paper, useMediaQuery, useTheme } from "@mui/material"
 import { downloadGeneTreeNewick } from "@/api/newick"
 import GeneSearchPanel from "@/components/autocomplete/GeneSearchPanel"
 import FloatingToggleButton from "@/components/FloatingToggleButton"
@@ -22,6 +22,9 @@ import { useClusteringState } from "./useClusteringState"
 export default function Clustering() {
   const [layout, setLayout] = useShareParam(LAYOUT_PARAM)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchCoversContent, setSearchCoversContent] = useState(false)
+  const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
+  const searchFloats = isMobile || searchCoversContent
   const treeRef = useRef<PhyloTreeHandle>(null)
 
   const {
@@ -107,21 +110,32 @@ export default function Clustering() {
               selectedGeneId={selectedGeneId}
               onSelect={setSelectedGeneId}
               geneById={geneById}
+              onSearchCoversContentChange={setSearchCoversContent}
             />
 
-            {searchOpen && (
-              <FloatingSurface sx={{ bottom: 64, right: 12, zIndex: 2, ...searchSurfaceSx }}>
+            {!searchFloats && (
+              <FloatingSurface sx={{ top: 12, left: 12, zIndex: 2, ...searchSurfaceSx }}>
                 {searchPanel}
               </FloatingSurface>
             )}
-            <FloatingToggleButton
-              open={searchOpen}
-              onToggle={() => setSearchOpen((v) => !v)}
-              icon={<SearchIcon fontSize="small" />}
-              title="Find gene"
-              openTitle="Close search"
-              sx={{ bottom: 12, right: 12, zIndex: 2 }}
-            />
+
+            {searchFloats && (
+              <>
+                {searchOpen && (
+                  <FloatingSurface sx={{ bottom: 64, right: 12, zIndex: 2, ...searchSurfaceSx }}>
+                    {searchPanel}
+                  </FloatingSurface>
+                )}
+                <FloatingToggleButton
+                  open={searchOpen}
+                  onToggle={() => setSearchOpen((v) => !v)}
+                  icon={<SearchIcon fontSize="small" />}
+                  title="Find gene"
+                  openTitle="Close search"
+                  sx={{ bottom: 12, right: 12, zIndex: 2 }}
+                />
+              </>
+            )}
 
             <LayoutToggle layout={layout} onChange={setLayout} />
           </ViewStatus>
