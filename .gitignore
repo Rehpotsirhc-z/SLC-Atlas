@@ -40,3 +40,4 @@ Thumbs.db
 # Logs
 *.log
 /todo.org
+/.bench-export/

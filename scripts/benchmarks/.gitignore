@@ -14,3 +14,5 @@ browser/site/jb_tracks_cov.txt
 browser/site/jb_tracks_full.txt
 # Ignore temporary debugging scripts
 browser/_*.mjs
+# Ignore loading-frames capture scratch
+results/loading-frames/

@@ -1,31 +1,75 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>igv full bench</title>
-<style>html,body{margin:0}#c{width:100%}</style>
-</head>
-<body>
-<div id="c"></div>
-<script src="/igv.min.js"></script>
-<script>
-// Params: ?loc=chr1:...&set=full|cov  (full = coverage + models + gwas; cov = coverage only)
-const q = new URLSearchParams(location.search);
-const loc = q.get('loc') || 'chr1:43510559-44510559';
-const set = q.get('set') || 'full';
-window.__ready = false; window.__err = null;
-fetch('/tracks_full.json').then(r => r.json()).then(list => {
-  const tracks = list
-    .filter(t => set === 'full' ? true : t.type === 'wig')
-    .map(t => t.type === 'wig'
-      ? { type: 'wig', format: 'bigwig', url: t.url, name: t.id, height: 40, autoscale: true }
-      : { type: 'annotation', format: 'bigbed', url: t.url, name: t.id, height: 40, displayMode: 'COLLAPSED' });
-  const options = {
-    reference: { id: 'hg38-local', name: 'hg38',
-                 fastaURL: '/hg38.min.fa', indexURL: '/hg38.min.fa.fai' },
-    locus: loc, showChromosomeWidget: false, showCenterGuide: false, tracks
-  };
-  return igv.createBrowser(document.getElementById('c'), options);
-}).then(b => { window.__igv = b; window.__ready = true; })
-  .catch(e => { window.__err = String(e); });
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>igv full bench</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+      }
+      #c {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="c"></div>
+    <script>
+      ;(function () {
+        const open = XMLHttpRequest.prototype.open
+        const local = (url) => {
+          if (
+            typeof url !== "string" ||
+            url.startsWith("/") ||
+            url.includes("127.0.0.1") ||
+            url.includes("localhost")
+          )
+            return url
+          if (url.includes("url_mappings.tsv")) return "/url_mappings.tsv"
+          if (/genomes.*\.json/.test(url) || url.includes("githubusercontent.com"))
+            return "/genomes_empty.json"
+          return url
+        }
+        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+          return open.call(this, method, local(url), ...rest)
+        }
+      })()
+    </script>
+    <script src="/igv.min.js"></script>
+    <script>
+      // Params: ?loc=chr1:...&set=full|cov  (full = coverage + models + gwas; cov = coverage only)
+      const q = new URLSearchParams(location.search)
+      const loc = q.get("loc") || "chr1:43510559-44510559"
+      const set = q.get("set") || "full"
+      window.__ready = false
+      window.__err = null
+      fetch("/tracks_full.json")
+        .then((r) => r.json())
+        .then((list) => {
+          const tracks = list
+            .filter((t) => (set === "full" ? true : t.role === "coverage"))
+            .map(({ role, ...spec }) => spec)
+          const options = {
+            reference: {
+              name: "hg38",
+              fastaURL: "/hg38.min.fa",
+              indexURL: "/hg38.min.fa.fai",
+            },
+            locus: loc,
+            showChromosomeWidget: false,
+            showCenterGuide: false,
+            tracks,
+          }
+          return igv.createBrowser(document.getElementById("c"), options)
+        })
+        .then((b) => {
+          window.__igv = b
+          window.__ready = true
+        })
+        .catch((e) => {
+          window.__err = String(e)
+        })
+    </script>
+  </body>
 </html>

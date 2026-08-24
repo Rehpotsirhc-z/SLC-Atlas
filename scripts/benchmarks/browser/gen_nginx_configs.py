@@ -7,10 +7,38 @@ EXPORT = os.environ.get("EXPORT", "/workspace/.bench-export")
 COV = "/workspace/data/app/browser/coverage"
 cov = sorted(f for f in os.listdir(COV) if f.endswith(".bw"))
 
-igv = [{"id": f[:-3], "url": f"/api/browser/coverage/{f}", "type": "wig"} for f in cov]
+igv = [
+    {
+        "role": "coverage",
+        "type": "wig",
+        "format": "bigwig",
+        "url": f"/api/browser/coverage/{f}",
+        "name": f[:-3],
+        "height": 40,
+        "autoscale": True,
+    }
+    for f in cov
+]
 igv += [
-    {"id": "models", "url": "/api/browser/models.bb", "type": "annotation"},
-    {"id": "gwas", "url": "/api/browser/gwas/PD_Nalls.bb", "type": "annotation"},
+    {
+        "role": "gwas",
+        "type": "wig",
+        "format": "bigwig",
+        "url": "/gwas_manhattan.bw",
+        "name": "GWAS -log10(p)",
+        "height": 90,
+        "autoscale": True,
+        "color": "rgb(90,120,220)",
+    },
+    {
+        "role": "models",
+        "type": "annotation",
+        "format": "bigbed",
+        "url": "/models_std.bb",
+        "name": "gene models",
+        "height": 120,
+        "displayMode": "EXPANDED",
+    },
 ]
 json.dump(igv, open(f"{EXPORT}/tracks_full.json", "w"))
 
@@ -29,21 +57,18 @@ tr = [
 ]
 tr += [
     {
+        "type": "QuantitativeTrack",
+        "trackId": "gwas",
+        "name": "GWAS -log10(p)",
+        "assemblyNames": ["hg38"],
+        "adapter": {"type": "BigWigAdapter", "bigWigLocation": {"uri": "/gwas_manhattan.bw"}},
+    },
+    {
         "type": "FeatureTrack",
         "trackId": "models",
         "name": "gene models",
         "assemblyNames": ["hg38"],
-        "adapter": {"type": "BigBedAdapter", "bigBedLocation": {"uri": "/api/browser/models.bb"}},
-    },
-    {
-        "type": "FeatureTrack",
-        "trackId": "gwas",
-        "name": "GWAS",
-        "assemblyNames": ["hg38"],
-        "adapter": {
-            "type": "BigBedAdapter",
-            "bigBedLocation": {"uri": "/api/browser/gwas/PD_Nalls.bb"},
-        },
+        "adapter": {"type": "BigBedAdapter", "bigBedLocation": {"uri": "/models_std.bb"}},
     },
 ]
 cfg = {

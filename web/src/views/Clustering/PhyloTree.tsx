@@ -87,7 +87,9 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const ready = layoutData && size.w > 0 && size.h > 0
   const treeRenderedW = ready
     ? isRadial
-      ? layoutData.width * Math.min(size.w / layoutData.width, size.h / layoutData.height) * FIT_MARGIN
+      ? layoutData.width *
+        Math.min(size.w / layoutData.width, size.h / layoutData.height) *
+        FIT_MARGIN
       : layoutData.width * rectScale
     : size.w
   const searchGutter = Math.max(0, (size.w - treeRenderedW) / 2)

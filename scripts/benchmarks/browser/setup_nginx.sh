@@ -11,8 +11,13 @@ ATLASFORGE_NO_PROGRESS=1 atlasforge export "$EXPORT" --data-dir "$REPO/data" --w
 
 echo "[setup] copy igv/JBrowse harness into the export root" >&2
 cp "$SITE/igv_full.html" "$SITE/hg38.min.fa" "$SITE/hg38.min.fa.fai" "$EXPORT/"
+# Keep igv.js genome-registry requests local
+cp "$SITE/url_mappings.tsv" "$SITE/genomes_empty.json" "$EXPORT/"
 cp "$REPO/scripts/benchmarks/node_modules/igv/dist/igv.min.js" "$EXPORT/"
 ln -sfn "$REPO/scripts/benchmarks/browser/jbrowse-web" "$EXPORT/jbrowse-web"
+
+echo "[setup] build portable gene-model and GWAS tracks for igv.js and JBrowse 2" >&2
+EXPORT="$EXPORT" python "$REPO/scripts/benchmarks/browser/build_bench_tracks.py" >&2
 
 echo "[setup] generate full-track configs pointing at the export's /api/browser data" >&2
 EXPORT="$EXPORT" python "$REPO/scripts/benchmarks/browser/gen_nginx_configs.py"
@@ -45,6 +50,8 @@ http {
     location /api/browser/coverage/ { add_header Cache-Control "no-cache"; gzip off; gzip_static off; }
     location = /api/browser/models.bb { add_header Cache-Control "no-cache"; gzip off; gzip_static off; }
     location /api/browser/gwas/ { add_header Cache-Control "no-cache"; gzip off; gzip_static off; }
+    location = /models_std.bb { add_header Cache-Control "no-cache"; gzip off; gzip_static off; }
+    location = /gwas_manhattan.bw { add_header Cache-Control "no-cache"; gzip off; gzip_static off; }
     location = /index.html { add_header Cache-Control "no-cache"; }
     location / { error_page 404 /404.html; try_files \$uri \$uri/index.html =404; }
   }
