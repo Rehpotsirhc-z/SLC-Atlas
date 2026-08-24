@@ -80,7 +80,6 @@ const ConservationHeatmap = forwardRef<ConservationHeatmapHandle, ConservationHe
       showSpeciesTree,
       showGeneTree,
       hasLegend: !!legendSlot,
-      searchInCorner,
     })
 
     useImperativeHandle(

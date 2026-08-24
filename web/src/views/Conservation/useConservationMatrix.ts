@@ -22,10 +22,8 @@ import type { Gene } from "@/types/gene"
 import {
   COL_LABEL_GAP,
   CORNER_DROPDOWN_MIN_W,
-  CORNER_INLINE_MIN_H,
   MONO_CHAR_W,
   SEARCH_PANEL_CLEAR_X,
-  SEARCH_PANEL_CLEAR_Y,
 } from "@/components/heatmap/constants"
 import { SP_TREE_PAD, SPECIES_LABEL_MIN_H, SPECIES_TREE_H } from "./constants"
 import { buildConservationFigureSvg } from "./conservationFigureSvg"
@@ -56,7 +54,6 @@ interface Options {
   showSpeciesTree: boolean
   showGeneTree: boolean
   hasLegend: boolean
-  searchInCorner: boolean
 }
 
 const conservationKey = (c: ConservationCell) => `${c.gene_id}__${c.species}`
@@ -74,7 +71,6 @@ export function useConservationMatrix({
   showSpeciesTree,
   showGeneTree,
   hasLegend,
-  searchInCorner,
 }: Options) {
   const theme = useTheme()
   const mode = theme.palette.mode
@@ -159,13 +155,10 @@ export function useConservationMatrix({
   const contentLeft = grid.fits ? Math.max(0, (containerW - grid.contentW) / 2) : 0
   const gridLeft = contentLeft + leftColW
 
-  const shouldCollapseCorner =
-    leftColW < CORNER_DROPDOWN_MIN_W ||
-    (searchInCorner && topH < CORNER_INLINE_MIN_H && contentLeft < SEARCH_PANEL_CLEAR_X)
+  const settingsFloats = leftColW < CORNER_DROPDOWN_MIN_W
 
-  const searchCoversContent =
-    gridLeft < SEARCH_PANEL_CLEAR_X ||
-    (topH < SEARCH_PANEL_CLEAR_Y && contentLeft < SEARCH_PANEL_CLEAR_X)
+  const searchClearLeft = showSpeciesTree || settingsFloats ? gridLeft : contentLeft
+  const searchFloats = searchClearLeft < SEARCH_PANEL_CLEAR_X
 
   const {
     setCellWidth,
@@ -175,12 +168,12 @@ export function useConservationMatrix({
     fits: layoutFits,
     contentOffsetLeft,
     cornerCollapsed,
-    searchCoversContent: visibleSearchCoversContent,
+    searchCoversContent: visibleSearchFloats,
   } = useHeatmapResize(setCellSize, {
     fits: grid.fits,
     contentLeft,
-    cornerCollapsed: shouldCollapseCorner,
-    searchCoversContent,
+    cornerCollapsed: settingsFloats,
+    searchCoversContent: searchFloats,
   })
 
   const cellFill = useConservationCellFill(matrix, metricDef)
@@ -292,7 +285,7 @@ export function useConservationMatrix({
     setCellHeight,
     resetCellSize,
     cornerCollapsed,
-    searchCoversContent: visibleSearchCoversContent,
+    searchCoversContent: visibleSearchFloats,
     contentW: grid.contentW,
     fits: layoutFits,
     contentOffsetLeft,

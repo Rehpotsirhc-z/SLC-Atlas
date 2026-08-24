@@ -72,7 +72,6 @@ const ExpressionHeatmap = forwardRef<ExpressionHeatmapHandle, ExpressionHeatmapP
       geneById,
       showGeneTree,
       hasLegend: !!legendSlot,
-      searchInCorner,
     })
 
     useImperativeHandle(

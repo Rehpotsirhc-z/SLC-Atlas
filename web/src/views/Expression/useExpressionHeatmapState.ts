@@ -8,7 +8,6 @@ import { useTheme } from "@mui/material"
 import {
   COL_LABEL_GAP,
   CORNER_DROPDOWN_MIN_W,
-  CORNER_INLINE_MIN_H,
   MONO_CHAR_W,
   SEARCH_PANEL_CLEAR_X,
 } from "@/components/heatmap/constants"
@@ -47,7 +46,6 @@ interface Options {
   geneById: Map<string, Gene>
   showGeneTree: boolean
   hasLegend: boolean
-  searchInCorner: boolean
 }
 
 const rowKey = (r: ExpressionRow) => `${r.gene_id}__${r.tissue}`
@@ -62,7 +60,6 @@ export function useExpressionHeatmapState({
   geneById,
   showGeneTree,
   hasLegend,
-  searchInCorner,
 }: Options) {
   const theme = useTheme()
   const mode = theme.palette.mode
@@ -232,11 +229,12 @@ export function useExpressionHeatmapState({
   const buildFigure = useCallback(() => figureRef.current(), [])
 
   const contentLeft = grid.fits ? Math.max(0, (containerW - grid.contentW) / 2) : 0
-  const shouldCollapseCorner =
-    leftColW < CORNER_DROPDOWN_MIN_W ||
-    (searchInCorner && topH < CORNER_INLINE_MIN_H && contentLeft < SEARCH_PANEL_CLEAR_X)
+  const gridLeft = contentLeft + leftColW
 
-  const searchCoversContent = contentLeft < SEARCH_PANEL_CLEAR_X
+  const settingsFloats = leftColW < CORNER_DROPDOWN_MIN_W
+
+  const searchClearLeft = settingsFloats ? gridLeft : contentLeft
+  const searchFloats = searchClearLeft < SEARCH_PANEL_CLEAR_X
 
   const {
     setCellWidth,
@@ -246,12 +244,12 @@ export function useExpressionHeatmapState({
     fits: layoutFits,
     contentOffsetLeft,
     cornerCollapsed,
-    searchCoversContent: visibleSearchCoversContent,
+    searchCoversContent: visibleSearchFloats,
   } = useHeatmapResize(setCellSize, {
     fits: grid.fits,
     contentLeft,
-    cornerCollapsed: shouldCollapseCorner,
-    searchCoversContent,
+    cornerCollapsed: settingsFloats,
+    searchCoversContent: searchFloats,
   })
 
   return {
@@ -278,7 +276,7 @@ export function useExpressionHeatmapState({
     setCellHeight,
     resetCellSize,
     cornerCollapsed,
-    searchCoversContent: visibleSearchCoversContent,
+    searchCoversContent: visibleSearchFloats,
     contentW: grid.contentW,
     fits: layoutFits,
     contentOffsetLeft,
