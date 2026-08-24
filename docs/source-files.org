@@ -160,7 +160,7 @@ BED12 has one free-text ~name~ field, so the pipeline accepts three layouts:
 | ~name~ holds                                    | Rest of the identity comes from                                      | Written by                       |
 |-----------------------------------------------+----------------------------------------------------------------------+----------------------------------|
 | the transcript ID                             | columns 13, 14, 15, 16: ~gene_id~, ~biotype~, ~gene_name~, ~transcript_name~ | this pipeline                    |
-| ~transcript_id___gene_id___biotype___gene_name~ | the name field itself                                                | other portals in this field      |
+| ~transcript_id___gene_id___biotype___gene_name~ | the name field itself                                                | [[https://github.com/TheDongLab/VizIt][VizIt]]                            |
 | the transcript ID alone                       | nothing; gene fields stay empty                                      | ~gtfToGenePred~ then ~genePredToBed~ |
 
 The build compares the start and end coordinates of shared genes. It stops when
