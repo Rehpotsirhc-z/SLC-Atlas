@@ -55,8 +55,9 @@ def _export(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog=COMMAND_NAME,
-        description=f"{PRODUCT_NAME} {PRODUCT_VERSION}. Turn a gene family into a browsable "
-        "atlas: fetch its data, build the dataset, then serve or export the site.",
+        description=f"{PRODUCT_NAME} {PRODUCT_VERSION}. AtlasForge is an "
+        "open-source system that generates an interactive web atlas for any gene "
+        "family through automated data retrieval and analysis.",
     )
     parser.add_argument("--version", action="version", version=f"{PRODUCT_NAME} {PRODUCT_VERSION}")
     sub = parser.add_subparsers(dest="command", required=True)

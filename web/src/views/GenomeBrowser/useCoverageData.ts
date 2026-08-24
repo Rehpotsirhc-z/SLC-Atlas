@@ -132,8 +132,6 @@ export function useCoverageData(
     const out: Request[] = []
     for (const track of tracks) {
       if (track.chroms.length > 0 && !track.chroms.includes(chrom)) continue
-      // Never finer than the width the build vouched for, so the reader cannot answer from a level
-      // it was not checked at, and never so much coarser that the lane turns into steps
       const floor = track.reduction
       const summary = floor > 0 && floor <= step * SUMMARY_MAX_COLUMNS ? Math.max(step, floor) : 0
       for (const strand of track.stranded ? (["plus", "minus"] as const) : [null]) {
