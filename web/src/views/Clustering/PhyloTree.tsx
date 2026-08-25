@@ -4,6 +4,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
+import type { AxisScale } from "@/api/hooks/useClustering"
 import { SEARCH_PANEL_CLEAR_X } from "@/components/heatmap/constants"
 import { svgSansFontFamily } from "@/theme/fonts"
 import { figureExportHandlers } from "@/utils/exportFigure"
@@ -32,6 +33,7 @@ export interface PhyloTreeHandle {
 interface PhyloTreeProps {
   data: ClusterNode[]
   layout: Layout
+  axisScale: AxisScale
   familyFilter: string | null
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
@@ -50,7 +52,16 @@ interface HoverState {
 }
 
 const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree(
-  { data, layout, familyFilter, selectedGeneId, onSelect, geneById, onSearchCoversContentChange },
+  {
+    data,
+    layout,
+    axisScale,
+    familyFilter,
+    selectedGeneId,
+    onSelect,
+    geneById,
+    onSearchCoversContentChange,
+  },
   ref,
 ) {
   const theme = useTheme()
@@ -243,6 +254,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
               color={edgeColor}
               monoFont={monoFont}
               compact={isMobile}
+              axisScale={axisScale}
             />
           )}
           <svg

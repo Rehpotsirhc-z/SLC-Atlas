@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react"
 import SearchIcon from "@mui/icons-material/Search"
 import { Box, Divider, Paper, useMediaQuery, useTheme } from "@mui/material"
+import { AXIS_SCALE } from "@/api/hooks/useClustering"
 import { downloadGeneTreeNewick } from "@/api/newick"
 import GeneSearchPanel from "@/components/autocomplete/GeneSearchPanel"
 import FloatingToggleButton from "@/components/FloatingToggleButton"
@@ -106,6 +107,7 @@ export default function Clustering() {
               ref={treeRef}
               data={data!}
               layout={layout}
+              axisScale={AXIS_SCALE[method]}
               familyFilter={familyFilter}
               selectedGeneId={selectedGeneId}
               onSelect={setSelectedGeneId}

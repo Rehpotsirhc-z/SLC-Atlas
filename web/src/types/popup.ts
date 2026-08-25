@@ -11,6 +11,7 @@ export interface GeneInfo {
   node: ClusterNode
   methodLabel: string
   closestSymbol: string | null
+  distance: string | null
   gene: Gene | null
 }
 

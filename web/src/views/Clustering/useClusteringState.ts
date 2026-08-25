@@ -4,6 +4,8 @@
 
 import { useMemo } from "react"
 import {
+  AXIS_SCALE,
+  branchDistance,
   METHOD_LABEL,
   resolveClusterMethod,
   useClustering,
@@ -48,7 +50,8 @@ export function useClusteringState() {
       if (sibling?.gene_id) closestSymbol = sibling.symbol
     }
     const gene = allGenes?.find((g) => g.id === selectedGeneId) ?? null
-    return { node, methodLabel: METHOD_LABEL[method], closestSymbol, gene }
+    const distance = branchDistance(AXIS_SCALE[method], node.branch_length)
+    return { node, methodLabel: METHOD_LABEL[method], closestSymbol, distance, gene }
   }, [data, selectedGeneId, method, allGenes])
 
   const popupContent = useMemo(

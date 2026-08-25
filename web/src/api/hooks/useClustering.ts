@@ -45,6 +45,25 @@ export const METHOD_LABEL: Record<ClusterMethod, string> = {
   family_grouping: "Grouped by family",
 }
 
+export interface AxisScale {
+  label: string
+  percent: boolean
+}
+
+export const AXIS_SCALE: Record<ClusterMethod, AxisScale> = {
+  aa_sequence: { label: "Residues differing between two genes", percent: true },
+  dna_sequence: { label: "Bases differing between two genes", percent: true },
+  rna_coexpression_all: { label: "1 − Spearman correlation (expression)", percent: false },
+  rna_coexpression_brain: { label: "1 − Spearman correlation (expression)", percent: false },
+  ortholog_identity: { label: "1 − Spearman correlation (ortholog identity)", percent: false },
+  family_grouping: { label: "", percent: false },
+}
+
+export function branchDistance(scale: AxisScale, branchLength: number): string | null {
+  if (!scale.label) return null
+  return scale.percent ? `${(branchLength * 100).toFixed(1)}%` : branchLength.toFixed(2)
+}
+
 export function resolveClusterMethod(metric: TreeMetric, tissue: TreeTissue): ClusterMethod {
   return metric === "rna" ? CLUSTER_METHOD[`rna:${tissue}`] : CLUSTER_METHOD[metric]
 }

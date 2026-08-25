@@ -114,7 +114,14 @@ export default function ViewToolbarActions({
           </Button>
         </>
       )}
-      <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>
+      <Menu
+        anchorEl={exportAnchor}
+        open={!!exportAnchor}
+        onClose={() => setExportAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        slotProps={{ paper: { sx: { mt: 0.5 } } }}
+      >
         {exportItems.map((item) => (
           <MenuItem
             key={item.label}

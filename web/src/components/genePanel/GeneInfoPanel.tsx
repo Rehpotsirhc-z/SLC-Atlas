@@ -20,7 +20,7 @@ interface GeneInfoPanelProps {
 }
 
 export default function GeneInfoPanel({ info, ...geometry }: GeneInfoPanelProps) {
-  const { node, methodLabel, closestSymbol, gene } = info
+  const { node, methodLabel, closestSymbol, distance, gene } = info
   const { palette } = useTheme()
   const family = gene?.family || node.family || "?"
   const familyColor = getFamilyColor(family, palette.mode)
@@ -31,7 +31,7 @@ export default function GeneInfoPanel({ info, ...geometry }: GeneInfoPanelProps)
       value: <FamilyLabel label={family} color={familyColor} category={gene?.category} />,
     },
     { label: "Metric", value: methodLabel },
-    { label: "Branch length", value: node.branch_length.toFixed(3) },
+    ...(distance ? [{ label: "Distance", value: distance }] : []),
     ...(closestSymbol ? [{ label: "Closest relative", value: closestSymbol }] : []),
   ]
 
