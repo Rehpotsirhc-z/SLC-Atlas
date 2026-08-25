@@ -21,7 +21,7 @@ export const DATA_DOMAINS: DataDomain[] = [
     key: "expression",
     label: "Expression",
     method:
-      "Expression is reported as the mean TPM for each gene across samples from the same tissue. In the brain view, samples are grouped into smaller brain regions.",
+      "Expression for each gene is averaged across samples from the same tissue. In the brain view, samples are grouped into smaller brain regions.",
     capability: "expression",
   },
   {

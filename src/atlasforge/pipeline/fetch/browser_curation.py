@@ -26,7 +26,7 @@ from .. import templates
 TRACKS_FILE = "browser_tracks.tsv"
 GWAS_FILE = "browser_gwas.tsv"
 
-TRACKS_HEADER = "track_id\tlabel\tgroup\tstrand\tsource\tbin\tlocal"
+TRACKS_HEADER = "track_id\tlabel\tgroup\tstrand\tsource\tbin\tlocal\tcitation\turl\tlicense_spdx"
 GWAS_HEADER = "study_id\ttrait\tcitation\tsource\tassembly\tlicense_spdx"
 
 BIGWIG_SUFFIXES = ("*.bw", "*.bigWig", "*.bigwig")
@@ -59,6 +59,9 @@ class TrackRow:
     source: str
     bin: int | None
     local: bool | None
+    citation: str = ""
+    url: str = ""
+    license_spdx: str = ""
 
 
 @dataclass(frozen=True)
@@ -112,6 +115,9 @@ def read_tracks(rows) -> list[TrackRow]:
                 source=_cell(cells, 4),
                 bin=int(size) if size else None,
                 local=_optional_bool(_cell(cells, 6)),
+                citation=_cell(cells, 7),
+                url=_cell(cells, 8),
+                license_spdx=_cell(cells, 9),
             )
         )
     return out
@@ -213,13 +219,16 @@ def tracks_text(tracks_dirs: Sequence[Path]) -> str:
                     f"{track_id!r}. Rename one, or seed them into separate runs."
                 )
             seen[(track_id, strand)] = bigwig
-            lines.append("\t".join((track_id, label, "", strand, str(bigwig), "", "yes")))
+            lines.append(
+                "\t".join((track_id, label, "", strand, str(bigwig), "", "yes", "", "", ""))
+            )
 
     return _document(
         [f"# Seeded from {p}" for p in tracks_dirs]
         + [
             "# Add a descriptive name and group for each track",
             "# Check any strand inferred from a file name",
+            "# Add citation, url, and license_spdx for local tracks without a public accession",
             "# Separate columns with tabs; blank lines and comments are ignored",
         ],
         [TRACKS_HEADER, *lines],

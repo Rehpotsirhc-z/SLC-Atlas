@@ -10,12 +10,17 @@
 #          keep the source resolution
 # local    Use yes to add a family-specific copy to the site, no to read it over the
 #          network, or leave blank to follow --slice-coverage
+# citation, url, license_spdx are optional fields shown in the About panel. Use them for
+#          local or in-house tracks without a public accession. Set url to a page that
+#          describes the data, not to the bigWig. A value is shown for a group only when
+#          all tracks that provide it use the same value
 #
 # The rows below are public ENCODE tissue ATAC-seq tracks read over the network
 # Replace them with your own assay when one is available
+# The ENCODE examples leave the optional provenance fields blank
 # Separate columns with tabs; blank lines and comments are ignored
 
-track_id	label	group	strand	source	bin	local
+track_id	label	group	strand	source	bin	local	citation	url	license_spdx
 encode_liver	Liver	ENCODE ATAC-seq		ENCSR124NNL		no
 encode_lung	Lung	ENCODE ATAC-seq		ENCSR647AOY		no
 encode_heart	Heart left ventricle	ENCODE ATAC-seq		ENCSR204PZT		no

@@ -111,6 +111,7 @@ export interface DataSourceRecord {
   version: string | null
   assembly: string | null
   retrieved_date: string | null
+  citation: string | null
   license_spdx: string | null
   url: string | null
 }

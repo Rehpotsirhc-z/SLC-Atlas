@@ -47,7 +47,7 @@ remain tab-separated.
 | ~symbol_overrides.tsv~  | Display symbols to use without changing the approved searchable symbols               |
 | ~species.tsv~           | Species included in conservation and their names in Ensembl, TimeTree, and UCSC       |
 | ~uniprot_overrides.tsv~ | Manual corrections to the Ensembl gene-to-UniProt mapping                             |
-| ~browser_tracks.tsv~    | Coverage tracks, their labels, grouping, source, strand, resolution, and hosting mode |
+| ~browser_tracks.tsv~    | Coverage tracks, their labels, grouping, source, strand, resolution, hosting mode, and provenance |
 | ~browser_gwas.tsv~      | GWAS studies, traits, citations, sources, assemblies, and licenses                    |
 
 Edit curation files instead of generated source tables whenever a choice has a
@@ -176,6 +176,11 @@ For stranded data, use two rows with the same ~track_id~ and set ~strand~ to ~pl
 and ~minus~. Set ~local~ to ~yes~ to create a copy under ~coverage/~, or ~no~ to
 let the browser read the source URL directly. Remote servers must support byte
 ranges and cross-origin requests.
+
+The optional ~citation~, ~url~, and ~license_spdx~ columns add track provenance to the
+About panel. Set ~url~ to a page that describes the data, not to the bigWig. The
+About panel lists each coverage group once, showing a field only when every
+track that provides that field uses the same value.
 
 Slicing and binning are independent. ~--browser-whole-genome~ controls which regions are
 retained, while ~--browser-bin~ controls their resolution. When neither slicing nor

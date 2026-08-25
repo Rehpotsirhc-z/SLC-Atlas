@@ -152,13 +152,23 @@ export default function AboutDataPopup() {
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column" }}>
                 {records.map((rec) => (
-                  <Entry
-                    key={`${rec.source}-${rec.url}`}
-                    name={rec.source}
-                    detail={sourceDetail(rec)}
-                    spdx={rec.license_spdx}
-                    url={rec.url}
-                  />
+                  <Box key={`${rec.source}-${rec.url}`} sx={{ py: 0.25 }}>
+                    <Entry
+                      name={rec.source}
+                      detail={sourceDetail(rec)}
+                      spdx={rec.license_spdx}
+                      url={rec.url}
+                    />
+                    {rec.citation && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mt: -0.25 }}
+                      >
+                        {rec.citation}
+                      </Typography>
+                    )}
+                  </Box>
                 ))}
                 {gwas.map((study) => (
                   <Box key={study.study_id} sx={{ py: 0.25 }}>

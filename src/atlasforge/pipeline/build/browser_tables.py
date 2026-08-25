@@ -81,6 +81,7 @@ SOURCES_SCHEMA = {
     "version": pl.Utf8,
     "assembly": pl.Utf8,
     "retrieved_date": pl.Utf8,
+    "citation": pl.Utf8,
     "license_spdx": pl.Utf8,
     "url": pl.Utf8,
 }
@@ -308,15 +309,31 @@ def _reachable(track: dict) -> bool:
     return all(track[name] or track[url] for name, url in lanes)
 
 
+def _agree(values) -> str:
+    """Return the shared non-empty value, or blank if the values differ."""
+    distinct = {v for v in values if v}
+    return distinct.pop() if len(distinct) == 1 else ""
+
+
 def source_frame(source_dir: Path, coverage: list[dict], studies: list[dict]) -> pl.DataFrame:
     rows = [
         {k: v for k, v in row.items() if k in SOURCES_SCHEMA}
         for row in read_tsv(source_dir / "gene_models.tsv")
     ]
-    groups = sorted({row.get("group") or "coverage" for row in coverage})
+    by_group: dict[str, list[dict]] = {}
+    for row in coverage:
+        by_group.setdefault(row.get("group") or "coverage", []).append(row)
     rows += [
-        {"source": group, "kind": "coverage", "version": "", "assembly": "", "url": ""}
-        for group in groups
+        {
+            "source": group,
+            "kind": "coverage",
+            "version": "",
+            "assembly": "",
+            "citation": _agree(r.get("citation", "") for r in lanes),
+            "license_spdx": _agree(r.get("license_spdx", "") for r in lanes),
+            "url": _agree(r.get("url", "") for r in lanes),
+        }
+        for group, lanes in sorted(by_group.items())
     ]
     rows += [
         {
