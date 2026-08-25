@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Dong Lab, Yale School of Medicine <https://donglab.org>
 #
+# SPDX-License-Identifier: Apache-2.0
+
 # Deploy an AtlasForge static export to S3 and CloudFront
 #
 # Run this on the machine that holds the complete export. The script uploads only
@@ -37,7 +41,11 @@ DRY_RUN_ARGS=()
 DELETE_ARGS=()
 
 usage() {
-  awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
+  awk '
+    !seen { if ($0 ~ /SPDX-License-Identifier/) seen = 1; next }
+    /^#/ { sub(/^# ?/, ""); print; body = 1; next }
+    body { exit }
+  ' "$0"
 }
 
 fail() {
