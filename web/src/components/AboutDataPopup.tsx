@@ -105,7 +105,7 @@ export default function AboutDataPopup() {
       footer={
         <>
           <Divider sx={{ mb: 1 }} />
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: -0.6 }}>
             This atlas was generated using{" "}
             <Link href={PRODUCT_URL} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
               {PRODUCT_NAME}
@@ -125,7 +125,7 @@ export default function AboutDataPopup() {
       minHeight={280}
       windowKey="about"
     >
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", px: 1.75, pt: 0.5, pb: 2 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", px: 1.5, pt: 0.5, pb: 2 }}>
         {domains.map((domain, index) => {
           const records = sources.filter((s) => s.domain === domain.key)
           const gwas: GwasStudy[] = domain.key === "browser" ? studies : []
