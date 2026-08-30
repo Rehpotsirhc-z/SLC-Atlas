@@ -62,6 +62,10 @@ export function AppNavTabs() {
       onChange={(_, i: number) => navigate(visible[i].path)}
       textColor="primary"
       indicatorColor="primary"
+      variant="scrollable"
+      scrollButtons="auto"
+      allowScrollButtonsMobile
+      sx={{ flex: 1, minWidth: 0 }}
     >
       {visible.map((r) => (
         <Tab key={r.path} label={r.label} />

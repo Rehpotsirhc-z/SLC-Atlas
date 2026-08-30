@@ -38,7 +38,7 @@ export default function App() {
             {atlas.shortName}
           </Typography>
           {!isMobile && <AppNavTabs />}
-          <Box sx={{ flexGrow: 1 }} />
+          {isMobile && <Box sx={{ flexGrow: 1 }} />}
           <AppInfoButton />
           <ThemeToggle />
         </Toolbar>
