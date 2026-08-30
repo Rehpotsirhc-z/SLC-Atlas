@@ -9,7 +9,7 @@
 # Run this on the machine that holds the complete export. The script uploads only
 # changed files and does not delete coverage, GWAS, or structure data
 #
-#   scripts/deploy.sh                 # sync site/ -> the bucket, then invalidate
+#   scripts/deploy.sh                 # sync dist/ -> the bucket, then invalidate
 #   scripts/deploy.sh --dry-run       # show every action, change nothing
 #   scripts/deploy.sh --prune         # also delete stale assets + removed HTML/JSON
 #   scripts/deploy.sh --site out/     # a different export dir
@@ -21,7 +21,7 @@ set -euo pipefail
 
 BUCKET="s3://slc.yalepages.org"
 DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-E3885KZHROH1N2}"
-SITE_DIR="site"
+SITE_DIR="dist"
 
 ASSET_CACHE="public, max-age=31536000, immutable"
 BIN_CACHE="public, max-age=604800"
