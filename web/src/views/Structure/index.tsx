@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Box, Divider, Paper, Stack, Typography, useMediaQuery, useTheme } from "@mui/material"
 import FamilyRail from "@/components/view/FamilyRail"
 import { useFamilyRail } from "@/components/view/useFamilyRail"
-import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { downloadName } from "@/utils/download"
 import { useDeferredReady } from "@/utils/useDeferredReady"
@@ -44,7 +43,6 @@ export default function Structure() {
   const {
     wall,
     genes,
-    hasMembrane,
     selectedHasMembrane,
     marks,
     hasSignal,
@@ -117,17 +115,8 @@ export default function Structure() {
   const paneWidth = contentWidth - CONTENT_PADDING_PX
   const sideBySide = !isMobile && paneWidth >= SIDE_BY_SIDE_MIN_WIDTH
 
-  const header = (
-    <ViewHeader
-      title="Structure"
-      subtitle={`Predicted models, ${hasMembrane ? "membrane topology" : "sequence features"}, and experimental structures`}
-    />
-  )
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      {header}
-
       <Box ref={outerRef} sx={{ display: "flex", flex: 1, minHeight: 0 }}>
         <FamilyRail
           genes={deferredReady ? genes : NO_GENES}

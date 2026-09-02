@@ -5,7 +5,6 @@
 import { useCallback, useMemo, useRef } from "react"
 import { Box, Divider, Paper, Popper, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { EMPTY_COVERAGE, EMPTY_VARIANTS, type VariantBlock } from "@/api/bbi"
-import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { biotypeColor } from "@/utils/biotypeColor"
 import { downloadName } from "@/utils/download"
@@ -171,10 +170,6 @@ export default function GenomeBrowser() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      <ViewHeader
-        title="Genome Browser"
-        subtitle="Coverage tracks, trait associations, and gene models on one genomic axis"
-      />
       <Paper
         ref={cardRef}
         variant="outlined"

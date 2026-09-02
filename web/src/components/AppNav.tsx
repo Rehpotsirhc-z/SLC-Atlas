@@ -5,7 +5,7 @@
 import { useMemo, useState } from "react"
 import { matchPath, useLocation, useNavigate } from "react-router-dom"
 import MenuIcon from "@mui/icons-material/Menu"
-import { IconButton, Menu, MenuItem, Tab, Tabs } from "@mui/material"
+import { IconButton, Menu, MenuItem, Tab, type TabProps, Tabs, Tooltip } from "@mui/material"
 import { useCapabilities } from "@/api/hooks/useCapabilities"
 import { ROUTES, type RouteMeta } from "@/config/routes"
 
@@ -51,6 +51,14 @@ export function AppNavMenu() {
   )
 }
 
+function NavTab({ description, ...tabProps }: TabProps & { description: string }) {
+  return (
+    <Tooltip title={description} placement="bottom" enterDelay={300}>
+      <Tab {...tabProps} />
+    </Tooltip>
+  )
+}
+
 export function AppNavTabs() {
   const navigate = useNavigate()
   const visible = useVisibleRoutes()
@@ -68,7 +76,7 @@ export function AppNavTabs() {
       sx={{ flex: 1, minWidth: 0 }}
     >
       {visible.map((r) => (
-        <Tab key={r.path} label={r.label} />
+        <NavTab key={r.path} label={r.label} description={r.description} />
       ))}
     </Tabs>
   )

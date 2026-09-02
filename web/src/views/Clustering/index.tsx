@@ -9,23 +9,31 @@ import { AXIS_SCALE } from "@/api/hooks/useClustering"
 import { downloadGeneTreeNewick } from "@/api/newick"
 import GeneSearchPanel from "@/components/autocomplete/GeneSearchPanel"
 import FloatingToggleButton from "@/components/FloatingToggleButton"
+import { CORNER_BUTTON_TOP } from "@/components/heatmap/constants"
+import HeatmapCornerButton from "@/components/heatmap/HeatmapCornerButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
-import ViewHeader from "@/components/view/ViewHeader"
 import ViewStatus from "@/components/view/ViewStatus"
 import { downloadName } from "@/utils/download"
 import { useShareParam } from "@/utils/useShareParam"
 import ClusteringToolbar from "./ClusteringToolbar"
 import LayoutToggle from "./LayoutToggle"
+import { AXIS_H } from "./PhyloAxis"
 import PhyloTree, { type PhyloTreeHandle } from "./PhyloTree"
+import { ROW_H_DEFAULT } from "./phyloLayout"
 import { LAYOUT_PARAM } from "./shareParams"
+import SpacingSettings from "./SpacingSettings"
 import { useClusteringState } from "./useClusteringState"
+
+const SPACING_TOP = AXIS_H + 18
 
 export default function Clustering() {
   const [layout, setLayout] = useShareParam(LAYOUT_PARAM)
+  const [rowH, setRowH] = useState(ROW_H_DEFAULT)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchCoversContent, setSearchCoversContent] = useState(false)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
   const searchFloats = isMobile || searchCoversContent
+  const settingsFloats = isMobile
   const treeRef = useRef<PhyloTreeHandle>(null)
 
   const {
@@ -77,11 +85,6 @@ export default function Clustering() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 2 }}>
-      <ViewHeader
-        title="Clustering"
-        subtitle="Similarity trees by amino-acid, DNA (CDS), RNA co-expression, and ortholog identity"
-      />
-
       <Paper
         variant="outlined"
         sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
@@ -107,6 +110,7 @@ export default function Clustering() {
               ref={treeRef}
               data={data!}
               layout={layout}
+              rowH={rowH}
               axisScale={AXIS_SCALE[method]}
               familyFilter={familyFilter}
               selectedGeneId={selectedGeneId}
@@ -114,6 +118,39 @@ export default function Clustering() {
               geneById={geneById}
               onSearchCoversContentChange={setSearchCoversContent}
             />
+
+            {layout === "rectangular" &&
+              (settingsFloats ? (
+                <HeatmapCornerButton topOffset={SPACING_TOP}>
+                  <SpacingSettings
+                    rowH={rowH}
+                    onRowHChange={setRowH}
+                    onReset={() => setRowH(ROW_H_DEFAULT)}
+                  />
+                </HeatmapCornerButton>
+              ) : (
+                <Box
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  sx={{
+                    position: "absolute",
+                    left: 12,
+                    top: searchFloats ? SPACING_TOP : CORNER_BUTTON_TOP,
+                    zIndex: 4,
+                    width: searchSurfaceSx.width,
+                    bgcolor: "background.paper",
+                    borderRadius: 1,
+                    pl: 1.5,
+                    pt: 0.5,
+                  }}
+                >
+                  <SpacingSettings
+                    rowH={rowH}
+                    onRowHChange={setRowH}
+                    onReset={() => setRowH(ROW_H_DEFAULT)}
+                  />
+                </Box>
+              ))}
 
             {!searchFloats && (
               <FloatingSurface sx={{ top: 12, left: 12, zIndex: 2, ...searchSurfaceSx }}>
