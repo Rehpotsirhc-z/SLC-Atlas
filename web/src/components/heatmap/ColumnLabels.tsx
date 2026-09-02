@@ -37,9 +37,9 @@ export function ColumnLabel({
       fontFamily={fontFamily}
       fill={fill}
       fontWeight={fontWeight}
-      textAnchor="start"
+      textAnchor="end"
       dominantBaseline="central"
-      transform={`rotate(90 ${x} ${y})`}
+      transform={`rotate(-90 ${x} ${y})`}
       style={{ pointerEvents: "none" }}
     >
       {text}

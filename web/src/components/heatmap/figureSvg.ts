@@ -71,7 +71,7 @@ export function columnLabelsSvg(opts: {
   return labels
     .map((label, i) => {
       const x = leftW + i * cellW + cellW / 2
-      return `<text x="${x}" y="${y}" font-size="${font}" font-family="${svgFont}" fill="${fill}" text-anchor="start" dominant-baseline="central" transform="rotate(90 ${x} ${y})">${esc(label)}</text>`
+      return `<text x="${x}" y="${y}" font-size="${font}" font-family="${svgFont}" fill="${fill}" text-anchor="end" dominant-baseline="central" transform="rotate(-90 ${x} ${y})">${esc(label)}</text>`
     })
     .join("")
 }
