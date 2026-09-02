@@ -5,7 +5,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { Box, Typography, useMediaQuery, useTheme } from "@mui/material"
 import type { AxisScale } from "@/api/hooks/useClustering"
-import { SEARCH_PANEL_CLEAR_X } from "@/components/heatmap/constants"
+import { CORNER_BUTTON_CLEAR_X, SEARCH_PANEL_CLEAR_X } from "@/components/heatmap/constants"
 import { svgSansFontFamily } from "@/theme/fonts"
 import { figureExportHandlers } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
@@ -33,12 +33,14 @@ export interface PhyloTreeHandle {
 interface PhyloTreeProps {
   data: ClusterNode[]
   layout: Layout
+  rowH: number
   axisScale: AxisScale
   familyFilter: string | null
   selectedGeneId: string | null
   onSelect: (geneId: string | null) => void
   geneById: Map<string, Gene>
   onSearchCoversContentChange?: (covers: boolean) => void
+  onCornerNearAxisChange?: (near: boolean) => void
 }
 
 // Deliberately outside the palette so the tree keeps its own muted greys in both themes
@@ -55,12 +57,14 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   {
     data,
     layout,
+    rowH,
     axisScale,
     familyFilter,
     selectedGeneId,
     onSelect,
     geneById,
     onSearchCoversContentChange,
+    onCornerNearAxisChange,
   },
   ref,
 ) {
@@ -76,12 +80,12 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const treeGroupRef = useRef<SVGGElement>(null)
   const [hover, setHover] = useState<HoverState | null>(null)
 
-  const { layoutData, leafByGene, rectScale } = usePhyloLayout(data, layout, size.w)
+  const { layoutData, leafByGene, rectScale } = usePhyloLayout(data, layout, size.w, rowH)
 
   const view = usePhyloTransform({ isRadial, layoutData, size, svgRef, containerRef })
   const { transform } = view
 
-  const hitTest = usePhyloHitTest({ layoutData, isRadial, transform, rectScale, svgRef })
+  const hitTest = usePhyloHitTest({ layoutData, isRadial, transform, rectScale, rowH, svgRef })
 
   const { focusGene, focusFamily } = usePhyloFocus({
     data,
@@ -105,9 +109,13 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
     : size.w
   const searchGutter = Math.max(0, (size.w - treeRenderedW) / 2)
   const searchCoversContent = searchGutter < SEARCH_PANEL_CLEAR_X
+  const cornerNearAxis = searchGutter < CORNER_BUTTON_CLEAR_X
   useEffect(() => {
     onSearchCoversContentChange?.(searchCoversContent)
   }, [searchCoversContent, onSearchCoversContentChange])
+  useEffect(() => {
+    onCornerNearAxisChange?.(cornerNearAxis)
+  }, [cornerNearAxis, onCornerNearAxisChange])
 
   const buildSvgString = () => {
     if (!treeGroupRef.current || !layoutData) return null

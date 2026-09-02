@@ -7,7 +7,12 @@ import { buildTree } from "@/utils/tree"
 import type { ClusterNode } from "@/types/clustering"
 import { computeLayout, RECT, type Layout, type LeafLayout } from "./phyloLayout"
 
-export function usePhyloLayout(data: ClusterNode[], layout: Layout, containerW: number) {
+export function usePhyloLayout(
+  data: ClusterNode[],
+  layout: Layout,
+  containerW: number,
+  rowH: number,
+) {
   const layoutData = useMemo(() => {
     const tree = buildTree(data)
     if (!tree) return null
@@ -15,8 +20,8 @@ export function usePhyloLayout(data: ClusterNode[], layout: Layout, containerW: 
     const w = Math.min(containerW || 600, maxW)
     const labelArea = Math.min(RECT.labelArea, Math.max(110, Math.round(w * 0.15)))
     const drawW = Math.max(200, w - RECT.left - labelArea)
-    return computeLayout(tree, layout, drawW, labelArea)
-  }, [data, layout, containerW])
+    return computeLayout(tree, layout, drawW, labelArea, rowH)
+  }, [data, layout, containerW, rowH])
 
   const leafByGene = useMemo(() => {
     const m = new Map<string, LeafLayout>()

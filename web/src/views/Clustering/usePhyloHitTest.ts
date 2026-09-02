@@ -18,10 +18,18 @@ interface Options {
   isRadial: boolean
   transform: Transform
   rectScale: number
+  rowH: number
   svgRef: RefObject<SVGSVGElement | null>
 }
 
-export function usePhyloHitTest({ layoutData, isRadial, transform, rectScale, svgRef }: Options) {
+export function usePhyloHitTest({
+  layoutData,
+  isRadial,
+  transform,
+  rectScale,
+  rowH,
+  svgRef,
+}: Options) {
   return useCallback(
     (clientX: number, clientY: number): LeafLayout | null => {
       if (!layoutData || !svgRef.current) return null
@@ -62,10 +70,10 @@ export function usePhyloHitTest({ layoutData, isRadial, transform, rectScale, sv
         }
       }
       if (!best) return null
-      const outOfRow = bestDiff > RECT.rowH * RECT_ROW_TOLERANCE
+      const outOfRow = bestDiff > rowH * RECT_ROW_TOLERANCE
       const leftOfLabel = vx < best.x - RECT.rowH * RECT_LEFT_REACH
       return outOfRow || leftOfLabel ? null : best
     },
-    [layoutData, transform, isRadial, rectScale, svgRef],
+    [layoutData, transform, isRadial, rectScale, rowH, svgRef],
   )
 }

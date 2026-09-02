@@ -9,7 +9,11 @@ import { AXIS_SCALE } from "@/api/hooks/useClustering"
 import { downloadGeneTreeNewick } from "@/api/newick"
 import GeneSearchPanel from "@/components/autocomplete/GeneSearchPanel"
 import FloatingToggleButton from "@/components/FloatingToggleButton"
-import { CORNER_BUTTON_TOP } from "@/components/heatmap/constants"
+import {
+  CORNER_BUTTON_LEFT,
+  CORNER_BUTTON_TOP,
+  CORNER_BUTTON_TOP_CLEAR,
+} from "@/components/heatmap/constants"
 import HeatmapCornerButton from "@/components/heatmap/HeatmapCornerButton"
 import FloatingSurface, { searchSurfaceSx } from "@/components/view/FloatingSurface"
 import ViewStatus from "@/components/view/ViewStatus"
@@ -24,16 +28,17 @@ import { LAYOUT_PARAM } from "./shareParams"
 import SpacingSettings from "./SpacingSettings"
 import { useClusteringState } from "./useClusteringState"
 
-const SPACING_TOP = AXIS_H + 18
+const SPACING_FLOAT_TOP = AXIS_H + CORNER_BUTTON_LEFT
 
 export default function Clustering() {
   const [layout, setLayout] = useShareParam(LAYOUT_PARAM)
   const [rowH, setRowH] = useState(ROW_H_DEFAULT)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchCoversContent, setSearchCoversContent] = useState(false)
+  const [cornerNearAxis, setCornerNearAxis] = useState(false)
   const isMobile = useMediaQuery(useTheme().breakpoints.down("sm"))
   const searchFloats = isMobile || searchCoversContent
-  const settingsFloats = isMobile
+  const settingsFloats = searchFloats
   const treeRef = useRef<PhyloTreeHandle>(null)
 
   const {
@@ -117,11 +122,14 @@ export default function Clustering() {
               onSelect={setSelectedGeneId}
               geneById={geneById}
               onSearchCoversContentChange={setSearchCoversContent}
+              onCornerNearAxisChange={setCornerNearAxis}
             />
 
             {layout === "rectangular" &&
               (settingsFloats ? (
-                <HeatmapCornerButton topOffset={SPACING_TOP}>
+                <HeatmapCornerButton
+                  topOffset={cornerNearAxis ? SPACING_FLOAT_TOP : CORNER_BUTTON_TOP_CLEAR}
+                >
                   <SpacingSettings
                     rowH={rowH}
                     onRowHChange={setRowH}
@@ -135,7 +143,7 @@ export default function Clustering() {
                   sx={{
                     position: "absolute",
                     left: 12,
-                    top: searchFloats ? SPACING_TOP : CORNER_BUTTON_TOP,
+                    top: CORNER_BUTTON_TOP,
                     zIndex: 4,
                     width: searchSurfaceSx.width,
                     bgcolor: "background.paper",

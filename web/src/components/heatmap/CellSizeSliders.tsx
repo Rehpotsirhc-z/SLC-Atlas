@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
 import HeightIcon from "@mui/icons-material/Height"
-import { Box, Button, Slider, Tooltip, Typography } from "@mui/material"
+import { Box, Button } from "@mui/material"
+import AxisSlider from "./AxisSlider"
 import { CELL_H_MAX, CELL_H_MIN, CELL_SIZE_STEP, CELL_W_MAX, CELL_W_MIN } from "./constants"
 
 interface CellSizeSlidersProps {
@@ -14,61 +14,6 @@ interface CellSizeSlidersProps {
   onWidthChangeCommitted: () => void
   onHeightChange: (value: number) => void
   onReset: () => void
-}
-
-const valueSx = {
-  fontSize: 11,
-  color: "text.secondary",
-  width: 30,
-  textAlign: "right",
-  fontVariantNumeric: "tabular-nums",
-} as const
-
-interface AxisSliderProps {
-  icon: ReactNode
-  title: string
-  value: number
-  min: number
-  max: number
-  onChange: (value: number) => void
-  onCommit?: () => void
-}
-
-function AxisSlider({ icon, title, value, min, max, onChange, onCommit }: AxisSliderProps) {
-  const [live, setLive] = useState(value)
-  const dragging = useRef(false)
-  useEffect(() => {
-    if (!dragging.current) setLive(value)
-  }, [value])
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Tooltip title={title} placement="top">
-        <Box sx={{ display: "flex", color: "text.secondary" }}>{icon}</Box>
-      </Tooltip>
-      <Slider
-        size="small"
-        min={min}
-        max={max}
-        step={CELL_SIZE_STEP}
-        value={live}
-        onChange={(_event, next) => {
-          dragging.current = true
-          setLive(next as number)
-          onChange(next as number)
-        }}
-        onChangeCommitted={(_event, next) => {
-          dragging.current = false
-          setLive(next as number)
-          onCommit?.()
-        }}
-        aria-label={title}
-        sx={{ py: 0.5 }}
-      />
-      <Typography component="span" sx={valueSx}>
-        {live}px
-      </Typography>
-    </Box>
-  )
 }
 
 export default function CellSizeSliders({
@@ -87,6 +32,7 @@ export default function CellSizeSliders({
         value={width}
         min={CELL_W_MIN}
         max={CELL_W_MAX}
+        step={CELL_SIZE_STEP}
         onChange={onWidthChange}
         onCommit={onWidthChangeCommitted}
       />
@@ -96,6 +42,7 @@ export default function CellSizeSliders({
         value={height}
         min={CELL_H_MIN}
         max={CELL_H_MAX}
+        step={CELL_SIZE_STEP}
         onChange={onHeightChange}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0.5 }}>

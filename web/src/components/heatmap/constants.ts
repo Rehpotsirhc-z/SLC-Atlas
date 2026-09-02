@@ -16,6 +16,7 @@ export const CORNER_DROPDOWN_MIN_W = 180
 export const CORNER_BUTTON_TOP = 119
 export const CORNER_BUTTON_TOP_CLEAR = 12
 export const CORNER_BUTTON_LEFT = 12
+export const CORNER_BUTTON_CLEAR_X = 68
 export const GENE_TREE_W = 120
 export const GENE_LABEL_W = 92
 export const GENE_LABEL_MIN_W = 40

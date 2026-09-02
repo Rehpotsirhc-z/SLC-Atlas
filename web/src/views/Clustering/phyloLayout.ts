@@ -34,7 +34,12 @@ export interface TreeLayout {
   treeRight: number
 }
 
-export const RECT = { rowH: 30, drawW: 950, left: 14, labelArea: 160, top: 20 }
+export const ROW_H_DEFAULT = 30
+export const ROW_H_MIN = 16
+export const ROW_H_MAX = 60
+export const ROW_H_STEP = 1
+
+export const RECT = { rowH: ROW_H_DEFAULT, drawW: 950, left: 24, labelArea: 160, top: 20 }
 export const RADIAL = { maxR: 560, labelMargin: 170 }
 
 // Branch lengths this small mean the tree carries no distances, so depth falls back to level
@@ -77,7 +82,13 @@ function leafLayouts(
   })
 }
 
-function rectangularLayout(tree: Tree<ClusterNode>, axes: Axes, drawW: number, labelArea: number) {
+function rectangularLayout(
+  tree: Tree<ClusterNode>,
+  axes: Axes,
+  drawW: number,
+  labelArea: number,
+  rowH: number,
+) {
   const { nodes } = tree
   const { depth, leaves, maxDepth, flat, level, maxLevel } = axes
 
@@ -87,7 +98,7 @@ function rectangularLayout(tree: Tree<ClusterNode>, axes: Axes, drawW: number, l
       : RECT.left + (depth.get(id)! / maxDepth) * drawW
 
   const y = new Map<number, number>()
-  leaves.forEach((l, i) => y.set(l, RECT.top + i * RECT.rowH))
+  leaves.forEach((l, i) => y.set(l, RECT.top + i * rowH))
   midpointSpread(tree, y)
 
   const pos = new Map<number, { x: number; y: number; angle: number | null }>()
@@ -104,7 +115,7 @@ function rectangularLayout(tree: Tree<ClusterNode>, axes: Axes, drawW: number, l
 
   return {
     width: RECT.left + drawW + labelArea,
-    height: RECT.top * 2 + Math.max(1, leaves.length) * RECT.rowH,
+    height: RECT.top * 2 + Math.max(1, leaves.length) * rowH,
     edges,
     leaves: leafLayouts(tree, leaves, pos),
     maxDepth,
@@ -159,10 +170,11 @@ export function computeLayout(
   layout: Layout,
   drawW = RECT.drawW,
   labelArea = RECT.labelArea,
+  rowH = RECT.rowH,
 ): TreeLayout {
   const axes = depthAxes(tree)
   return layout === "rectangular"
-    ? rectangularLayout(tree, axes, drawW, labelArea)
+    ? rectangularLayout(tree, axes, drawW, labelArea, rowH)
     : radialLayout(tree, axes)
 }
 
