@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Ref } from "react"
 import { Box } from "@mui/material"
 import type { AxisScale } from "@/api/hooks/useClustering"
 import { sansFontFamily } from "@/theme/fonts"
@@ -34,9 +35,18 @@ interface Props {
   monoFont: string
   compact: boolean
   axisScale: AxisScale
+  groupRef?: Ref<SVGGElement>
 }
 
-export default function PhyloAxis({ layoutData, scale, color, monoFont, compact, axisScale }: Props) {
+export default function PhyloAxis({
+  layoutData,
+  scale,
+  color,
+  monoFont,
+  compact,
+  axisScale,
+  groupRef,
+}: Props) {
   const { treeLeft, treeRight, maxDepth, width } = layoutData
   const { label, percent } = axisScale
   return (
@@ -47,55 +57,57 @@ export default function PhyloAxis({ layoutData, scale, color, monoFont, compact,
         viewBox={`0 0 ${width} ${AXIS_H}`}
         style={{ display: "block", margin: "0 auto" }}
       >
-        {label && (
-          <text
-            x={(treeLeft + treeRight) / 2}
-            y={LABEL_BASELINE}
-            textAnchor="middle"
-            fontSize={compact ? 10 : 11}
-            fontFamily={sansFontFamily}
-            fill={color}
-          >
-            {label}
-          </text>
-        )}
-        <line
-          x1={treeLeft}
-          y1={AXIS_H - 1}
-          x2={treeRight}
-          y2={AXIS_H - 1}
-          stroke={color}
-          strokeWidth={0.5}
-        />
-        {axisTicks(maxDepth).map((t) => {
-          const x = treeRight - (t / maxDepth) * (treeRight - treeLeft)
-          const fontSize = compact ? 9 : 11
-          const text = formatTick(t, percent)
-          const half = (text.length * fontSize * 0.6) / 2
-          const labelX = Math.min(width - half, Math.max(half, x))
-          return (
-            <g key={t}>
-              <line
-                x1={x}
-                y1={AXIS_H - 1}
-                x2={x}
-                y2={AXIS_H - 7}
-                stroke={color}
-                strokeWidth={0.5}
-              />
-              <text
-                x={labelX}
-                y={AXIS_H - 10}
-                textAnchor="middle"
-                fontSize={fontSize}
-                fontFamily={monoFont}
-                fill={color}
-              >
-                {text}
-              </text>
-            </g>
-          )
-        })}
+        <g ref={groupRef}>
+          {label && (
+            <text
+              x={(treeLeft + treeRight) / 2}
+              y={LABEL_BASELINE}
+              textAnchor="middle"
+              fontSize={compact ? 10 : 11}
+              fontFamily={sansFontFamily}
+              fill={color}
+            >
+              {label}
+            </text>
+          )}
+          <line
+            x1={treeLeft}
+            y1={AXIS_H - 1}
+            x2={treeRight}
+            y2={AXIS_H - 1}
+            stroke={color}
+            strokeWidth={0.5}
+          />
+          {axisTicks(maxDepth).map((t) => {
+            const x = treeRight - (t / maxDepth) * (treeRight - treeLeft)
+            const fontSize = compact ? 9 : 11
+            const text = formatTick(t, percent)
+            const half = (text.length * fontSize * 0.6) / 2
+            const labelX = Math.min(width - half, Math.max(half, x))
+            return (
+              <g key={t}>
+                <line
+                  x1={x}
+                  y1={AXIS_H - 1}
+                  x2={x}
+                  y2={AXIS_H - 7}
+                  stroke={color}
+                  strokeWidth={0.5}
+                />
+                <text
+                  x={labelX}
+                  y={AXIS_H - 10}
+                  textAnchor="middle"
+                  fontSize={fontSize}
+                  fontFamily={monoFont}
+                  fill={color}
+                >
+                  {text}
+                </text>
+              </g>
+            )
+          })}
+        </g>
       </svg>
     </Box>
   )

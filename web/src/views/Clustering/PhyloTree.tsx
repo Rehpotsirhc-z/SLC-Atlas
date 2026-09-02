@@ -11,7 +11,7 @@ import { figureExportHandlers } from "@/utils/exportFigure"
 import { useElementSize } from "@/utils/useElementSize"
 import type { ClusterNode } from "@/types/clustering"
 import type { Gene } from "@/types/gene"
-import PhyloAxis from "./PhyloAxis"
+import PhyloAxis, { AXIS_H } from "./PhyloAxis"
 import PhyloTooltip from "./PhyloTooltip"
 import { Highlight, LeafLabel } from "./PhyloLeaf"
 import { isFlat, type Layout, type LeafLayout } from "./phyloLayout"
@@ -78,6 +78,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
   const [containerRef, size] = useElementSize<HTMLDivElement>()
   const svgRef = useRef<SVGSVGElement>(null)
   const treeGroupRef = useRef<SVGGElement>(null)
+  const axisGroupRef = useRef<SVGGElement>(null)
   const [hover, setHover] = useState<HoverState | null>(null)
 
   const { layoutData, leafByGene, rectScale } = usePhyloLayout(data, layout, size.w, rowH)
@@ -119,14 +120,29 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
 
   const buildSvgString = () => {
     if (!treeGroupRef.current || !layoutData) return null
-    const clone = treeGroupRef.current.cloneNode(true) as SVGGElement
-    clone.removeAttribute("transform")
     const { width: w, height: h } = layoutData
     const bg = theme.palette.background.paper
+    const axisEl = axisGroupRef.current
+    const showAxis = !isRadial && !isFlat(layoutData.maxDepth) && axisEl !== null
+    const axisH = showAxis ? AXIS_H : 0
+    const totalH = h + axisH
+
+    const tree = treeGroupRef.current.cloneNode(true) as SVGGElement
+    if (axisH) tree.setAttribute("transform", `translate(0 ${axisH})`)
+    else tree.removeAttribute("transform")
+
+    let inner = ""
+    if (showAxis) {
+      const axis = axisEl.cloneNode(true) as SVGGElement
+      axis.removeAttribute("transform")
+      inner += axis.outerHTML
+    }
+    inner += tree.outerHTML
+
     return (
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"` +
-      ` font-family="${svgSansFontFamily}"><rect width="${w}" height="${h}" fill="${bg}"/>` +
-      `${clone.outerHTML}</svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${totalH}" viewBox="0 0 ${w} ${totalH}"` +
+      ` font-family="${svgSansFontFamily}"><rect width="${w}" height="${totalH}" fill="${bg}"/>` +
+      `${inner}</svg>`
     )
   }
   const buildSvgRef = useRef(buildSvgString)
@@ -263,6 +279,7 @@ const PhyloTree = forwardRef<PhyloTreeHandle, PhyloTreeProps>(function PhyloTree
               monoFont={monoFont}
               compact={isMobile}
               axisScale={axisScale}
+              groupRef={axisGroupRef}
             />
           )}
           <svg
