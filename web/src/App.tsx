@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Link as RouterLink } from "react-router-dom"
 import { AppBar, Box, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { AppNavMenu, AppNavTabs } from "./components/AppNav"
 import ThemeToggle from "./components/ThemeToggle"
@@ -12,7 +12,7 @@ import AboutDataPopup from "./components/AboutDataPopup"
 import ShareUrlSync from "./components/ShareUrlSync"
 import { routes } from "./routes"
 import { atlas } from "./config/atlas"
-import { HOME_ROUTE } from "./config/routes"
+import Home from "./views/Home"
 import NotFound from "./views/NotFound"
 
 export default function App() {
@@ -34,7 +34,18 @@ export default function App() {
       >
         <Toolbar variant="dense">
           {isMobile && <AppNavMenu />}
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mr: 2, whiteSpace: "nowrap" }}>
+          <Typography
+            component={RouterLink}
+            to="/"
+            variant="subtitle1"
+            fontWeight={700}
+            sx={{
+              mr: 2,
+              whiteSpace: "nowrap",
+              color: "inherit",
+              textDecoration: "none",
+            }}
+          >
             {atlas.shortName}
           </Typography>
           {!isMobile && <AppNavTabs />}
@@ -57,7 +68,7 @@ export default function App() {
           {routes.map((r) => (
             <Route key={r.path} path={r.path} element={r.element} />
           ))}
-          <Route path="/" element={<Navigate to={HOME_ROUTE.path} replace />} />
+          <Route path="/" element={<Home />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Box>

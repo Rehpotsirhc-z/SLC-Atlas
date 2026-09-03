@@ -5,7 +5,6 @@
 import { Link as RouterLink, useLocation } from "react-router-dom"
 import HomeIcon from "@mui/icons-material/Home"
 import { Box, Button, Typography, useTheme } from "@mui/material"
-import { HOME_ROUTE } from "@/config/routes"
 import { capBoxSx, capButtonSx } from "@/theme"
 
 export default function NotFound() {
@@ -37,7 +36,7 @@ export default function NotFound() {
       </Typography>
       <Button
         component={RouterLink}
-        to={HOME_ROUTE.path}
+        to="/"
         size="small"
         variant="outlined"
         startIcon={<HomeIcon />}
@@ -49,7 +48,7 @@ export default function NotFound() {
         }}
       >
         <Box component="span" sx={capBoxSx}>
-          Go to {HOME_ROUTE.label}
+          Go home
         </Box>
       </Button>
     </Box>
