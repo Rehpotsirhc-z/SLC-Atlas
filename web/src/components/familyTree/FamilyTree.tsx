@@ -76,7 +76,7 @@ const FamilyTree = memo(function FamilyTree({
       startTransition(() => setExpandedItems(items))
       if (!selectedFamily) return
       const opened = items.filter((family) => !expandedItems.includes(family))
-      if (!items.includes(selectedFamily) || opened.some((family) => family !== selectedFamily)) {
+      if (opened.some((family) => family !== selectedFamily)) {
         setSelectedGeneId(null)
       }
     },

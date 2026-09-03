@@ -67,6 +67,11 @@ export function useGeneAnnotationState() {
     if (text.trim()) setFamilyFilter(null)
   }, [])
 
+  const selectFamily = useCallback((family: string | null) => {
+    setFamilyFilter(family)
+    if (family) setSearchText("")
+  }, [])
+
   const deferredSearchText = useDeferredValue(searchText)
   const deferredFamilyFilter = useDeferredValue(familyFilter)
   const visibleGenes = useMemo(
@@ -120,7 +125,7 @@ export function useGeneAnnotationState() {
     searchText,
     setSearchText: search,
     familyFilter,
-    setFamilyFilter,
+    setFamilyFilter: selectFamily,
     sortKey,
     sortDirection,
     toggleSort,
